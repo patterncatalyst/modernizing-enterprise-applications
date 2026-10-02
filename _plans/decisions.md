@@ -58,6 +58,7 @@ confirmation — see "Open Questions")}.
 | DRQ-030 | GitHub Actions is the project CI/CD platform; a minimal Code-CI (equivalence gate) ships in r02, and Part 10 explicitly documents all GitHub Actions workflows (equivalence gate + deploy jobs). | User-approved; proves the equivalence-gate-in-CI thesis in the walking skeleton and keeps the CI/CD teaching concrete. | accepted |
 | DRQ-031 | Rename "equivalence oracle" → "behavior-equivalence suite" (the Newman collection) and "equivalence gate" (its CI check), dropping the word "oracle" to avoid confusion with Oracle Database (the stack uses PostgreSQL). | User-requested clarity. | accepted |
 | DRQ-032 | **Each extracted service is a non-trivial example demonstrating specific Quarkus strengths, reusing/adapting patterns from `datamesh-reference-arch-quarkus`** (Panache, Reactive Messaging/Kafka, gRPC, GraphQL, Camel-on-Quarkus, Dev Services, native, langchain4j/MCP). Review (ch.15, r02) stays the deliberately simple walking-skeleton slice; the bar rises from notification onward. | User-requested; makes the "after" architecture compelling and shows Quarkus value, not just a 1:1 port. | accepted |
+| DRQ-033 | Code samples use tabbed Spring Boot ⇄ Quarkus panels (codetabs mechanism ported from cloud-native-design-patterns, recolored to the project accent) throughout, so each migration's before/after is directly comparable. | User-requested; sharpens the Spring→Quarkus teaching. | accepted |
 
 ## Open Questions (consolidated — see build-plan return summary)
 

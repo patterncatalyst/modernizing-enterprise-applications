@@ -173,6 +173,9 @@ chapter ships a runnable example and a verification-status footer.
   (distinct from amber CNDP/EIP, red DataMesh, teal DDD-Obs; see DRQ-023).
 - **`brand_emoji`:** **🏗️** — **CONFIRMED**. **`github_repo`:**
   `modernizing-enterprise-applications`; **`github_username`:** `patterncatalyst`.
+- **Code samples:** tabbed Spring Boot ⇄ Quarkus panels (`_includes/codetabs.html`
+  + `assets/js/codetabs.js`, ported from cloud-native-design-patterns and
+  recolored to `--accent`) throughout, per DRQ-033.
 
 ### B.1 `_parts` (ordered)
 
