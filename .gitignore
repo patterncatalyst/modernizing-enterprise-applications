@@ -1,0 +1,22 @@
+# Local reference material — do NOT publish (original deck PDF, etc.)
+_source/
+
+# Jekyll build output
+_site/
+.jekyll-cache/
+.jekyll-metadata
+
+# Dependency / vendor directories
+vendor/
+node_modules/
+
+# JVM / Maven build output
+target/
+*.class
+
+# Secrets / local env
+.env
+*.local.md
+
+# OS cruft
+.DS_Store
