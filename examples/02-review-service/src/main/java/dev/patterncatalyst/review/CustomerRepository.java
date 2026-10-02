@@ -1,14 +1,16 @@
 package dev.patterncatalyst.review;
 
-import org.springframework.data.jpa.repository.JpaRepository;
+import io.quarkus.hibernate.orm.panache.PanacheRepository;
+import jakarta.enterprise.context.ApplicationScoped;
 
 /**
- * LIFTED UNCHANGED (shape) from
- * {@code dev.patterncatalyst.monolith.common.CustomerRepository} — a plain
- * Spring Data {@code JpaRepository}, supported as-is by the
- * {@code quarkus-spring-data-jpa} compatibility extension. Scoped down to the
- * minimal {@link Customer} projection; see its class comment for the deferred
- * data-decomposition note.
+ * REFACTORED to idiomatic Quarkus (ch.15 Phase B, DRQ-029) from the Phase A
+ * Spring Data {@code JpaRepository<Customer, Long>} interface — a plain
+ * Panache repository with no extra query methods. {@link Customer} remains
+ * the same minimal, read-only shadow projection of the shared schema (still
+ * SMELL[ch.18], deferred — see its class javadoc); only the data-access
+ * mechanism changed, not the data-coupling smell.
  */
-public interface CustomerRepository extends JpaRepository<Customer, Long> {
+@ApplicationScoped
+public class CustomerRepository implements PanacheRepository<Customer> {
 }

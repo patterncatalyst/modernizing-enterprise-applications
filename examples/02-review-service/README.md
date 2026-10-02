@@ -1,11 +1,16 @@
 # review-service
 
-**ch.15 Phase A ("lift onto Quarkus") — r02 S8.** The monolith's (`examples/00-monolith`)
-Review bounded context, lifted onto Quarkus largely unchanged via the
-Quarkiverse Spring-compatibility extensions (DRQ-029). This is **Phase A only**
-— the Spring annotations and class shapes are kept as-is on purpose; the
-idiomatic Quarkus rewrite (Quarkus REST, Panache, native CDI) is Phase B
-(r02 S9).
+**ch.15 Phase B ("make it idiomatic") — r02 S9.** The monolith's
+(`examples/00-monolith`) Review bounded context, extracted onto Quarkus in
+two phases (DRQ-029): **Phase A** (r02 S8, preserved in git history at commit
+`5479d49`) lifted the Spring-shaped source onto Quarkus largely unchanged via
+the Quarkiverse Spring-compatibility extensions. **This step (Phase B)**
+refactors off that compatibility shim to idiomatic Quarkus — Quarkus REST
+(RESTEasy Reactive) instead of `quarkus-spring-web`, Panache repositories
+instead of Spring Data `JpaRepository`, plain CDI `@ApplicationScoped` +
+constructor injection instead of `@Service`, and a `@ServerExceptionMapper`
+instead of `@RestControllerAdvice` — with the exact same external HTTP
+contract. See `MIGRATION.md` for the before/after measurements.
 
 - Port `8081`. Endpoints (identical external contract to the monolith):
   `GET /api/reviews?sku=...`, `GET /api/reviews/{id}`, `POST /api/reviews`
@@ -76,8 +81,7 @@ If you want to learn more about building native executables, please consult <htt
 ## Related Guides
 
 - Hibernate Validator ([guide](https://quarkus.io/guides/validation)): Bean validation using Hibernate Validator and Jakarta Validation annotations
-- Quarkus Extension for Spring DI API ([guide](https://quarkus.io/guides/spring-di)): Define your dependency injection with Spring DI
-- Quarkus Extension for Spring Data JPA API ([guide](https://quarkus.io/guides/spring-data-jpa)): Use Spring Data JPA annotations to create your data access layer
+- Hibernate ORM with Panache ([guide](https://quarkus.io/guides/hibernate-orm-panache)): Simplified JPA/Hibernate data access
+- Writing REST services with Quarkus REST ([guide](https://quarkus.io/guides/rest)): Jakarta REST (JAX-RS) endpoints and `@ServerExceptionMapper`
 - JDBC Driver - PostgreSQL ([guide](https://quarkus.io/guides/datasource)): Connect to the PostgreSQL database via JDBC
 - Elytron Security Properties File ([guide](https://quarkus.io/guides/security-properties)): Secure your applications using properties files
-- Quarkus Extension for Spring Web API ([guide](https://quarkus.io/guides/spring-web)): Use Spring Web annotations to create your REST services

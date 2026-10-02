@@ -2,7 +2,6 @@ package dev.patterncatalyst.review;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import java.util.Optional;
@@ -13,16 +12,15 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
- * LIFTED UNCHANGED from
- * {@code dev.patterncatalyst.monolith.review.ReviewServiceTest} (ch.15 Phase
- * A). This is a plain Mockito unit test with no Spring/Quarkus context at
- * all, so it needed zero framework-level migration — only the package name
- * changed. {@link Customer}/{@link InventoryItem} are built via their
- * package-private no-arg JPA constructors + reflection-free test doubles
- * here, so a tiny test-only constructor is added to each (see their
- * {@code // test support} comment) rather than reflecting into private JPA
- * fields, which the original monolith entities didn't need because their
- * shared-kernel versions had public multi-arg constructors.
+ * UPDATED for ch.15 Phase B (DRQ-029): still a plain Mockito unit test with
+ * no Quarkus/CDI context, so the migration cost was purely mechanical —
+ * {@link ReviewRepository}/{@link CustomerRepository}/{@link InventoryRepository}
+ * are now Panache repositories, so {@code findById} returns the entity
+ * directly (nullable) instead of {@code Optional<T>}, and the happy-path test
+ * no longer stubs a {@code save(...)} return value since Panache's
+ * {@code persist(entity)} returns {@code void} (Mockito does nothing for an
+ * unstubbed void method, which is exactly the desired behavior here). Same
+ * three scenarios, same assertions, as Phase A.
  */
 @ExtendWith(MockitoExtension.class)
 class ReviewServiceTest {
@@ -49,9 +47,8 @@ class ReviewServiceTest {
         InventoryItem item = TestFixtures.inventoryItem(100L, "SKU-WIDGET-001");
         var command = new ReviewCreate(2L, "SKU-WIDGET-001", 5, "Works great!");
 
-        when(customerRepository.findById(2L)).thenReturn(Optional.of(customer));
+        when(customerRepository.findById(2L)).thenReturn(customer);
         when(inventoryRepository.findBySku("SKU-WIDGET-001")).thenReturn(Optional.of(item));
-        when(reviewRepository.save(any(Review.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         ReviewDto dto = reviewService.createReview(command);
 
@@ -63,7 +60,7 @@ class ReviewServiceTest {
     @Test
     void createReview_customerNotFound_throwsResourceNotFoundException() {
         var command = new ReviewCreate(404L, "SKU-WIDGET-001", 3, "fine");
-        when(customerRepository.findById(404L)).thenReturn(Optional.empty());
+        when(customerRepository.findById(404L)).thenReturn(null);
 
         assertThatThrownBy(() -> reviewService.createReview(command))
                 .isInstanceOf(ResourceNotFoundException.class)
@@ -74,7 +71,7 @@ class ReviewServiceTest {
     void createReview_skuNotFound_throwsResourceNotFoundException() {
         Customer customer = TestFixtures.customer(2L);
         var command = new ReviewCreate(2L, "NOPE", 3, "fine");
-        when(customerRepository.findById(2L)).thenReturn(Optional.of(customer));
+        when(customerRepository.findById(2L)).thenReturn(customer);
         when(inventoryRepository.findBySku("NOPE")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> reviewService.createReview(command))

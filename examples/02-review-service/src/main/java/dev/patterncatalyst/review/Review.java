@@ -11,11 +11,13 @@ import jakarta.persistence.Table;
 import java.time.Instant;
 
 /**
- * LIFTED from {@code dev.patterncatalyst.monolith.review.Review} (ch.15 Phase
- * A, DRQ-029) — identical JPA annotations and class shape. The {@code @Entity}
- * / {@code @Table} / {@code @ManyToOne} / {@code @JoinColumn} mapping works
- * unchanged under Quarkus Hibernate ORM; {@code quarkus-spring-data-jpa}
- * requires no entity changes at all (plain JPA entities, not Panache).
+ * UNCHANGED across ch.15 Phase A → Phase B (DRQ-029): this plain JPA entity
+ * needed zero edits when {@link ReviewRepository} was refactored from a
+ * Spring Data {@code JpaRepository} to a Panache {@code PanacheRepository}.
+ * Panache's REPOSITORY pattern (as opposed to active-record/{@code PanacheEntity})
+ * works against ordinary {@code @Entity} classes, so the {@code @Entity} /
+ * {@code @Table} / {@code @ManyToOne} / {@code @JoinColumn} mapping carries
+ * over verbatim.
  *
  * <p>SMELL[ch.18] (carried over, not cured here): still joins directly to the
  * shared {@code customers} and {@code inventory_items} tables in the SAME

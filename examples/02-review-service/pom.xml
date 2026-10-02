@@ -31,17 +31,17 @@
     </dependencyManagement>
 
     <dependencies>
+        <!-- Idiomatic Quarkus stack (ch.15 Phase B, DRQ-029) — the
+             quarkus-spring-web / quarkus-spring-di / quarkus-spring-data-jpa
+             compatibility extensions from Phase A are REMOVED. No
+             spring-compat shim remains underneath this service. -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-hibernate-validator</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-spring-di</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-spring-data-jpa</artifactId>
+            <artifactId>quarkus-hibernate-orm-panache</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -51,13 +51,6 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-elytron-security-properties-file</artifactId>
         </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-spring-web</artifactId>
-        </dependency>
-        <!-- quarkus-spring-web is a translation layer onto a real REST stack —
-             it needs one of quarkus-rest-jackson / quarkus-resteasy-jackson
-             underneath for JSON (de)serialization and exception mapping. -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-rest-jackson</artifactId>

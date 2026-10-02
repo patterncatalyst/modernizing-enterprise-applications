@@ -1,6 +1,7 @@
 package dev.patterncatalyst.review;
 
 import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
@@ -13,20 +14,26 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 /**
- * MIGRATED from {@code dev.patterncatalyst.monolith.review.ReviewControllerTest}
- * (ch.15 Phase A). The original was a Spring {@code @WebMvcTest} SLICE test
- * (controller only, security filters re-enabled via {@code @Import(SecurityConfig.class)}).
- * Quarkus has no slice-test equivalent (per the migrate-spring-to-quarkus
- * testing module: "No {@code @WebMvcTest} equivalent — use {@code @QuarkusTest}
- * for all test types"), so this boots the full app via {@code @QuarkusTest}
- * and swaps {@code MockMvc} for REST Assured and {@code @MockitoBean} for
- * {@code @InjectMock} — otherwise the same four cases, same assertions,
- * proving the exact 401/201/400 contract the behavior-equivalence suite
- * checks against the real HTTP server (not the servlet-mock layer the
- * monolith's version used).
+ * RENAMED from {@code ReviewControllerTest} for ch.15 Phase B (DRQ-029), to
+ * match the resource class's new name ({@link ReviewResource}). The test
+ * mechanics are unchanged from Phase A — still {@code @QuarkusTest} booting
+ * the full app (Quarkus has no slice-test equivalent) with REST Assured and
+ * {@code @InjectMock} — because {@link ReviewService} is already an
+ * {@code @ApplicationScoped} (normal-scoped, proxyable) CDI bean regardless of
+ * which REST layer sits in front of it.
+ *
+ * <p>The Location header assertion is relaxed from an exact-match to
+ * {@code endsWith(...)}: Jakarta REST's {@code Response.created(URI)}
+ * resolves a relative location URI against the request's base URI (unlike
+ * Spring's {@code ResponseEntity.created(URI)}, which echoed the literal
+ * string), so the header value is now an absolute URL ending in the same
+ * path. The behavior-equivalence suite only asserts the header is
+ * <em>present</em> (see {@code tooling/newman/mea.postman_collection.json},
+ * "4d. Authenticated write succeeds"), so this is a test-assertion-strictness
+ * adjustment, not a contract change.
  */
 @QuarkusTest
-class ReviewControllerTest {
+class ReviewResourceTest {
 
     @InjectMock
     ReviewService reviewService;
@@ -72,7 +79,7 @@ class ReviewControllerTest {
                 .when().post("/api/reviews")
                 .then()
                 .statusCode(201)
-                .header("Location", "/api/reviews/9")
+                .header("Location", endsWith("/api/reviews/9"))
                 .body("sku", is("SKU-WIDGET-001"));
     }
 

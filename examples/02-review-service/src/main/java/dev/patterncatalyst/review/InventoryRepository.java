@@ -1,17 +1,19 @@
 package dev.patterncatalyst.review;
 
+import io.quarkus.hibernate.orm.panache.PanacheRepository;
+import jakarta.enterprise.context.ApplicationScoped;
 import java.util.Optional;
-import org.springframework.data.jpa.repository.JpaRepository;
 
 /**
- * LIFTED (shape) from {@code dev.patterncatalyst.monolith.inventory.InventoryRepository},
- * scoped to only the derived query Review actually needs
- * ({@code findWithLockBySku}/pessimistic locking is an Order/Inventory
- * concern, not Review's). Derived-query methods (the Spring Data
- * {@code findBy*} convention) work unchanged under
- * {@code quarkus-spring-data-jpa}.
+ * REFACTORED to idiomatic Quarkus (ch.15 Phase B, DRQ-029) from the Phase A
+ * Spring Data {@code JpaRepository<InventoryItem, Long>} interface's derived
+ * {@code findBySku} query. Panache has no method-name-derivation convention,
+ * so the query is spelled out explicitly with simplified HQL.
  */
-public interface InventoryRepository extends JpaRepository<InventoryItem, Long> {
+@ApplicationScoped
+public class InventoryRepository implements PanacheRepository<InventoryItem> {
 
-    Optional<InventoryItem> findBySku(String sku);
+    public Optional<InventoryItem> findBySku(String sku) {
+        return find("sku", sku).firstResultOptional();
+    }
 }
