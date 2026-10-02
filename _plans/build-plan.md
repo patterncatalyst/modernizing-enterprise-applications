@@ -20,7 +20,8 @@ synthesis_of: [plan-candidate-risk, plan-candidate-simple, plan-candidate-outcom
 single most valuable mechanism: **r02 is a thin walking skeleton that retires
 the four biggest risks at once** (does the monolith demonstrate a pattern? does
 the strangle work? is the ADLC real? does a chapter hit the 2k bar with running
-code?), and its **Newman equivalence oracle gating every extraction in CI**. I
+code?), and its **behavior-equivalence suite (the Newman collection captured against
+the monolith) gating every extraction in CI via the equivalence gate**. I
 also took its risk register, its podman/minikube boundary discipline, and its
 reconciliation-log drift control. I left its *Inventory-first* walking-skeleton
 choice (replaced with Review-first — see tension T1) and softened its 31-chapter
@@ -62,8 +63,8 @@ A **single continuous shipping/e-commerce narrative**: build a believable
 Spring Boot monolith first, then **strangle it to Quarkus + Camel microservices
 one seam at a time**, introducing each pattern **at the moment the migration
 forces it**, with **testing woven through every step** and the **monolith's
-Newman collection as a behavior-equivalence oracle** that gates every
-extraction. The whole thing is executed through an **ADLC (AI Development
+Newman collection as a behavior-equivalence suite**, enforced by an
+**equivalence gate** that blocks every extraction. The whole thing is executed through an **ADLC (AI Development
 Lifecycle)** that the book both *teaches* (a dedicated Part) and *demonstrates*
 (an "ADLC in Action" callout in every migration chapter) — and the book's own
 `_plans/` ledger (`decisions.md` / `build-plan.md` / `reconciliation.md`) is the
@@ -180,14 +181,14 @@ chapter ships a runnable example and a verification-status footer.
 | 0 | Setting Up | Toolchain (SDKMAN/JDK 25/Maven/Quarkus+Camel CLI), the podman observability stack, the repo, the ADLC ledger, how to run every example. |
 | 1 | Why Modernize | Modernization as disciplined engineering; when microservices are a bad idea; strategies; the assessment rubric and evolution arc reframed for 2026. |
 | 2 | The AI Development Lifecycle (ADLC) | What replaces the SDLC: phases, agent roles, MCP tools, human gates, the safety net, and a full worked loop on a trivial change. |
-| 3 | The Reference Monolith | Build the Spring Boot "before" picture: domain, modules, persistence, API, seed data, deliberate smells, and the test suite that becomes the oracle. |
+| 3 | The Reference Monolith | Build the Spring Boot "before" picture: domain, modules, persistence, API, seed data, deliberate smells, and the test suite that becomes the equivalence suite. |
 | 4 | Finding the Seams | Strategic + tactical DDD, hexagonal, event storming, coupling theory, modular monolith / decomposed DBs — deciding *where* to cut. |
 | 5 | The Strangler Fig in Practice | The strangler family and the first two extractions (review, notification); ACL/content-based routing; going event-driven. |
 | 6 | Data Across the Seam | Shared data → CDC/log-tailing (+ inventory extraction) → outbox → event-sourcing/CQRS → ACID→ACD. |
 | 7 | Coordinating Across Services | Distributed transactions, choreographed saga (+ payment), orchestrated saga (+ shipping), failure modes and the resilience chassis. |
 | 8 | Communication & Contracts | REST/gRPC/GraphQL (+ order extraction & gateway, strangler completes), the Quarkus/MicroProfile chassis, the schema/API/service registry. |
 | 9 | Operating the Modernized System | Deployment patterns; service mesh, observability (OTel/LGTM/Kiali), distributed tracing — on minikube. |
-| 10 | Delivering & Reflection | CI/CD for the strangler, GitOps, progressive delivery, supply-chain security; then the pattern-map/chassis/anti-patterns/what's-next close. |
+| 10 | Delivering & Reflection | CI/CD for the strangler on **GitHub Actions** (the workflow files, the equivalence-gate job, the deployment jobs named explicitly), GitOps, progressive delivery, supply-chain security; then the pattern-map/chassis/anti-patterns/what's-next close. |
 | A+ | Appendices | Deep-dive reference material (mostly reuse-as-is / adapt). |
 
 ### B.2 Ordered chapter list (title + 1–2 line synopsis)
@@ -244,10 +245,11 @@ chapter ships a runnable example and a verification-status footer.
 - **09 The Deliberate Smells** — the coupling/god-service/shared-table/
   transaction-scope smells planted on purpose, each tagged to the pattern that
   will later cure it. *Deepen: Newman ch.3.*
-- **10 Testing the Monolith (the Oracle)** — unit + Testcontainers integration
-  tests + the **Newman contract collection** captured against the running
-  monolith; this suite becomes the equivalence oracle re-run against every
-  extraction. *Reuse: EIP-Camel testing strategy + CNDP Newman appendix.*
+- **10 Testing the Monolith (the Equivalence Suite)** — unit + Testcontainers
+  integration tests + the **Newman contract collection** captured against the
+  running monolith; this collection becomes the behavior-equivalence suite,
+  re-run against every extraction via the equivalence gate. *Reuse: EIP-Camel
+  testing strategy + CNDP Newman appendix.*
 
 **Part 4 — Finding the Seams**
 - **11 Strategic & Tactical DDD + Hexagonal** — subdomains, bounded contexts,
@@ -267,8 +269,8 @@ chapter ships a runnable example and a verification-status footer.
   proxy / redirection / shared-database variants; the Camel strangler proxy used
   for cutover. *Adapt: CNDP monolith-to-microservices (promoted from appendix).*
 - **15 Extraction 1 — Review Service (the walking skeleton)** — REST-only, OIDC,
-  no sync dependency; prove the full loop: ACL, Quarkus scaffold, oracle
-  equivalence, flag-gated cutover, decommission the monolith module. *The
+  no sync dependency; prove the full loop: ACL, Quarkus scaffold, equivalence
+  gate pass, flag-gated cutover, decommission the monolith module. *The
   deliberately anticlimactic first win; authored first in r02.*
 - **16 Content-Based Routing & the Anti-Corruption Layer** — Camel content-based
   router, message translator, content enricher as the translation layer at the
@@ -330,10 +332,12 @@ chapter ships a runnable example and a verification-status footer.
   lgtm-minikube-stack.*
 
 **Part 10 — Delivering & Reflection**
-- **31 CI/CD, GitOps, Progressive Delivery & Supply Chain** — pipelines that run
-  the equivalence oracle on every extraction; UBI image builds; GitOps;
-  feature-flag/canary progressive cutover; SBOM + CVE scan + policy-as-code
-  (security-by-design, the deck's gap). *Partly net-new.*
+- **31 CI/CD, GitOps, Progressive Delivery & Supply Chain** — **names the actual
+  GitHub Actions workflows** (`.github/workflows/code-ci.yml` and friends), the
+  equivalence-gate job that runs the behavior-equivalence suite on every
+  extraction, and the deployment jobs, not just the concepts behind them; UBI
+  image builds; GitOps; feature-flag/canary progressive cutover; SBOM + CVE
+  scan + policy-as-code (security-by-design, the deck's gap). *Partly net-new.*
 - **32 The Pattern Language, Revisited** — Richardson's map re-walked with the
   completed migration; anti-patterns of over-decomposition; the chassis in 2026;
   honestly-scoped "further horizons" (serverless, Wasm, platform engineering,
@@ -445,7 +449,7 @@ AI feature *in* the shipped system).
 A **fresh Spring Boot 3.x monolith (JDK 25)** — one deployable, one database,
 one JVM — the believable common ancestor of the sibling target architectures
 (reuse-map §6). **Kept permanently in-repo at `examples/00-monolith/`
-(CONFIRMED, DRQ-024)** as the living "before" and the Newman equivalence-oracle's
+(CONFIRMED, DRQ-024)** as the living "before" and the equivalence suite's
 referent.
 
 - **Domain (six bounded contexts as packages/modules):** `order`, `inventory`,
@@ -469,7 +473,7 @@ referent.
 - **API surface:** REST for all six contexts; an in-process order-placement flow
   touching inventory → payment → shipping → notification **in one ACID
   `@Transactional`** (the distributed-transaction smell cured by saga).
-  springdoc OpenAPI seeds the Newman oracle.
+  springdoc OpenAPI seeds the Newman behavior-equivalence suite.
 - **Deliberate smells (each tagged to its curing chapter):**
   1. Shared schema / cross-context joins → owned data + CDC (ch.18/19).
   2. God `OrderService` reaching into other modules → hardest/last extraction
@@ -481,7 +485,7 @@ referent.
   5. No ACL / leaky domain model → ACL at the seam (ch.16).
   6. Review tangled into shared security but genuinely independent → easy first
      strand (ch.15, the walking skeleton).
-- **Testing (the oracle):** JUnit unit tests per service; Testcontainers
+- **Testing (the equivalence suite):** JUnit unit tests per service; Testcontainers
   integration tests over real Postgres; a **Newman contract collection** (happy
   path + out-of-stock + payment-decline) re-run **unchanged** against each
   extracted service to prove behavioral equivalence (reuse CNDP `appendix-o` +
@@ -496,7 +500,7 @@ referent.
 Order follows rising difficulty and the deck's "least-complex / highest-ROI
 first" guidance (p.18). Each step = a chapter, a `DRQ-NNN` decision, a
 `build-plan.md` row, a `demos/demo-*.sh`, a flag-gated cutover behind the Camel
-strangler proxy, and an oracle gate before the monolith module is decommissioned.
+strangler proxy, and an equivalence-gate check before the monolith module is decommissioned.
 
 | # | Service | Seam / mechanism | Data & transaction handling | Target | Chapters |
 |---|---|---|---|---|---|
@@ -528,22 +532,22 @@ extensions** — `quarkus-spring-web` (Spring MVC REST annotations),
 Data repositories), `quarkus-spring-security`, `quarkus-spring-boot-properties`,
 `quarkus-spring-cache`, `quarkus-spring-scheduled`, and
 `quarkus-spring-cloud-config-client` as applicable. This is the fast, low-risk
-bridge: the service runs natively on Quarkus and passes the Newman equivalence
-oracle quickly, with no idiom rewrite blocking the oracle gate. **Phase B —
+bridge: the service runs natively on Quarkus and passes the equivalence gate
+quickly, with no idiom rewrite blocking the gate. **Phase B —
 make it idiomatic:** the same service is then refactored off the compatibility
 shim to idiomatic Quarkus — RESTEasy Reactive/Quarkus REST, Panache
 (active-record or repository), native CDI, SmallRye Config, and Quarkus
 Security — with a measured before/after (startup time, memory, native-image
 size/build) captured as the teaching payoff. Phase A de-risks each extraction
-(oracle-green fast); Phase B is where the "why Quarkus" argument gets made
+(equivalence-gate-green fast); Phase B is where the "why Quarkus" argument gets made
 with numbers. Together A→B is the single repeatable template every extraction
 chapter (15, 17, 19, 23, 24, 26) follows, reinforcing the full-depth decision
 (DRQ-026) without requiring six independent one-shot rewrites.
 
 **Seam toolkit (consistent across all six):** a Camel strangler proxy routing by
 URI/content; an ACL (Camel message translator + content enricher) at each
-boundary; feature flags (OpenFeature/flagd) as the cutover mechanism; the Newman
-oracle as the go/no-go gate. **Reversibility** is a design property — every step
+boundary; feature flags (OpenFeature/flagd) as the cutover mechanism; the
+equivalence gate as the go/no-go checkpoint. **Reversibility** is a design property — every step
 is flag-reversible before decommission. End state matches the DataMesh "after"
 picture, so examples cross-reference it directly rather than re-author.
 
@@ -563,7 +567,7 @@ example — the book is built the way it teaches.
 | **2. Map** | Agent reconnaissance: classify the legacy module, map dependencies, find the seam | — | camel-mcp `migration_analyze`; quarkus-agent `migrate-spring-to-quarkus`; Explore subagent | design/analysis |
 | **3. Plan** | Opus produces the step plan, `DRQ-NNN`, and `build-plan.md` rows | **GATE: human approves plan before any code** | lgtm-relay (Opus plan) | design + task breakdown |
 | **4. Generate** | Sonnet scaffolds + writes code + tests | — | lgtm-relay (Sonnet); lgtm-quarkus; lgtm-camel; quarkus-agent `create`/`skills`; camel-mcp route scaffold | implementation |
-| **5. Verify** | Opus validates: run Citrus/Newman/Dev Services, check the oracle, security scan; write `reconciliation.md` | **GATE: human signs off on equivalence** | lgtm-relay (Opus validate); camel-mcp `validate_route`; Newman/Citrus | code review + QA + security |
+| **5. Verify** | Opus validates: run Citrus/Newman/Dev Services, check the equivalence gate, security scan; write `reconciliation.md` | **GATE: human signs off on equivalence** | lgtm-relay (Opus validate); camel-mcp `validate_route`; Newman/Citrus | code review + QA + security |
 | **6. Operate** | Deploy behind a flag, observe via LGTM, shift traffic | human controls rollout % | lgtm-podman/minikube-stack; feature flags | deploy |
 | **7. Reconcile** | Append decision outcomes, update build-plan status, record drift | — | the three ledger artifacts | change log / traceability |
 
@@ -577,7 +581,7 @@ append-only, agent-maintained memory.
 ### F.3 How each chapter DEMONSTRATES it (not describes)
 Every migration chapter (15, 17, 19, 23, 24, 26) ends with an **"ADLC in
 Action"** callout: the Frame statement, the actual `DRQ-NNN` entry, the agent
-tier + MCP tool used, the gate decisions, the oracle/reconciliation result, and
+tier + MCP tool used, the gate decisions, the equivalence-gate/reconciliation result, and
 the decision-log IDs touched. **Demo mechanism (CONFIRMED, DRQ-025):** agent/MCP
 tool usage in these callouts is shown as pre-captured, reproducible tool
 output — narrated transcripts checked into the repo alongside the chapter — not
@@ -604,7 +608,7 @@ black-box contract tests; plus **Citrus** for end-to-end route tests and
 
 | Pattern / step | Unit | Contract | Integration | E2E |
 |---|---|---|---|---|
-| Monolith baseline (the oracle) | JUnit per service | — | Testcontainers / `@SpringBootTest` | **Newman full flow (oracle)** |
+| Monolith baseline (the equivalence suite) | JUnit per service | — | Testcontainers / `@SpringBootTest` | **Newman full flow (equivalence suite)** |
 | Each extraction | JUnit + Camel MockEndpoint/AdviceWith | **Newman collection run *unchanged* vs monolith** | Dev Services (Kafka/PG/Apicurio) + REST Assured; Citrus per route | Newman vs the whole mesh |
 | Content-based routing / ACL | MockEndpoint + AdviceWith | — | Citrus vs real Kafka/HTTP/DB | — |
 | Outbox / CDC | publisher unit | schema contract (Apicurio) | Dev Services + Debezium IT | event-arrival assertions |
@@ -625,17 +629,27 @@ confirm Dev Services matches" discipline.
 
 ## H. CI/CD design
 
+**GitHub Actions is the project's CI/CD platform** (per `lgtm-github`) — every
+pipeline below is a real `.github/workflows/*.yml` file in the repo, not a
+conceptual stand-in. **Part 10 (ch.31) MUST explicitly call out the concrete
+GitHub Actions used** — the workflow file(s), the equivalence-gate job, and the
+deployment jobs — so readers see the actual CI/CD implementation, not just the
+underlying concepts.
+
 - **Pipelines (GitHub Actions, per `lgtm-github`):**
   1. **Site CI** — Jekyll build + static validation (link check, front-matter,
      word-count ≥ 2000, example-dir presence, verification-footer presence) on
      every PR.
-  2. **Code CI** — Maven reactor build + unit/integration (Dev Services) +
-     native-image smoke for Quarkus services; the **equivalence gate** runs the
-     monolith's Newman collection against each extracted service and **fails if
-     behavior diverges**.
+  2. **Code CI** (`.github/workflows/code-ci.yml`, minimal version introduced
+     in r02 via S-CI, expanded through r04–r07) — Maven reactor build +
+     unit/integration (Dev Services) + native-image smoke for Quarkus
+     services; the **equivalence gate** job runs the behavior-equivalence
+     suite (the monolith's Newman collection) against each extracted service
+     and **fails the build if behavior diverges**.
   3. **Migration/cutover pipeline (ch.31 subject)** — builds the monolith *and*
-     the growing service set together, runs equivalence, deploys to minikube,
-     performs flag/canary cutover, verifies, and can roll back.
+     the growing service set together, runs the equivalence gate, deploys to
+     minikube via dedicated deployment jobs, performs flag/canary cutover,
+     verifies, and can roll back.
 - **GitOps:** declarative manifests in `k8s/` (reuse DataMesh base + kustomize +
   Istio + KEDA overlays, retargeted to podman-built images); Argo-style sync
   demonstrated on minikube; progressive delivery via feature flags
@@ -662,7 +676,7 @@ Outline (one section per book part):
 1. Title + Why Modernize (Part 1) — strategies, when-not-to, the 2×2.
 2. **NEW: The ADLC** (Part 2) — the phase diagram, agents/tools/gates, the
    ledger — the centerpiece absent from the original.
-3. Meet the Monolith (Part 3) — domain, smells, the oracle.
+3. Meet the Monolith (Part 3) — domain, smells, the equivalence suite.
 4. Finding the Seams (Part 4) — DDD / event storming / coupling.
 5. Strangler Fig in Practice (Part 5) — the proxy, the six-step sequence.
 6. Data Across the Seam (Part 6) — shared→CDC→outbox→CQRS→ACID→ACD.
@@ -691,7 +705,7 @@ increment; later relays resume from the `build-plan.md` status table.
 | Iter | Theme | Deliverable (shippable increment) | Risks retired |
 |---|---|---|---|
 | **r01** | **Planning (this relay)** | this `build-plan.md`, `decisions.md` seed, PRD, chosen accent/emoji, confirmed podman — **artifacts only, no build** | scope framing; toolchain decision |
-| **r02** | **Walking skeleton** | site scaffold (lgtm-jekyll) + podman stack + **monolith built (ch.08–10 incl. the oracle)** + **Review extracted (ch.15) end-to-end** + **ch.15 authored to 2k with runnable code + tests + equivalence pass** + **ADLC demonstrated once** (ch.07 loop + full plan→execute→validate trace in `_plans` + chapter callout) | the four biggest risks at once |
+| **r02** | **Walking skeleton** | site scaffold (lgtm-jekyll) + podman stack + **monolith built (ch.08–10 incl. the equivalence suite)** + **Review extracted (ch.15) end-to-end** + **ch.15 authored to 2k with runnable code + tests + equivalence pass** + **ADLC demonstrated once** (ch.07 loop + full plan→execute→validate trace in `_plans` + chapter callout) + **minimal Code-CI green (equivalence gate runs in GitHub Actions)** | the four biggest risks at once |
 | **r03** | Front matter + ADLC | Part 0 (00–02), Part 1 (03–04), Part 2 (05–07), finish Part 3 prose (08–10) | ADLC-Part credibility; monolith completeness |
 | **r04** | Seams + first event-driven | Part 4 (11–13), ch.14, ch.16, **Notification extraction (ch.17, full-depth migrate-spring-to-quarkus)** + outbox intro | decomposition-pattern coverage; event-driven mechanics |
 | **r05** | Data patterns | Part 6 (18–22) incl. **Inventory extraction (ch.19, full-depth migrate-spring-to-quarkus)** + CDC, outbox-done-right, CQRS, ACID→ACD | the hardest data patterns; decomposed-DB mechanics |
@@ -749,7 +763,7 @@ new service modules not touching shared modules. Each relay updates
 - [ ] ADLC decision stated explicitly (Part + thread) with a concrete phase model
       and a per-chapter demonstration mechanism.
 - [ ] Monolith design names the six contexts, the deliberate smells, and the
-      equivalence-oracle approach.
+      behavior-equivalence-suite approach.
 - [ ] Strangler sequence maps first-seam → full decomposition → chapters.
 - [ ] Iteration plan defines r02 as a walking skeleton proving the top risks,
       with clean resume boundaries.
@@ -760,7 +774,7 @@ new service modules not touching shared modules. Each relay updates
 ### L.2 Eventual build — acceptance bar
 - [ ] Every chapter ≥ 2000 words excluding code/diagrams, progressive, with a
       runnable example and a verification-status footer naming the tests run.
-- [ ] The monolith runs; the Newman oracle is green in CI.
+- [ ] The monolith runs; the equivalence gate is green in CI.
 - [ ] Every extracted service passes the monolith's Newman collection unchanged
       before its monolith module is decommissioned.
 - [ ] Every one of the six extractions (review, notification, inventory,
@@ -787,7 +801,7 @@ new service modules not touching shared modules. Each relay updates
 | **R5** | podman/docker conflict | someone pulls lgtm-docker-stack / DataMesh compose; Dev Services tag mismatch | single podman compose source; boundary in ch.01 + `decisions.md` DRQ; "pin tags once in `.env`"; CI uses the same stack |
 | **R6** | Chapters miss 2k / ship without code | prose-only or stub chapters slip | Site CI static validation (word count + example-dir + footer); Code CI equivalence gate |
 | **R7** | Pattern-coverage gaps | a deck pattern quietly never lands | §C matrix is the checklist; validate phase cross-checks matrix vs shipped chapters each relay |
-| **R8** | Equivalence oracle rots | Newman collection drifts as API evolves | collection versioned with the monolith; CI runs it against every service; failure blocks "done" |
+| **R8** | Equivalence suite rots | Newman collection drifts as API evolves | collection versioned with the monolith; CI runs it against every service; failure blocks "done" |
 | **R9** | Shared-root collisions across parallel relays | two executors edit `pom.xml`/`_config.yml`/compose at once | §K single-writer rule; per-module isolation otherwise |
 | **R10** | Premature push / repo creation | agent creates repo or pushes without approval | standing memory gate; repo creation deferred to start of r02 after approval; lgtm-github only on explicit permission |
 | **R11** | Tool/version drift (JDK 25, Quarkus, Camel 4.2x, Spring 3.x) | examples break on newer releases | version matrix in `decisions.md`; Dev Services + CI pin versions; Quarkus/Camel MCP for version-matched ground truth |
