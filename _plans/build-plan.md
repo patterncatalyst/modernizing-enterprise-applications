@@ -452,6 +452,11 @@ one JVM — the believable common ancestor of the sibling target architectures
 (CONFIRMED, DRQ-024)** as the living "before" and the equivalence suite's
 referent.
 
+The monolith is intentionally the simple, legacy-shaped "before" — it is not
+where Quarkus's strengths are shown. The non-trivial, production-shaped
+examples live on the Quarkus "after" side of each extraction (§E, DRQ-032),
+so the before/after contrast stays pedagogically sharp.
+
 - **Domain (six bounded contexts as packages/modules):** `order`, `inventory`,
   `payment`, `shipping`, `notification`, `review`. Reuse the shared DTO
   vocabulary (`OrderDto`, `OrderStatus`, `StockDto`, `ReviewDto`,
@@ -550,6 +555,36 @@ boundary; feature flags (OpenFeature/flagd) as the cutover mechanism; the
 equivalence gate as the go/no-go checkpoint. **Reversibility** is a design property — every step
 is flag-reversible before decommission. End state matches the DataMesh "after"
 picture, so examples cross-reference it directly rather than re-author.
+
+**Example quality bar (CONFIRMED, DRQ-032).** Each extraction above must be a
+non-trivial, production-shaped example — not a toy CRUD stub — that
+demonstrates specific Quarkus strengths, reusing/adapting patterns from the
+sibling `datamesh-reference-arch-quarkus` project (with attribution) rather
+than re-authoring from scratch:
+
+- **notification** → SmallRye Reactive Messaging / Kafka, adapted from
+  datamesh's `notification-service`.
+- **inventory** → `quarkus-grpc` service-to-service calls + Panache
+  persistence, adapted from datamesh's `inventory-service`.
+- **payment** / **shipping** → choreographed/orchestrated sagas, including
+  Camel-on-Quarkus EIPs (Saga EIP for shipping), adapted from datamesh's
+  `payment-service` / `shipping-service` and its orchestration-styles demo
+  (`ai-rules-service`, `_docs/13-orchestration-styles.md`).
+- **order + gateway** → a SmallRye GraphQL gateway federating the extracted
+  services into the CQRS read side, adapted from datamesh's
+  `graphql-gateway`.
+- **Cross-cutting (all six)** → Quarkus Dev Services, continuous testing, and
+  native image, pulled from datamesh's `quarkus-deep-dive` part and its
+  `demo-continuous-testing.sh` / `demo-native.sh` / `demo-oidc.sh`; OIDC on
+  the review service per §E row 1.
+- **Optional AI route** → langchain4j/MCP, adapted from datamesh's
+  `ai-mcp-service` / `ai-rules-service` (ties to Appendix V, DRQ-028; stays
+  optional/scope-guarded).
+
+Review (ch.15, r02) remains the deliberately simple REST-leaf walking
+skeleton — that is a *sequencing* choice (prove the loop first), not the
+quality bar. Every extraction from notification onward raises the bar to a
+full Quarkus-strength showcase.
 
 ---
 
