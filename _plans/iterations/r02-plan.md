@@ -1,6 +1,6 @@
 ---
 title: "r02 Iteration Plan — The Walking Skeleton"
-description: "Concrete, ordered, executable step plan for r02: public repo, Jekyll scaffold, podman stack, Spring monolith + Newman oracle, Review extraction (two-phase) behind a Camel strangler proxy, ch.15 authored to the full bar, and the ADLC demonstrated once."
+description: "Concrete, ordered, executable step plan for r02: public repo, Jekyll scaffold, podman stack, Spring monolith + Newman behavior-equivalence suite, Review extraction (two-phase) behind a Camel strangler proxy, a minimal Code-CI equivalence gate, ch.15 authored to the full bar, and the ADLC demonstrated once."
 status: "execution plan — unblocks the r02 relay (Opus plan → Sonnet execute → Opus validate)"
 iteration: r02
 depends_on: [_plans/build-plan.md, _plans/decisions.md, _plans/research/reuse-map.md]
@@ -9,7 +9,7 @@ depends_on: [_plans/build-plan.md, _plans/decisions.md, _plans/research/reuse-ma
 # r02 — The Walking Skeleton (execution plan)
 
 > **Branch for all r02 work:** `r02-walking-skeleton`
-> **Total steps:** 14 (S1 … S14)
+> **Total steps:** 15 (S1 … S14, plus S-CI)
 > **Relay tiering (DRQ-004):** every step is *executed* by **Sonnet**; steps marked
 > **[Opus gate]** additionally require an **Opus validation** pass before their
 > checkpoint commit. The whole iteration plan is itself the Opus "Plan" phase and
@@ -17,12 +17,13 @@ depends_on: [_plans/build-plan.md, _plans/decisions.md, _plans/research/reuse-ma
 
 ## r02 definition of done (from build-plan §J, DRQ-011)
 Site scaffold (lgtm-jekyll) + podman stack + **monolith built (ch.08–10 incl. the
-oracle)** + **Review extracted (ch.15) end-to-end, two-phase** + **ch.15 authored
-to ≥2000 words with runnable code + tests + equivalence pass** + **ADLC
-demonstrated once** (ch.07 loop + full plan→execute→validate trace in `_plans/` +
-the ch.15 "ADLC in Action" callout). Four risks retired at once (R2 monolith
-demonstrates a pattern; strangle works; R3 ADLC is real; R6 a chapter hits 2k
-with running code).
+behavior-equivalence suite)** + **Review extracted (ch.15) end-to-end, two-phase** +
+**ch.15 authored to ≥2000 words with runnable code + tests + equivalence pass** +
+**ADLC demonstrated once** (ch.07 loop + full plan→execute→validate trace in
+`_plans/` + the ch.15 "ADLC in Action" callout) + **minimal Code-CI green (the
+equivalence gate running in GitHub Actions, DRQ-030)**. Four risks retired at once
+(R2 monolith demonstrates a pattern; strangle works; R3 ADLC is real; R6 a chapter
+hits 2k with running code).
 
 ## Standing constraints applied to every step
 Scope discipline (no speculative infra — nothing here that an r02 deliverable
@@ -42,11 +43,12 @@ S1 (repo+branch, SEQUENTIAL, must be first)
  ├─ S3 podman stack ──┤           (PARALLEL lane B — owns infra/, compose)
  └─ S4 monolith code ─┘           (PARALLEL lane C — owns examples/00-monolith/)
 S5 monolith tests        (SEQ after S4)
-S6 Newman ORACLE         (SEQ after S5 + S3)                 [Opus gate]
+S6 Newman EQUIVALENCE SUITE (SEQ after S5 + S3)              [Opus gate]
 S7 Camel strangler proxy (SEQ after S4; may overlap S5/S6)
-S8 Review Phase A (lift) (SEQ after S6 + S7)                 [Opus gate — oracle]
-S9 Review Phase B (idiomatic + measured)  (SEQ after S8)     [Opus gate — oracle]
+S8 Review Phase A (lift) (SEQ after S6 + S7)                 [Opus gate — equivalence gate]
+S9 Review Phase B (idiomatic + measured)  (SEQ after S8)     [Opus gate — equivalence gate]
 S10 flag-gated cutover + decommission     (SEQ after S9)     [Opus gate]
+S-CI minimal Code-CI (equivalence gate)   (SEQ after S10)    [Opus gate]
  ├─ S11 ch.15 diagram ───┐        (PARALLEL after S8)
  └─ S12 ch.07 ADLC loop ─┘        (PARALLEL after S10 evidence exists)
 S13 ch.15 authoring to the bar   (SEQ after S10 + S11 + S12) [Opus gate — 2k+footer]
@@ -135,7 +137,7 @@ disjoint directory subtree so S2/S3/S4 never touch the same file.
   with cross-context FKs/joins; **Flyway** migrations; **deterministic seed data**.
   REST surface for all six; an in-process order-placement flow across
   inventory→payment→shipping→notification in **one `@Transactional`**. springdoc
-  OpenAPI exposed (seeds the oracle). **All six deliberate smells planted and
+  OpenAPI exposed (seeds the behavior-equivalence suite). **All six deliberate smells planted and
   tagged** to their curing chapters (§D). Scale discipline: 3–9 files/module.
 - **(c) Creates/touches:** `examples/00-monolith/pom.xml` (single module or thin
   reactor), `src/main/java/**` (six context packages), `src/main/resources/{db/migration,
@@ -169,15 +171,16 @@ disjoint directory subtree so S2/S3/S4 never touch the same file.
 - **(h) Tier:** Sonnet. No Opus gate.
 - **(i) Checkpoint commit:** `test(monolith): JUnit + Testcontainers integration suite`
 
-## S6 — Newman oracle collection (ch.10 subject, part 2 — THE ORACLE)  *(SEQUENTIAL, after S5 + S3)*  **[Opus gate]**
+## S6 — Newman behavior-equivalence suite (ch.10 subject, part 2 — THE EQUIVALENCE SUITE)  *(SEQUENTIAL, after S5 + S3)*  **[Opus gate]**
 - **(b) Goal / DoD:** A **Newman contract collection** with **happy path +
   out-of-stock + payment-decline** captured against the *running* monolith; this
-  collection becomes the **behavior-equivalence oracle** (DRQ-014) re-run
-  **unchanged** against the extracted Review service. Environment files for local
-  (reuse DataMesh single-collection-many-environments + DDD-Obs failure-path
-  payload shapes).
+  collection becomes the **behavior-equivalence suite** (the Newman collection
+  captured against the monolith, DRQ-014) re-run **unchanged** against the
+  extracted Review service via the **equivalence gate**. Environment files for
+  local (reuse DataMesh single-collection-many-environments + DDD-Obs
+  failure-path payload shapes).
 - **(c) Creates/touches:** `tooling/newman/mea.postman_collection.json`,
-  `tooling/newman/local.postman_environment.json`, a `demos/demo-oracle.sh` runner.
+  `tooling/newman/local.postman_environment.json`, a `demos/demo-equivalence.sh` runner.
 - **(d) Skills/MCP:** Newman (reuse CNDP App. O + DDD-Obs payloads). Runs against
   the S3 stack + S4 app.
 - **(e) Deps / parallel:** after S5 **and** S3 (needs a live monolith). SEQUENTIAL.
@@ -187,7 +190,7 @@ disjoint directory subtree so S2/S3/S4 never touch the same file.
   equivalence is meaningful later). **[Opus gate]:** Opus confirms the three
   scenarios genuinely exercise the Review path + the order flow, not just 200s.
 - **(h) Tier:** Sonnet execute; **Opus validate**.
-- **(i) Checkpoint commit:** `test(oracle): Newman equivalence collection (happy + out-of-stock + payment-decline)`
+- **(i) Checkpoint commit:** `test(equivalence): Newman behavior-equivalence suite (happy + out-of-stock + payment-decline)`
 
 ## S7 — Camel strangler proxy  *(SEQUENTIAL, after S4; may overlap S5/S6)*
 - **(b) Goal / DoD:** A **Camel strangler proxy** fronting the monolith, routing by
@@ -201,56 +204,57 @@ disjoint directory subtree so S2/S3/S4 never touch the same file.
   `camel_validate_route`, `camel_render_route_diagram`).
 - **(e) Deps / parallel:** after S4; may overlap S5/S6 (disjoint dir).
 - **(f) Collision risk:** low (own example dir + per-route Citrus files).
-- **(g) Acceptance:** proxy forwards all Review routes to the monolith; the **oracle
-  (S6) passes through the proxy** unchanged; `camel_validate_route` clean; Citrus
-  route test green.
-- **(h) Tier:** Sonnet. No Opus gate (its proof is the S8 oracle run).
+- **(g) Acceptance:** proxy forwards all Review routes to the monolith; the
+  **equivalence suite (S6) passes through the proxy** unchanged;
+  `camel_validate_route` clean; Citrus route test green.
+- **(h) Tier:** Sonnet. No Opus gate (its proof is the S8 equivalence-gate run).
 - **(i) Checkpoint commit:** `feat(strangler): Camel strangler proxy with flag-gated cutover (default → monolith)`
 
-## S8 — Review extraction, **Phase A** (lift onto Quarkus)  *(SEQUENTIAL, after S6 + S7)*  **[Opus gate — oracle]**
+## S8 — Review extraction, **Phase A** (lift onto Quarkus)  *(SEQUENTIAL, after S6 + S7)*  **[Opus gate — equivalence gate]**
 - **(b) Goal / DoD:** The monolith's **Review** source lifted onto **Quarkus**
   largely unchanged via **Quarkiverse Spring-compatibility extensions**
   (`quarkus-spring-web`, `-di`, `-data-jpa`, `-security`, `-boot-properties` as
   applicable, DRQ-029 Phase A), with its **own schema from day one** (no shared-txn
   entanglement), OIDC-protected endpoints, an **ACL** (Camel message translator /
-  content enricher) at the seam. **Passes the Newman oracle (S6) unchanged.**
+  content enricher) at the seam. **Passes the equivalence gate (S6 suite) unchanged.**
 - **(c) Creates/touches:** `examples/15-review-service/` (Quarkus module), its own
   Flyway schema, ACL route. Reactor wiring isolated to this module.
 - **(d) Skills/MCP:** **quarkus-agent** MCP — **`quarkus_skills` with the monolith
   dir to discover and follow `migrate-spring-to-quarkus`** (do NOT self-plan the
   migration); `quarkus_create`/`quarkus_start`/`quarkus_searchDocs`;
   **lgtm-quarkus**; **lgtm-camel**/**camel-mcp** for the ACL route.
-- **(e) Deps / parallel:** after S6 (oracle must exist) **and** S7 (proxy). SEQUENTIAL.
+- **(e) Deps / parallel:** after S6 (equivalence suite must exist) **and** S7 (proxy). SEQUENTIAL.
 - **(f) Collision risk:** med — isolate under `examples/15-review-service/`;
   serialize any reactor-root `pom.xml` edit (one writer).
 - **(g) Acceptance:** Review runs natively on Quarkus; **`newman run` of the S6
   collection is green against the extracted service** (via the proxy pointed at
-  Review for Review routes). **[Opus gate]:** human/Opus signs off on oracle
-  equivalence (§F.1 Verify gate) before commit.
+  Review for Review routes). **[Opus gate]:** human/Opus signs off on the
+  equivalence-gate pass (§F.1 Verify gate) before commit.
 - **(h) Tier:** Sonnet execute; **Opus validate**.
-- **(i) Checkpoint commit:** `feat(review): Phase A — lift Review onto Quarkus via Spring-compat extensions, oracle green`
+- **(i) Checkpoint commit:** `feat(review): Phase A — lift Review onto Quarkus via Spring-compat extensions, equivalence gate green`
 
-## S9 — Review extraction, **Phase B** (idiomatic Quarkus + measured)  *(SEQUENTIAL, after S8)*  **[Opus gate — oracle]**
+## S9 — Review extraction, **Phase B** (idiomatic Quarkus + measured)  *(SEQUENTIAL, after S8)*  **[Opus gate — equivalence gate]**
 - **(b) Goal / DoD:** Refactor Review off the compat shim to **idiomatic Quarkus** —
   Quarkus REST (RESTEasy Reactive), **Panache**, native CDI, SmallRye Config,
   Quarkus Security — and capture a **measured before/after** (startup time, memory,
   native-image size/build) as the teaching payoff (DRQ-029 Phase B). **Re-passes
-  the oracle unchanged.**
+  the equivalence gate unchanged.**
 - **(c) Creates/touches:** `examples/15-review-service/**` (refactor), a
   `measurements.md`/table artifact for the before/after numbers.
 - **(d) Skills/MCP:** **quarkus-agent** (`quarkus_skills` panache/rest, `quarkus_searchDocs`),
   **lgtm-quarkus**; native build via the Quarkus toolchain.
 - **(e) Deps / parallel:** after S8. SEQUENTIAL.
 - **(f) Collision risk:** low (same isolated module).
-- **(g) Acceptance:** compat extensions removed; `newman run` oracle **still green**;
-  before/after metrics captured with method noted. **[Opus gate]:** oracle
-  equivalence re-confirmed; metrics are real (not placeholder).
+- **(g) Acceptance:** compat extensions removed; `newman run` against the
+  equivalence suite **still green**; before/after metrics captured with method
+  noted. **[Opus gate]:** equivalence-gate pass re-confirmed; metrics are real
+  (not placeholder).
 - **(h) Tier:** Sonnet execute; **Opus validate**.
 - **(i) Checkpoint commit:** `refactor(review): Phase B — idiomatic Quarkus (REST/Panache/CDI) with measured before/after`
 
 ## S10 — Flag-gated cutover + monolith module decommission  *(SEQUENTIAL, after S9)*  **[Opus gate]**
 - **(b) Goal / DoD:** Flip the strangler flag so **Review traffic routes to the
-  Quarkus service**; verify the oracle green end-to-end through the proxy;
+  Quarkus service**; verify the equivalence gate green end-to-end through the proxy;
   **decommission the monolith's review module** (code removed/disabled, reversibly
   — reversibility is a design property, §E). Full loop proven once.
 - **(c) Creates/touches:** flag config in `examples/01-strangler-proxy/`; removes/
@@ -259,12 +263,42 @@ disjoint directory subtree so S2/S3/S4 never touch the same file.
   OpenFeature/flagd, Newman re-run.
 - **(e) Deps / parallel:** after S9. SEQUENTIAL.
 - **(f) Collision risk:** touches the monolith module (one writer) + proxy flag.
-- **(g) Acceptance:** with the flag ON, oracle green and Review served by Quarkus;
+- **(g) Acceptance:** with the flag ON, equivalence gate green and Review served by Quarkus;
   with the flag OFF, traffic reverts to the (pre-decommission tag) monolith —
   reversibility demonstrated before decommission; post-decommission build green.
   **[Opus gate]:** cutover + decommission reviewed.
 - **(h) Tier:** Sonnet execute; **Opus validate**.
 - **(i) Checkpoint commit:** `feat(review): flag-gated cutover to Quarkus and decommission monolith review module`
+
+## S-CI — Minimal Code-CI: equivalence gate in GitHub Actions  *(SEQUENTIAL, after S10)*  **[Opus gate]**
+- **(b) Goal / DoD:** One minimal **GitHub Actions** workflow at
+  `.github/workflows/code-ci.yml` that runs the **behavior-equivalence suite**
+  (the Newman collection, S6) against the extracted, cut-over **Quarkus Review
+  service** (S10) and **fails the build if it does not pass** — proving the
+  "equivalence-gate-in-CI" thesis (DRQ-014, DRQ-030; build-plan §H) once,
+  end-to-end, inside the walking skeleton.
+- **(c) Creates/touches:** `.github/workflows/code-ci.yml` (new) — checks out
+  the repo, builds `examples/15-review-service/`, brings up the minimal
+  prerequisites Review needs to serve traffic (its own Postgres schema; reuse
+  the S3 podman-stack service definitions as GitHub Actions service
+  containers or an equivalent CI-local substitute), then runs
+  `newman run tooling/newman/mea.postman_collection.json` against the running
+  Review service and fails the job on a non-zero Newman exit code.
+- **(d) Skills/MCP:** **lgtm-github** (GitHub Actions / workflow conventions);
+  no new MCP tools — reuses the S6 equivalence suite and the S8–S10 Review
+  service artifacts as-is.
+- **(e) Deps / parallel:** after **S10** (needs the cut-over Quarkus Review
+  service to exist). SEQUENTIAL.
+- **(f) Collision risk:** low — new, isolated `.github/workflows/` file; no
+  overlap with any other step's directories.
+- **(g) Acceptance:** the workflow triggers on `push`/`pull_request`; the job
+  executes the equivalence suite against the Quarkus Review service and is
+  green; a **deliberately-broken Review** (one Review behavior intentionally
+  violated, then reverted) makes the job go **red** — demonstrated once and
+  recorded as evidence for this step. **[Opus gate]:** Opus confirms the
+  workflow actually gates (verified red-then-green), not just a green-only run.
+- **(h) Tier:** Sonnet execute; **Opus validate** (acceptance-bearing step).
+- **(i) Checkpoint commit:** `ci(r02.x): minimal Code-CI — equivalence gate runs the Newman suite against Review in GitHub Actions`
 
 ## S11 — ch.15 diagram(s)  *(PARALLEL, after S8)*
 - **(b) Goal / DoD:** At least one paired **SVG + `.excalidraw`** figure for ch.15
@@ -284,7 +318,7 @@ disjoint directory subtree so S2/S3/S4 never touch the same file.
   established as the reusable **"ADLC in Action"** format, backed by
   **pre-captured, reproducible, narrated tool output** (DRQ-025) from the actual
   Review extraction (S8–S10) — quarkus-agent `migrate-spring-to-quarkus` trace,
-  camel-mcp validation, Newman oracle result, the `DRQ-NNN` entries, agent tiers,
+  camel-mcp validation, the equivalence-gate result, the `DRQ-NNN` entries, agent tiers,
   and both human gates. The repo's own `_plans/` ledger is Exhibit A (DRQ-007).
 - **(c) Creates/touches:** captured transcripts under `_docs/` companion assets
   (e.g. `_docs/_adlc-traces/` or alongside the chapter), and the "ADLC in Action"
@@ -294,8 +328,8 @@ disjoint directory subtree so S2/S3/S4 never touch the same file.
 - **(e) Deps / parallel:** needs S10 evidence; PARALLEL with S11.
 - **(f) Collision risk:** low; coordinate the callout template reuse with S13.
 - **(g) Acceptance:** a complete Frame→Map→Plan→Generate→Verify→Operate→Reconcile
-  trace exists as checked-in narrated output; both gates and the oracle result are
-  visible; `_plans/` is referenced as the worked example.
+  trace exists as checked-in narrated output; both gates and the equivalence-gate
+  result are visible; `_plans/` is referenced as the worked example.
 - **(h) Tier:** Sonnet. Opus gate folded into S13/S14 review.
 - **(i) Checkpoint commit:** `docs(§07): ADLC worked-loop trace and "ADLC in Action" callout format`
 
@@ -304,8 +338,9 @@ disjoint directory subtree so S2/S3/S4 never touch the same file.
   skeleton") authored end-to-end to the full bar: **≥2000 words excl. code/diagrams**,
   progressive, the **runnable** `examples/15-review-service/` referenced, the S11
   diagram embedded, a real **"ADLC in Action" callout** (from S12), and a
-  **verification-status footer** naming exactly the tests/demos run (oracle, Citrus,
-  Testcontainers). Narrates both Phase A and Phase B with the measured numbers.
+  **verification-status footer** naming exactly the tests/demos run (equivalence
+  suite, Citrus, Testcontainers). Narrates both Phase A and Phase B with the
+  measured numbers.
 - **(c) Creates/touches:** `_docs/15-extraction-1-review-service.md` (front matter:
   `title`, `order: 15`, `part: "The Strangler Fig in Practice"`, `description`,
   `duration`); may add `_example_pages/` entry for the Review example.
@@ -328,7 +363,7 @@ disjoint directory subtree so S2/S3/S4 never touch the same file.
   (below) is verified. Clean resume boundary recorded for r03.
 - **(c) Creates/touches:** `_plans/reconciliation.md` (new), `_plans/build-plan.md`
   (status), `_plans/decisions.md` (pinned matrix). Serialize all three (one writer).
-- **(d) Skills/MCP:** none new; lgtm-jekyll full-site validation; re-run oracle once.
+- **(d) Skills/MCP:** none new; lgtm-jekyll full-site validation; re-run the equivalence suite once.
 - **(e) Deps / parallel:** after all. SEQUENTIAL.
 - **(f) Collision risk:** the three `_plans/*` are single-writer — this is the only
   step that writes them in r02 (besides S1's initial add).
@@ -345,14 +380,16 @@ disjoint directory subtree so S2/S3/S4 never touch the same file.
 - [ ] Podman stack (Postgres + Kafka + LGTM) comes up; tags pinned in `.env`; no Docker.
 - [ ] Monolith at `examples/00-monolith/` runs; six contexts; seed data; all six
       deliberate smells planted + tagged; JUnit + Testcontainers green.
-- [ ] Newman oracle (happy + out-of-stock + payment-decline) green **against the monolith**.
+- [ ] Newman behavior-equivalence suite (happy + out-of-stock + payment-decline)
+      green **against the monolith**.
 - [ ] Review extracted two-phase (A: Spring-compat; B: idiomatic + measured),
-      behind the Camel strangler proxy, **oracle green unchanged** after each phase.
+      behind the Camel strangler proxy, **equivalence gate green unchanged** after each phase.
 - [ ] Flag-gated cutover demonstrated + reversibility shown + monolith review module decommissioned.
 - [ ] ch.15 authored ≥2000 words, runnable code, embedded diagram, real "ADLC in
       Action" callout, verification-status footer.
 - [ ] ADLC demonstrated once end-to-end (ch.07 loop + captured/narrated trace +
       `_plans/` ledger as worked example).
+- [ ] Minimal Code-CI green (the equivalence gate runs in GitHub Actions, S-CI).
 - [ ] `reconciliation.md` present (zero unexplained drift); `build-plan.md` r02 rows
       DONE; `decisions.md` version matrix pinned.
 
@@ -360,15 +397,17 @@ disjoint directory subtree so S2/S3/S4 never touch the same file.
 r03 ("Front matter + ADLC") resumes from the `build-plan.md` status table: author
 Part 0 (00–02), Part 1 (03–04), Part 2 (05–07, expanding the S12 ch.07 loop to the
 full bar), and finish Part 3 prose (08–10, elevating the S4/S5/S6 monolith into
-chapters 08–10). The S12 "ADLC in Action" callout template and the S6 oracle are the
-reusable foundations r03+ build on. No new service extraction in r03 (next extraction,
-Notification, is r04).
+chapters 08–10). The S12 "ADLC in Action" callout template and the S6
+equivalence suite are the reusable foundations r03+ build on. No new service
+extraction in r03 (next extraction, Notification, is r04). The S-CI minimal
+Code-CI workflow is the seed that r08's full Site CI + Code CI build on.
 
-## One blocking question for the user
-**CI scope for r02:** the r02 row in §J does **not** list CI, but DRQ-014 says the
-oracle "gates every extraction **in CI**." Do you want a **minimal GitHub Actions
-Code-CI workflow** added in r02 (one job that runs the Newman oracle against the
-extracted Review service, proving the gate mechanism once as part of the walking
-skeleton), or should **all** CI (Site CI + Code CI, §H) be **deferred to r08** to
-hold scope discipline? Default if unanswered: **defer to r08** (keep r02 to the
-explicit §J deliverables); a minimal Code-CI step would insert between S10 and S13.
+## Resolved — CI scope for r02 (DRQ-030)
+**CI scope for r02:** the r02 row in §J originally did not list CI, while
+DRQ-014 says the equivalence gate "gates every extraction **in CI**." The user
+approved adding a **minimal GitHub Actions Code-CI workflow in r02** (DRQ-030):
+one job (**S-CI**) that runs the Newman behavior-equivalence suite against the
+extracted Quarkus Review service, proving the equivalence-gate-in-CI mechanism
+once as part of the walking skeleton. The remaining CI/CD surface (full Site
+CI, the migration/cutover pipeline, GitOps, supply-chain scanning, §H) stays
+deferred to r08 to hold scope discipline.
