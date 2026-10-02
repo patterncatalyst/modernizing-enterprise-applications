@@ -9,6 +9,7 @@ _site/
 # Dependency / vendor directories
 vendor/
 node_modules/
+.bundle/
 
 # JVM / Maven build output
 target/
