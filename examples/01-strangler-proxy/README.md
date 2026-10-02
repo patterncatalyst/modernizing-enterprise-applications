@@ -48,15 +48,24 @@ One route, one `RouteBuilder`
 
 | Value | Backend for `/api/reviews/**` | Backend for everything else |
 |---|---|---|
-| `false` (**default**, r02/S7) | monolith `:8080` | monolith `:8080` |
-| `true` (from S10) | Review service `:8081` | monolith `:8080` |
+| `false` (r02/S7–S9) | monolith `:8080` | monolith `:8080` |
+| `true` (**default**, from r02/S10 — permanent) | Review service `:8081` | monolith `:8080` |
 
 Set in `src/main/resources/application.properties`, or overridden at runtime
 with `-Dstrangler.review.enabled=true` / `STRANGLER_REVIEW_ENABLED=true`. It
 is read once per request from Quarkus/SmallRye Config — flipping it is a
-config change plus a restart, not a code change, which is exactly what makes
-the eventual cutover (and rolling it back) a *reversible* operation rather
-than a rewrite.
+config change plus a restart, not a code change, which is exactly what made
+the cutover (and, while the monolith's Review module still existed, rolling it
+back) a *reversible* operation rather than a rewrite.
+
+**r02/S10 — the cutover is now permanent.** `strangler.review.enabled=true` is
+the committed default and the monolith's Review module (controller, service,
+repository, entity, DTOs) has been decommissioned — removed from
+`examples/00-monolith/` entirely (see its `SMELLS.md`, smell #6, now cured).
+Before that decommission, both flag states were proven green against the full
+behavior-equivalence suite (49/49 assertions each), demonstrating real
+reversibility right up until the one deliberately irreversible step. See
+`CUTOVER.md` in this directory for the full before/after/decommission trace.
 
 Two other properties name the fixed backend targets the flag chooses between.
 The route never builds a target URI from request data — only ever from these
@@ -94,18 +103,18 @@ Or for the dev-mode inner loop: `quarkus dev` (live reload on route changes).
 
 The project's behavior-equivalence suite
 (`tooling/newman/mea.postman_collection.json`) is baseUrl-parameterized, so
-the exact same 49 assertions that pass against the monolith directly must
-also pass **through this proxy**, proving it is a transparent reverse proxy
-today (flag off, everything still reaches the monolith):
+the exact same 49 assertions pass **through this proxy** regardless of which
+backend is actually answering `/api/reviews/**`:
 
 ```bash
 demos/demo-equivalence.sh http://localhost:8888
 ```
 
-A green run here, with the collection completely unmodified, is the proxy's
-definition of done for r02/S7 (build-plan.md §E step 0 and §G's load-bearing
-rule). When S10 flips `strangler.review.enabled=true` and
-`examples/15-review-service/` exists, the same command re-run against
-`:8888` must *still* be green — only now the Review folder of the collection
-is actually being served by the extracted Quarkus service instead of the
-monolith, with no client-visible difference.
+This was run green three times across r02/S10 (see `CUTOVER.md` for the full
+trace): once with the flag off (Review served by the monolith), once with the
+flag on (Review served by `examples/02-review-service`, everything else still
+the monolith) — proving reversibility — and once more after the monolith's
+Review module was decommissioned (Review served by Quarkus, everything else
+served by the now-slimmed, five-context monolith). All three runs: 49/49
+assertions, 0 failed, with the collection completely unmodified between runs —
+only `--baseUrl` and the proxy's flag changed.

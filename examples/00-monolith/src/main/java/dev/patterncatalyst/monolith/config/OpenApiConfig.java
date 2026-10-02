@@ -19,9 +19,11 @@ public class OpenApiConfig {
                         .title("Reference Monolith API")
                         .version("0.1.0-r02")
                         .description(
-                                "The six bounded contexts of the reference monolith (order, inventory, "
-                                        + "payment, shipping, notification, review) exposed as one Spring MVC REST "
-                                        + "surface. See SMELLS.md for the six deliberate smells planted in this "
-                                        + "codebase."));
+                                "The five bounded contexts the reference monolith still owns (order, inventory, "
+                                        + "payment, shipping, notification) exposed as one Spring MVC REST surface. "
+                                        + "Review (the sixth context) was extracted and decommissioned in r02/S10 — "
+                                        + "it is served by examples/02-review-service behind the strangler proxy's "
+                                        + "strangler.review.enabled flag. See SMELLS.md for the six deliberate "
+                                        + "smells planted in this codebase (smell #6 is now cured)."));
     }
 }

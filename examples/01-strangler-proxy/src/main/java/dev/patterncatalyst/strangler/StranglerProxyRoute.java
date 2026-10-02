@@ -22,21 +22,27 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
  * must introduce zero observable difference versus talking to the monolith
  * directly.
  *
- * <p><b>The flag:</b> {@code strangler.review.enabled} (default {@code false})
- * is the single cutover switch for the Review bounded context, the first
- * extraction in the decomposition roadmap (build-plan.md §E). Content-based
- * routing on the {@code /api/reviews} path prefix consults this flag to pick
- * the backend:
+ * <p><b>The flag:</b> {@code strangler.review.enabled} (default {@code true} as
+ * of r02/S10) is the single cutover switch for the Review bounded context, the
+ * first extraction in the decomposition roadmap (build-plan.md §E).
+ * Content-based routing on the {@code /api/reviews} path prefix consults this
+ * flag to pick the backend:
  * <ul>
- *   <li>{@code false} (today, r02/S7) → Review requests still go to the monolith.</li>
- *   <li>{@code true} (from S10, once examples/15-review-service/ exists and
- *       has passed the behavior-equivalence suite) → Review requests go to
- *       the extracted Quarkus service instead, with the monolith's Review
- *       module eventually decommissioned.</li>
+ *   <li>{@code false} (r02/S7–S9) → Review requests went to the monolith.
+ *       Both this and the {@code true} state were proven green against the
+ *       full behavior-equivalence suite before the monolith's Review module
+ *       was decommissioned — see CUTOVER.md.</li>
+ *   <li>{@code true} (permanent default, from S10) → Review requests go to
+ *       the extracted Quarkus service (examples/02-review-service/). The
+ *       monolith's Review module has since been decommissioned (removed), so
+ *       flipping this back to {@code false} today would just reach a
+ *       monolith that 404s on {@code /api/reviews/**} — reversibility was a
+ *       real, demonstrated property right up to that decommission step, which
+ *       is deliberately the one irreversible move in the sequence.</li>
  * </ul>
  * Flipping the flag is a config change and a restart — no route code changes,
- * which is what makes the cutover (and its reversal, since reversibility is a
- * design property) safe.
+ * which is what made the cutover (and, before decommission, its reversal)
+ * safe.
  *
  * <p>Explicitly {@code @ApplicationScoped} so Quarkus/CDI — not plain
  * reflection — constructs this bean and resolves the {@code @ConfigProperty}
@@ -75,9 +81,21 @@ public class StranglerProxyRoute extends RouteBuilder {
             // fixed, operator-configured base URLs below — never a value derived
             // from the request itself (secure-by-default dynamic-URI discipline,
             // build-plan.md §F.4).
+            //
+            // NOTE: platform-http's CamelHttpPath carries the FULL incoming path
+            // (e.g. "/api/reviews/5"), not a path relative to this route's own
+            // "/api" consumer prefix — an r02/S10 bugfix corrected an earlier
+            // version of this predicate that checked for a "/reviews" prefix and
+            // so never matched, silently sending 100% of Review traffic to the
+            // monolith regardless of the flag. (It went unnoticed under S7-S9
+            // because the monolith and review-service read/wrote the SAME shared
+            // `reviews` table, so responses were identical either way — the
+            // equivalence suite stayed green while testing the wrong backend.
+            // Caught before decommission by stopping the monolith and confirming
+            // the Review route failed instead of falling over to review-service.)
             .choice()
                 .when(PredicateBuilder.and(
-                        simple("${header.CamelHttpPath} startsWith '/reviews'"),
+                        simple("${header.CamelHttpPath} startsWith '/api/reviews'"),
                         exchange -> reviewEnabled))
                     .setProperty(TARGET_PROPERTY, constant(TARGET_REVIEW))
                 .otherwise()

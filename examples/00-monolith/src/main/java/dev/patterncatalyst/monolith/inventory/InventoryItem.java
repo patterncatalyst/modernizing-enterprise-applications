@@ -9,10 +9,15 @@ import jakarta.persistence.Table;
 import java.time.Instant;
 
 /**
- * Stock levels for a product. {@code order}, {@code review}, and (indirectly)
+ * Stock levels for a product. {@code order} and (indirectly)
  * {@code payment}/{@code shipping} all join against this table across context
- * boundaries — see {@code SMELL[ch.18]} in {@code order.OrderItem} and
- * {@code review.Review}.
+ * boundaries — see {@code SMELL[ch.18]} in {@code order.OrderItem}.
+ *
+ * <p>The {@code reviews} table (owned, post r02/S10, by
+ * {@code examples/02-review-service} — Review's application code was removed
+ * from this monolith) also carries a database-level FK here. That table is
+ * deliberately left in place in this shared schema; see {@code Customer}'s
+ * javadoc for why.
  */
 @Entity
 @Table(name = "inventory_items")

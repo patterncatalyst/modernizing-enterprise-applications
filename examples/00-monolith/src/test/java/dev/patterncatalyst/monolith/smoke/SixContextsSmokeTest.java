@@ -22,8 +22,17 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 /**
  * Self-contained smoke test (DoD for S4): boots the full Spring context against a
  * throwaway, Testcontainers-provisioned Postgres (no external podman-stack
- * required) and hits at least one REST endpoint per bounded context, proving all
- * six contexts respond from one running monolith.
+ * required) and hits at least one REST endpoint per bounded context.
+ *
+ * <p>Originally proved all six contexts responded from one running monolith.
+ * As of r02/S10, Review has been decommissioned from the monolith (cutover to
+ * {@code examples/02-review-service} behind the strangler proxy's
+ * {@code strangler.review.enabled} flag is now permanent default-on) — this
+ * smoke test now covers the FIVE contexts the monolith still owns
+ * (order/inventory/payment/shipping/notification). Review's equivalent
+ * coverage lives in the behavior-equivalence suite
+ * (tooling/newman/mea.postman_collection.json, "Review Context Contract"
+ * folder) run against the extracted service.
  *
  * <p>This is intentionally a thin smoke test, not the full suite — JUnit
  * unit/integration coverage per service and the Newman behavior-equivalence suite
@@ -31,7 +40,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  */
 @Testcontainers
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
-class SixContextsSmokeTest {
+class SixContextsSmokeTest { // name kept for history; five contexts + one decommission check, post r02/S10
 
     @Container
     static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16-alpine")
@@ -85,22 +94,14 @@ class SixContextsSmokeTest {
     }
 
     @Test
-    void reviewContextRespondsAndEnforcesSharedSecurity() {
-        ResponseEntity<Object[]> reads = rest.getForEntity("/api/reviews?sku=SKU-WIDGET-001", Object[].class);
-        assertThat(reads.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(reads.getBody()).hasSize(1); // Grace's seeded review
-
-        // SMELL[ch.15]: the write path is authenticated via the monolith's ONE
-        // shared SecurityConfig, even though review has no other dependency on it.
-        var unauthenticatedBody = new dev.patterncatalyst.monolith.review.ReviewCreate(
-                1L, "SKU-WIDGET-001", 3, "fine");
-        ResponseEntity<Object> unauthenticated = rest.postForEntity("/api/reviews", unauthenticatedBody, Object.class);
-        assertThat(unauthenticated.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
-
-        ResponseEntity<Object> authenticated = rest
-                .withBasicAuth("demo-customer", "demo-pass")
-                .postForEntity("/api/reviews", unauthenticatedBody, Object.class);
-        assertThat(authenticated.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+    void reviewIsNoLongerServedByTheMonolith() {
+        // r02/S10 decommission: Review's controller/service/repository/entity were
+        // removed from the monolith once the strangler proxy's cutover to
+        // examples/02-review-service became the permanent default
+        // (strangler.review.enabled=true). The monolith itself now 404s here —
+        // proof the extraction was clean and nothing else depended on this package.
+        ResponseEntity<Object> response = rest.getForEntity("/api/reviews?sku=SKU-WIDGET-001", Object.class);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     }
 
     @Test

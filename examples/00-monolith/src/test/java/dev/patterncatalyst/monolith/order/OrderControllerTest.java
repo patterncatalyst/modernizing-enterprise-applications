@@ -29,8 +29,11 @@ import org.springframework.test.web.servlet.MockMvc;
  * Tier 2 (slice): {@code @WebMvcTest} for the order checkout endpoint — the
  * monolith's most consequential REST surface. Security filters are disabled
  * here ({@code addFilters = false}) because order endpoints carry no auth
- * rule of their own (see {@code ReviewControllerTest} for the one endpoint
- * that does).
+ * rule of their own. (Review, the one context whose write endpoint WAS
+ * authenticated, was decommissioned from the monolith in r02/S10 — it is now
+ * served exclusively by {@code examples/02-review-service} behind the
+ * strangler proxy's {@code strangler.review.enabled} flag, with its own
+ * standalone security config; see SMELLS.md smell #6, now cured.)
  */
 @WebMvcTest(OrderController.class)
 @AutoConfigureMockMvc(addFilters = false)
