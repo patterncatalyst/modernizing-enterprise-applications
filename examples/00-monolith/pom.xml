@@ -110,6 +110,27 @@
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
       </plugin>
+
+      <!-- Surefire (Tier 1 unit + Tier 2 slice tests, *Test) keeps its default
+           include pattern (**/*Test.java) and already naturally excludes *IT.java
+           since that pattern doesn't match. It runs in the default `test` phase. -->
+
+      <!-- Failsafe (Tier 3 integration tests, *IT) — Testcontainers-backed
+           @DataJpaTest repository tests; bound to integration-test + verify so
+           `mvn verify` fails the build on a red integration test, matching the
+           Surefire failure behavior for unit/slice tests. -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>integration-test</goal>
+              <goal>verify</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
 </project>
