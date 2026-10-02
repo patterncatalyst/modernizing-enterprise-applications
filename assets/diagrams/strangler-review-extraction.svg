@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1320 1040" font-family="'Red Hat Text', system-ui, sans-serif" role="img">
+<defs><marker id="a" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#555"/></marker><marker id="am" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2f5f3d"/></marker></defs>
+<rect x="40" y="80" width="220" height="90" rx="9" fill="#ffffff" stroke="#999999" stroke-width="1.5"/>
+<text x="150.0" y="115.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Newman</text>
+<text x="150.0" y="132.5" font-size="11.5" fill="#555555" text-anchor="middle">behavior-equivalence suite</text>
+<text x="150.0" y="147.5" font-size="11.5" fill="#555555" text-anchor="middle">16 reqs / 49 assertions</text>
+<rect x="40" y="220" width="220" height="90" rx="9" fill="#eef4fb" stroke="#2f6db5" stroke-width="2"/>
+<text x="150.0" y="263.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Client</text>
+<text x="150.0" y="280.0" font-size="11.5" fill="#555555" text-anchor="middle">(browser / API caller)</text>
+<rect x="330" y="220" width="250" height="110" rx="9" fill="#eaf4ec" stroke="#3d7a4e" stroke-width="2"/>
+<text x="455.0" y="265.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Camel strangler proxy</text>
+<text x="455.0" y="282.5" font-size="11.5" fill="#555555" text-anchor="middle">:8888</text>
+<text x="455.0" y="297.5" font-size="11.5" fill="#555555" text-anchor="middle">flag: strangler.review.enabled = false</text>
+<rect x="650" y="90" width="270" height="100" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
+<text x="785.0" y="130.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Spring monolith</text>
+<text x="785.0" y="147.5" font-size="11.5" fill="#555555" text-anchor="middle">:8080 — 6 contexts</text>
+<text x="785.0" y="162.5" font-size="11.5" fill="#555555" text-anchor="middle">(incl. Review)</text>
+<rect x="650" y="370" width="270" height="100" rx="9" fill="#ffffff" stroke="#999999" stroke-width="1.5" stroke-dasharray="6 4"/>
+<text x="785.0" y="410.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Quarkus Review service</text>
+<text x="785.0" y="427.5" font-size="11.5" fill="#555555" text-anchor="middle">:8081 — Phase A lift</text>
+<text x="785.0" y="442.5" font-size="11.5" fill="#555555" text-anchor="middle">(not yet live)</text>
+<rect x="1000" y="210" width="240" height="130" rx="9" fill="#ffffff" stroke="#999999" stroke-width="1.5"/>
+<text x="1120.0" y="258.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">PostgreSQL</text>
+<text x="1120.0" y="275.0" font-size="11.5" fill="#555555" text-anchor="middle">shared instance</text>
+<text x="1120.0" y="290.0" font-size="11.5" fill="#555555" text-anchor="middle">`reviews` table</text>
+<text x="1120.0" y="305.0" font-size="11.5" fill="#555555" text-anchor="middle">(single schema)</text>
+<rect x="40" y="560" width="220" height="90" rx="9" fill="#ffffff" stroke="#999999" stroke-width="1.5"/>
+<text x="150.0" y="595.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Newman</text>
+<text x="150.0" y="612.5" font-size="11.5" fill="#555555" text-anchor="middle">behavior-equivalence suite</text>
+<text x="150.0" y="627.5" font-size="11.5" fill="#555555" text-anchor="middle">16 reqs / 49 assertions</text>
+<rect x="40" y="700" width="220" height="90" rx="9" fill="#eef4fb" stroke="#2f6db5" stroke-width="2"/>
+<text x="150.0" y="743.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Client</text>
+<text x="150.0" y="760.0" font-size="11.5" fill="#555555" text-anchor="middle">(browser / API caller)</text>
+<rect x="330" y="700" width="250" height="110" rx="9" fill="#eaf4ec" stroke="#3d7a4e" stroke-width="2"/>
+<text x="455.0" y="745.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Camel strangler proxy</text>
+<text x="455.0" y="762.5" font-size="11.5" fill="#555555" text-anchor="middle">:8888</text>
+<text x="455.0" y="777.5" font-size="11.5" fill="#555555" text-anchor="middle">flag: strangler.review.enabled = true (default)</text>
+<rect x="650" y="570" width="270" height="100" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
+<text x="785.0" y="610.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Spring monolith</text>
+<text x="785.0" y="627.5" font-size="11.5" fill="#555555" text-anchor="middle">:8080 — 5 contexts</text>
+<text x="785.0" y="642.5" font-size="11.5" fill="#555555" text-anchor="middle">(Review decommissioned)</text>
+<rect x="650" y="850" width="270" height="100" rx="9" fill="#eaf4ec" stroke="#3d7a4e" stroke-width="2"/>
+<text x="785.0" y="890.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Quarkus Review service</text>
+<text x="785.0" y="907.5" font-size="11.5" fill="#555555" text-anchor="middle">:8081 — Phase A lift</text>
+<text x="785.0" y="922.5" font-size="11.5" fill="#555555" text-anchor="middle">(live, serving /api/reviews*)</text>
+<rect x="1000" y="690" width="240" height="130" rx="9" fill="#ffffff" stroke="#999999" stroke-width="1.5"/>
+<text x="1120.0" y="738.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">PostgreSQL</text>
+<text x="1120.0" y="755.0" font-size="11.5" fill="#555555" text-anchor="middle">shared instance</text>
+<text x="1120.0" y="770.0" font-size="11.5" fill="#555555" text-anchor="middle">`reviews` table</text>
+<text x="1120.0" y="785.0" font-size="11.5" fill="#555555" text-anchor="middle">(Phase A: still shared — see MIGRATION.md)</text>
+<path d="M241.5,170.0 L343.1666666666667,220.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<text x="298.33333333333337" y="189.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">run #1: 49/49 green</text>
+<text x="298.33333333333337" y="189.0" font-size="11" fill="#555" text-anchor="middle">run #1: 49/49 green</text>
+<path d="M260.0,268.60655737704917 L330.0,270.9016393442623" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<text x="301.0" y="263.75409836065575" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">HTTP</text>
+<text x="301.0" y="263.75409836065575" font-size="11" fill="#555" text-anchor="middle">HTTP</text>
+<path d="M580.0,223.86363636363637 L662.7777777777778,190.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<text x="627.3888888888889" y="200.9318181818182" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">/api/** incl. /api/reviews* (flag=false)</text>
+<text x="627.3888888888889" y="200.9318181818182" font-size="11" fill="#555" text-anchor="middle">/api/** incl. /api/reviews* (flag=false)</text>
+<path d="M580.0,329.92424242424244 L671.2068965517242,370.0" fill="none" stroke="#555" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#a)"/>
+<text x="631.6034482758621" y="343.96212121212125" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">/api/reviews* (flag=true only)</text>
+<text x="631.6034482758621" y="343.96212121212125" font-size="11" fill="#555" text-anchor="middle">/api/reviews* (flag=true only)</text>
+<path d="M909.074074074074,190.0 L1000.0,226.6417910447761" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<path d="M900.5172413793103,370.0 L1000.0,326.94029850746267" fill="none" stroke="#555" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#a)"/>
+<path d="M241.5,650.0 L343.1666666666667,700.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<text x="298.33333333333337" y="669.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">run #2 (post routing fix): 49/49 green</text>
+<text x="298.33333333333337" y="669.0" font-size="11" fill="#555" text-anchor="middle">run #2 (post routing fix): 49/49 green</text>
+<path d="M260.0,748.6065573770492 L330.0,750.9016393442623" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<text x="301.0" y="743.7540983606557" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">HTTP</text>
+<text x="301.0" y="743.7540983606557" font-size="11" fill="#555" text-anchor="middle">HTTP</text>
+<path d="M580.0,703.8636363636364 L662.7777777777778,670.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<text x="627.3888888888889" y="680.9318181818182" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">/api/** (everything else)</text>
+<text x="627.3888888888889" y="680.9318181818182" font-size="11" fill="#555" text-anchor="middle">/api/** (everything else)</text>
+<path d="M580.0,809.9242424242424 L671.2068965517242,850.0" fill="none" stroke="#2f5f3d" stroke-width="2" marker-end="url(#am)"/>
+<text x="631.6034482758621" y="823.9621212121212" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">/api/reviews* (flag=true)</text>
+<text x="631.6034482758621" y="823.9621212121212" font-size="11" fill="#2f5f3d" text-anchor="middle">/api/reviews* (flag=true)</text>
+<path d="M909.074074074074,670.0 L1000.0,706.6417910447761" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<path d="M900.5172413793103,850.0 L1000.0,806.9402985074627" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<text x="660.0" y="32" font-size="18" fill="#1d1d1d" text-anchor="middle" font-weight="700">ch.15 — Extracting Review: the strangler-fig seam (before -&gt; after cutover)</text>
+<text x="40" y="65" font-size="14" fill="#1d1d1d" text-anchor="start" font-weight="700">BEFORE — flag OFF (r02 S7–S9): Review still served by the monolith</text>
+<text x="40" y="538" font-size="14" fill="#1d1d1d" text-anchor="start" font-weight="700">AFTER — flag ON, committed default (r02 S10): Review served by Quarkus; monolith decommissioned</text>
+<text x="40" y="970" font-size="11" fill="#555555" text-anchor="start">proxy predicate fixed post-S10: matches the FULL CamelHttpPath (startsWith &#x27;/api/reviews&#x27;), not a path relative to the /api consumer prefix</text>
+<text x="40" y="1026" font-size="11" fill="#555555" text-anchor="start">The flag is the whole cutover: a config change + restart, no route code change. Decommission (step 3, after routing was verified) is the one irreversible move.</text>
+</svg>

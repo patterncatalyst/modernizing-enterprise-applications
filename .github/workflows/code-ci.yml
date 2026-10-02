@@ -1,0 +1,147 @@
+# code-ci.yml — r02 S-CI: the minimal equivalence gate in GitHub Actions
+# (DRQ-030, DRQ-014). Proves, once, that the behavior-equivalence suite (the
+# Newman collection captured against the monolith, tooling/newman/) can gate
+# an extracted service in CI, not just on a developer's laptop.
+#
+# Scope discipline (r02-plan.md S-CI, DRQ-030): this job only builds and
+# serves examples/02-review-service/ and runs the suite's "Review Context
+# Contract" folder against it — the full Site CI / deploy-pipeline surface
+# stays deferred to r08. It does NOT build or boot the Spring Boot monolith
+# (examples/00-monolith/): review-service deliberately owns no Flyway
+# migrations of its own (see its application.properties —
+# quarkus.hibernate-orm.schema-management.strategy=none; the monolith owns
+# this shared schema) and the walking skeleton's CI gate should not need to
+# build a second, unrelated Maven project just to get tables. Instead this
+# job applies the monolith's existing, committed V1/V2 migration SQL
+# (examples/00-monolith/src/main/resources/db/migration/) directly with
+# psql — the exact same DDL/seed Flyway would run, with no monolith JVM
+# involved. If those files change, this job picks the change up automatically
+# (no suite drift, R8).
+#
+# Red->green proof (acceptance criterion, r02-plan.md S-CI): this workflow
+# was validated locally before being committed by deliberately breaking
+# review-service's validation contract (ReviewCreate's @Max(5) on `rating`
+# temporarily widened to @Max(500) so an out-of-range rating that should 400
+# was instead accepted as 201) and re-running the exact newman command this
+# job runs — "4e. Authenticated write with invalid rating -> 400 validation"
+# failed (RED), proving the gate actually gates. The change was then
+# reverted and the suite re-run GREEN before this file was committed. See
+# examples/02-review-service/README.md's "CI equivalence gate" note for the
+# full before/after transcript.
+
+name: Code CI
+
+on:
+  push:
+    branches: ["**"]
+    paths:
+      - "examples/02-review-service/**"
+      - "examples/00-monolith/src/main/resources/db/migration/**"
+      - "tooling/newman/**"
+      - ".github/workflows/code-ci.yml"
+  pull_request:
+    paths:
+      - "examples/02-review-service/**"
+      - "examples/00-monolith/src/main/resources/db/migration/**"
+      - "tooling/newman/**"
+      - ".github/workflows/code-ci.yml"
+  workflow_dispatch:
+
+jobs:
+  equivalence-gate:
+    name: equivalence-gate
+    runs-on: ubuntu-latest
+
+    # Postgres, pinned to the same tag/creds the project's podman stack and
+    # review-service's application.properties use (.env: POSTGRES_IMAGE_TAG,
+    # POSTGRES_DB/_USER/_PASSWORD) so this is the SAME contract, not a
+    # CI-only substitute.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: monolith
+          POSTGRES_USER: monolith
+          POSTGRES_PASSWORD: monolith_dev_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U monolith -d monolith"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 12
+
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v5
+
+      - name: Set up JDK 25 (temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+
+      - name: Set up Node (for newman)
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install newman
+        run: npm install -g newman
+
+      - name: Apply the monolith's schema + seed data to Postgres
+        # review-service reads/writes the monolith's existing `reviews` table
+        # plus read-only projections of `customers`/`inventory_items` — it
+        # does not own or run these migrations itself (schema-management
+        # strategy=none). Apply the committed SQL directly; psql is preinstalled
+        # on the ubuntu-latest runner image.
+        run: |
+          set -euo pipefail
+          PGPASSWORD=monolith_dev_only psql -h localhost -U monolith -d monolith \
+            -f examples/00-monolith/src/main/resources/db/migration/V1__init_schema.sql
+          PGPASSWORD=monolith_dev_only psql -h localhost -U monolith -d monolith \
+            -f examples/00-monolith/src/main/resources/db/migration/V2__seed_data.sql
+
+      - name: Build the Review service
+        working-directory: examples/02-review-service
+        run: ./mvnw -q -DskipTests package
+
+      - name: Start the Review service
+        working-directory: examples/02-review-service
+        run: |
+          nohup java -jar target/quarkus-app/quarkus-run.jar > quarkus.log 2>&1 &
+          echo $! > quarkus.pid
+
+      - name: Wait for the Review service to be ready on :8081
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 60); do
+            if curl -sf "http://localhost:8081/api/reviews?sku=SKU-WIDGET-001" > /dev/null; then
+              echo "Review service is up."
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Review service did not become ready in time." >&2
+          cat examples/02-review-service/quarkus.log || true
+          exit 1
+
+      - name: Run the behavior-equivalence suite (Review Context Contract) — the equivalence gate
+        # This is the gate: a non-zero newman exit code fails the job.
+        run: |
+          newman run tooling/newman/mea.postman_collection.json \
+            --folder "Review Context Contract" \
+            --env-var baseUrl=http://localhost:8081 \
+            --env-var reviewUsername=demo-customer \
+            --env-var reviewPassword=demo-pass
+
+      - name: Dump Review service log on failure
+        if: failure()
+        run: cat examples/02-review-service/quarkus.log || true
+
+      - name: Stop the Review service
+        if: always()
+        run: |
+          if [ -f examples/02-review-service/quarkus.pid ]; then
+            kill "$(cat examples/02-review-service/quarkus.pid)" || true
+          fi

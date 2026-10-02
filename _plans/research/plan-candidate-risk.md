@@ -138,7 +138,7 @@ is an open question for the user. `brand_emoji` proposal: "🏗️".
 - **07 The Deliberate Smells** — the coupling/data/transaction smells planted
   on purpose, each tagged to the pattern that will later cure it.
 - **08 Testing the Monolith** — the baseline test suite (unit + API/Newman)
-  that becomes the *equivalence oracle* for every extracted service.
+  that becomes the *behavior-equivalence suite* for every extracted service.
 
 **Part 4 — Finding the Seams**
 - **09 Strategic & Tactical DDD** — subdomains, bounded contexts, aggregates,
@@ -320,7 +320,7 @@ architectures (reuse-map §6).
   *in-process, in one ACID transaction* (the distributed-transaction smell to
   be cured by saga).
 - **Seed data:** deterministic fixtures (customers, SKUs, stock levels,
-  sample orders) so the equivalence oracle is reproducible.
+  sample orders) so the equivalence suite is reproducible.
 - **Deliberate "smells" (each tagged to its curing pattern):**
   1. Shared database / cross-context joins → owned data + CDC (ch.17/19).
   2. One big in-process ACID transaction across contexts → saga (ch.21).
@@ -332,7 +332,7 @@ architectures (reuse-map §6).
      hexagonal at extraction (ch.09/14).
   6. No outbox; events (if any) published non-transactionally → outbox
      (ch.18).
-- **How it's tested (becomes the equivalence oracle):** JUnit unit tests per
+- **How it's tested (becomes the behavior-equivalence suite):** JUnit unit tests per
   service; `@SpringBootTest` slice/integration tests; a **Newman collection**
   exercising the full order flow (happy path + failure paths) that will later
   be run *unchanged* against each extracted service to prove behavioral
@@ -373,7 +373,7 @@ relay with human gates. Concretely:
 | **Frame** | Capture intent, constraints, acceptance criteria into a PRD + `decisions.md` entry | human + planning agent (Opus) | requirements / design doc |
 | **Plan** | Decompose into a `build-plan.md` step table with skill/MCP mapping; gate on human review | `lgtm-relay` plan phase (Opus) | design + task breakdown |
 | **Execute** | Generate code/chapters via skills, using MCP tools for ground truth | `lgtm-relay` execute (Sonnet) + Quarkus Agent MCP, Camel MCP, lgtm-* skills | implementation |
-| **Validate** | Run tests/demos, check equivalence oracle, reconcile drift; gate | `lgtm-relay` validate (Opus) + Newman/Citrus/Dev Services | code review + QA |
+| **Validate** | Run tests/demos, check the equivalence gate, reconcile drift; gate | `lgtm-relay` validate (Opus) + Newman/Citrus/Dev Services | code review + QA |
 | **Record** | Append decisions, update build-plan status, reconcile | all phases write `_plans/*` | change log / traceability |
 
 - **Where agents + MCP fit:** the Quarkus Agent MCP (`quarkus_create`,
@@ -383,7 +383,7 @@ relay with human gates. Concretely:
   lgtm-* skills drive site/deck/infra/diagrams.
 - **How SDLC is *replaced*:** requirements→PRD+decisions; design→plan phase +
   DDD/event-storming chapters; implementation→execute phase; testing→the
-  validate gate + equivalence oracle; maintenance→reconciliation.md drift
+  validate gate + equivalence gate; maintenance→reconciliation.md drift
   tracking. Human gates sit at Plan-approval and Validate-sign-off.
 - **How each chapter DEMONSTRATES it (not describes):** every Part-5/6
   chapter carries a **"Built with the ADLC"** panel containing (a) the actual
@@ -403,7 +403,7 @@ Three-tier pyramid (reuse EIP `37` + `41`, CNDP `28`), applied per pattern:
 
 | Pattern area | Unit | Contract | Integration | E2E |
 |---|---|---|---|---|
-| Monolith baseline | JUnit per service | — | `@SpringBootTest` | Newman full flow (the **equivalence oracle**) |
+| Monolith baseline | JUnit per service | — | `@SpringBootTest` | Newman full flow (the **behavior-equivalence suite**) |
 | Extracted service (each) | JUnit + Camel `MockEndpoint`/`AdviceWith` | Newman collection run *unchanged* vs monolith | Quarkus Dev Services (Kafka/PG/Apicurio) + REST Assured; Citrus `.citrus.it.yaml` per route | Newman against the whole mesh |
 | Routing / transformation (Camel) | MockEndpoint | — | Citrus against real Kafka/HTTP/DB via Testcontainers | — |
 | Outbox / CDC | unit on publisher | schema contract (Apicurio) | Dev Services + Debezium IT | event-arrival assertions |
@@ -414,8 +414,8 @@ Three-tier pyramid (reuse EIP `37` + `41`, CNDP `28`), applied per pattern:
   route), DataMesh single-collection-many-environments Newman, DDD-Obs
   payload library + saga collections, "pin image tags once in `.env`, confirm
   Dev Services matches" discipline.
-- **Load-bearing rule:** the monolith's Newman collection is the equivalence
-  oracle — an extracted service is "done" only when it passes the *same*
+- **Load-bearing rule:** the monolith's Newman collection is the
+  behavior-equivalence suite — an extracted service is "done" only when it passes the *same*
   collection the monolith passed. This is how the book proves each pattern
   preserves behavior, and it is a per-chapter acceptance gate.
 
@@ -538,7 +538,7 @@ updates `build-plan.md` status so the next resumes without re-reading code.
 - [ ] ADLC decision stated explicitly (both thread + Part) with a concrete
       phase model and a per-chapter demonstration mechanism.
 - [ ] Monolith design names the six contexts, the deliberate smells, and the
-      equivalence-oracle test approach.
+      behavior-equivalence-suite test approach.
 - [ ] Strangler sequence maps first-seam → full decomposition → chapters.
 - [ ] Iteration plan defines r02 as a walking skeleton proving all four top
       risks, with clean resume boundaries.
@@ -574,7 +574,7 @@ updates `build-plan.md` status so the next resumes without re-reading code.
 | **R5** | **podman/docker toolchain conflict** | someone pulls `lgtm-docker-stack` / DataMesh compose; Dev Services image-tag mismatch; CI differs from dev loop | single compose source (podman); boundary stated in ch.01 + `decisions.md` (mirror DataMesh DRQ-003 but inverted); "pin tags once in `.env`" discipline; CI uses same stack |
 | **R6** | **Chapters miss the 2k-word bar or ship without runnable code** | prose-only or stub-code chapters slip through | static validation in Site CI (word count + example-dir presence + verification footer); equivalence gate in Code CI |
 | **R7** | **Pattern-coverage gaps** | a deck pattern quietly never lands | §C matrix is the checklist; validate phase cross-checks matrix vs shipped chapters each relay |
-| **R8** | **Equivalence oracle rots** | monolith Newman collection not kept in sync as API evolves | collection is versioned with the monolith; CI runs it against every service; failure blocks "done" |
+| **R8** | **Equivalence suite rots** | monolith Newman collection not kept in sync as API evolves | collection is versioned with the monolith; CI runs it against every service; failure blocks "done" |
 | **R9** | **Reactor / shared-root collisions across parallel relays** | two executors edit `pom.xml`/`_config.yml`/compose simultaneously | §K serialization rule: one writer per shared root per relay; per-module isolation otherwise |
 | **R10** | **Premature push / repo creation** | agent creates repo or pushes without approval | standing memory gate; repo creation deferred to start of r02 *after* user approval; `lgtm-github` only on explicit permission |
 | **R11** | **Tool/version drift** (JDK 25, Quarkus, Camel 4.2x, Spring 3.x) | examples break against newer releases | version matrix in `decisions.md`; Dev Services + CI pin versions; Camel/Quarkus MCP used for version-matched ground truth |

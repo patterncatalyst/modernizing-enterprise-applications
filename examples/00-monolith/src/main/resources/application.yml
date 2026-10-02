@@ -1,0 +1,38 @@
+# Reference monolith configuration.
+#
+# Defaults target the project's local podman-stack Postgres coordinates (S3,
+# infra/). These are overridable via standard Spring Boot environment variables
+# (SPRING_DATASOURCE_URL / _USERNAME / _PASSWORD) so this module never hard-codes
+# a dependency on the podman stack being up — the Testcontainers-backed smoke test
+# (src/test) overrides them entirely and is fully self-contained.
+spring:
+  application:
+    name: monolith
+  datasource:
+    url: jdbc:postgresql://localhost:5432/monolith
+    username: monolith
+    password: monolith
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: false
+
+server:
+  port: 8080
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+logging:
+  level:
+    dev.patterncatalyst.monolith: INFO
