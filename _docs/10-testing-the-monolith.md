@@ -5,9 +5,9 @@ part: "The Reference Monolith"
 description: "Unit and Testcontainers integration tests plus the Newman contract collection that becomes the behavior-equivalence suite for every later extraction."
 ---
 
-Chapter 9 catalogued the smells planted on purpose in `examples/00-monolith/` —
+Chapter 9 catalogued the smells planted in `examples/00-monolith/` —
 the god service, the shared schema, the one sprawling transaction. Planting a
-smell on purpose only has value if you can prove, later, that curing it didn't
+smell only has value if you can prove, later, that curing it didn't
 change what the system does. That proof needs two different kinds of test, and
 this chapter builds both. The first kind is the ordinary three-tier pyramid
 every Spring Boot codebase should have: unit tests for the logic, slice tests
@@ -19,9 +19,8 @@ Part 5 onward will re-run, unchanged, as the gate every extraction has to
 clear.
 
 The pyramid lives in `examples/00-monolith/src/test/`; the behavior-equivalence
-suite lives in `tooling/newman/`. Both are real, already-committed code — this
-chapter walks the code as it exists on disk, not a sketch of what it should
-look like.
+suite lives in `tooling/newman/`. Both are already-committed code: this
+chapter walks the code as it exists on disk.
 
 ## Three tiers, one `mvn verify`
 
@@ -39,9 +38,8 @@ codebase and exactly the right number for a reference monolith: enough
 coverage per context to make the smells demonstrable, not so much that the
 example stops being readable in one sitting.
 
-The three tiers answer three different questions, and keeping them separate is
-itself a design decision worth noticing before looking at any one of them in
-detail:
+The three tiers answer three different questions, and keeping them separate
+matters before looking at any one of them in detail:
 
 - **Tier 1 (unit)** asks "does this one class's logic do the right thing,"
   with every collaborator mocked out. No Spring context, no database, no
@@ -83,7 +81,7 @@ none of the `*IT.java` files. Failsafe is bound explicitly to
 
 `mvn test` therefore runs only the fast tiers; `mvn verify` runs all three,
 and fails the build on a red integration test exactly the way it already
-failed on a red unit test. This is the fragile bit worth naming plainly: the
+failed on a red unit test. The fragile bit: the
 split is driven entirely by a filename suffix, not by an annotation or a
 plugin configuration that inspects what a test actually does. `SixContextsSmokeTest`
 is the sharpest illustration of that fragility inside this very codebase — it
@@ -272,7 +270,7 @@ payload: they prove the direct foreign-key joins from `orders` into the
 shared `customers` and `inventory_items` tables actually resolve through
 Hibernate's `@ManyToOne` mappings against the Flyway-migrated schema — the
 exact coupling Chapter 9 named as a smell, now pinned down by a test that will
-have to be rewritten, deliberately, the day that coupling gets cured.
+have to be rewritten the day that coupling gets cured.
 `InventoryRepositoryIT` does the equivalent work for the `PESSIMISTIC_WRITE`
 lock query `InventoryService#reserve` depends on — a query Spring Data's
 method-name parser will happily compile against a mock but can only be proven
@@ -350,17 +348,17 @@ to roll back a reservation inside the exact same ACID transaction as the
 order write, the characterization suite captures *that*, warts and smells
 included, rather than some more idealized future behavior. The point of
 writing it before cutting anything is that it is the only artifact that can
-honestly answer the question "did this extraction change behavior," because
+answer the question "did this extraction change behavior," because
 it is the only thing in the project that recorded what the behavior actually
 was before the extraction happened. Write it after the fact — or worse,
 write it against what the new service does and call that the baseline — and
-there is nothing left to compare against; any genuine regression and any
-deliberate improvement look identical, because nothing captured the
+there is nothing left to compare against; a regression and a
+planned improvement look identical, because nothing captured the
 "before" to tell them apart.
 
 In this project that suite lives in `tooling/newman/mea.postman_collection.json`,
 run with the `newman` CLI (Postman's collection runner), and it earns the name
-**behavior-equivalence suite** for a specific, load-bearing reason: every
+**behavior-equivalence suite** for a specific, critical reason: every
 request in it targets a `baseUrl` collection variable rather than a hardcoded
 host, so the exact same collection can point at the monolith on one run and
 at a freshly extracted Quarkus service on the next, with not one assertion
@@ -432,9 +430,8 @@ once it runs unattended in CI rather than once by hand.
 
 ## The equivalence gate: what "done" means from here forward
 
-This suite is not a chapter-sized teaching exercise that gets filed away once
-the point is made. It is already load-bearing in this project's own history.
-Chapter 7 walked the full agentic development lifecycle run for real against
+This suite already has a track record in this project's own history.
+Chapter 7 walked the full agentic development lifecycle run against
 Review's extraction, and the behavior-equivalence suite built in this chapter
 is the exact artifact it was gating against: sixteen assertions caught a
 native-image serialization defect that every JVM-mode test run had missed,
@@ -449,7 +446,7 @@ already sitting in the collection today; Notification, Inventory, Payment,
 Shipping, and finally Order with its own gateway follow in Part 6 and beyond,
 each one required to pass the same collection — extended with its own
 scenario folder when its turn comes, never rewritten for the services that
-came before it. The rule from `build-plan.md` Section G is blunt on purpose:
+came before it. The rule from `build-plan.md` Section G is blunt:
 an extracted service is "done" only when it passes the *same* collection the
 monolith passed, both as a per-chapter acceptance gate and as a check wired
 into CI. A green suite is necessary evidence for every one of those cutovers.
@@ -502,7 +499,7 @@ by hand during authoring.
 
 ## What you learned
 
-- The monolith's test pyramid separates three concerns deliberately: Tier 1
+- The monolith's test pyramid separates three concerns: Tier 1
   Mockito unit tests prove branching logic and call ordering with nothing
   real behind them; Tier 2 `@WebMvcTest` slices prove the HTTP binding,
   validation, and error-mapping a unit test structurally can't see; Tier 3
@@ -521,7 +518,7 @@ by hand during authoring.
   **behavior-equivalence suite** portable across a Spring monolith and a
   Quarkus extraction with nothing in common internally.
 - The **equivalence gate** — this exact collection, re-run unchanged — is
-  already proven load-bearing: it is the artifact Chapter 7 showed catching a
+  already proven essential: it is the artifact Chapter 7 showed catching a
   real native-image bug and anchoring the differential test that caught a
   real routing bug. Every extraction from Chapter 15 forward inherits that
   same gate rather than getting a new one invented for it.

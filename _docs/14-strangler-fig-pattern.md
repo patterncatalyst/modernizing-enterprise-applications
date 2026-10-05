@@ -24,7 +24,7 @@ suite through it instead of at the monolith directly.
 
 {% include excalidraw.html file="strangler-review-extraction" alt="Two stacked diagrams showing the Camel strangler proxy before and after the Review cutover: before, the proxy forwards /api/reviews traffic to the Spring monolith; after, the flag strangler.review.enabled routes that traffic to the Quarkus review service instead, with the monolith's Review module decommissioned." caption="Figure 14.1 — The strangler proxy before and after the Review cutover: one Camel route, one flag, two backends." %}
 
-## Fowler's pattern, and why the metaphor earns its keep
+## Fowler's pattern, and why the metaphor fits
 
 Martin Fowler named this pattern after a real botanical process, and the
 metaphor is unusually precise for an engineering analogy, which is why
@@ -88,7 +88,7 @@ Chapter 4 introduced the Strangler Fig family at the altitude a strategy
 decision needs: name the three shapes the pattern takes, say which one
 this book commits to, and move on. This chapter has running code to
 stand the distinction up properly, because the three variants answer
-two genuinely different questions — *how does the routing decision get
+two different questions — *how does the routing decision get
 made*, and *does data ownership have to move in the same step as code
 ownership* — and conflating them is a common way strangler migrations
 get needlessly harder than they have to be.
@@ -127,7 +127,7 @@ does the newly extracted service need its own database before it can
 go live, or can it keep reading and writing the same tables the
 still-shrinking monolith uses while the *code* separation proceeds on
 its own schedule? This book's own Review extraction uses exactly this
-variant, deliberately, and the Review service's own
+variant, and the Review service's own
 `application.properties` says so in plain configuration —
 `quarkus.hibernate-orm.schema-management.strategy=none` — because
 `examples/02-review-service/` is still in its Phase A
@@ -135,7 +135,7 @@ variant, deliberately, and the Review service's own
 `reviews` table lives in the same shared Postgres instance the
 monolith's five remaining contexts use, and nothing about the cutover
 this chapter walks through required that to change first. That is not
-a corner cut; it is a boundary genuinely separable from the service
+a corner cut; it is a boundary separable from the service
 boundary, and forcing both to move in the same step would have bought
 this chapter's worked example nothing except a data migration it did
 not yet need. True per-context data ownership for Review — its own
@@ -190,7 +190,7 @@ sufficient for an entire API surface rather than one consumer per
 resource — without it, Camel would need an exact path match, and this
 route would need to be rewritten every time a new resource appeared
 anywhere in the system. The cost of that convenience is a fact that
-genuinely tripped up this book's own cutover, covered in the next
+tripped up this book's own cutover, covered in the next
 section: `platform-http` hands the route the **full** incoming path in
 `CamelHttpPath`, including the `/api` prefix the consumer itself was
 registered under — not a path relative to that prefix, which is the
@@ -234,8 +234,8 @@ chances for the reversal itself to fail. A routing decision read from
 config requires none of that.
 
 **The second `choice()` is the forward — the actual reverse proxy —**
-and the two query parameters on each `.to()` call are doing load-bearing
-work individually. `bridgeEndpoint=true` tells Camel's HTTP producer to
+and the two query parameters on each `.to()` call each do essential
+work. `bridgeEndpoint=true` tells Camel's HTTP producer to
 reuse the inbound request's method, path, and query string exactly as
 received, rather than building a new URI from the Camel message the way
 a plain HTTP producer call normally would; without it, every header,
@@ -363,7 +363,7 @@ route left in the monolith matching `/api/reviews`, the one
 authenticated rule it used to enforce simply never fires anymore,
 rather than being deleted and risking disturbing something unrelated —
 a scope decision that kept the change confined to Review's own files.
-The `reviews` table itself, and its seed data, were deliberately *not*
+The `reviews` table itself, and its seed data, were *not*
 dropped, for exactly the shared-database reason named earlier: the
 extracted service still depends on that table being there, and true
 data ownership is a Chapter 18/19 problem, not a Review-chapter one.
@@ -371,7 +371,7 @@ With the module gone, `strangler.review.enabled=true` became the
 committed default in `application.properties`, replacing the `false`
 it had held throughout the cutover check.
 
-The proof that this step is genuinely irreversible, and not merely
+The proof that this step is irreversible, and not merely
 inconvenient to reverse, is a direct request against the now-slimmed
 monolith: `GET http://localhost:8080/api/reviews` returns `404 Not
 Found`, while `GET http://localhost:8080/api/orders` returns `200 OK`,
@@ -381,18 +381,18 @@ flag back to the state that used to mean "serve Review from the
 monolith." The flag still mechanically works — it is not dead code —
 but a request to `/api/reviews` through it now returns `404`, because
 the backend that value used to select no longer has anything to serve.
-That is the plainly observable shape of a closed reversibility
+That is the observable shape of a closed reversibility
 window: the mechanism that provided reversibility is still there and
 still functions exactly as designed; what changed is that one of the
 two destinations it could point to has been permanently removed.
 
-Decommission earning its place as the deliberately *last* step, after
+Decommission as the *last* step, after
 every other check has gone green, is the whole discipline this chapter
 has been building toward. Retiring the old code too early — before the
 routing fix was verified, for instance — would have destroyed the
 fallback that made diagnosing and correcting the predicate bug cheap
 and safe. Retiring it only once the stop-the-monolith check, not just
-the suite, had proven the new service was genuinely answering is what
+the suite, had proven the new service was answering is what
 keeps "incremental" from quietly becoming "big-bang, just spread over
 more calendar time."
 

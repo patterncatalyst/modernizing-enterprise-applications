@@ -15,7 +15,7 @@ next), **skills** (packaged, repeatable instructions an agent loads before it
 acts), and **MCP tools** (servers that hand an agent a real toolchain to act
 against, not just a prompt to reason from). None of this is abstract for this
 book — the chapter you are reading right now was produced by the exact
-machinery it describes, and the next section says so plainly before it says
+machinery it describes, and the next section says so before it says
 anything else.
 
 ## Agents: a model in a loop with tools
@@ -101,7 +101,7 @@ pattern as the product; this book's relay uses the identical pattern as its
 the thing being coordinated differs; the walkthrough in Chapter 7 shows exactly
 what that relay caught, and failed to catch, on the Review extraction.
 
-One more distinction earns its keep here: *orchestration* is not the same
+One more distinction matters here: *orchestration* is not the same
 thing as *parallelism*. The plan → execute → validate relay is strictly
 sequential — each phase's output gates the next, and the whole point is that
 nothing in Generate starts before a human has approved Plan. Elsewhere in this
@@ -111,7 +111,7 @@ generation as safe to parallelize because they touch disjoint files, while the
 Maven reactor root and the shared `_plans/` ledger are explicitly serialized
 to one writer at a time under its single-writer rule. Multi-agent orchestration, in
 other words, is a design decision about *dependencies between tasks*, not a
-blanket instruction to "use more agents." A task that genuinely has no shared
+blanket instruction to "use more agents." A task that has no shared
 state and no approval gate between its pieces is a good candidate for
 parallel agents; a task where one piece's output must be approved before the
 next begins — Plan before Generate, Generate before Verify — is not, no matter
@@ -162,7 +162,7 @@ whether or not that agent remembers how the project started. This book's own
 `examples/02-review-service/AGENTS.md` is not a teaching prop; it is the
 actual file the Quarkus-side execution agent read before touching a single
 line of the Review extraction, and its opening rule states the governance
-pattern plainly:
+pattern directly:
 
 ```
 Condensed excerpt -- examples/02-review-service/AGENTS.md, lines 5-15
@@ -217,7 +217,7 @@ requires actually running a program rather than describing one.
 
 This project uses two MCP servers, and naming what each one actually does is
 more useful than describing MCP in the abstract. The **quarkus-agent** MCP
-server gives an agent four distinct capabilities over a real, running Quarkus
+server gives an agent four distinct capabilities over a running Quarkus
 project: it can **scaffold** a new project (`quarkus_create`) rather than the
 agent hand-assembling a `pom.xml` from memory; it can **search
 version-matched documentation** (`quarkus_searchDocs`) against the exact
@@ -290,8 +290,7 @@ misleadingly correct-looking response. Neither one substitutes for the other,
 and understanding which layer is responsible for which kind of mistake is
 most of what it takes to trust a loop this fast.
 
-The underlying reason MCP matters is the same for both servers, and it is
-worth stating plainly rather than leaving it implicit: an agent's training
+The underlying reason MCP matters is the same for both servers: an agent's training
 data is a snapshot, and a framework, an API, or a catalog of components is
 not. Quarkus ships a new release on a predictable cadence; Camel's component
 and EIP catalog grows and occasionally deprecates entries; a project's own
@@ -312,7 +311,7 @@ by phase makes the composition concrete rather than aspirational:
   for a person stating intent and writing the decision-log entry, because the
   outcome this step is supposed to achieve is a judgment call, not a
   retrievable fact.
-- **Map** is where an MCP server earns its keep first: `quarkus_skills`
+- **Map** is where an MCP server contributes first: `quarkus_skills`
   querying a Spring module's directory, or `camel-mcp`'s catalog lookups,
   ground the agent's reconnaissance in the real shape of the code and the
   real toolchain before any plan gets drafted.

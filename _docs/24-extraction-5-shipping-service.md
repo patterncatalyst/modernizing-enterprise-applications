@@ -2,7 +2,7 @@
 title: "Orchestrated Sagas & Extraction 5 — Shipping (Camel Saga EIP)"
 order: 24
 part: "Coordinating Across Services"
-description: "Shipping becomes a bounded, orchestrated saga: a single Camel Saga EIP coordinator sequences dispatch and owns the compensation decision, the deliberate contrast to Chapter 23's choreography; the cross-context undo is delegated to the order context that owns the data it must reverse, and the equivalence suite is extended to prove it net-zero across an even longer chain."
+description: "Shipping becomes a bounded, orchestrated saga: a single Camel Saga EIP coordinator sequences dispatch and owns the compensation decision, in contrast to Chapter 23's choreography; the cross-context undo is delegated to the order context that owns the data it must reverse, and the equivalence suite is extended to prove it net-zero across an even longer chain."
 duration: 40 minutes
 ---
 
@@ -16,7 +16,7 @@ thing about how the sequence is controlled: instead of three independent
 services each reacting to an event and emitting the next one, a single route
 now holds the whole fulfilment sequence in one place, decides whether to
 proceed or compensate, and says so explicitly in its own source. Everything
-below is real, running code already committed to this repository:
+below is running code already committed to this repository:
 `examples/06-shipping-service/` (the Quarkus shipping service and its Camel
 Saga EIP orchestrator), `examples/00-monolith/`
 (`order/OrderSagaListener#onPaymentCaptured`/`onShipmentDispatched`/
@@ -36,7 +36,7 @@ The run script in each directory builds/sets up and runs it; each
 
 Chapter 23 cashed in Chapter 22's named consistency smell for payment —
 `OrderService#placeOrder` stopped calling payment in-process, and what
-Postgres used to give for free inside one transaction had to be rebuilt
+Postgres used to give as a side effect inside one transaction had to be rebuilt
 explicitly, asynchronously, across a process boundary. That entry's closing
 line named the two contexts still owing the same debt: shipping and order.
 This chapter pays shipping's half. `examples/00-monolith`'s `SMELLS.md`
@@ -68,7 +68,7 @@ anymore.
 ## Orchestration, not choreography — the contrast this book has been building to
 
 Chapter 23 named the two control styles a saga can run under and picked
-choreography on purpose: no coordinator, every participant reacting only to
+choreography: no coordinator, every participant reacting only to
 the event it subscribes to and emitting the next one, the sequence existing
 only as the sum of three independent reactions. This chapter makes the
 opposite choice, and the decision was written down before a line of saga
@@ -364,8 +364,8 @@ construction, not by convention.
 ## What an in-memory coordinator does not promise
 
 A Camel Saga EIP coordinator that keeps all of its in-flight state on the
-JVM heap is a deliberate, bounded choice for a teaching example, and its
-limits are worth naming as plainly as its mechanics. `InMemorySagaService`
+JVM heap is a bounded choice for this example, and its
+limits matter as much as its mechanics. `InMemorySagaService`
 remembers which sagas are in flight, and their registered compensation and
 completion callbacks, purely in memory — a coordinator restart mid-saga, a
 crash between the dispatch step's commit and the emit step's atomic pair,
@@ -374,14 +374,14 @@ exactly that moment would sit there forever, uncompensated and
 unconfirmed, because nothing remembers a saga was ever running for that
 order. `LRASagaService`, built on a distributed, crash-durable coordinator,
 is the production-grade alternative — deferred here for the same reason
-earlier extractions deferred CDC or a schema registry: it is new
-infrastructure this teaching example does not need to stand up to
-demonstrate the pattern, not a gap nobody noticed. The same bounded-saga
+earlier extractions deferred CDC or a schema registry: new
+infrastructure this example does not need to demonstrate the pattern, a
+scoped decision rather than an oversight. The same bounded-saga
 discipline shows up in what `onShipmentFailed` does *not* do: it
 compensates inventory only. The payment this order's `payment.captured`
 already captured is not refunded — reaching back into the payment service
 to request a refund would extend this saga's scope into a second,
-payment-aware compensation this chapter deliberately does not build. Both
+payment-aware compensation this chapter does not build. Both
 limits are recorded directly in the code that would need to change to close
 them, and both are named here as real engineering tradeoffs this extraction
 accepted rather than solved, with Chapter 25's resilience work as the
@@ -415,7 +415,7 @@ pending and still passed **127/127**, which would have been an easy false
 green to miss entirely. The fix loaded the collection through newman's Node
 API and patched the in-memory variable directly, packaged into
 `demos/lib/run-shipping-newman.js` without ever rewriting the committed
-collection file. With the saga genuinely engaged, a forced `SHIP-FAIL`
+collection file. With the saga now engaged, a forced `SHIP-FAIL`
 checkout's stock was captured directly against the inventory service, twice:
 
 ```
@@ -429,7 +429,7 @@ order: 478 -> 477 -> 478.
 ```
 
 The sharper proof is the two negative checks, because a green suite alone
-cannot tell a genuinely firing compensation from one that would pass
+cannot tell a firing compensation from one that would pass
 regardless. With the saga's `.compensation(...)` registration commented
 out and the service rebuilt, a forced `SHIP-FAIL` order went **RED — 2 of
 163 assertions failed** (manual) and **2 of 47** (scripted), both isolated
@@ -464,7 +464,7 @@ terminal `CONFIRMED` assertion now depends on it.
 
 > **ADLC in Action** — This extraction ran the identical Frame → Map → Plan →
 > Generate → Verify → Operate → Reconcile loop Chapter 23 demonstrated for
-> Payment, at a deliberately different shape. Frame fixed the orchestration
+> Payment, at a different shape. Frame fixed the orchestration
 > decision (DRQ-056) before anything was built — a bounded saga on
 > `payment.captured`, coordinated by a Camel Saga EIP route, with a whole-flow
 > re-expression and a direct shipping-calls-inventory shortcut both considered
@@ -473,7 +473,7 @@ terminal `CONFIRMED` assertion now depends on it.
 > event topology, the saga's step shape and compensation, delegated
 > cross-context compensation, two new order states, deterministic failure
 > injection, the two-phase service, idempotency, and two-flag reversibility.
-> Map named four reasons this rung is harder than choreography: a genuine
+> Map named four reasons this rung is harder than choreography: a
 > coordinator now has to exist, its compensation is coordinator-initiated and
 > crosses service boundaries, the order's `CONFIRMED` moves one hop later, and
 > a new failure-bearing terminal outcome had to be proven net-zero. Plan laid
@@ -487,7 +487,7 @@ terminal `CONFIRMED` assertion now depends on it.
 > lgtm-quarkus, lgtm-camel, and camel-mcp tooling, following
 > `migrate-spring-to-quarkus` for the lifted read surface. Verify is this
 > chapter's sharpest negative checks and its real stock numbers —
-> 496→495→496, 478→477→478 — plus a genuine CLI-limitation finding (newman's
+> 496→495→496, 478→477→478 — plus a CLI-limitation finding (newman's
 > `--env-var` cannot set a collection-scoped variable) found, diagnosed, and
 > worked around before the cutover evidence could even begin, and a
 > downstream timing flake found and closed immediately after. Operate is the

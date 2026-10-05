@@ -5,13 +5,13 @@ part: "Data Across the Seam"
 description: "The consistency just given up — dirty reads, lost updates, non-repeatable reads — where it bites and how to bound it."
 ---
 
-Chapter 21 gave the gateway's read side a model that tolerates staleness on
-purpose — CQRS accepts that a read model can lag its write model by a bounded
+Chapter 21 gave the gateway's read side a model that tolerates staleness —
+CQRS accepts that a read model can lag its write model by a bounded
 window, because the alternative (reading and writing the same normalized
 tables under one transaction manager) is the thing the gateway was built to
 get away from — and it closed by naming this chapter directly as the one
 that "itemizes the bill": dirty reads, lost updates, non-repeatable reads,
-the isolation ACID used to give you for free and that an eventually
+the isolation ACID used to give you automatically and that an eventually
 consistent system, by its nature, cannot. This chapter pays that bill in
 full, without euphemism, and asks the harder question underneath Chapter
 21's acceptance: what, precisely, is being given up, and why is giving it up
@@ -80,18 +80,18 @@ because this one hasn't committed. Every one of those four calls either all
 happen or none of them do, and nothing in the method's own code expresses
 that promise explicitly — it is bought entirely by the method boundary
 Spring's `@Transactional` wraps around the whole thing, backed by one
-Postgres connection's write-ahead log. That is the strength this chapter has
-to be honest about before it explains why the strength cannot travel: the
+Postgres connection's write-ahead log. That is the strength this chapter
+names before explaining why it cannot travel: the
 monolith's checkout author never had to write a single line of
-failure-recovery code, because the database wrote it for free, for every
+failure-recovery code, because the database wrote it automatically, for every
 possible combination of partial failure, the instant the `@Transactional`
 annotation was added.
 
 ## The free rollback, proven — not asserted
 
-A claim this load-bearing earns more than a code comment's say-so, and this
+A claim this consequential earns more than a code comment's say-so, and this
 project does not ask you to take it on faith. `PaymentDeclinedException`'s
-own javadoc states the dependency plainly: raising this exception mid-method
+own javadoc states the dependency: raising this exception mid-method
 "rolls back everything already written in this request — including the
 inventory decrement," a sentence that is only true because of where the
 exception is thrown relative to the transaction boundary, and the contrast
@@ -108,7 +108,7 @@ between them is the whole argument. At the unit tier,
 mocks every collaborator and can only prove *orchestration order* — that
 `inventoryService.reserve(...)` was called before `paymentService.charge(...)`
 threw, and that `shippingService.dispatch(...)` was never reached after it
-did. Its own in-code comment is honest about the limit of what a mocked test
+did. Its own in-code comment states the limit of what a mocked test
 can show: "inventory WAS reserved (in-memory) before the decline; in the real
 flow only the surrounding `@Transactional` rolls that back. This unit test
 proves the orchestration order, not the rollback itself." A mock cannot roll
@@ -149,7 +149,7 @@ assertions: step 3a takes a snapshot, step 3b forces a mid-transaction
 failure through the exact code path the javadoc above describes, and step 3c
 re-reads the same row from the same database and finds it unchanged — not
 "unchanged according to a mock that was never asked to change it," but
-unchanged because Postgres genuinely undid the `UPDATE` that
+unchanged because Postgres actually undid the `UPDATE` that
 `inventoryService.reserve(...)` issued, the instant `charge(...)` threw
 further down the same call stack. This is the behavior-equivalence suite's
 black-box counterpart to the unit test's white-box proof, and this project's
@@ -181,7 +181,7 @@ whether it *can* commit, without yet committing; every participant that
 votes yes must then hold its local locks and its prepared, uncommitted state
 until the coordinator tells it what to do next. In the **commit** phase, the
 coordinator collects every vote and, only if every single one was "yes,"
-tells every participant to commit for real; if even one voted "no" (or never
+tells every participant to commit; if even one voted "no" (or never
 answered), it tells every participant to abort instead.
 
 Kleppmann's treatment of this protocol in *Designing Data-Intensive
@@ -190,7 +190,7 @@ the boundary this book is building across. First, the coordinator is a
 single point of failure for the entire operation: if it crashes after
 collecting votes but before broadcasting the commit decision, every
 participant that voted yes is stuck holding its locks indefinitely,
-unable to safely commit or abort on its own, because it genuinely does not
+unable to safely commit or abort on its own, because it does not
 know what the other participants decided — this is 2PC's "in doubt" state,
 and it can only be resolved by the coordinator recovering, which may take
 an unbounded amount of time. Second, the protocol is synchronous and
@@ -255,7 +255,7 @@ independently of the other three.
 The property a saga restores in place of the dropped cross-service atomicity
 is not "guarantee it never happens" — that guarantee is specifically what 2PC
 could not deliver without the costs named above — but "guarantee that when a
-later step fails, an explicit, deliberately-written **compensating action**
+later step fails, an explicit, carefully written **compensating action**
 undoes the effect of every step that already succeeded." A compensating
 action is not a rollback in the database sense; it is a new forward-moving
 transaction, written by the service that owns the data being undone, that
@@ -268,7 +268,7 @@ later step — payment, in Chapter 23's choreographed version — fails. Nothing
 makes that compensating call happen automatically the way Postgres made the
 monolith's rollback happen automatically; a saga author has to write it, name
 it, and test its failure-path behavior exactly as carefully as the happy
-path, because the one mechanism that used to do this for free — one database,
+path, because the one mechanism that used to do this automatically — one database,
 one transaction manager — is no longer in the room.
 
 ## CAP, PACELC, and what "correctness" means now
@@ -307,7 +307,7 @@ order that settles permanently as "placed" after payment was actually
 declined, with no compensating action ever running to correct it, is the
 real failure ACD has to guard against, and guarding against it is what a
 saga's explicit compensation step — not an implicit database rollback — now
-has to do on purpose.
+has to do explicitly.
 
 ## The isolation anomalies the monolith never had to name
 
@@ -379,7 +379,7 @@ consistent, and exactly as synchronous, as the specific business invariant
 requires, and no more."
 
 Payment and shipping are where the full saga pattern is actually built,
-because both of them genuinely tolerate a bounded window *and* genuinely
+because both of them tolerate a bounded window *and*
 need a compensating action when something downstream goes wrong — a
 captured payment whose shipment later fails to dispatch has to be refunded,
 not merely logged as an anomaly. Chapter 23 builds the choreographed version
@@ -400,7 +400,7 @@ which kind of saga before being told which one "wins."
 ## What you learned
 
 - The monolith's checkout gets atomic rollback across four bounded contexts
-  **for free**, paid for entirely by one `@Transactional` boundary and one
+  **automatically**, paid for entirely by one `@Transactional` boundary and one
   database's write-ahead log — a guarantee this project proved with two
   different tiers of evidence: a mocked unit test showing the *orchestration
   order* a decline forces, and the behavior-equivalence suite's
@@ -427,10 +427,10 @@ which kind of saga before being told which one "wins."
   instantaneous assertion, is the right shape of check for it.
 - Not every context needs the same answer: notification tolerates full
   asynchrony with no compensating action at all (Chapter 17); inventory's
-  stock reservation stays deliberately synchronous because overselling is a
+  stock reservation stays synchronous because overselling is a
   correctness failure a compensation cannot fully repair (Chapter 19);
   payment and shipping get the full saga treatment because they tolerate a
-  bounded window but genuinely need compensation when something fails
+  bounded window but need compensation when something fails
   downstream (Chapters 23 and 24).
 
 Chapter 23 picks this argument up and makes it concrete on the Payment
@@ -456,6 +456,6 @@ Payment-Declined" folder, whose three-step capture/decline/recheck sequence
 is paraphrased (condensed, not byte-exact) above and is also narrated in
 Chapter 10's testing chapter. What a reader's own run should confirm
 independently: executing that Newman folder against a freshly seeded
-monolith to watch the stock count genuinely hold steady across the decline,
+monolith to watch the stock count hold steady across the decline,
 rather than taking the paraphrased assertions on the page as sufficient — the whole point of a
 behavior-equivalence suite is that it is runnable, not merely readable.*

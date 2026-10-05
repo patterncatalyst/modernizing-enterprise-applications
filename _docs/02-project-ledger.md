@@ -32,10 +32,9 @@ book calls the ADLC, the AI Development Lifecycle — and Part 2 is where you
 will see it defined phase by phase. This chapter is not that explanation. It
 exists because the ADLC's last phase, Reconcile, is not an abstraction; it is
 three concrete files that a human can open, read, and trust, and you need to
-know those files exist and what they contain before you watch them get used
-for real.
+know those files exist and what they contain before you watch them get used.
 
-Here is the problem a ledger solves, stated plainly, independent of any
+Here is the problem a ledger solves, independent of any
 particular framework or phase model. An agent-assisted modernization effort
 is not one long conversation. It is dozens of short ones, spread across days
 or weeks, often by different people, sometimes interrupted by something as
@@ -126,7 +125,7 @@ safe to execute consistently rather than half-finished — anyone touching a
 chapter, a test file, or a CI workflow after DRQ-031 lands can grep for the
 retired word and know exactly which row explains why every hit needs fixing.
 
-The third row is a genuine strategy decision, and it is the one that shapes
+The third row is a strategy decision, and it is the one that shapes
 every extraction chapter from Part 5 forward:
 
 ```
@@ -199,7 +198,7 @@ risks that iteration is designed to retire. The walking-skeleton iteration
 this project is mid-way through right now, `r02`, is defined there as
 proving "the four biggest risks at once": whether the monolith actually
 demonstrates a pattern worth curing, whether the strangler mechanism
-genuinely works end to end, whether the ADLC is a real practice and not a
+works end to end, whether the ADLC is a real practice and not a
 diagram, and whether a chapter can hit this book's two-thousand-word bar with
 running code behind it. That table is what keeps a thirty-three-chapter,
 nine-iteration project from turning into an unbounded wish list: the build
@@ -361,7 +360,7 @@ far walked through two of them in detail plus the per-iteration plan and
 status pair that sit alongside them. The third — a reconciliation record that
 tracks every reused or adapted artifact against the source it came from, so
 that drift from a cited reference is a tracked fact rather than a silent one
-— is deliberately not fabricated for this chapter, because it does not exist
+— is not fabricated for this chapter, because it does not exist
 in this project yet. It is scoped as one of the walking skeleton's own
 remaining steps, visible in the resume excerpt above: closing out the current
 iteration is exactly the moment this project commits to writing it. That is
@@ -385,7 +384,7 @@ narrates the loop that writes to this ledger in detail, on a real extraction,
 including two real defects the loop's safety net caught before either one
 reached a reader. This chapter's job was narrower: make sure you know what
 the ledger's pieces are called, what each one is for, and where to find them,
-before you watch them get used for real two parts from now.
+before you watch them get used two parts from now.
 
 ## What's next
 
@@ -393,7 +392,7 @@ Part 1, "Why Modernize," picks up a different question before any ledger
 entry gets written against this project's own monolith: not how the work
 gets recorded, but why a modernization effort — strangling a monolith into
 services one seam at a time — is worth doing as disciplined engineering
-rather than following fashion, and when it genuinely is not. Part 2, "The AI
+rather than following fashion, and when it is not. Part 2, "The AI
 Development Lifecycle (ADLC)," is where the phase model this chapter has only
 gestured at — Frame, Map, Plan, Generate, Verify, Operate, and the Reconcile
 phase that writes to the files you just read about — gets defined properly,

@@ -58,7 +58,7 @@ flipping between this book's JVM-mode and native-image examples in Part 5.
 
 **Apache Maven 3.9.x**, or just the Maven Wrapper the individual projects
 already carry. This is the one place in the toolchain where the two examples
-in this repository genuinely differ from each other, and the difference is
+in this repository differ from each other, and the difference is
 worth internalizing now rather than discovering it as a build failure later.
 `examples/00-monolith/` — the Spring Boot "before" picture — has no
 `mvnw` script committed; it expects a Maven installation already on your
@@ -69,7 +69,7 @@ directory, invoked as `./mvnw` from inside that project's own directory. The
 wrapper exists precisely so a Quarkus project's exact Maven version travels
 with the repository instead of depending on whatever happens to be installed
 globally; the monolith, as the fixed "before" reference the whole book
-measures every extraction against, is deliberately simpler and just needs a
+measures every extraction against, is simpler and just needs a
 real Maven on the path. If you do not already have one, SDKMAN installs Maven
 the same way it installs the JDK:
 
@@ -97,7 +97,7 @@ quarkus --version
 **The Camel CLI and Camel TUI — optional, scoped to Part 5 onward.** You will
 not need either to build or run `examples/01-strangler-proxy/` in this
 chapter — it is an ordinary Quarkus Maven module and `./mvnw package` is all
-it takes. The CLI earns its place later, when Chapter 14 and beyond have you
+it takes. The CLI becomes useful later, when Chapter 14 and beyond have you
 prototyping a new Camel route interactively (`camel init`, `camel run`)
 before it graduates into a committed Maven project, and the Camel MCP server
 this book's agent loop leans on for route validation and EIP-catalog lookups
@@ -111,7 +111,7 @@ camel --version
 
 **Podman and the `podman compose` plugin — not Docker.** This is the one
 substitution in the toolchain that is a fixed decision for this book, not a
-convenience recommendation, so it is worth stating plainly: everywhere a
+convenience recommendation: everywhere a
 modernization book might reach for `docker compose`, this one uses
 `podman compose` instead, and `compose.yaml` at the repository root says so
 directly in its own header comment — "PODMAN ONLY" — with a warning against
@@ -219,11 +219,11 @@ last saw and gets out of your way rather than hanging forever). Each of the
 three services carries its own healthcheck in `compose.yaml`: Postgres via
 `pg_isready`, Kafka via `kafka-broker-api-versions.sh` against its own
 broker, and the LGTM bundle via a plain `curl` against Grafana's
-`/api/health` endpoint — worth calling out because the upstream
+`/api/health` endpoint, because the upstream
 `otel-lgtm` image does not ship `wget`, and a healthcheck template that
 assumes it will silently fail with exit code 127 forever. When the script
 finishes, it prints the three addresses you'll use for the rest of this
-chapter and, really, the rest of the book:
+chapter and every chapter after it:
 
 ```text
 Grafana:    http://localhost:3000
@@ -355,7 +355,7 @@ working baseline.
 
 Before moving on, it is worth a quick orientation pass over the top-level
 directories you will keep returning to. None of this needs to be memorized —
-you will have walked every one of these paths for real by the time you reach
+you will have walked every one of these paths by the time you reach
 Part 3 — but knowing roughly what lives where now will save you a few
 `find` commands later.
 
@@ -435,7 +435,7 @@ tracked scripts, pom files, and workflow definitions (`compose.yaml`,
 have not been re-run end-to-end from a clean clone in the authoring loop that
 produced this page. The highest-risk things for a reader to confirm on a
 real run: that `scripts/stack-up.sh` reports all three services healthy on a
-genuinely fresh machine, that the `SPRING_DATASOURCE_PASSWORD` override above
+fresh machine, that the `SPRING_DATASOURCE_PASSWORD` override above
 actually matches whatever you set `POSTGRES_PASSWORD` to in your own `.env`,
 and that `demos/demo-equivalence.sh http://localhost:8888` reports a fully
 green run against your own freshly built services before you continue to
