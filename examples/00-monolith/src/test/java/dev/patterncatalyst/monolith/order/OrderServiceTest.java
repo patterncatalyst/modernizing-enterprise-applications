@@ -240,7 +240,6 @@ class OrderServiceTest {
                 1L, List.of(new OrderCreate.Line("SKU-GIZMO-003", 99)), "CARD-VISA", "1 Test Way");
 
         when(customerRepository.findById(1L)).thenReturn(Optional.of(customer));
-        when(inventoryService.findBySkuOrThrow("SKU-GIZMO-003")).thenReturn(widget);
         when(remoteInventoryClient.reserve("SKU-GIZMO-003", 99))
                 .thenReturn(new RemoteInventoryClient.ReserveResult(false, 5));
 
@@ -250,6 +249,8 @@ class OrderServiceTest {
 
         verify(orderRepository, never()).save(any());
         verify(paymentService, never()).charge(any(), anyLong(), anyString());
+        // r05/ch.19 S8 (DRQ-043): insufficient stock means no snapshot is ever fetched.
+        verify(remoteInventoryClient, never()).getStock(anyString());
         verify(remoteInventoryClient, never()).release(anyString(), org.mockito.ArgumentMatchers.anyInt());
     }
 
@@ -266,9 +267,10 @@ class OrderServiceTest {
                 1L, List.of(new OrderCreate.Line("SKU-WIDGET-001", 3)), "CARD-DECLINE", "1 Test Way");
 
         when(customerRepository.findById(1L)).thenReturn(Optional.of(customer));
-        when(inventoryService.findBySkuOrThrow("SKU-WIDGET-001")).thenReturn(widget);
         when(remoteInventoryClient.reserve("SKU-WIDGET-001", 3))
                 .thenReturn(new RemoteInventoryClient.ReserveResult(true, 97));
+        when(remoteInventoryClient.getStock("SKU-WIDGET-001"))
+                .thenReturn(new RemoteInventoryClient.StockSnapshot("SKU-WIDGET-001", "Standard Widget", 1999L));
         when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> invocation.getArgument(0));
         doThrow(new PaymentDeclinedException("Payment method 'CARD-DECLINE' was declined"))
                 .when(paymentService).charge(any(Order.class), anyLong(), eq("CARD-DECLINE"));
@@ -293,9 +295,10 @@ class OrderServiceTest {
                 1L, List.of(new OrderCreate.Line("SKU-WIDGET-001", 2)), "CARD-VISA", "1 Test Way");
 
         when(customerRepository.findById(1L)).thenReturn(Optional.of(customer));
-        when(inventoryService.findBySkuOrThrow("SKU-WIDGET-001")).thenReturn(widget);
         when(remoteInventoryClient.reserve("SKU-WIDGET-001", 2))
                 .thenReturn(new RemoteInventoryClient.ReserveResult(true, 98));
+        when(remoteInventoryClient.getStock("SKU-WIDGET-001"))
+                .thenReturn(new RemoteInventoryClient.StockSnapshot("SKU-WIDGET-001", "Standard Widget", 1999L));
         when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(paymentService.charge(any(Order.class), anyLong(), anyString()))
                 .thenAnswer(invocation -> new Payment(

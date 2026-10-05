@@ -18,11 +18,13 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 /**
  * Tier 3 (integration): {@code @DataJpaTest} against a real Testcontainers
  * Postgres — proves two things static analysis can't: (1) the SMELL[ch.18]
- * cross-context FK joins (order -&gt; customer, order_item -&gt;
- * inventory_item) actually resolve through Hibernate's {@code @ManyToOne}
- * mappings against the Flyway-migrated schema, and (2) {@code Order}'s
- * {@code cascade = ALL} on {@code items} really persists {@code OrderItem}
- * rows transitively, not just in memory.
+ * cross-context FK join (order -&gt; customer) actually resolves through
+ * Hibernate's {@code @ManyToOne} mapping against the Flyway-migrated schema
+ * (the order_item -&gt; inventory_item FK was decomposed in r05/ch.19 S8,
+ * DRQ-043 — {@code OrderItem} now persists a denormalized sku/name/price
+ * snapshot instead, a plain soft reference with no DB FK/JPA association),
+ * and (2) {@code Order}'s {@code cascade = ALL} on {@code items} really
+ * persists {@code OrderItem} rows transitively, not just in memory.
  *
  * <p>Owns its own Testcontainers Postgres instance (see the note on
  * {@code InventoryRepositoryIT} for why it isn't shared via a base class).
@@ -52,14 +54,14 @@ class OrderRepositoryIT {
     private TestEntityManager entityManager;
 
     @Test
-    void findById_seedOrder_resolvesCrossContextJoinsToCustomerAndInventoryItem() {
+    void findById_seedOrder_resolvesCustomerJoinAndOrderItemSnapshot() {
         Order order = orderRepository.findById(1L).orElseThrow();
 
         // SMELL[ch.18]: direct FK join into the shared customers table.
         assertThat(order.getCustomer().getName()).isEqualTo("Ada Lovelace");
         assertThat(order.getItems()).hasSize(1);
-        // SMELL[ch.18]: direct FK join into the shared inventory_items table.
-        assertThat(order.getItems().get(0).getInventoryItem().getSku()).isEqualTo("SKU-WIDGET-001");
+        // r05/ch.19 S8 (DRQ-043): no FK/join -- a denormalized snapshot on OrderItem itself.
+        assertThat(order.getItems().get(0).getSku()).isEqualTo("SKU-WIDGET-001");
         assertThat(order.getTotalCents()).isEqualTo(3998L);
     }
 
@@ -69,14 +71,15 @@ class OrderRepositoryIT {
         InventoryItem gadget = entityManager.find(InventoryItem.class, 2L); // SKU-GADGET-002
 
         Order order = new Order(customer, "99 Test Street");
-        order.addItem(new OrderItem(gadget, 2, gadget.getPriceCents()));
+        order.addItem(new OrderItem(gadget.getSku(), gadget.getName(), 2, gadget.getPriceCents()));
 
         Order saved = orderRepository.saveAndFlush(order);
         entityManager.clear(); // force a real reload, proving the OrderItem rows were persisted
 
         Order reloaded = orderRepository.findById(saved.getId()).orElseThrow();
         assertThat(reloaded.getItems()).hasSize(1);
-        assertThat(reloaded.getItems().get(0).getInventoryItem().getSku()).isEqualTo("SKU-GADGET-002");
+        assertThat(reloaded.getItems().get(0).getSku()).isEqualTo("SKU-GADGET-002");
+        assertThat(reloaded.getItems().get(0).getProductName()).isEqualTo(gadget.getName());
         assertThat(reloaded.getTotalCents()).isEqualTo(gadget.getPriceCents() * 2);
     }
 }

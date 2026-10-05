@@ -1,10 +1,12 @@
 package dev.patterncatalyst.monolith.inventory;
 
+import dev.patterncatalyst.inventory.v1.GetStockRequest;
 import dev.patterncatalyst.inventory.v1.InventoryGrpcServiceGrpc;
 import dev.patterncatalyst.inventory.v1.InventoryGrpcServiceGrpc.InventoryGrpcServiceBlockingStub;
 import dev.patterncatalyst.inventory.v1.ReleaseRequest;
 import dev.patterncatalyst.inventory.v1.ReserveReply;
 import dev.patterncatalyst.inventory.v1.ReserveRequest;
+import dev.patterncatalyst.inventory.v1.StockReply;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.StatusRuntimeException;
@@ -124,7 +126,29 @@ public class RemoteInventoryClient {
                         .build());
     }
 
+    /**
+     * r05/ch.19 S8 (DRQ-043): full read of one sku's current stock record,
+     * used by {@code OrderService#placeOrder} (in {@code
+     * inventory.mode=remote}) to populate {@code OrderItem}'s denormalized
+     * snapshot (sku/name/unit-price-at-order-time) from the extracted
+     * inventory service's OWN data, instead of reaching into this
+     * monolith's local {@code inventory_items} table -- the same {@code
+     * GetStock} RPC the ch.16 {@code InventoryAclRoute} content enricher
+     * uses on the read side (S9).
+     */
+    public StockSnapshot getStock(String sku) {
+        StockReply reply = stub.withDeadlineAfter(timeoutMs, TimeUnit.MILLISECONDS)
+                .getStock(GetStockRequest.newBuilder()
+                        .setStockKeepingUnit(sku)
+                        .build());
+        return new StockSnapshot(reply.getStockKeepingUnit(), reply.getDisplayName(), reply.getUnitPriceCents());
+    }
+
     /** Clean translation of the gRPC {@code ReserveReply} -- the raw proto type never leaks past this client. */
     public record ReserveResult(boolean ok, int onHandQty) {
+    }
+
+    /** Clean translation of the gRPC {@code StockReply} -- the raw proto type never leaks past this client. */
+    public record StockSnapshot(String sku, String name, long priceCents) {
     }
 }

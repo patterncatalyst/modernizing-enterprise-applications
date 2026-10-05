@@ -116,6 +116,16 @@ public class OrderService {
      * decline, a shipping failure, or any other exception before the order
      * confirms) — a deliberate first taste of saga compensation, forward-ref
      * ch.23.
+     *
+     * <p>r05/ch.19 S8 (DRQ-043): {@code OrderItem} no longer holds a
+     * cross-context JPA/DB FK onto {@code inventory.InventoryItem} (SMELL
+     * [ch.18], now CURED for this seam). Each line's sku/name/
+     * unit-price-at-order-time is captured as a denormalized snapshot at the
+     * point above where the {@code OrderItem} is built — from the local
+     * {@code InventoryItem} in {@code inventory.mode=local}, or from the
+     * remote inventory service's {@code GetStock} gRPC reply in {@code
+     * inventory.mode=remote} (see {@link RemoteInventoryClient#getStock}).
+     * {@code common.OrderDto}'s shape is unchanged either way.
      */
     @Transactional
     public OrderDto placeOrder(OrderCreate command) {
@@ -133,20 +143,13 @@ public class OrderService {
         List<ReservedLine> remoteReservations = new ArrayList<>();
 
         try {
-            // SMELL[ch.16]: reaching directly into inventory's entities/repository from
-            // the order context, with no anti-corruption layer at the seam.
             for (OrderCreate.Line line : command.items()) {
-                InventoryItem inventoryItem = inventoryService.findBySkuOrThrow(line.sku());
+                OrderItem orderItem;
                 if (remoteInventory) {
                     // r05/ch.19 S7: the decorating collaborator — the actual
-                    // reserve/decrement now happens in the extracted
-                    // inventory service's OWN database over gRPC, not
-                    // against this monolith's local inventory_items row.
-                    // inventoryItem above is still read locally only to
-                    // populate OrderItem's FK/name/price snapshot fields;
-                    // ch.18/S8 later replaces this with a denormalized
-                    // snapshot captured from the gRPC reply (H3, not yet
-                    // done here).
+                    // reserve/decrement happens in the extracted inventory
+                    // service's OWN database over gRPC, not against this
+                    // monolith's local inventory_items row.
                     RemoteInventoryClient.ReserveResult result =
                             remoteInventoryClient.reserve(line.sku(), line.quantity());
                     if (!result.ok()) {
@@ -154,10 +157,24 @@ public class OrderService {
                                 .formatted(line.quantity(), line.sku(), result.onHandQty()));
                     }
                     remoteReservations.add(new ReservedLine(line.sku(), line.quantity()));
+                    // r05/ch.19 S8 (DRQ-043): the OrderItem snapshot is
+                    // captured from the extracted inventory service's OWN
+                    // GetStock reply -- never from this monolith's local
+                    // inventory_items table -- curing SMELL #5 (raw-entity
+                    // leak) at the source for the snapshot path too.
+                    RemoteInventoryClient.StockSnapshot stock = remoteInventoryClient.getStock(line.sku());
+                    orderItem = new OrderItem(stock.sku(), stock.name(), line.quantity(), stock.priceCents());
                 } else {
+                    // SMELL[ch.16]: reaching directly into inventory's entity/repository
+                    // from the order context, with no anti-corruption layer at the seam
+                    // (only in inventory.mode=local; the remote path above has an ACL).
+                    InventoryItem inventoryItem = inventoryService.findBySkuOrThrow(line.sku());
                     inventoryService.reserve(line.sku(), line.quantity()); // throws InsufficientStockException, no writes yet
+                    orderItem = new OrderItem(
+                            inventoryItem.getSku(), inventoryItem.getName(), line.quantity(),
+                            inventoryItem.getPriceCents());
                 }
-                order.addItem(new OrderItem(inventoryItem, line.quantity(), inventoryItem.getPriceCents()));
+                order.addItem(orderItem);
             }
 
             order = orderRepository.save(order);
@@ -267,8 +284,12 @@ public class OrderService {
     }
 
     private static OrderDto toDto(Order order) {
+        // r05/ch.19 S8 (DRQ-043): projects from OrderItem's own denormalized
+        // snapshot fields now, not a cross-context InventoryItem join -- the
+        // external shape (OrderDto.Item: sku/quantity/unitPriceCents) is
+        // byte-for-byte unchanged.
         List<OrderDto.Item> items = order.getItems().stream()
-                .map(i -> new OrderDto.Item(i.getInventoryItem().getSku(), i.getQuantity(), i.getUnitPriceCents()))
+                .map(i -> new OrderDto.Item(i.getSku(), i.getQuantity(), i.getUnitPriceCents()))
                 .toList();
         return new OrderDto(
                 order.getId(),
