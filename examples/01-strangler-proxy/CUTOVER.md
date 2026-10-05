@@ -178,3 +178,125 @@ cutover attempt and the decommission step. The original flag-OFF baseline
 (run #1) remains valid evidence on its own: the routing defect only ever
 caused requests to go to the monolith regardless of the flag, which is
 already the correct behavior when the flag is `false`.
+
+---
+
+## Notification cutover (notification-plan.md S6/S7, ch.17, DRQ-036/DRQ-037)
+
+A second flag, `strangler.notification.enabled`, was added to this proxy
+alongside Review's — same content-based-routing shape, same full-path
+predicate discipline (`/api/notifications`, learned the hard way from §2
+above). This is the **read-side** half of a two-flag reversibility story: the
+monolith's `notification.mode=synchronous|outbox` config is the write-side
+half (a different file — `examples/00-monolith/src/main/resources/
+application.yml` — not touched by this proxy). A real cutover flips both
+together.
+
+### 1. Reversibility baseline — notification flag OFF, monolith synchronous
+
+All four backends up (monolith `:8080` default/synchronous, review-service
+`:8081`, notification-service `:8083`, proxy `:8888`), proxy flags at their
+S6/S10 defaults (`strangler.review.enabled=true`,
+`strangler.notification.enabled=false`):
+
+```
+demos/demo-equivalence.sh http://localhost:8888
+```
+
+**Result: 58/58 assertions green, 0 failed.** `/api/notifications` served
+synchronously by the monolith (unmodified behavior); the bounded-wait poll in
+the "Notification Context Contract" folder matched on its very first GET —
+exactly the synchronous-backend shape DRQ-037 predicts.
+
+### 2. CUTOVER — both flags flipped
+
+Monolith restarted with `NOTIFICATION_MODE=outbox` (checkout now writes an
+outbox row instead of sending a synchronous confirmation); proxy restarted
+with `strangler.notification.enabled=true`. Full suite re-run, unmodified,
+through the proxy:
+
+```
+demos/demo-equivalence.sh http://localhost:8888
+```
+
+**Result: 70/70 assertions green, 0 failed.** This time the bounded-wait poll
+in the Notification folder *genuinely retried* — several `GET
+/api/notifications` attempts came back `200` with no matching notification
+yet before the match appeared — real, observed outbox -> Kafka -> consumer
+latency, not an instant synchronous hit. `/api/notifications` is now served
+by `examples/03-notification-service`; checkout folders (Scenarios 1-3) and
+the Review folder were unaffected and stayed green, exactly as DRQ-037
+predicted for the async backend.
+
+### 3. Negative check — the consumer stopped, the assertion MUST go RED
+
+With the cutover state still active, the notification-service process (its
+Kafka consumer **and** its `/api/notifications` read surface — they are the
+same process) was killed. Only the "Notification Context Contract" folder
+was re-run through the proxy:
+
+```
+newman run tooling/newman/mea.postman_collection.json \
+    --environment tooling/newman/local.postman_environment.json \
+    --env-var "baseUrl=http://localhost:8888" \
+    --folder "Notification Context Contract"
+```
+
+**Result: RED — newman exit code 1.** The exact failing assertions:
+
+```
+1. AssertionError  Notification read surface returns 200
+                    expected response to have status code 200 but got 500
+2. AssertionError  Content-Type is application/json
+                    expected 'text/plain; charset=utf-8' to include 'application/json'
+3. JSONError        No data, empty input at 1:1
+```
+
+(`GET /api/notifications?customerId=1` came back `500` because the proxy's
+`notification` target was unreachable — connection refused, forwarded with
+`throwExceptionOnFailure=false` as a plain-text 500 body — so the test
+script's `pm.response.json()` call threw before the bounded-wait retry
+branch was ever reached.) This is a **stronger** failure than a soft
+budget-exhaustion (empty-list-after-10-retries): it proves the suite does not
+quietly pass when the entire async pipeline — consumer included — is down,
+closing the exact false-equivalence gap CUTOVER.md §2 identified for Review.
+
+The notification-service process was then restarted. Re-running the same
+folder:
+
+**Result: GREEN — 11/11 assertions, newman exit code 0.** On restart the
+service immediately drained the backlog (`consumed order.placed for order 50
+(customer 1)` in its logs — the event published by the relay while the
+consumer was down, delivered at-least-once once a consumer was listening
+again), and the freshly-created order from this re-run was also observed
+within budget.
+
+### 4. Committed default flipped to true (post-cutover)
+
+With all three results recorded, `strangler.notification.enabled=true` was
+made the committed default in `application.properties` (mirroring Review's
+S10 flip), the proxy was rebuilt and restarted relying purely on that
+default (no `-D` override), and the full suite was run once more as a final
+sanity check:
+
+```
+demos/demo-equivalence.sh http://localhost:8888
+```
+
+**Result: 64/64 assertions green, 0 failed.**
+
+### Summary of the notification-cutover runs
+
+| # | Notification flag | Monolith `notification.mode` | `/api/notifications` served by | Result |
+|---|---|---|---|---|
+| 1 | `false` | `synchronous` (default) | monolith | **58/58**, 0 failed (reversibility baseline) |
+| 2 | `true` (override) | `outbox` | notification-service | **70/70**, 0 failed (cutover; poll genuinely retried) |
+| 3a | `true` | `outbox`, consumer **down** | *(nothing — 500)* | **RED** — negative check, proves the async path is real |
+| 3b | `true` | `outbox`, consumer restarted | notification-service | **GREEN** — 11/11, 0 failed |
+| 4 | `true` (committed default) | `outbox` | notification-service | **64/64**, 0 failed (final sanity, post-flip) |
+
+Unlike Review's S10 flip, this is **not** the point where reversibility
+closes — the monolith's synchronous notification path and
+`/api/notifications` read surface are untouched (decommission is
+notification-plan S8, out of scope for this cutover step). Flipping this flag
+back to `false` today still reaches a working monolith notification surface.
