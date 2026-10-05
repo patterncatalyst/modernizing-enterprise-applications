@@ -300,3 +300,218 @@ closes — the monolith's synchronous notification path and
 `/api/notifications` read surface are untouched (decommission is
 notification-plan S8, out of scope for this cutover step). Flipping this flag
 back to `false` today still reaches a working monolith notification surface.
+
+---
+
+## Inventory cutover (inventory-plan.md S10, ch.19, DRQ-045/DRQ-046)
+
+A third flag, `strangler.inventory.enabled`, was added to this proxy
+alongside Review's and Notification's — same content-based-routing shape on
+the `/api/inventory` path prefix, same full-path predicate discipline. This
+is the **read-side** half of a two-flag reversibility story (DRQ-045): the
+monolith's own `inventory.mode=local|remote` config
+(`examples/00-monolith/src/main/resources/application.yml`, overridable via
+the `INVENTORY_MODE` env var — a different file, not touched by this proxy)
+is the call/write-side half, governing whether `OrderService#placeOrder`
+reserves stock in-JVM against the shared schema or over gRPC `Reserve`
+against `examples/04-inventory-service` (with a compensating gRPC `Release`
+on any post-reserve checkout failure, DRQ-042). A real cutover flips both
+together. Unlike Review and Notification, Inventory's hot path is
+**synchronous gRPC**, not an async outbox/Kafka pipeline — the crux case here
+is Scenario 3 (payment-declined), which must prove the compensating `Release`
+actually restores stock **across the service boundary**, not inside the
+monolith's own rolled-back transaction.
+
+### 1. Reversibility baseline — inventory flag OFF, monolith local
+
+All five backends up (monolith `:8080` with `inventory.mode=local`,
+review-service `:8081`, notification-service `:8083`, inventory-service
+`:8084`/`:9004`, proxy `:8888`), proxy flags at their pre-cutover defaults
+(`strangler.review.enabled=true`, `strangler.notification.enabled=true`,
+`strangler.inventory.enabled=false`):
+
+```
+demos/demo-equivalence.sh http://localhost:8888
+```
+
+**Result: 85/85 assertions green, 0 failed.** `/api/inventory` served by the
+monolith's own `inventory_items` table (unmodified behavior); Scenario 1-3
+checkout exercised the monolith's in-JVM reserve exactly as before this
+extraction began.
+
+### 2. CUTOVER — both flags flipped
+
+Monolith restarted with `INVENTORY_MODE=remote` (checkout now reserves/
+releases stock over gRPC against `examples/04-inventory-service`'s own
+database instead of the shared schema); proxy restarted with
+`-Dstrangler.inventory.enabled=true` (override, prior to the committed-default
+flip in §5 below). Full suite re-run, unmodified, through the proxy, multiple
+times for stability:
+
+```
+demos/demo-equivalence.sh http://localhost:8888
+```
+
+**Result: green every run (73-77/73-77 assertions, 0 failed — the small
+count variance is the Notification folder's bounded-wait poll retrying a
+different number of times per run, not a correctness difference).**
+`/api/inventory` is now served by `examples/04-inventory-service`; Review and
+Notification folders were unaffected and stayed green.
+
+**Explicit before/after stock, read directly from the inventory service
+(:8084) — the crucial evidence for this extraction:**
+
+| Scenario | Before (service) | Checkout | After (service) | Monolith's own local table | Result |
+|---|---|---|---|---|---|
+| 1 — Happy path (qty 1) | 30 | `201 CONFIRMED` | **29** (−1) | frozen at **34** throughout | gRPC `Reserve` decremented the SERVICE's own stock by exactly the ordered qty; the monolith's local `inventory_items` row for the same sku was **never touched** (confirmed by reading `:8080/api/inventory` directly before and after — unchanged at 34) |
+| 2 — Out-of-stock (qty 999999 of a 5-on-hand sku) | 5 | `409 OUT_OF_STOCK` | **5** (unchanged) | n/a (rejected before any write) | gRPC `Reserve` returned insufficient and the checkout never attempted a write |
+| 3 — Payment-declined (qty 1, THE crux) | 29 | `402 PAYMENT_DECLINED` | **29** (net zero) | n/a | gRPC `Reserve` succeeded (stock was available), payment then declined, and `OrderService`'s catch block fired the compensating gRPC `Release` for the sku it had just reserved — the net observable effect across the two independent databases matches the monolith's old same-transaction-rollback behavior exactly |
+
+The proxy's own `/api/inventory` response was also compared directly against
+the inventory-service's and the monolith's, confirming the proxy is
+genuinely routing to the extracted service rather than silently falling
+through to the monolith (the false-positive trap from §2 above, named for
+Review): after the Scenario runs, `GET :8888/api/inventory/SKU-WIDGET-001`
+and `GET :8084/api/inventory/SKU-WIDGET-001` returned the **same** (29),
+while `GET :8080/api/inventory/SKU-WIDGET-001` (the monolith's own frozen
+local copy) returned a **different** value (34) — unlike Review's original
+S10 false positive, the two backends here own genuinely separate databases,
+so agreement between the proxy and the service (and disagreement with the
+monolith) is real proof of correct routing, not coincidence.
+
+### 3. Post-cutover reversibility check
+
+With the cutover state still active, both flags were flipped back — monolith
+restarted with no `INVENTORY_MODE` override (back to its default `local`) and
+the proxy restarted with no `-D` override (back to its then-default `false`,
+prior to §5's commit). `GET :8888/api/inventory/SKU-WIDGET-001` and
+`GET :8080/api/inventory/SKU-WIDGET-001` agreed again (both 34, the
+monolith's own local figure), and the full suite was re-run:
+
+```
+demos/demo-equivalence.sh http://localhost:8888
+```
+
+**Result: 75/75 assertions green, 0 failed.** The reversibility window
+demonstrated in §1 was still genuinely open after a full cutover-and-back
+cycle — flipping both flags is a config change and a restart, nothing more,
+right up until decommission (inventory-plan S11).
+
+### 4. Negative check — the inventory service stopped, the assertion MUST go RED
+
+Both flags flipped back to the cutover state (monolith `INVENTORY_MODE=remote`,
+proxy `-Dstrangler.inventory.enabled=true`) and the inventory-service process
+killed (both its `:8084` HTTP read surface and `:9004` gRPC server — same
+process). Full suite re-run through the proxy:
+
+```
+demos/demo-equivalence.sh http://localhost:8888
+```
+
+**Result: RED — newman exit code 1, 34 of 56 assertions failed.** Every
+inventory-dependent request failed hard:
+
+- `GET /api/inventory` → `500` (the proxy's `inventory` target was
+  unreachable — connection refused, forwarded as a plain-text 500 body).
+- `POST /api/orders` (Scenario 1, happy-path) → `500` — the monolith's gRPC
+  `Reserve` call to the dead inventory service failed, and the whole checkout
+  failed with it (no partial state: the order was never created, no
+  `Location` header, nothing to compensate).
+- Scenario 2 and 3's checkouts failed the same way (`500` instead of their
+  expected `409`/`402`), because the very first step of `placeOrder` in
+  `inventory.mode=remote` is the gRPC `Reserve` call — with no inventory
+  service to answer it, checkout cannot proceed far enough to even reach the
+  out-of-stock or payment-decline branches.
+- `Inventory Context Contract` (6a/6b/6c) all failed with `500`s for the same
+  reason as the Smoke check.
+- Review and Notification folders were **unaffected** and stayed green —
+  proving the failure was scoped exactly to the inventory seam, not a
+  proxy-wide outage.
+
+This is the strongest possible negative-check result: the suite does not
+degrade gracefully or silently pass when the extracted service — and its
+gRPC seam specifically — is down; it fails hard and loud, closing the
+CUTOVER.md §2 false-equivalence gap for the synchronous cross-service case
+(DRQ-046).
+
+The inventory-service process was then restarted. Re-running the full suite:
+
+**Result: GREEN — 75/75 assertions, newman exit code 0.** Checkout and
+`/api/inventory` both recovered immediately once the gRPC server and HTTP
+read surface came back up — no backlog to drain (unlike Notification's
+Kafka-backed negative check), since Reserve/Release are synchronous RPCs with
+no queue.
+
+### 5. Committed default flipped to true (post-cutover, read-side only)
+
+With all results recorded, `strangler.inventory.enabled=true` was made the
+committed default in `application.properties` (mirroring Review's and
+Notification's own flips), the proxy was rebuilt and restarted relying purely
+on that default (no `-D` override). **Unlike** Review's and Notification's
+flips, the monolith's own `inventory.mode` committed default was
+**deliberately left at `local`** — decommissioning the monolith's local
+Inventory write path and flipping that default to `remote`-only is
+inventory-plan **S11**, explicitly out of scope here (DRQ-045 calls this out:
+reversibility holds "until the decommission step").
+
+**Verified in the actual intended steady-state operation** — proxy relying on
+its new committed default, monolith started with the `INVENTORY_MODE=remote`
+env var override (the same combination proven green in §2) — the full suite
+was re-run twice for stability:
+
+```
+demos/demo-equivalence.sh http://localhost:8888
+```
+
+**Result: green both times (75/75 and 77/77 assertions, 0 failed).**
+
+**A documented finding, not a defect:** a full sanity run was also taken with
+**zero env overrides on either side** — i.e., the proxy's new committed
+default (`true`) paired with the monolith's own still-local committed default
+(`inventory.mode=local`) — the literal "freshly cloned, nothing set" state
+between S10 and S11. This combination is **not** the proven-green cutover
+state from §2: it pairs a write path that lands in the monolith's shared
+`inventory_items` table with a read path the proxy now routes to
+`examples/04-inventory-service`'s own database, bridged only by the
+**asynchronous** Debezium CDC stream (DRQ-040). Run three times, this
+combination **consistently** failed exactly one assertion per run —
+`Scenario 1 — Happy-Path Checkout / 1d. Stock decremented by exactly the
+ordered quantity` — off by exactly 1 every time (e.g. "expected 32 to deeply
+equal 31"): the test's immediate post-checkout read outran the CDC
+connector's replication of that same checkout's write. This is the exact
+eventual-consistency risk DRQ-041 ("replication is async") and DRQ-046
+("the read folder may need a bounded-wait only while reads are served from
+the CDC-replicated store mid-transition") both anticipated — it was simply
+assumed to land on the *Inventory Context Contract* read folder, not on a
+checkout scenario's immediate read-after-write, because DRQ-046 only promised
+synchronous-safe checkout assertions **when both flags move together**. With
+only the proxy's default flipped and the monolith's left at `local`, that
+precondition does not hold. **No code in this repository was changed to
+paper over this** — the Newman collection stays unedited (per the project's
+equivalence-gate discipline) and the monolith's `inventory.mode` default
+stays `local` (S11's job, not S10's). Operators running this proxy with its
+new committed default between S10 and S11 should set `INVENTORY_MODE=remote`
+explicitly (matching §2's proven-green combination) rather than relying on
+both sides' bare defaults.
+
+### Summary of the inventory-cutover runs
+
+| # | Inventory flag | Monolith `inventory.mode` | `/api/inventory` served by | Result |
+|---|---|---|---|---|
+| 1 | `false` | `local` (default) | monolith | **85/85**, 0 failed (reversibility baseline) |
+| 2 | `true` (override) | `remote` | inventory-service | **green every run** (73-77/73-77), 0 failed (cutover; Scenario 1/2/3 before/after stock proven, incl. cross-seam compensation) |
+| 3 | `false` (reverted) | `local` (reverted) | monolith | **75/75**, 0 failed (post-cutover reversibility check) |
+| 4a | `true` | `remote`, service **down** | *(nothing — 500)* | **RED** — 34/56 failed; negative check proves the gRPC seam is real |
+| 4b | `true` | `remote`, service restarted | inventory-service | **GREEN** — 75/75, 0 failed |
+| 5 | `true` (committed default) | `remote` (env override) | inventory-service | **green both runs** (75/75, 77/77), 0 failed (final sanity, steady-state operation) |
+| 5′ | `true` (committed default) | `local` (bare default, **not** the proven combination) | inventory-service (CDC-fed, async) | **74/75**, 1 failed — consistent CDC-lag race on Scenario 1d, documented above, not a regression |
+
+Like Notification's flip and unlike Review's, this is **not** the point where
+reversibility closes for the write side — the monolith's local Inventory
+module (`InventoryController`/`InventoryService`/`InventoryRepository`/
+`InventoryItem`) and its `inventory.mode=local` code path are fully intact
+(decommission is inventory-plan S11, not run here). Flipping
+`strangler.inventory.enabled` back to `false` today, or leaving
+`INVENTORY_MODE` unset, still reaches a fully working monolith-served
+inventory surface — reversibility, including the write side, remains a real,
+demonstrated property (run #3 above) right up to S11.
