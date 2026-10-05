@@ -12,12 +12,12 @@ import java.time.Instant;
  * funds, written atomically with the {@code Payment} row via the payment
  * service's own transactional outbox (DRQ-053).
  *
- * <p><b>Consumed by:</b> the monolith's order-saga reaction (r06/S6, {@code
- * order.OrderSagaListener} — not yet built as of this contract-only step),
- * which transitions the order to {@code OrderStatus.CONFIRMED} and dispatches
- * shipping (DRQ-049/DRQ-050). The reaction must be idempotent: a redelivered
- * {@code payment.captured} for an order that already left {@code PENDING} is a
- * no-op (DRQ-051).
+ * <p><b>Consumed by:</b> the monolith's order-saga reaction ({@code
+ * order.OrderSagaListener}, r06/S6, the ONLY path since r06/S9
+ * decommission), which transitions the order to {@code
+ * OrderStatus.CONFIRMED} and dispatches shipping (DRQ-049/DRQ-050). The
+ * reaction must be idempotent: a redelivered {@code payment.captured} for an
+ * order that already left {@code PENDING} is a no-op (DRQ-051).
  *
  * <p>This is a plain record, not shared code between the two Maven reactors —
  * the monolith and the payment service each author a structurally identical
@@ -30,8 +30,8 @@ import java.time.Instant;
  * @param paymentId the payment service's own identifier for the captured
  *     payment row
  * @param amountCents the captured amount, in cents
- * @param method the payment method used (mirrors the monolith's {@code
- *     Payment.method})
+ * @param method the payment method used (the checkout's {@code paymentMethod},
+ *     carried on the {@code order.placed} handoff — see {@code OrderCreate})
  * @param status always the literal {@code "CAPTURED"}, carried on the wire
  *     (not just implied by the topic) so a consumer reading a merged/replayed
  *     stream can branch on the payload alone

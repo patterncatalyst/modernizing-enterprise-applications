@@ -94,40 +94,49 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
  * flag: strangler.inventory.enabled") for the full writeup of where ch.16's
  * sketch actually gets realized.
  *
- * <p><b>The Payment seam (payment-plan.md S7, ch.23, DRQ-052):</b>
+ * <p><b>The Payment seam (payment-plan.md S7/S9, ch.23, DRQ-052):</b>
  * {@code strangler.payment.enabled} is the fourth cutover flag, added
  * alongside Review's, Notification's, and Inventory's, with the identical
  * content-based routing shape on the {@code /api/payments} path prefix
  * (full path, not a route-relative prefix, per the CUTOVER.md paragraph 2
- * lesson, applied here for a fourth time). It defaults to {@code false}:
- * this is payment-plan S7, pre-cutover — {@code /api/payments} is served by
- * the monolith until S8's equivalence-gate cutover, proven through the full
- * podman stack, which is deliberately out of scope here.
+ * lesson, applied here for a fourth time). <b>payment-plan S9 DECOMMISSION
+ * (committed default, now permanent, irreversible step):</b> it now defaults
+ * to {@code true} — the monolith's in-process payment module (
+ * {@code payment.PaymentController}/{@code PaymentService}/{@code Payment}/
+ * {@code PaymentRepository}) has been decommissioned and its
+ * {@code payment.mode=synchronous|choreographed} flag removed entirely, so
+ * {@code /api/payments} on the monolith now 404s — flipping this flag back
+ * to {@code false} today would just reach that 404. Before this flip, S8
+ * proved the cutover (and its reversibility) with both flags flipped back
+ * afterward; see {@code examples/01-strangler-proxy/application.properties}
+ * for the full evidence trail (reversibility baseline, cutover run with the
+ * bounded-wait Scenario 1/3 proof, and the negative check).
  *
  * <p><b>ACL honesty note (payment-plan S7):</b> the same call already made
  * for Inventory above applies here too. The monolith's
  * {@code payment.PaymentDto} and the payment service's
- * {@code dev.patterncatalyst.payment.PaymentDto} are byte-for-byte identical
+ * {@code dev.patterncatalyst.payment.PaymentDto} were byte-for-byte identical
  * records — {@code id}, {@code orderId}, {@code amountCents}, {@code method},
- * {@code status}, {@code createdAt}, same names/types/order. {@code orderId}
- * was already a plain {@code Long} on the wire in the monolith (only the JPA
- * entity carried a cross-context {@code @ManyToOne Order} join,
- * {@code SMELL[ch.18]}); the payment service's {@code Payment} entity
- * decomposes that FK to a plain {@code orderId} value column (r06/S4,
- * DRQ-052 Phase A), but that is an internal persistence-layer change that
- * never reached the read contract, so the wire shape needed zero changes.
- * The {@code payment.captured}/{@code payment.declined} Kafka events the two
- * sides exchange are likewise authored field-for-field identical on both
- * sides (DRQ-038: plain JSON, no shared code between reactors). There is
- * therefore nothing for a Camel message translator to translate at this
- * seam — building one (as the plan's step title, "wire PaymentAclRoute",
- * literally suggests) would fabricate a no-op ACL for a contract that does
- * not differ, the same speculative-infrastructure trap the Inventory
- * precedent above already ruled out. This branch is therefore an honest,
- * transparent reverse proxy, exactly like the Review, Notification, and
- * Inventory branches above it — there is no {@code PaymentAclRoute} class in
- * this package. See this project's README.md ("The flag:
- * strangler.payment.enabled") for the full field-by-field writeup.
+ * {@code status}, {@code createdAt}, same names/types/order — before the
+ * monolith's copy was deleted in S9. {@code orderId} was already a plain
+ * {@code Long} on the wire in the monolith (only the JPA entity carried a
+ * cross-context {@code @ManyToOne Order} join, {@code SMELL[ch.18]}); the
+ * payment service's {@code Payment} entity decomposes that FK to a plain
+ * {@code orderId} value column (r06/S4, DRQ-052 Phase A), but that is an
+ * internal persistence-layer change that never reached the read contract, so
+ * the wire shape needed zero changes. The {@code payment.captured}/
+ * {@code payment.declined} Kafka events the two sides exchange are likewise
+ * authored field-for-field identical on both sides (DRQ-038: plain JSON, no
+ * shared code between reactors). There is therefore nothing for a Camel
+ * message translator to translate at this seam — building one (as the
+ * plan's step title, "wire PaymentAclRoute", literally suggests) would
+ * fabricate a no-op ACL for a contract that does not differ, the same
+ * speculative-infrastructure trap the Inventory precedent above already
+ * ruled out. This branch is therefore an honest, transparent reverse proxy,
+ * exactly like the Review, Notification, and Inventory branches above it —
+ * there is no {@code PaymentAclRoute} class in this package. See this
+ * project's README.md ("The flag: strangler.payment.enabled") for the full
+ * field-by-field writeup.
  *
  * <p>Explicitly {@code @ApplicationScoped} so Quarkus/CDI — not plain
  * reflection — constructs this bean and resolves the {@code @ConfigProperty}
@@ -149,8 +158,11 @@ public class StranglerProxyRoute extends RouteBuilder {
     @ConfigProperty(name = "strangler.inventory.enabled", defaultValue = "false")
     boolean inventoryEnabled;
 
-    /** The strangler cutover flag for Payment traffic (payment-plan.md S7, ch.23, DRQ-052).
-     *  Defaults to the monolith; read-side only (see class javadoc for the ACL honesty note). */
+    /** The strangler cutover flag for Payment traffic (payment-plan.md S7/S9, ch.23, DRQ-052).
+     *  Permanently defaults to the payment service as of S9's decommission — the monolith no
+     *  longer has anything to serve at {@code /api/payments} (see class javadoc). The
+     *  {@code defaultValue} below is an unreached fallback: {@code application.properties}
+     *  always sets this property explicitly. */
     @ConfigProperty(name = "strangler.payment.enabled", defaultValue = "false")
     boolean paymentEnabled;
 

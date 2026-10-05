@@ -2,7 +2,6 @@ package dev.patterncatalyst.monolith.order;
 
 import dev.patterncatalyst.monolith.common.OrderCreate;
 import dev.patterncatalyst.monolith.common.OrderDto;
-import dev.patterncatalyst.monolith.common.OrderStatus;
 import jakarta.validation.Valid;
 import java.net.URI;
 import java.util.List;
@@ -25,25 +24,23 @@ public class OrderController {
     }
 
     /**
-     * ch.23 (r06/S6, DRQ-047/H1): the resource is always created
+     * ch.23 (r06/S9, DRQ-047, DECOMMISSION): the resource is always created
      * synchronously and is immediately pollable via {@code GET
-     * /api/orders/{id}} — only the STATUS CODE differs by outcome. When
-     * {@code payment.mode=synchronous} (default) {@link OrderService
-     * #placeOrder} always returns a terminal order (CONFIRMED, or it threw
-     * before this point) — {@code 201 Created}. When {@code
-     * payment.mode=choreographed} the order comes back {@code PENDING}
-     * (payment outcome arrives later over the choreography) — {@code 202
-     * Accepted}. Branching on the returned {@link OrderDto#status()} avoids
-     * threading the {@code payment.mode} flag through this layer too.
+     * /api/orders/{id}}, but the checkout outcome is NOT — {@link
+     * OrderService#placeOrder} now always returns the order {@code PENDING}
+     * (payment is captured out-of-process, over the choreographed saga), so
+     * this always returns {@code 202 Accepted} with a {@code Location}
+     * header. The synchronous {@code 201 Created}/{@code 402} contract this
+     * endpoint used to also support (the {@code payment.mode=synchronous}
+     * path) was removed along with that flag; the real-time terminal status
+     * ({@code CONFIRMED}/{@code PAYMENT_DECLINED}) is reached eventually and
+     * observed by polling {@code GET /api/orders/{id}}.
      */
     @PostMapping
     public ResponseEntity<OrderDto> placeOrder(@Valid @RequestBody OrderCreate command) {
         OrderDto dto = service.placeOrder(command);
         URI location = URI.create("/api/orders/" + dto.id());
-        if (dto.status() == OrderStatus.PENDING) {
-            return ResponseEntity.accepted().location(location).body(dto);
-        }
-        return ResponseEntity.created(location).body(dto);
+        return ResponseEntity.accepted().location(location).body(dto);
     }
 
     @GetMapping("/{id}")

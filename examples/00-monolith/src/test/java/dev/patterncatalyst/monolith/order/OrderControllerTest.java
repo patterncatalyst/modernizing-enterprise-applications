@@ -49,29 +49,14 @@ class OrderControllerTest {
     private OrderService orderService;
 
     @Test
-    void placeOrder_validCommand_returns201WithLocation() throws Exception {
-        var command = new OrderCreate(
-                1L, List.of(new OrderCreate.Line("SKU-WIDGET-001", 2)), "CARD-VISA", "1 Test Way");
-        var dto = new OrderDto(
-                7L, 1L, OrderStatus.CONFIRMED, 3998L, Instant.parse("2026-01-07T12:00:00Z"),
-                List.of(new OrderDto.Item("SKU-WIDGET-001", 2, 1999L)));
-        when(orderService.placeOrder(any(OrderCreate.class))).thenReturn(dto);
-
-        mockMvc.perform(post("/api/orders")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(command)))
-                .andExpect(status().isCreated())
-                .andExpect(header().string("Location", "/api/orders/7"))
-                .andExpect(jsonPath("$.status", is("CONFIRMED")))
-                .andExpect(jsonPath("$.totalCents", is(3998)));
-    }
-
-    @Test
-    void placeOrder_choreographedPending_returns202WithLocation() throws Exception {
-        // ch.23 (r06/S6, H1): when the service returns a PENDING order
-        // (payment.mode=choreographed), the controller returns 202 Accepted
-        // with a Location header — the resource is created synchronously
-        // and is immediately pollable, only the outcome arrives later.
+    void placeOrder_validCommand_returns202PendingWithLocation() throws Exception {
+        // ch.23 (r06/S9, DRQ-047, DECOMMISSION): checkout always returns 202
+        // Accepted with a Location header now — OrderService#placeOrder
+        // always hands the order off PENDING via the choreographed saga; the
+        // synchronous 201 Created/CONFIRMED contract this endpoint used to
+        // also support (payment.mode=synchronous) was removed along with
+        // that flag. The resource is still created synchronously and is
+        // immediately pollable; only the terminal outcome arrives later.
         var command = new OrderCreate(
                 1L, List.of(new OrderCreate.Line("SKU-WIDGET-001", 2)), "CARD-VISA", "1 Test Way");
         var dto = new OrderDto(
@@ -84,7 +69,8 @@ class OrderControllerTest {
                         .content(objectMapper.writeValueAsString(command)))
                 .andExpect(status().isAccepted())
                 .andExpect(header().string("Location", "/api/orders/8"))
-                .andExpect(jsonPath("$.status", is("PENDING")));
+                .andExpect(jsonPath("$.status", is("PENDING")))
+                .andExpect(jsonPath("$.totalCents", is(3998)));
     }
 
     @Test

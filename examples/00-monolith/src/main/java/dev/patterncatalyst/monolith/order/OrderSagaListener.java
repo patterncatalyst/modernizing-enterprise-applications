@@ -17,26 +17,21 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * ch.23 (r06/S6, DRQ-047/DRQ-049, H4) — the monolith's FIRST Kafka
  * <b>consumer</b>. Until this step the monolith only ever <em>produced</em>
- * (the {@code order.placed} transactional outbox relay); in {@code
- * payment.mode=choreographed} the order context now also <em>consumes</em>
- * the payment service's two possible outcomes and drives the rest of the
- * order lifecycle off them, replacing the ch.19 in-line {@code catch}
- * compensation for the payment-decline path specifically (the catch still
- * compensates a reserve failure in both modes — see {@code
- * OrderService#placeOrder}).
+ * (the {@code order.placed} transactional outbox relay); the order context
+ * now also <em>consumes</em> the payment service's two possible outcomes
+ * and drives the rest of the order lifecycle off them, replacing the ch.19
+ * in-line {@code catch} compensation for the payment-decline path
+ * specifically (that catch, in {@code OrderService#placeOrder}, now only
+ * compensates a PRE-HANDOFF reserve/save/outbox failure — see its javadoc
+ * for why the two compensation paths can never overlap).
  *
- * <p><b>Why this is safe to leave always-registered, even in {@code
- * payment.mode=synchronous}:</b> in synchronous mode an order is ALWAYS
- * already terminal (CONFIRMED, or never persisted at all on a decline,
- * because the surrounding {@code @Transactional} rolls back before the
- * {@code order.placed} outbox row is ever written) before the payment
- * service could possibly react to its {@code order.placed} event and emit
- * an outcome back. So even if the payment service and Kafka are live
- * alongside a synchronous-mode monolith, any {@code payment.captured}/
- * {@code payment.declined} that arrives here finds the order already out of
- * {@code PENDING} and the idempotency guard below no-ops it — the new path
- * is dormant in effect, per the plan's H4 mitigation, without needing a
- * separate on/off switch for the listener itself.
+ * <p>r06/ch.23 S9 (DECOMMISSION): the {@code payment.mode=synchronous|
+ * choreographed} reversibility flag this listener's reactions used to be
+ * conditionally exercised under is gone — choreographed is now the ONLY
+ * checkout path, so every order handed off via {@code order.placed}
+ * genuinely waits on this listener to reach a terminal state; there is no
+ * more synchronous fallback where an order is already terminal before this
+ * listener could react.
  *
  * <p><b>Idempotency (DRQ-051):</b> both reactions guard on the order's
  * CURRENT status — if it is not {@code PENDING}, the event is a no-op
