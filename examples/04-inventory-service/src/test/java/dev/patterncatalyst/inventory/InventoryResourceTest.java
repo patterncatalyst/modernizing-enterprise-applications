@@ -11,14 +11,16 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * r05/ch.19 S5 (Phase A, DRQ-044). Real, end-to-end {@code @QuarkusTest} for
- * the lifted read surface -- no mocking of {@link InventoryService}, mirrors
- * notification-service's {@code NotificationResourceTest}: the thing worth
+ * r05/ch.19 S5 (Phase A) -&gt; S6 (Phase B, DRQ-029/DRQ-044) -- renamed from
+ * {@code InventoryControllerTest} to match the {@code InventoryResource}
+ * rename, mirroring review-service's {@code ReviewControllerTest} -&gt;
+ * {@code ReviewResourceTest}. Real, end-to-end {@code @QuarkusTest} for the
+ * read surface -- no mocking of {@link InventoryService}: the thing worth
  * proving is that Quarkus Dev Services' isolated Testcontainers Postgres,
- * this service's OWN Flyway migration, and the Spring-compat
- * controller/service/repository stack all work together end-to-end,
- * preserving the monolith's exact {@link StockDto} JSON shape and 404
- * contract.
+ * this service's OWN Flyway migration, and the idiomatic Quarkus REST +
+ * Panache stack all work together end-to-end, preserving the monolith's
+ * exact {@link StockDto} JSON shape and 404 contract -- unchanged across the
+ * Phase A -&gt; Phase B refactor.
  *
  * <p>Seeds via {@link InventoryCdcWriter#upsert} directly -- the same
  * idempotent write path {@link InventoryCdcConsumer} uses in production --
@@ -26,7 +28,7 @@ import org.junit.jupiter.api.Test;
  * of its own (its data always originates from the monolith via CDC).
  */
 @QuarkusTest
-class InventoryControllerTest {
+class InventoryResourceTest {
 
     @Inject
     InventoryCdcWriter writer;

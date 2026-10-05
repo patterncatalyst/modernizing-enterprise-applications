@@ -1,18 +1,27 @@
 package dev.patterncatalyst.inventory;
 
+import jakarta.enterprise.context.ApplicationScoped;
 import java.util.List;
-import org.springframework.stereotype.Service;
 
 /**
- * LIFTED from {@code dev.patterncatalyst.monolith.inventory.InventoryService}
- * (r05/ch.19 S5, Phase A, DRQ-044). {@code listAll}/{@code getBySku}/
- * {@code findBySkuOrThrow}/{@code toDto} are unchanged. The monolith's
- * {@code reserve(sku, quantity)} method is NOT lifted here -- it becomes the
- * gRPC {@code Reserve} RPC's server-side implementation in S6
- * (idiomatic-from-start against this service's own locking, DRQ-041/DRQ-044),
- * not a Phase A carry-over of the in-JVM mutation.
+ * REFACTORED to idiomatic Quarkus (r05/ch.19 S6 Phase B, DRQ-029/DRQ-044)
+ * from the Phase A lift. The Spring {@code @Service} stereotype is dropped
+ * -- plain CDI {@code @ApplicationScoped} plus Quarkus's simplified
+ * constructor injection (a single constructor needs no {@code @Inject}) is
+ * the whole DI story now, mirroring review-service's/notification-service's
+ * Phase B.
+ *
+ * <p>{@code listAll}/{@code getBySku}/{@code findBySkuOrThrow}/{@code toDto}
+ * are byte-for-byte the same business logic as Phase A; only
+ * {@code repository.findAll()} becomes {@code repository.listAll()} (Panache
+ * repository's equivalent). The mutating {@code reserve}/{@code release}
+ * concern does NOT live here -- it is the gRPC {@code Reserve}/{@code
+ * Release} RPCs' server-side implementation ({@link InventoryGrpcServiceImpl}
+ * delegating to {@link InventoryRepository#reserve}/{@link
+ * InventoryRepository#release}), idiomatic-from-start per DRQ-041/DRQ-044,
+ * not a REST-surface concern.
  */
-@Service
+@ApplicationScoped
 public class InventoryService {
 
     private final InventoryRepository repository;
@@ -22,7 +31,7 @@ public class InventoryService {
     }
 
     public List<StockDto> listAll() {
-        return repository.findAll().stream().map(InventoryService::toDto).toList();
+        return repository.listAll().stream().map(InventoryService::toDto).toList();
     }
 
     public StockDto getBySku(String sku) {

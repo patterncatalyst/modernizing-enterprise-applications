@@ -30,34 +30,25 @@
         </dependencies>
     </dependencyManagement>
 
-    <!-- r05/ch.19 S4+S5 (DRQ-039, DRQ-044): Phase A lifts the monolith's
-         InventoryController/InventoryService/InventoryRepository/InventoryItem
-         read surface onto Quarkus via the Quarkiverse Spring-compat
-         extensions (quarkus-spring-web/-di/-data-jpa), same pattern as
-         review-service's original Phase A (since superseded there by Phase
-         B). quarkus-grpc is added here too (S4) so the inventory.proto
-         contract compiles and generates Mutiny stubs; the gRPC SERVER
-         implementation (Reserve/Release/CheckStock/GetStock) is deferred to
-         S6 (Phase B, idiomatic-from-start per DRQ-044). quarkus-messaging-kafka
-         backs the net-new (no Spring original to lift, DRQ-035-style)
-         Debezium CDC backfill/sync consumer (S5) into this service's OWN
-         `inventory` schema (quarkus-flyway, DRQ-044/own-schema). -->
+    <!-- r05/ch.19 S6 (DRQ-039, DRQ-044), Phase B. The Spring-compat shim
+         from Phase A (quarkus-spring-web/-di/-data-jpa) is REMOVED; the read
+         surface now runs on Quarkus REST (quarkus-rest-jackson) + Panache
+         (quarkus-hibernate-orm-panache) + plain CDI, mirroring
+         review-service's/notification-service's Phase B (see MIGRATION.md).
+         quarkus-grpc now also carries the SERVER implementation
+         (InventoryGrpcServiceImpl: CheckStock/Reserve/Release/GetStock),
+         idiomatic-from-start per DRQ-044 (no Spring original ever existed for
+         these RPCs). quarkus-messaging-kafka still backs the net-new Debezium
+         CDC backfill/sync consumer (S5) into this service's OWN `inventory`
+         schema (quarkus-flyway, DRQ-044/own-schema), unchanged by this step. -->
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-spring-web</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-spring-di</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-spring-data-jpa</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-rest-jackson</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-hibernate-orm-panache</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

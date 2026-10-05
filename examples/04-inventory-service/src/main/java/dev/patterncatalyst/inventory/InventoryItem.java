@@ -16,10 +16,17 @@ import java.time.Instant;
  * <p>UNLIKE the monolith's entity, {@code id} is NOT
  * {@code @GeneratedValue} -- it is CDC-ASSIGNED, carried over verbatim from
  * the monolith's row id by {@link InventoryCdcConsumer} /
- * {@link InventoryRepository#upsert}, so this service's copy and the
+ * {@link InventoryCdcWriter#upsert}, so this service's copy and the
  * upstream source row always agree on identity. The public read surface
  * ({@link StockDto}) never exposes {@code id}, only {@code sku}, so this is
  * an internal-only identity choice.
+ *
+ * <p>Phase B (r05/ch.19 S6, DRQ-029/DRQ-044): zero entity edits needed --
+ * same finding as review-service's and notification-service's Phase B.
+ * Panache's REPOSITORY pattern (see {@link InventoryRepository}, chosen over
+ * active-record since this entity's identity/persistence already has
+ * CDC-specific rules worth keeping separate from the entity itself) works
+ * against this ordinary {@code @Entity} class unchanged.
  */
 @Entity
 @Table(name = "inventory_items", schema = "inventory")
