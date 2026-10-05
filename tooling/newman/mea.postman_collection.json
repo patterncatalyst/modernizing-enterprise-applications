@@ -2,7 +2,7 @@
   "info": {
     "name": "Modernizing Enterprise Applications — Behavior-Equivalence Suite",
     "_postman_id": "mea-equivalence-suite",
-    "description": "The behavior-equivalence suite (r02-plan S6, notification-plan S2, inventory-plan S2, payment-plan S2, build-plan.md §G/§D). Captured against the running Spring Boot monolith (examples/00-monolith). This collection is the project's equivalence gate: it is re-run UNCHANGED against each extracted service (starting with the Quarkus Review service, ch.15) and a service is only considered 'done' once it passes this same suite with no edits (build-plan.md §G load-bearing rule). Every request targets {{baseUrl}} so the identical collection can point at the monolith or at an extracted service's own port. Covers: (1) happy-path checkout — ADAPTED for the forthcoming ASYNC checkout contract (payment-plan.md S2, DRQ-047/DRQ-055): the POST is tolerant of `201` (today's synchronous monolith) or `202` (the future choreographed-saga payment service), and a BOUNDED-WAIT poll of GET /api/orders/{id} asserts the order strictly reaches the terminal `CONFIRMED` status — only the transport is relaxed, the terminal outcome and the stock-decrement side effect are unchanged and strict; (2) out-of-stock — left untouched/fully synchronous (inventory Reserve stays synchronous even after the payment extraction, so POST still returns `409` immediately); (3) payment-declined — ADAPTED the same way (DRQ-047/DRQ-055): POST tolerant of `402` (today's synchronous monolith — the whole checkout transaction is rolled back/compensated before the response, so there is no order to poll) or `202` (the saga — order persists PENDING, decline arrives later), then a BOUNDED-WAIT poll of GET /api/orders/{id} strictly asserting `PAYMENT_DECLINED` (saga path only) AND a BOUNDED-WAIT poll of GET /api/inventory/{sku} strictly asserting stock returns to net-zero (both paths) — the crux assertion (compensation via an in-line Release today, via the payment.declined choreography reaction later, DRQ-049) is never weakened; (4) the Review context contract (list, get-by-id, unauthenticated POST -> 401, authenticated POST -> 201, validation -> 400) — the first extraction's externally-observable surface — (5) the Notification context contract (DRQ-037): a checkout followed by a BOUNDED-WAIT poll of GET /api/notifications?customerId= so the identical assertion is correct whether the order-confirmation notification is written synchronously in-transaction (today's monolith, hits on the first attempt) or eventually via outbox -> Kafka -> consumer (the future async notification service, ch.17) — and (6) the Inventory Context Contract (inventory-plan.md S2, DRQ-046): the `/api/inventory` READ surface (list + get-by-sku + 404 for an unknown sku), asserted as a synchronous request/response (no bounded-wait — Reserve stays synchronous, DRQ-041) — distinct from, and NOT a duplicate of, the cross-seam inventory-mutation behavior already proven by Scenario 1 (stock decrements by ordered qty), Scenario 2 (out-of-stock -> 409, stock unchanged) and Scenario 3 (payment-declined -> stock rolled back, not left decremented), which remain the load-bearing inventory-equivalence checks the ch.19/ch.23 extractions must keep green across the seam — and (7) the Payment Context Contract (payment-plan.md S2b, DRQ-055), added after an S8 cutover run found it missing from S2's delivery: the `/api/payments` READ surface (list by orderId + get-by-id, PaymentDto-shaped), correlated with Scenario 1's confirmed order (reusing `happyPathOrderId`) so a CAPTURED payment row is guaranteed in both the synchronous-monolith and choreographed-saga states — plus the Notification Context Contract's checkout step (formerly 5a), which S8 also found still asserting the stale synchronous 201/CONFIRMED contract; it is now adapted to the same 201|202-tolerant, bounded-wait-to-CONFIRMED pattern as Scenario 1's 1b/1c before the downstream notification check runs; (8) Scenario 4 — Shipping-Failure (shipping-plan.md S2, ch.24, DRQ-059/060/062/065 — the H2/H3 crux): a checkout carrying the deterministic `SHIP-FAIL` sentinel in `shippingAddress` (DRQ-062, the shipping analogue of payment's `CARD-DECLINE`), then a BOUNDED-WAIT poll of GET /api/orders/{id} strictly asserting the terminal `SHIPPING_FAILED` status AND a BOUNDED-WAIT poll of GET /api/inventory/{sku} strictly asserting stock returns to net-zero — the orchestrated, coordinator-initiated, cross-context compensation (DRQ-060) this scenario exists to prove genuinely fires. Today's in-process monolith has no shipping-failure path at all, so this scenario is honestly gated PENDING at baseline (a `shippingSagaEnabled` collection variable, default `false`, plus a `setNextRequest` skip guard — NOT Postman's `disabled` flag, which newman's CLI runner does not honor) and is enabled for real at S8 cutover; and (9) the Shipping Context Contract (shipping-plan.md S2, DRQ-063): the `/api/shipments` READ surface (list by orderId + get-by-id + 404 on an unknown id, ShipmentDto-shaped: id/orderId/address/status/createdAt), correlated with Scenario 1's confirmed order — this folder asserts only the read contract, never a mode-specific status, so it is green both before and after the shipping cutover.",
+    "description": "The behavior-equivalence suite (r02-plan S6, notification-plan S2, inventory-plan S2, payment-plan S2, build-plan.md §G/§D). Captured against the running Spring Boot monolith (examples/00-monolith). This collection is the project's equivalence gate: it is re-run UNCHANGED against each extracted service (starting with the Quarkus Review service, ch.15) and a service is only considered 'done' once it passes this same suite with no edits (build-plan.md §G load-bearing rule). Every request targets {{baseUrl}} so the identical collection can point at the monolith or at an extracted service's own port. Covers: (1) happy-path checkout — ADAPTED for the forthcoming ASYNC checkout contract (payment-plan.md S2, DRQ-047/DRQ-055): the POST is tolerant of `201` (today's synchronous monolith) or `202` (the future choreographed-saga payment service), and a BOUNDED-WAIT poll of GET /api/orders/{id} asserts the order strictly reaches the terminal `CONFIRMED` status — only the transport is relaxed, the terminal outcome and the stock-decrement side effect are unchanged and strict; (2) out-of-stock — left untouched/fully synchronous (inventory Reserve stays synchronous even after the payment extraction, so POST still returns `409` immediately); (3) payment-declined — ADAPTED the same way (DRQ-047/DRQ-055): POST tolerant of `402` (today's synchronous monolith — the whole checkout transaction is rolled back/compensated before the response, so there is no order to poll) or `202` (the saga — order persists PENDING, decline arrives later), then a BOUNDED-WAIT poll of GET /api/orders/{id} strictly asserting `PAYMENT_DECLINED` (saga path only) AND a BOUNDED-WAIT poll of GET /api/inventory/{sku} strictly asserting stock returns to net-zero (both paths) — the crux assertion (compensation via an in-line Release today, via the payment.declined choreography reaction later, DRQ-049) is never weakened; (4) the Review context contract (list, get-by-id, unauthenticated POST -> 401, authenticated POST -> 201, validation -> 400) — the first extraction's externally-observable surface — (5) the Notification context contract (DRQ-037): a checkout followed by a BOUNDED-WAIT poll of GET /api/notifications?customerId= so the identical assertion is correct whether the order-confirmation notification is written synchronously in-transaction (today's monolith, hits on the first attempt) or eventually via outbox -> Kafka -> consumer (the future async notification service, ch.17) — and (6) the Inventory Context Contract (inventory-plan.md S2, DRQ-046): the `/api/inventory` READ surface (list + get-by-sku + 404 for an unknown sku), asserted as a synchronous request/response (no bounded-wait — Reserve stays synchronous, DRQ-041) — distinct from, and NOT a duplicate of, the cross-seam inventory-mutation behavior already proven by Scenario 1 (stock decrements by ordered qty), Scenario 2 (out-of-stock -> 409, stock unchanged) and Scenario 3 (payment-declined -> stock rolled back, not left decremented), which remain the load-bearing inventory-equivalence checks the ch.19/ch.23 extractions must keep green across the seam — and (7) the Payment Context Contract (payment-plan.md S2b, DRQ-055), added after an S8 cutover run found it missing from S2's delivery: the `/api/payments` READ surface (list by orderId + get-by-id, PaymentDto-shaped), correlated with Scenario 1's confirmed order (reusing `happyPathOrderId`) so a CAPTURED payment row is guaranteed in both the synchronous-monolith and choreographed-saga states — plus the Notification Context Contract's checkout step (formerly 5a), which S8 also found still asserting the stale synchronous 201/CONFIRMED contract; it is now adapted to the same 201|202-tolerant, bounded-wait-to-CONFIRMED pattern as Scenario 1's 1b/1c before the downstream notification check runs; (8) Scenario 4 — Shipping-Failure (shipping-plan.md S2, ch.24, DRQ-059/060/062/065 — the H2/H3 crux): a checkout carrying the deterministic `SHIP-FAIL` sentinel in `shippingAddress` (DRQ-062, the shipping analogue of payment's `CARD-DECLINE`), then a BOUNDED-WAIT poll of GET /api/orders/{id} strictly asserting the terminal `SHIPPING_FAILED` status AND a BOUNDED-WAIT poll of GET /api/inventory/{sku} strictly asserting stock returns to net-zero — the orchestrated, coordinator-initiated, cross-context compensation (DRQ-060) this scenario exists to prove genuinely fires. Today's in-process monolith has no shipping-failure path at all, so this scenario is honestly gated PENDING at baseline (a `shippingSagaEnabled` collection variable, default `false`, plus a `setNextRequest` skip guard — NOT Postman's `disabled` flag, which newman's CLI runner does not honor) and is enabled for real at S8 cutover; and (9) the Shipping Context Contract (shipping-plan.md S2, DRQ-063): the `/api/shipments` READ surface (list by orderId + get-by-id + 404 on an unknown id, ShipmentDto-shaped: id/orderId/address/status/createdAt), correlated with Scenario 1's confirmed order — this folder asserts only the read contract, never a mode-specific status, so it is green both before and after the shipping cutover; (10) the Order Context Contract (order-plan.md S2, ch.26, DRQ-071 — the FINAL monolith-anchored baseline folder added by this suite): the `/api/orders` surface itself — `POST /api/orders` -> `202 Accepted` + `Location` (DRQ-047's settled async checkout contract, no longer dual-mode now that payment/shipping are decommissioned), `GET /api/orders/{id}` -> `200` with the OrderDto shape (id/customerId/status/totalCents/createdAt/shippingAddress — exposed per r07/S6 — /items[]), `GET /api/orders` -> `200` array, and `GET /api/orders/{unknown id}` -> `404 NOT_FOUND`; correlated with Scenario 1's confirmed order (`happyPathOrderId`), asserting shape/status-enum membership only (never a single pinned status value) so it is mode-agnostic across the order extraction's own future cutover; and (11) the GraphQL Gateway Contract (order-plan.md S2/S7, ch.26, DRQ-069/DRQ-071) — STAGED, PENDING until S7: asserts the `order(id)` aggregation query's shape (order + items + stock + reviews + payments + shipments) against the as-yet-nonexistent `examples/08-graphql-gateway` (:8090); honestly gated PENDING at baseline via a `graphqlGatewayEnabled` collection variable (default `false`) plus a `setNextRequest(null)` skip guard — the same proven idiom Scenario 4's `SF-gate` uses, NOT Postman's `disabled` flag (newman's CLI runner does not honor it) — and is enabled for real at S7/S8 by patching the COLLECTION variable via the newman Node API (the same `demos/lib/run-shipping-newman.js` pattern), never via `--env-var` (verified not to reach `pm.collectionVariables`, see that script's header comment). DRQ-071 (equivalence-suite fate): this S2 run is the LAST time the monolith is this suite's referent for a fresh baseline capture (frozen as `tooling/newman/GOLDEN-BASELINE.md`) before S9 proves equivalence across the seam and S10 re-designates these same assertions as a frozen contract/acceptance suite with no live monolith in CI.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -1678,6 +1678,346 @@
           ]
         }
       ]
+    },
+    {
+      "name": "Order Context Contract",
+      "item": [
+        {
+          "name": "9a. Place an order to exercise the write contract -> 202, Location header (DRQ-047)",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "description": "order-plan S2 (DRQ-071, the FINAL monolith baseline): proves the `/api/orders` write contract directly, independent of Scenario 1's own checkout. DRQ-047's dual-mode (201 synchronous | 202 saga) tolerance was already retired on this endpoint when payment was decommissioned (r06/S9) -- OrderController#placeOrder now ALWAYS returns 202 PENDING, never 201 -- so this is a single, strict, mode-agnostic assertion that holds against the monolith today and against examples/07-order-service (once it lifts this same controller unchanged) after the order cutover. This order's own id is deliberately NOT tracked forward -- 9b/9c/9d correlate to Scenario 1's happyPathOrderId instead, the same reuse-an-id-already-placed pattern every other Context Contract folder uses.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": 1,\n  \"items\": [ { \"sku\": \"SKU-WIDGET-001\", \"quantity\": 1 } ],\n  \"paymentMethod\": \"CARD-VISA\",\n  \"shippingAddress\": \"1 Order Context Contract Way, Testville\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/orders",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "orders"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Order creation is accepted -- 202 Accepted (DRQ-047, the settled async checkout contract)', function () {",
+                  "    pm.response.to.have.status(202);",
+                  "});",
+                  "pm.test('Content-Type is application/json', function () {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "});",
+                  "pm.test('Location header present', function () {",
+                  "    pm.expect(pm.response.headers.has('Location')).to.be.true;",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test('Order id is a number', function () {",
+                  "    pm.expect(json.id).to.be.a('number');",
+                  "});",
+                  "pm.test('Order is PENDING at POST time (payment outcome not yet known, DRQ-047)', function () {",
+                  "    pm.expect(json.status).to.eql('PENDING');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "9b. Get order by id -> 200, the OrderDto shape incl. shippingAddress (r07/S6)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "description": "Correlates with Scenario 1's confirmed order (happyPathOrderId), the same reuse-an-id pattern the Payment/Shipping Context Contract folders use. This folder asserts only the read-shape contract (field names/types + status-enum membership), never a single pinned status value -- Scenario 1's own bounded-wait poll (1c) is what strictly proves the terminal CONFIRMED outcome -- so this stays mode-agnostic and green both before and after the order extraction's own future cutover.",
+            "url": {
+              "raw": "{{baseUrl}}/api/orders/{{happyPathOrderId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "orders", "{{happyPathOrderId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Get order by id returns 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Content-Type is application/json', function () {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test('Order id matches the correlated Scenario-1 order', function () {",
+                  "    pm.expect(json.id).to.eql(Number(pm.collectionVariables.get('happyPathOrderId')));",
+                  "});",
+                  "pm.test('Order has the documented OrderDto shape (customerId, status, totalCents, createdAt, shippingAddress, items[])', function () {",
+                  "    pm.expect(json.customerId).to.be.a('number');",
+                  "    pm.expect(json.status).to.be.oneOf(['PENDING', 'CONFIRMED', 'PAYMENT_DECLINED', 'AWAITING_SHIPMENT', 'SHIPPING_FAILED']);",
+                  "    pm.expect(json.totalCents).to.be.a('number');",
+                  "    pm.expect(json.createdAt).to.not.be.undefined;",
+                  "    pm.expect(json.shippingAddress).to.be.a('string');",
+                  "    pm.expect(json.items).to.be.an('array');",
+                  "    pm.expect(json.items.length).to.be.at.least(1);",
+                  "});",
+                  "pm.test('Each order item has the documented shape (sku, quantity, unitPriceCents)', function () {",
+                  "    json.items.forEach(function (it) {",
+                  "        pm.expect(it.sku).to.be.a('string');",
+                  "        pm.expect(it.quantity).to.be.a('number');",
+                  "        pm.expect(it.unitPriceCents).to.be.a('number');",
+                  "    });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "9c. List orders -> 200, array including the correlated Scenario-1 order",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/orders",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "orders"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('List orders returns 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Content-Type is application/json', function () {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test('Response is a non-empty array', function () {",
+                  "    pm.expect(json).to.be.an('array');",
+                  "    pm.expect(json.length).to.be.at.least(1);",
+                  "});",
+                  "var expectedOrderId = Number(pm.collectionVariables.get('happyPathOrderId'));",
+                  "var match = json.find(function (o) { return o.id === expectedOrderId; });",
+                  "pm.test('The correlated Scenario-1 order is present in the list', function () {",
+                  "    pm.expect(match, 'no order with id ' + expectedOrderId).to.not.be.undefined;",
+                  "});",
+                  "pm.test('Each listed order has the documented OrderDto shape', function () {",
+                  "    json.forEach(function (o) {",
+                  "        pm.expect(o.id).to.be.a('number');",
+                  "        pm.expect(o.customerId).to.be.a('number');",
+                  "        pm.expect(o.status).to.be.a('string');",
+                  "        pm.expect(o.totalCents).to.be.a('number');",
+                  "        pm.expect(o.items).to.be.an('array');",
+                  "    });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "9d. Get order by unknown id -> 404, NOT_FOUND",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/orders/999999999",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "orders", "999999999"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Unknown order id returns 404 Not Found', function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "pm.test('Content-Type is application/json', function () {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test('Documented error contract: error=NOT_FOUND', function () {",
+                  "    pm.expect(json.error).to.eql('NOT_FOUND');",
+                  "});",
+                  "pm.test('Error body carries a timestamp', function () {",
+                  "    pm.expect(json.timestamp).to.not.be.undefined;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "GraphQL Gateway Contract",
+      "item": [
+        {
+          "name": "GG-gate. GraphQL gateway contract gate -- PENDING at baseline until S7 (DRQ-069/DRQ-071)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "description": "BASELINE/HONESTY GUARD (order-plan S2, DRQ-069/DRQ-071). `examples/08-graphql-gateway` does not exist yet at S2 -- it is scaffolded at S7 -- so this whole folder cannot pass against today's topology, or even be meaningfully attempted (there is no GraphQL endpoint anywhere to call). Exactly like Scenario 4's SF-gate (shipping-plan S2, verified by hand against newman 6.2.2: the CLI runner does NOT honor Postman's per-item `disabled: true` flag, it still executes the item), this item is a cheap, harmless, always-true reachability check whose test script is the REAL gate: it inspects the `graphqlGatewayEnabled` collection variable (default `false`) and, when disabled, calls `postman.setNextRequest(null)` to stop the run here -- this is the LAST folder in the collection, so skipping past it is equivalent to ending normally -- so GG-a/GG-b never execute at baseline (they cannot falsely pass OR falsely fail an unbuilt gateway). Flip `graphqlGatewayEnabled` to `true` at S7/S8 once examples/08-graphql-gateway is standing to enable this folder for real. Per DRQ-071/the SF-gate precedent, `graphqlGatewayEnabled` is a COLLECTION variable -- newman's `--env-var`/`--global-var` CLI flags populate a DIFFERENT scope and will NOT reach it (verified empirically for `shippingSagaEnabled`, see demos/lib/run-shipping-newman.js's header comment); enabling this folder for real at S7/S8 requires the same Node-API in-memory-patch helper pattern, e.g. a future demos/lib/run-order-newman.js modeled on run-shipping-newman.js -- not a CLI flag.",
+            "url": {
+              "raw": "{{baseUrl}}/api/inventory",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "inventory"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// This assertion is real but deliberately unrelated to the GraphQL",
+                  "// aggregation semantics -- it only proves the target topology is",
+                  "// reachable, so this gate item never itself constitutes a false",
+                  "// pass/fail of the GraphQL gateway contract.",
+                  "pm.test('Gate check: inventory read surface reachable', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "var gatewayEnabled = (pm.collectionVariables.get('graphqlGatewayEnabled') || 'false') === 'true';",
+                  "if (!gatewayEnabled) {",
+                  "    console.log('GraphQL Gateway Contract is PENDING at baseline (graphqlGatewayEnabled=false): ' +",
+                  "        'examples/08-graphql-gateway does not exist yet (order-plan S7, DRQ-069). ' +",
+                  "        'Skipping GG-a..GG-b; enable at S7/S8 once the gateway is standing.');",
+                  "    postman.setNextRequest(null);",
+                  "} else {",
+                  "    console.log('GraphQL Gateway Contract ENABLED (graphqlGatewayEnabled=true) -- running the order(id) aggregation assertions.');",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GG-a. order(id) aggregated query -> 200, OrderAggregate shape (order+items+stock+reviews+payments+shipments, DRQ-069)",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "description": "STAGED (order-plan S2, enabled at S7/S8 -- see GG-gate). This is the S2-authored contract examples/08-graphql-gateway's schema is expected to satisfy field-for-field (same discipline as DRQ-038's field-for-field event contracts, authored before the producer exists): an additive, data-less aggregation of order + its line items' stock/reviews + the order's payments/shipments across the five already-extracted services (DRQ-069). Correlates with Scenario 1's confirmed order (happyPathOrderId) so payments/shipments/stock/reviews are all guaranteed to have real data to aggregate. Asserts the REAL response shape strictly when enabled -- never 'any 2xx' -- so this cannot go vacuous: a gateway that returns malformed/partial/error data fails this test.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query OrderAggregate($id: ID!) { order(id: $id) { id customerId status totalCents createdAt shippingAddress items { sku quantity unitPriceCents stock { quantityOnHand } reviews { id rating comment } } payments { id status amountCents method createdAt } shipments { id status address createdAt } } }\",\n  \"variables\": { \"id\": \"{{happyPathOrderId}}\" }\n}"
+            },
+            "url": {
+              "raw": "{{graphqlGatewayBaseUrl}}/graphql",
+              "host": ["{{graphqlGatewayBaseUrl}}"],
+              "path": ["graphql"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('GraphQL endpoint returns 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Content-Type is application/json', function () {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test('No GraphQL errors on a successful aggregation', function () {",
+                  "    pm.expect(json.errors, JSON.stringify(json.errors)).to.be.undefined;",
+                  "});",
+                  "pm.test('order(id) resolves a non-null OrderAggregate', function () {",
+                  "    pm.expect(json.data).to.not.be.undefined;",
+                  "    pm.expect(json.data.order).to.not.be.null;",
+                  "});",
+                  "var order = json.data.order;",
+                  "pm.test('Order aggregate id matches the correlated Scenario-1 order', function () {",
+                  "    pm.expect(String(order.id)).to.eql(pm.collectionVariables.get('happyPathOrderId'));",
+                  "});",
+                  "pm.test('Order aggregate has the documented order fields', function () {",
+                  "    pm.expect(order.customerId).to.not.be.undefined;",
+                  "    pm.expect(order.status).to.be.oneOf(['PENDING', 'CONFIRMED', 'PAYMENT_DECLINED', 'AWAITING_SHIPMENT', 'SHIPPING_FAILED']);",
+                  "    pm.expect(order.totalCents).to.be.a('number');",
+                  "    pm.expect(order.createdAt).to.not.be.undefined;",
+                  "    pm.expect(order.shippingAddress).to.be.a('string');",
+                  "});",
+                  "pm.test('Order aggregate items[] carry nested stock + reviews', function () {",
+                  "    pm.expect(order.items).to.be.an('array');",
+                  "    pm.expect(order.items.length).to.be.at.least(1);",
+                  "    order.items.forEach(function (it) {",
+                  "        pm.expect(it.sku).to.be.a('string');",
+                  "        pm.expect(it.quantity).to.be.a('number');",
+                  "        pm.expect(it.unitPriceCents).to.be.a('number');",
+                  "        pm.expect(it.stock).to.not.be.null;",
+                  "        pm.expect(it.stock.quantityOnHand).to.be.a('number');",
+                  "        pm.expect(it.reviews).to.be.an('array');",
+                  "    });",
+                  "});",
+                  "pm.test('Order aggregate carries at least one CAPTURED payment (Scenario 1 was a successful checkout)', function () {",
+                  "    pm.expect(order.payments).to.be.an('array');",
+                  "    pm.expect(order.payments.length).to.be.at.least(1);",
+                  "    pm.expect(order.payments.some(function (p) { return p.status === 'CAPTURED'; })).to.be.true;",
+                  "});",
+                  "pm.test('Order aggregate carries at least one dispatched shipment', function () {",
+                  "    pm.expect(order.shipments).to.be.an('array');",
+                  "    pm.expect(order.shipments.length).to.be.at.least(1);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GG-b. order(id) with unknown id -> 200 GraphQL envelope, data.order null + errors[] (DRQ-069)",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "description": "STAGED (order-plan S2, enabled at S7/S8 -- see GG-gate). The negative check that keeps GG-a non-vacuous: GraphQL itself always answers 200 (transport success), so a strict contract here cannot be 'any 2xx' -- it must assert the GraphQL error ENVELOPE (data.order null + a populated errors[] array), never merely the HTTP status.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query OrderAggregate($id: ID!) { order(id: $id) { id status } }\",\n  \"variables\": { \"id\": \"999999999\" }\n}"
+            },
+            "url": {
+              "raw": "{{graphqlGatewayBaseUrl}}/graphql",
+              "host": ["{{graphqlGatewayBaseUrl}}"],
+              "path": ["graphql"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('GraphQL endpoint returns 200 (transport success, even for a resolver-level NOT_FOUND)', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test('data.order is null for an unknown id', function () {",
+                  "    pm.expect(json.data).to.not.be.undefined;",
+                  "    pm.expect(json.data.order).to.be.null;",
+                  "});",
+                  "pm.test('errors[] is populated (the GraphQL error envelope, not a silent null)', function () {",
+                  "    pm.expect(json.errors).to.be.an('array');",
+                  "    pm.expect(json.errors.length).to.be.at.least(1);",
+                  "    json.errors.forEach(function (e) {",
+                  "        pm.expect(e.message).to.be.a('string');",
+                  "        pm.expect(e.message.length).to.be.at.least(1);",
+                  "    });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
     }
   ],
   "variable": [
@@ -1717,6 +2057,8 @@
     { "key": "shipFailStockPollAttempts", "value": "0", "type": "string" },
     { "key": "shipFailStockPollMaxAttempts", "value": "20", "type": "string" },
     { "key": "shipFailStockPollDelayMs", "value": "750", "type": "string" },
-    { "key": "shippingContractShipmentId", "value": "", "type": "string" }
+    { "key": "shippingContractShipmentId", "value": "", "type": "string" },
+    { "key": "graphqlGatewayEnabled", "value": "false", "type": "string" },
+    { "key": "graphqlGatewayBaseUrl", "value": "http://localhost:8090", "type": "string" }
   ]
 }
