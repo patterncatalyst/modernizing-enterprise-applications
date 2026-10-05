@@ -741,45 +741,49 @@ status-guarded; with the flag off the full suite stays green (asserted in S6).
 ---
 
 ## ch.24 EXIT CHECKLIST (equivalence green across the orchestrated seam + ACID→ACD realized for shipping)
-- [ ] **Orchestration decided & applied (DRQ-056/057):** shipping is a bounded orchestrated saga on
+*(verified item-by-item against committed reality at S14 — see
+`_plans/reconciliation.md` "ch.24 EXIT CHECKLIST — verified item by item" for
+the full evidence trail cited per item; commit hashes there.)*
+- [x] **Orchestration decided & applied (DRQ-056/057):** shipping is a bounded orchestrated saga on
       `payment.captured`, coordinated by a Camel Saga EIP route (`InMemorySagaService`) in
       `examples/06-shipping-service`; whole-flow re-expression and LRA both considered and rejected/
       deferred with rationale.
-- [ ] **Saga coordinator genuinely sequences + compensates (DRQ-059):** `.saga()` with
+- [x] **Saga coordinator genuinely sequences + compensates (DRQ-059):** `.saga()` with
       `.compensation(...)/.option(...)/.timeout(...)`; happy path dispatches + emits
       `shipment.dispatched`; abort/timeout invokes compensation (cancel shipment + emit
       `shipment.failed`) exactly once; validated via camel-mcp + a saga abort-path unit test.
-- [ ] **Equivalence green across the seam — honestly:** Scenario 1 (longer bounded-wait → CONFIRMED),
+- [x] **Equivalence green across the seam — honestly:** Scenario 1 (longer bounded-wait → CONFIRMED),
       Scenario 4 (bounded-wait → SHIPPING_FAILED + inventory net-zero via the orchestrated
       compensation), Scenario 2/3 unchanged, plus the Shipping Context Contract folder; assertions
       strictly assert terminal status + side-effects (not vacuous).
-- [ ] **Cross-context compensation proven net-zero (DRQ-060):** a forced `SHIP-FAIL` ends with stock
+- [x] **Cross-context compensation proven net-zero (DRQ-060):** a forced `SHIP-FAIL` ends with stock
       net-zero, driven by the coordinator's compensation → `shipment.failed` → order `SHIPPING_FAILED`
       + gRPC `Release`; not an in-process path.
-- [ ] **Order lifecycle updated (DRQ-058/061):** order reaches `CONFIRMED` only on `shipment.dispatched`
+- [x] **Order lifecycle updated (DRQ-058/061):** order reaches `CONFIRMED` only on `shipment.dispatched`
       (via `AWAITING_SHIPMENT`), and `SHIPPING_FAILED` on `shipment.failed`; external async contract
       (DRQ-047) unchanged.
-- [ ] **Shipping owns its data & fulfilment over Kafka:** the Quarkus service owns its schema, consumes
+- [x] **Shipping owns its data & fulfilment over Kafka:** the Quarkus service owns its schema, consumes
       `payment.captured`, runs the saga, and emits `shipment.dispatched`/`shipment.failed` via its own
       transactional outbox; sole owner after decommission (`GET :8080/api/shipments` → 404).
-- [ ] **ACID→ACD realized for shipping (SMELL[ch.22]):** in-process shipping dispatch no longer rides
+- [x] **ACID→ACD realized for shipping (SMELL[ch.22]):** in-process shipping dispatch no longer rides
       any checkout/payment transaction; SMELLS.md updated with evidence.
-- [ ] **Idempotency / at-least-once handled (DRQ-064):** redelivered `payment.captured` does not create
+- [x] **Idempotency / at-least-once handled (DRQ-064):** redelivered `payment.captured` does not create
       a second shipment / re-run the saga; redelivered `shipment.dispatched`/`shipment.failed` are
       no-ops; `Release` only on the first `shipment.failed`.
-- [ ] **Two-phase honored (DRQ-063):** read surface Phase A (spring-compat) → Phase B (idiomatic),
+- [x] **Two-phase honored (DRQ-063):** read surface Phase A (spring-compat) → Phase B (idiomatic),
       measured; saga/consumer/producer idiomatic-from-start; `Shipment` FK decomposed to `orderId` value.
-- [ ] **Reversibility shown (DRQ-065)** before decommission (both flags off → in-process confirm+dispatch
+- [x] **Reversibility shown (DRQ-065)** before decommission (both flags off → in-process confirm+dispatch
       restored, green).
-- [ ] **Negative check proven (DRQ-065):** Camel Saga compensation disabled ⇒ forced `SHIP-FAIL` leaves
+- [x] **Negative check proven (DRQ-065):** Camel Saga compensation disabled ⇒ forced `SHIP-FAIL` leaves
       stock decremented / order not failed ⇒ Scenario 4 RED; shipping consumer down ⇒ order stuck
       `AWAITING_SHIPMENT` ⇒ Scenario 1 RED.
-- [ ] **Code-CI green:** the shipping equivalence gate exercises the orchestrated saga end-to-end in
+- [x] **Code-CI green:** the shipping equivalence gate exercises the orchestrated saga end-to-end in
       GitHub Actions (red-then-green via disabling the saga compensation); sibling gates still green with
       the shipping dependency added (cross-service cascade handled).
-- [ ] **ch.24 authored ≥2000 words**, runnable example, embedded diagrams, real "ADLC in Action" callout,
-      verification-status footer; choreography-vs-orchestration taught concretely.
-- [ ] **Ledger reconciled:** `decisions.md` DRQ-056…065 accepted + version matrix updated; §E row 5 DONE;
+- [x] **ch.24 authored ≥2000 words**, runnable example, embedded diagrams, real "ADLC in Action" callout,
+      verification-status footer; choreography-vs-orchestration taught concretely. (Measured 4,531 words
+      excl. code/diagrams/front-matter.)
+- [x] **Ledger reconciled:** `decisions.md` DRQ-056…065 accepted + version matrix updated; §E row 5 DONE;
       this plan's steps and exit checklist marked DONE.
 
 ## Biggest risks
