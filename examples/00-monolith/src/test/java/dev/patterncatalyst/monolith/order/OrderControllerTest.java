@@ -67,6 +67,27 @@ class OrderControllerTest {
     }
 
     @Test
+    void placeOrder_choreographedPending_returns202WithLocation() throws Exception {
+        // ch.23 (r06/S6, H1): when the service returns a PENDING order
+        // (payment.mode=choreographed), the controller returns 202 Accepted
+        // with a Location header — the resource is created synchronously
+        // and is immediately pollable, only the outcome arrives later.
+        var command = new OrderCreate(
+                1L, List.of(new OrderCreate.Line("SKU-WIDGET-001", 2)), "CARD-VISA", "1 Test Way");
+        var dto = new OrderDto(
+                8L, 1L, OrderStatus.PENDING, 3998L, Instant.parse("2026-01-07T12:00:00Z"),
+                List.of(new OrderDto.Item("SKU-WIDGET-001", 2, 1999L)));
+        when(orderService.placeOrder(any(OrderCreate.class))).thenReturn(dto);
+
+        mockMvc.perform(post("/api/orders")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(command)))
+                .andExpect(status().isAccepted())
+                .andExpect(header().string("Location", "/api/orders/8"))
+                .andExpect(jsonPath("$.status", is("PENDING")));
+    }
+
+    @Test
     void placeOrder_emptyItemsList_returns400ValidationFailed() throws Exception {
         var invalidCommand = new OrderCreate(1L, List.of(), "CARD-VISA", "1 Test Way");
 

@@ -81,11 +81,16 @@ class OrderServiceTest {
     private OrderService orderService;
     private Customer customer;
 
+    private OrderService choreographedOrderService;
+
     @BeforeEach
     void setUp() {
         orderService = new OrderService(
                 orderRepository, customerRepository, remoteInventoryClient, paymentService,
-                shippingService, outboxRepository, objectMapper);
+                shippingService, outboxRepository, objectMapper, "synchronous");
+        choreographedOrderService = new OrderService(
+                orderRepository, customerRepository, remoteInventoryClient, paymentService,
+                shippingService, outboxRepository, objectMapper, "choreographed");
         customer = new Customer("Ada Lovelace", "ada@example.com");
     }
 
@@ -244,5 +249,93 @@ class OrderServiceTest {
         assertThatThrownBy(() -> orderService.getById(99L))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("99");
+    }
+
+    // ---- ch.23 (r06/S6, H1/H4): payment.mode=choreographed ----
+
+    @Test
+    void placeOrder_choreographed_staysPendingAndNeverChargesOrShips() throws Exception {
+        var command = new OrderCreate(
+                1L, List.of(new OrderCreate.Line("SKU-WIDGET-001", 2)), "CARD-VISA", "1 Test Way");
+
+        when(customerRepository.findById(1L)).thenReturn(Optional.of(customer));
+        when(remoteInventoryClient.reserve("SKU-WIDGET-001", 2))
+                .thenReturn(new RemoteInventoryClient.ReserveResult(true, 98));
+        when(remoteInventoryClient.getStock("SKU-WIDGET-001"))
+                .thenReturn(new RemoteInventoryClient.StockSnapshot("SKU-WIDGET-001", "Standard Widget", 1999L));
+        when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> {
+            Order saved = invocation.getArgument(0);
+            Order spy = org.mockito.Mockito.spy(saved);
+            when(spy.getId()).thenReturn(42L);
+            return spy;
+        });
+
+        OrderDto dto = choreographedOrderService.placeOrder(command);
+
+        assertThat(dto.status()).isEqualTo(OrderStatus.PENDING);
+        assertThat(dto.totalCents()).isEqualTo(1999L * 2);
+
+        verify(remoteInventoryClient).reserve("SKU-WIDGET-001", 2);
+        // ch.23 crux: choreographed mode NEVER calls charge/confirm/dispatch in-line.
+        verify(paymentService, never()).charge(any(), anyLong(), anyString());
+        verify(shippingService, never()).dispatch(any(), anyString());
+        verify(remoteInventoryClient, never()).release(anyString(), anyInt());
+
+        ArgumentCaptor<OutboxEvent> captor = ArgumentCaptor.forClass(OutboxEvent.class);
+        verify(outboxRepository).save(captor.capture());
+        OutboxEvent event = captor.getValue();
+        assertThat(event.getEventType()).isEqualTo(Topics.ORDER_PLACED);
+        // the handoff payload must carry paymentMethod for the payment service's
+        // DECLINE-in-method demo rule (DRQ-048).
+        assertThat(event.getPayload()).contains("\"paymentMethod\":\"CARD-VISA\"");
+    }
+
+    @Test
+    void placeOrder_choreographed_outOfStock_stillThrows409SynchronouslyBeforeAnyOutboxWrite() {
+        // H1/S6 acceptance: Scenario 2 (out-of-stock) stays synchronous in
+        // BOTH modes — reserve failure is detected before any order.placed
+        // handoff, so no choreography is ever started for this order.
+        var command = new OrderCreate(
+                1L, List.of(new OrderCreate.Line("SKU-GIZMO-003", 99)), "CARD-VISA", "1 Test Way");
+
+        when(customerRepository.findById(1L)).thenReturn(Optional.of(customer));
+        when(remoteInventoryClient.reserve("SKU-GIZMO-003", 99))
+                .thenReturn(new RemoteInventoryClient.ReserveResult(false, 5));
+
+        assertThatThrownBy(() -> choreographedOrderService.placeOrder(command))
+                .isInstanceOf(InsufficientStockException.class)
+                .hasMessageContaining("SKU-GIZMO-003");
+
+        verify(orderRepository, never()).save(any());
+        verify(outboxRepository, never()).save(any());
+        verify(remoteInventoryClient, never()).release(anyString(), anyInt());
+    }
+
+    @Test
+    void placeOrder_choreographed_reserveFailsOnSecondLine_compensatesFirstLine() {
+        // the existing reserve-failure catch/compensate still applies in
+        // choreographed mode (it is NOT the payment-decline compensation,
+        // which has moved to OrderSagaListener — see S6 "do NOT
+        // double-compensate").
+        var command = new OrderCreate(
+                1L,
+                List.of(new OrderCreate.Line("SKU-WIDGET-001", 2), new OrderCreate.Line("SKU-GIZMO-003", 99)),
+                "CARD-VISA",
+                "1 Test Way");
+
+        when(customerRepository.findById(1L)).thenReturn(Optional.of(customer));
+        when(remoteInventoryClient.reserve("SKU-WIDGET-001", 2))
+                .thenReturn(new RemoteInventoryClient.ReserveResult(true, 98));
+        when(remoteInventoryClient.getStock("SKU-WIDGET-001"))
+                .thenReturn(new RemoteInventoryClient.StockSnapshot("SKU-WIDGET-001", "Standard Widget", 1999L));
+        when(remoteInventoryClient.reserve("SKU-GIZMO-003", 99))
+                .thenReturn(new RemoteInventoryClient.ReserveResult(false, 5));
+
+        assertThatThrownBy(() -> choreographedOrderService.placeOrder(command))
+                .isInstanceOf(InsufficientStockException.class);
+
+        verify(remoteInventoryClient).release("SKU-WIDGET-001", 2);
+        verify(orderRepository, never()).save(any());
+        verify(outboxRepository, never()).save(any());
     }
 }

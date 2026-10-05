@@ -2,6 +2,7 @@ package dev.patterncatalyst.monolith.order;
 
 import dev.patterncatalyst.monolith.common.OrderCreate;
 import dev.patterncatalyst.monolith.common.OrderDto;
+import dev.patterncatalyst.monolith.common.OrderStatus;
 import jakarta.validation.Valid;
 import java.net.URI;
 import java.util.List;
@@ -23,10 +24,26 @@ public class OrderController {
         this.service = service;
     }
 
+    /**
+     * ch.23 (r06/S6, DRQ-047/H1): the resource is always created
+     * synchronously and is immediately pollable via {@code GET
+     * /api/orders/{id}} — only the STATUS CODE differs by outcome. When
+     * {@code payment.mode=synchronous} (default) {@link OrderService
+     * #placeOrder} always returns a terminal order (CONFIRMED, or it threw
+     * before this point) — {@code 201 Created}. When {@code
+     * payment.mode=choreographed} the order comes back {@code PENDING}
+     * (payment outcome arrives later over the choreography) — {@code 202
+     * Accepted}. Branching on the returned {@link OrderDto#status()} avoids
+     * threading the {@code payment.mode} flag through this layer too.
+     */
     @PostMapping
     public ResponseEntity<OrderDto> placeOrder(@Valid @RequestBody OrderCreate command) {
         OrderDto dto = service.placeOrder(command);
-        return ResponseEntity.created(URI.create("/api/orders/" + dto.id())).body(dto);
+        URI location = URI.create("/api/orders/" + dto.id());
+        if (dto.status() == OrderStatus.PENDING) {
+            return ResponseEntity.accepted().location(location).body(dto);
+        }
+        return ResponseEntity.created(location).body(dto);
     }
 
     @GetMapping("/{id}")

@@ -119,6 +119,20 @@ class SixContextsSmokeTest { // name kept for history; three contexts + three de
         registry.add("spring.datasource.password", POSTGRES::getPassword);
         registry.add("inventory.grpc.host", () -> "localhost");
         registry.add("inventory.grpc.port", INVENTORY_GRPC_SERVER::getPort);
+        // ch.23 (r06/S6): this test is deliberately self-contained — no
+        // external podman-stack Kafka broker required (see class javadoc).
+        // Now that order.OrderSagaListener (r06/S6) is a real @KafkaListener,
+        // leaving application.yml's default localhost:9092 in place would
+        // let this Spring context's consumer silently attach to a REAL
+        // podman-stack broker if one happens to be running on the host and
+        // react to unrelated live traffic (and let OutboxRelay's producer do
+        // the same). Pointing at an address nothing listens on keeps this
+        // test's Kafka-touching beans present (so the context still wires
+        // and boots exactly as choreographed mode would) but inert — sends
+        // fail fast and are logged (OutboxRelay already tolerates publish
+        // failures), and the listener containers simply retry against a
+        // closed port in the background, never touching real test data.
+        registry.add("spring.kafka.bootstrap-servers", () -> "localhost:1");
     }
 
     @Autowired

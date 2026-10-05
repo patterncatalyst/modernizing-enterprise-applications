@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,6 +37,19 @@ import org.springframework.transaction.annotation.Transactional;
  * entity/repository reach-in is gone (SMELL #5, CURED — see SMELLS.md) and
  * checkout now reaches inventory only through {@link RemoteInventoryClient}'s
  * typed gRPC contract.
+ *
+ * <p>ch.23 (r06/S6, DRQ-047): {@code payment.mode=synchronous|choreographed}
+ * (default {@code synchronous}) gates the checkout contract itself. In
+ * {@code synchronous} mode (the default, unchanged baseline) {@link
+ * #placeOrder} behaves exactly as described below: charge in-line, confirm,
+ * dispatch shipping, 201/402. In {@code choreographed} mode {@code
+ * placeOrder} stops calling payment/shipping in-line — the order is
+ * persisted {@code PENDING} and the {@code order.placed} outbox handoff
+ * drives the payment service; {@link OrderSagaListener} reacts to {@code
+ * payment.captured}/{@code payment.declined} to confirm+ship or
+ * decline+compensate (DRQ-049), replacing this method's in-line catch for
+ * the payment-decline path only (the catch still compensates a reserve
+ * failure in BOTH modes).
  */
 @Service
 public class OrderService {
@@ -49,6 +63,7 @@ public class OrderService {
     private final ShippingService shippingService;
     private final OutboxRepository outboxRepository;
     private final ObjectMapper objectMapper;
+    private final String paymentMode;
 
     public OrderService(
             OrderRepository orderRepository,
@@ -57,7 +72,8 @@ public class OrderService {
             PaymentService paymentService,
             ShippingService shippingService,
             OutboxRepository outboxRepository,
-            ObjectMapper objectMapper) {
+            ObjectMapper objectMapper,
+            @Value("${payment.mode:synchronous}") String paymentMode) {
         this.orderRepository = orderRepository;
         this.customerRepository = customerRepository;
         this.remoteInventoryClient = remoteInventoryClient;
@@ -65,6 +81,12 @@ public class OrderService {
         this.shippingService = shippingService;
         this.outboxRepository = outboxRepository;
         this.objectMapper = objectMapper;
+        this.paymentMode = paymentMode;
+    }
+
+    /** ch.23 (r06/S6, DRQ-047): {@code true} when {@code payment.mode=choreographed}. */
+    private boolean isChoreographed() {
+        return "choreographed".equalsIgnoreCase(paymentMode);
     }
 
     /**
@@ -159,6 +181,20 @@ public class OrderService {
 
             order = orderRepository.save(order);
 
+            if (isChoreographed()) {
+                // ch.23 (r06/S6, DRQ-047/H1/H4): payment.mode=choreographed —
+                // checkout STOPS calling paymentService.charge in-line. The
+                // order is persisted PENDING and the order.placed outbox
+                // event (now carrying paymentMethod, DRQ-048) is the handoff
+                // to the payment service, which reacts over Kafka and emits
+                // payment.captured|declined. OrderSagaListener reacts to
+                // those and drives confirm+ship or decline+compensate — see
+                // its class javadoc. order.confirm() and
+                // shippingService.dispatch are deliberately NOT called here.
+                writeOrderPlacedOutboxEvent(customer, order, command.paymentMethod());
+                return toDto(order);
+            }
+
             // SMELL[ch.22]/[ch.26]: payment captured synchronously, in-process, inside
             // the same transaction as the inventory decrement above. A decline here
             // can no longer be undone by this transaction, because the decrement
@@ -178,7 +214,7 @@ public class OrderService {
             // something downstream still throws). This is now the ONLY
             // notification path; the synchronous in-transaction call (SMELL[ch.17])
             // has been removed.
-            writeOrderPlacedOutboxEvent(customer, order);
+            writeOrderPlacedOutboxEvent(customer, order, command.paymentMethod());
 
             return toDto(order);
         } catch (RuntimeException ex) {
@@ -227,7 +263,7 @@ public class OrderService {
      * write is part of the checkout transaction, not a separate dual-write
      * after commit.
      */
-    private void writeOrderPlacedOutboxEvent(Customer customer, Order order) {
+    private void writeOrderPlacedOutboxEvent(Customer customer, Order order, String paymentMethod) {
         String confirmationMessage =
                 "Order #%d confirmed, total $%.2f".formatted(order.getId(), order.getTotalCents() / 100.0);
         OrderPlacedEvent event = new OrderPlacedEvent(
@@ -235,6 +271,7 @@ public class OrderService {
                 customer.getId(),
                 customer.getEmail(),
                 order.getTotalCents(),
+                paymentMethod,
                 confirmationMessage,
                 Instant.now());
         try {
