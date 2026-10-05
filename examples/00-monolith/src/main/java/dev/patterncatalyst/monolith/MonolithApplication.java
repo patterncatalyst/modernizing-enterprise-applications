@@ -2,6 +2,7 @@ package dev.patterncatalyst.monolith;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
  * The reference monolith: one deployable, one shared Postgres schema, one JVM.
@@ -17,17 +18,32 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * from this module — it is now served exclusively by the standalone
  * {@code examples/02-review-service} Quarkus application, reached through the
  * Camel strangler proxy ({@code examples/01-strangler-proxy}) with
- * {@code strangler.review.enabled=true} as the permanent default. This
- * monolith now owns FIVE in-process contexts (order, inventory, payment,
- * shipping, notification); Review's REST-leaf independence (no synchronous
- * collaborator with the other five) is exactly what made that extraction
- * clean — see {@code SMELLS.md} smell #6.
+ * {@code strangler.review.enabled=true} as the permanent default. Review's
+ * REST-leaf independence (no synchronous collaborator with the other five)
+ * is exactly what made that extraction clean — see {@code SMELLS.md} smell #6.
+ *
+ * <p><b>r04/S8 update:</b> {@code notification} has likewise been extracted
+ * and decommissioned — it is now served exclusively by the standalone
+ * {@code examples/03-notification-service} Quarkus application (consuming
+ * {@code order.placed} off Kafka), reached through the same strangler proxy
+ * with {@code strangler.notification.enabled=true} as the permanent default.
+ * This monolith now owns FOUR in-process contexts (order, inventory, payment,
+ * shipping) — see {@code SMELLS.md} smell #4.
  *
  * <p>Six deliberate smells were planted on purpose and tagged in-code with
  * {@code // SMELL[ch.NN]: ...} comments; see {@code SMELLS.md} in this module's
- * root for the full catalogue and curing-chapter map (smell #6 is now cured).
+ * root for the full catalogue and curing-chapter map (smells #4 and #6 are
+ * now cured).
+ *
+ * <p><b>r04/S3 (ch.17):</b> {@code @EnableScheduling} activates the
+ * transactional-outbox relay ({@code common.outbox.OutboxRelay}), which polls
+ * for unpublished {@code outbox} rows and publishes them to Kafka. As of
+ * r04/S8 this is the ONLY way checkout communicates an order was placed —
+ * {@code order.OrderService#placeOrder} unconditionally writes a row every
+ * time.
  */
 @SpringBootApplication
+@EnableScheduling
 public class MonolithApplication {
 
     public static void main(String[] args) {

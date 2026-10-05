@@ -44,6 +44,22 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
  * which is what made the cutover (and, before decommission, its reversal)
  * safe.
  *
+ * <p><b>The Notification seam (notification-plan.md S6/S7, ch.17, DRQ-036):</b>
+ * {@code strangler.notification.enabled} is the second cutover flag, added
+ * alongside Review's, with the identical shape: content-based routing on the
+ * {@code /api/notifications} path prefix. It is the <i>read-side</i> half of
+ * a two-flag reversibility story — the monolith's own
+ * {@code notification.mode=synchronous|outbox} config (unrelated file,
+ * {@code examples/00-monolith/.../application.yml}) is the write-side half.
+ * A real cutover flips both together: the monolith stops sending the
+ * synchronous confirmation and instead writes a transactional outbox row
+ * that a scheduled relay publishes to Kafka; this proxy stops routing
+ * {@code /api/notifications} reads to the monolith and instead routes them
+ * to the extracted Quarkus service, which has consumed that same event into
+ * its own store. See {@code examples/01-strangler-proxy/CUTOVER.md} for
+ * the cutover evidence trail (reversibility baseline, cutover run, and the
+ * negative check that proves the async pipeline is genuinely exercised).
+ *
  * <p>Explicitly {@code @ApplicationScoped} so Quarkus/CDI — not plain
  * reflection — constructs this bean and resolves the {@code @ConfigProperty}
  * fields before {@link #configure()} runs.
@@ -55,6 +71,10 @@ public class StranglerProxyRoute extends RouteBuilder {
     @ConfigProperty(name = "strangler.review.enabled", defaultValue = "false")
     boolean reviewEnabled;
 
+    /** The strangler cutover flag for Notification traffic. Defaults to the monolith. */
+    @ConfigProperty(name = "strangler.notification.enabled", defaultValue = "false")
+    boolean notificationEnabled;
+
     /** The monolith — the default backend for everything until a context is cut over. */
     @ConfigProperty(name = "strangler.monolith.base-url")
     String monolithBaseUrl;
@@ -63,8 +83,13 @@ public class StranglerProxyRoute extends RouteBuilder {
     @ConfigProperty(name = "strangler.review.base-url")
     String reviewServiceBaseUrl;
 
+    /** The extracted Notification service — only selected once the flag is on. */
+    @ConfigProperty(name = "strangler.notification.base-url")
+    String notificationServiceBaseUrl;
+
     private static final String TARGET_PROPERTY = "stranglerTarget";
     private static final String TARGET_REVIEW = "review";
+    private static final String TARGET_NOTIFICATION = "notification";
     private static final String TARGET_MONOLITH = "monolith";
 
     @Override
@@ -93,11 +118,21 @@ public class StranglerProxyRoute extends RouteBuilder {
             // equivalence suite stayed green while testing the wrong backend.
             // Caught before decommission by stopping the monolith and confirming
             // the Review route failed instead of falling over to review-service.)
+            // NOTE (notification-plan S6): the Notification seam reuses the
+            // exact lesson CUTOVER.md §2 paid for on Review — match the FULL
+            // incoming path "/api/notifications", never a route-relative
+            // "/notifications", or the predicate silently never matches and
+            // every request falls through to the monolith regardless of the
+            // flag.
             .choice()
                 .when(PredicateBuilder.and(
                         simple("${header.CamelHttpPath} startsWith '/api/reviews'"),
                         exchange -> reviewEnabled))
                     .setProperty(TARGET_PROPERTY, constant(TARGET_REVIEW))
+                .when(PredicateBuilder.and(
+                        simple("${header.CamelHttpPath} startsWith '/api/notifications'"),
+                        exchange -> notificationEnabled))
+                    .setProperty(TARGET_PROPERTY, constant(TARGET_NOTIFICATION))
                 .otherwise()
                     .setProperty(TARGET_PROPERTY, constant(TARGET_MONOLITH))
             .end()
@@ -113,6 +148,8 @@ public class StranglerProxyRoute extends RouteBuilder {
             .choice()
                 .when(simple("${exchangeProperty." + TARGET_PROPERTY + "} == '" + TARGET_REVIEW + "'"))
                     .to(reviewServiceBaseUrl + "?bridgeEndpoint=true&throwExceptionOnFailure=false")
+                .when(simple("${exchangeProperty." + TARGET_PROPERTY + "} == '" + TARGET_NOTIFICATION + "'"))
+                    .to(notificationServiceBaseUrl + "?bridgeEndpoint=true&throwExceptionOnFailure=false")
                 .otherwise()
                     .to(monolithBaseUrl + "?bridgeEndpoint=true&throwExceptionOnFailure=false")
             .end();

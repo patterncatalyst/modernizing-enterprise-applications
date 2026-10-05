@@ -1,15 +1,17 @@
 package dev.patterncatalyst.monolith.common;
 
 /**
- * Reserved event-topic names for the future event-driven extractions (ch.17+).
+ * Event-topic names for the event-driven extractions (ch.17+).
  *
- * <p>The monolith does NOT publish to these topics today — see
- * {@code SMELL[ch.17]} on {@link dev.patterncatalyst.monolith.notification.NotificationService}
- * for the synchronous-call smell these names will eventually replace. Naming them
- * here now (with zero messaging infrastructure attached) keeps the monolith's
- * vocabulary aligned 1:1 with the sibling target projects' Kafka topics
- * (reuse-map.md section 6: {@code order.placed}, {@code payment.captured},
- * {@code shipment.dispatched}) without adding any speculative infrastructure.
+ * <p>{@code ORDER_PLACED} is published for real as of r04/S3+S8: {@code
+ * order.OrderService#placeOrder} writes it to the transactional outbox on
+ * every checkout, and {@code common.outbox.OutboxRelay} relays it to Kafka
+ * (SMELL[ch.17] — the synchronous in-transaction notification call this
+ * replaced — is now cured; see {@code SMELLS.md}). {@code PAYMENT_CAPTURED}
+ * and {@code SHIPMENT_DISPATCHED} remain reserved for future extractions;
+ * naming them here now (with zero messaging infrastructure attached for
+ * those two) keeps the monolith's vocabulary aligned 1:1 with the sibling
+ * target projects' Kafka topics (reuse-map.md section 6).
  */
 public final class Topics {
 

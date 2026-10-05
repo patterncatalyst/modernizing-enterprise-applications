@@ -67,15 +67,57 @@ behavior-equivalence suite (49/49 assertions each), demonstrating real
 reversibility right up until the one deliberately irreversible step. See
 `CUTOVER.md` in this directory for the full before/after/decommission trace.
 
-Two other properties name the fixed backend targets the flag chooses between.
-The route never builds a target URI from request data — only ever from these
-two configured constants — which keeps the dynamic-URI seam secure by
-default (no header or path value can redirect the proxy to an arbitrary
-host):
+## The flag: `strangler.notification.enabled` (notification-plan.md S6/S7, ch.17)
+
+| Value | Backend for `/api/notifications/**` | Backend for everything else |
+|---|---|---|
+| `false` (notification-plan S6) | monolith `:8080` (synchronous read surface) | unaffected |
+| `true` (**default**, from notification-plan S7 — cutover) | notification-service `:8083` (async, outbox -> Kafka -> consumer) | unaffected |
+
+Identical shape to the Review flag — content-based routing on the
+`/api/notifications` path prefix, matching the **full** incoming path (the
+exact bug CUTOVER.md §2 documents for Review: matching a route-relative
+`/notifications` prefix instead would silently never match, since
+`platform-http`'s `CamelHttpPath` always carries the full path). This is the
+**read-side** half of a two-flag reversibility story (DRQ-036): the
+monolith's own `notification.mode=synchronous|outbox` config (a *different*
+file, `examples/00-monolith/src/main/resources/application.yml`) is the
+write-side half. A real cutover flips both together.
+
+**Cutover evidence (notification-plan S7):** with both flags flipped
+(monolith `NOTIFICATION_MODE=outbox` + this flag `true`), the full
+behavior-equivalence suite ran green through this proxy, and critically the
+"Notification Context Contract" folder's bounded-wait poll *actually
+retried* several times before the notification became observable — real
+evidence of outbox -> Kafka -> consumer latency, not an instant synchronous
+hit. Reversibility was demonstrated first (flag `false` + monolith
+synchronous, full suite green). A **negative check** — stopping the
+notification-service process (its consumer and its read surface) and
+re-running just that folder — went RED (the proxy's forwarded 500 /
+connection failure broke the "returns 200" and JSON-body assertions), then
+GREEN again once the service was restarted — proving the assertion genuinely
+exercises the async pipeline rather than passing for the wrong reason
+(DRQ-037, guarding against the exact false-equivalence trap CUTOVER.md §2
+describes for Review). See "Notification cutover" in `CUTOVER.md` for the
+full run-by-run trace.
+
+Unlike Review's flip, this is **not** the point where reversibility closes:
+the monolith's synchronous notification path and `/api/notifications` read
+surface still exist (decommission is notification-plan S8, not yet run) —
+flipping this flag back to `false` today still reaches a working monolith
+notification surface.
+
+## Backend targets
+
+Properties name the fixed backend targets each flag chooses between. The
+route never builds a target URI from request data — only ever from these
+configured constants — which keeps the dynamic-URI seam secure by default (no
+header or path value can redirect the proxy to an arbitrary host):
 
 ```properties
 strangler.monolith.base-url=http://localhost:8080
 strangler.review.base-url=http://localhost:8081
+strangler.notification.base-url=http://localhost:8083
 ```
 
 ## Ports
@@ -84,7 +126,8 @@ strangler.review.base-url=http://localhost:8081
 |---|---|---|
 | Strangler proxy (this project) | **8888** | `quarkus.http.port` |
 | Monolith (`examples/00-monolith/`) | 8080 | default target, always |
-| Review service (`examples/15-review-service/`, arrives S8+) | 8081 | only reachable through the proxy once the flag flips (S10) |
+| Review service (`examples/02-review-service/`) | 8081 | only reachable through the proxy once the Review flag flips (S10) |
+| Notification service (`examples/03-notification-service/`) | 8083 | only reachable through the proxy once the Notification flag is on (notification-plan S7) |
 
 ## Running it
 

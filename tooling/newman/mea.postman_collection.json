@@ -2,7 +2,7 @@
   "info": {
     "name": "Modernizing Enterprise Applications — Behavior-Equivalence Suite",
     "_postman_id": "mea-equivalence-suite",
-    "description": "The behavior-equivalence suite (r02-plan S6, build-plan.md §G/§D). Captured against the running Spring Boot monolith (examples/00-monolith). This collection is the project's equivalence gate: it is re-run UNCHANGED against each extracted service (starting with the Quarkus Review service, ch.15) and a service is only considered 'done' once it passes this same suite with no edits (build-plan.md §G load-bearing rule). Every request targets {{baseUrl}} so the identical collection can point at the monolith or at an extracted service's own port. Covers: (1) happy-path checkout, (2) out-of-stock, (3) payment-declined (asserting inventory is NOT left decremented, per the monolith's actual rollback behavior), and (4) the Review context contract (list, get-by-id, unauthenticated POST -> 401, authenticated POST -> 201, validation -> 400) — the first extraction's externally-observable surface.",
+    "description": "The behavior-equivalence suite (r02-plan S6, notification-plan S2, build-plan.md §G/§D). Captured against the running Spring Boot monolith (examples/00-monolith). This collection is the project's equivalence gate: it is re-run UNCHANGED against each extracted service (starting with the Quarkus Review service, ch.15) and a service is only considered 'done' once it passes this same suite with no edits (build-plan.md §G load-bearing rule). Every request targets {{baseUrl}} so the identical collection can point at the monolith or at an extracted service's own port. Covers: (1) happy-path checkout, (2) out-of-stock, (3) payment-declined (asserting inventory is NOT left decremented, per the monolith's actual rollback behavior), (4) the Review context contract (list, get-by-id, unauthenticated POST -> 401, authenticated POST -> 201, validation -> 400) — the first extraction's externally-observable surface — and (5) the Notification context contract (DRQ-037): a checkout followed by a BOUNDED-WAIT poll of GET /api/notifications?customerId= so the identical assertion is correct whether the order-confirmation notification is written synchronously in-transaction (today's monolith, hits on the first attempt) or eventually via outbox -> Kafka -> consumer (the future async notification service, ch.17).",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -622,6 +622,152 @@
           ]
         }
       ]
+    },
+    {
+      "name": "Notification Context Contract",
+      "item": [
+        {
+          "name": "5a. Place order to trigger a confirmation notification -> 201 Created",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": 1,\n  \"items\": [ { \"sku\": \"SKU-WIDGET-001\", \"quantity\": 1 } ],\n  \"paymentMethod\": \"CARD-VISA\",\n  \"shippingAddress\": \"1 Equivalence Suite Way, Notification City\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/orders",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "orders"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Order created returns 201', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test('Content-Type is application/json', function () {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test('Order status transitions straight to CONFIRMED', function () {",
+                  "    pm.expect(json.status).to.eql('CONFIRMED');",
+                  "});",
+                  "// Before-state for the poll below: the order/customer this checkout just",
+                  "// created, plus a fresh retry budget — captured as collection variables so",
+                  "// the folder is idempotent/re-runnable without a DB reset (mirrors the",
+                  "// 'before' captures in Scenarios 1-3).",
+                  "pm.collectionVariables.set('notificationOrderId', json.id);",
+                  "pm.collectionVariables.set('notificationCustomerId', json.customerId);",
+                  "pm.collectionVariables.set('notificationPollAttempts', 0);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5b. Confirmation notification becomes observable (bounded-wait poll)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications?customerId={{notificationCustomerId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "notifications"],
+              "query": [ { "key": "customerId", "value": "{{notificationCustomerId}}" } ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// DRQ-037 bounded-wait eventual-consistency poll: only delay on a RETRY",
+                  "// (attempts > 0), never on the first attempt. Against today's synchronous",
+                  "// monolith the notification is already there on attempt 0, so this never",
+                  "// sleeps and the folder passes immediately. Against the future async",
+                  "// service (outbox -> Kafka -> SmallRye consumer) this gives each retry a",
+                  "// short, bounded window for the event to be consumed. A plain busy-wait is",
+                  "// used (not setTimeout) so the delay is honored identically by the Postman",
+                  "// app and by newman's non-interactive sandbox before the request is sent.",
+                  "var attempts = Number(pm.collectionVariables.get('notificationPollAttempts') || 0);",
+                  "if (attempts > 0) {",
+                  "    var delayMs = Number(pm.collectionVariables.get('notificationPollDelayMs'));",
+                  "    var start = Date.now();",
+                  "    while (Date.now() - start < delayMs) { /* intentional bounded busy-wait */ }",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Notification read surface returns 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Content-Type is application/json', function () {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "});",
+                  "",
+                  "var expectedOrderId = Number(pm.collectionVariables.get('notificationOrderId'));",
+                  "var expectedCustomerId = Number(pm.collectionVariables.get('notificationCustomerId'));",
+                  "var maxAttempts = Number(pm.collectionVariables.get('notificationPollMaxAttempts'));",
+                  "var delayMs = Number(pm.collectionVariables.get('notificationPollDelayMs'));",
+                  "var attempts = Number(pm.collectionVariables.get('notificationPollAttempts') || 0);",
+                  "",
+                  "var json = pm.response.json();",
+                  "var match = Array.isArray(json)",
+                  "    ? json.find(function (n) { return n.orderId === expectedOrderId; })",
+                  "    : undefined;",
+                  "",
+                  "if (!match && (attempts + 1) < maxAttempts) {",
+                  "    // Not observable yet and the retry budget is not exhausted: this is the",
+                  "    // ONLY branch that loops. Correct for BOTH backends — a synchronous",
+                  "    // backend matches on attempt 0 and never reaches here; an async backend",
+                  "    // keeps retrying (bounded) while outbox -> Kafka -> consumer catches up.",
+                  "    pm.collectionVariables.set('notificationPollAttempts', attempts + 1);",
+                  "    postman.setNextRequest(pm.info.requestName);",
+                  "    return;",
+                  "}",
+                  "",
+                  "// Either found, or the bounded-wait budget is exhausted: assert the",
+                  "// externally-observable contract (NotificationDto fields) — never raw DB",
+                  "// rows — and stop retrying either way (goes RED here, not hung, when the",
+                  "// notification never arrives — the DRQ-037 negative-check property).",
+                  "pm.test('Order-confirmation notification for this checkout is observable within the bounded-wait budget (' + maxAttempts + ' x ' + delayMs + 'ms)', function () {",
+                  "    pm.expect(match, 'no notification with orderId ' + expectedOrderId + ' for customerId ' + expectedCustomerId + ' after ' + (attempts + 1) + ' attempt(s)').to.not.be.undefined;",
+                  "});",
+                  "",
+                  "if (match) {",
+                  "    pm.test('Notification is addressed to the checkout customer', function () {",
+                  "        pm.expect(match.customerId).to.eql(expectedCustomerId);",
+                  "    });",
+                  "    pm.test('Notification references the order created by this checkout', function () {",
+                  "        pm.expect(match.orderId).to.eql(expectedOrderId);",
+                  "    });",
+                  "    pm.test('Notification has the documented NotificationDto shape', function () {",
+                  "        pm.expect(match.id).to.be.a('number');",
+                  "        pm.expect(match.channel).to.eql('EMAIL');",
+                  "        pm.expect(match.message).to.be.a('string');",
+                  "        pm.expect(match.message).to.include('Order #' + expectedOrderId + ' confirmed');",
+                  "        pm.expect(match.sentAt).to.not.be.undefined;",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
     }
   ],
   "variable": [
@@ -631,6 +777,11 @@
     { "key": "happyPathOrderId", "value": "", "type": "string" },
     { "key": "widgetStockBeforeHappyPath", "value": "", "type": "string" },
     { "key": "gizmoStockBeforeOverorder", "value": "", "type": "string" },
-    { "key": "widgetStockBeforeDecline", "value": "", "type": "string" }
+    { "key": "widgetStockBeforeDecline", "value": "", "type": "string" },
+    { "key": "notificationOrderId", "value": "", "type": "string" },
+    { "key": "notificationCustomerId", "value": "", "type": "string" },
+    { "key": "notificationPollAttempts", "value": "0", "type": "string" },
+    { "key": "notificationPollMaxAttempts", "value": "10", "type": "string" },
+    { "key": "notificationPollDelayMs", "value": "500", "type": "string" }
   ]
 }
