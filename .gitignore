@@ -15,6 +15,13 @@ node_modules/
 target/
 *.class
 
+# Local service run logs (captured when running services by hand for verification)
+*.log
+
+# Python bytecode cache (scripts/)
+__pycache__/
+*.pyc
+
 # Secrets / local env
 .env
 *.local.md

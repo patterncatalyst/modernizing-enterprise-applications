@@ -172,6 +172,64 @@ translators, the "what's safe to carry back" decision) remain the two
 independent concerns ch.16 named; they simply don't both have to live in the
 same Camel route when one side of the seam hasn't diverged.
 
+## The flag: `strangler.payment.enabled` (payment-plan.md S7, ch.23, DRQ-052)
+
+| Value | Backend for `/api/payments/**` | Backend for everything else |
+|---|---|---|
+| `false` (**default**, payment-plan S7 — not yet cut over) | monolith `:8080` | unaffected |
+| `true` (payment-plan S8 — cutover) | payment-service `:8085` | unaffected |
+
+Identical shape to the Review, Notification, and Inventory flags — content-based
+routing on the `/api/payments` path prefix, matching the **full** incoming path
+(the same CUTOVER.md paragraph 2 lesson applied a fourth time).
+
+### ACL honesty: why this branch is also a transparent proxy, not a translator
+
+The payment-plan's S7 step title says "wire `PaymentAclRoute` (ACL
+translator)" — but the same honesty check already applied to Inventory above
+applies here, and the answer is the same:
+
+- The monolith's `/api/payments` read surface returns
+  `dev.patterncatalyst.monolith.payment.PaymentDto`: `record PaymentDto(Long
+  id, Long orderId, long amountCents, String method, PaymentStatus status,
+  Instant createdAt)`.
+- The payment service's `/api/payments` read surface returns
+  `dev.patterncatalyst.payment.PaymentDto` — lifted **unchanged**: `record
+  PaymentDto(Long id, Long orderId, long amountCents, String method,
+  PaymentStatus status, Instant createdAt)`. Same field names, types, and
+  order; same `PaymentStatus` enum (`CAPTURED`, `DECLINED`); same paths
+  (`GET /api/payments/{id}`, `GET /api/payments?orderId=`); same 404/400
+  status codes.
+- `orderId` was already a plain `Long` **on the wire** in the monolith — only
+  the JPA entity (`monolith.payment.Payment`) carried a cross-context
+  `@ManyToOne Order` join (`SMELL[ch.18]`). The payment service's `Payment`
+  entity decomposes that FK to a plain `orderId` value column (r06/S4,
+  DRQ-052 Phase A) — but that is an internal persistence-layer change, not a
+  read-contract change, so `PaymentDto` needed zero edits.
+- The `payment.captured`/`payment.declined` Kafka events the two sides
+  exchange (DRQ-048) are likewise authored field-for-field identical on both
+  sides per DRQ-038 (plain JSON, no shared code between the two Maven
+  reactors).
+
+Both backends therefore produce **byte-for-byte identical JSON** for this
+read surface. A Camel message translator here would have nothing to
+translate — building one anyway (as the plan step's literal title suggests)
+would fabricate a redundant ACL for a contract that does not differ, exactly
+the speculative-infrastructure trap the Inventory precedent above already
+ruled out. So the `/api/payments` branch is an honest, transparent reverse
+proxy, structurally identical to the Review, Notification, and Inventory
+branches — there is no `PaymentAclRoute` class in this project.
+
+Unlike Inventory's gRPC seam, there also isn't a *different* layer where a
+genuine payment ACL lives: the payment service's choreography (consuming
+`order.placed`, producing `payment.captured`/`payment.declined`) deliberately
+authors the same field vocabulary on both sides (DRQ-038), so there is no
+wire-format divergence anywhere in this seam for a translator to bridge —
+not at this proxy, and not elsewhere. If that ever changes (e.g. a future
+Avro/Apicurio migration, ch.28, introduces a schema divergence), that is
+where a real translator would belong, same reasoning as Inventory's gRPC
+write-up above.
+
 ## Backend targets
 
 Properties name the fixed backend targets each flag chooses between. The
@@ -184,6 +242,7 @@ strangler.monolith.base-url=http://localhost:8080
 strangler.review.base-url=http://localhost:8081
 strangler.notification.base-url=http://localhost:8083
 strangler.inventory.base-url=http://localhost:8084
+strangler.payment.base-url=http://localhost:8085
 ```
 
 ## Ports
@@ -195,6 +254,7 @@ strangler.inventory.base-url=http://localhost:8084
 | Review service (`examples/02-review-service/`) | 8081 | only reachable through the proxy once the Review flag flips (S10) |
 | Notification service (`examples/03-notification-service/`) | 8083 | only reachable through the proxy once the Notification flag is on (notification-plan S7) |
 | Inventory service (`examples/04-inventory-service/`) | 8084 | only reachable through the proxy once the Inventory flag is on (inventory-plan S10); gRPC server at :9004 is used by the monolith directly, not via this proxy |
+| Payment service (`examples/05-payment-service/`) | 8085 | only reachable through the proxy once the Payment flag is on (payment-plan S8); not yet enabled by default (payment-plan S7) |
 
 ## Running it
 

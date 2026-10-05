@@ -13,8 +13,6 @@ import dev.patterncatalyst.monolith.common.outbox.OrderPlacedEvent;
 import dev.patterncatalyst.monolith.common.outbox.OutboxEvent;
 import dev.patterncatalyst.monolith.common.outbox.OutboxRepository;
 import dev.patterncatalyst.monolith.inventory.RemoteInventoryClient;
-import dev.patterncatalyst.monolith.payment.PaymentService;
-import dev.patterncatalyst.monolith.shipping.ShippingService;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -35,7 +33,29 @@ import org.springframework.transaction.annotation.Transactional;
  * of r05/ch.19 S11, inventory is the second: the raw in-JVM
  * entity/repository reach-in is gone (SMELL #5, CURED — see SMELLS.md) and
  * checkout now reaches inventory only through {@link RemoteInventoryClient}'s
- * typed gRPC contract.
+ * typed gRPC contract. As of r06/ch.23 S9, payment is the third: this class no
+ * longer has a direct dependency on payment's service/repository/entity at
+ * all (they are deleted) — checkout only ever reaches payment indirectly, via
+ * the {@code order.placed} outbox event, and only reacts to ITS outcome
+ * events through {@link OrderSagaListener}, never a direct call. Shipping
+ * (still directly reached, now from {@code OrderSagaListener} rather than
+ * this class) and order itself remain (ch.24, ch.26).
+ *
+ * <p>ch.23 (r06/S9, DECOMMISSION): the {@code payment.mode=synchronous|
+ * choreographed} reversibility flag introduced for the S6 cutover has been
+ * removed along with the monolith's in-process payment module ({@code
+ * payment.PaymentController}/{@code PaymentService}/{@code Payment}/{@code
+ * PaymentRepository}, now deleted) — choreographed is the ONLY path.
+ * {@link #placeOrder} never calls payment (or shipping) in-line: it
+ * validates the customer, reserves every line synchronously over gRPC,
+ * persists the order {@code PENDING}, writes the {@code order.placed}
+ * outbox event (carrying {@code paymentMethod}), and returns — the
+ * controller maps that to {@code 202 Accepted}. {@link OrderSagaListener}
+ * reacts to the payment service's {@code payment.captured}/{@code
+ * payment.declined} outcomes to confirm+ship or decline+compensate
+ * (DRQ-049). The synchronous {@code 201}/{@code 402} checkout contract this
+ * method used to also support is gone; see the class/method history below
+ * and {@code common/web/GlobalExceptionHandler} for what was removed.
  */
 @Service
 public class OrderService {
@@ -45,8 +65,6 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final CustomerRepository customerRepository;
     private final RemoteInventoryClient remoteInventoryClient;
-    private final PaymentService paymentService;
-    private final ShippingService shippingService;
     private final OutboxRepository outboxRepository;
     private final ObjectMapper objectMapper;
 
@@ -54,15 +72,11 @@ public class OrderService {
             OrderRepository orderRepository,
             CustomerRepository customerRepository,
             RemoteInventoryClient remoteInventoryClient,
-            PaymentService paymentService,
-            ShippingService shippingService,
             OutboxRepository outboxRepository,
             ObjectMapper objectMapper) {
         this.orderRepository = orderRepository;
         this.customerRepository = customerRepository;
         this.remoteInventoryClient = remoteInventoryClient;
-        this.paymentService = paymentService;
-        this.shippingService = shippingService;
         this.outboxRepository = outboxRepository;
         this.objectMapper = objectMapper;
     }
@@ -72,19 +86,27 @@ public class OrderService {
      * contexts — order, inventory, payment, shipping (plus this context's own
      * outbox table write; the outbox is order-owned infrastructure, not a
      * notification-context collaborator, so it doesn't widen this blast radius
-     * the way the old synchronous notification call did). It "works" today
-     * because Postgres gives us atomic rollback for free across all of them.
-     * The moment any one of these becomes its own service with its own database,
-     * this rollback-everything behavior disappears and has to be rebuilt
-     * explicitly as a saga with compensating actions (ch.23 choreographed,
-     * ch.24 orchestrated) — that is the ACID -> ACD story told in ch.22.
-     * Notification (ch.17/r04/S8) was the first context removed from this
-     * transaction's blast radius entirely.
+     * the way the old synchronous notification call did). It "worked" in the
+     * original monolith because Postgres gave atomic rollback for free across
+     * all of them. r06/ch.23 S9 (DECOMMISSION) REALIZES the ACID -> ACD story
+     * this smell names, for the payment portion: payment is now its own
+     * service with its own database, so this method no longer calls it at
+     * all (see below), and the cross-context consistency a local rollback
+     * used to give for free is rebuilt EXPLICITLY as the choreographed saga
+     * (order.placed -> payment captures/declines -> {@link
+     * OrderSagaListener} reacts) with an idempotent compensating {@code
+     * Release} on decline (DRQ-049) — see SMELLS.md SMELL[ch.22]. Notification
+     * (ch.17/r04/S8) was the first context removed from this transaction's
+     * blast radius; payment (ch.23/r06/S9) is the second. Shipping and order
+     * itself remain (ch.24, ch.26).
      *
-     * <p>Flow: validate customer -> check+reserve stock (inventory, over gRPC
-     * -- see below) -> persist the order -> charge payment (payment; a
-     * decline triggers the compensating Release below) -> dispatch shipment
-     * (shipping) -> write the {@code order.placed} outbox event.
+     * <p>Flow: validate customer -> check+reserve stock (inventory, over
+     * gRPC -- see below) -> persist the order {@code PENDING} -> write the
+     * {@code order.placed} outbox event (the handoff to the choreographed
+     * saga) -> return. Payment capture and order confirmation/shipping
+     * dispatch happen OUT OF PROCESS and asynchronously, driven by {@link
+     * OrderSagaListener} reacting to the payment service's outcome events —
+     * see that class's javadoc.
      *
      * <p>ch.17 (r04/S8) CURE: the notification step is no longer flag-gated —
      * the synchronous in-transaction call to a local NotificationService
@@ -106,13 +128,31 @@ public class OrderService {
      * RemoteInventoryClient}'s gRPC {@code Reserve} against the extracted
      * inventory service's OWN database (SMELL #5, now CURED — see
      * SMELLS.md) is the ONLY path. That decrement commits OUTSIDE this
-     * {@code @Transactional} and therefore can no longer be undone by it; the
-     * surrounding try/catch issues a compensating gRPC {@code Release} for
-     * every sku this checkout successfully reserved remotely, on ANY failure
-     * that happens afterward (insufficient stock on a later line, a payment
-     * decline, a shipping failure, or any other exception before the order
-     * confirms) — a deliberate first taste of saga compensation, forward-ref
-     * ch.23.
+     * {@code @Transactional} and therefore can no longer be undone by it.
+     *
+     * <p>r06/ch.23 S9 (DECOMMISSION, DRQ-047/DRQ-049) — <b>what the
+     * surrounding {@code try/catch} compensates now:</b> the {@code
+     * payment.mode=synchronous|choreographed} flag is gone (choreographed is
+     * the only path) and payment is no longer called from this method AT
+     * ALL, so the catch below can no longer be reached by a payment decline —
+     * that compensation has moved to {@link
+     * OrderSagaListener#onPaymentDeclined}, which reacts to the payment
+     * service's {@code payment.declined} event for an order that WAS already
+     * handed off (DRQ-049). What the catch STILL must do, and does: this
+     * loop can still throw mid-flight — e.g. line 1 reserves successfully
+     * and line 2 is out of stock ({@link InsufficientStockException}), or the
+     * subsequent {@code orderRepository.save}/outbox write throws — leaving
+     * line 1's reservation committed in the inventory service's own database
+     * with no saga ever started to compensate it (the order was never
+     * handed off; {@code order.placed} was never written). The catch below
+     * releases every such PRE-HANDOFF reservation before propagating the
+     * original failure. The catch and {@link
+     * OrderSagaListener#onPaymentDeclined} are therefore mutually
+     * exclusive by construction: the catch only fires for a checkout that
+     * never reached the saga (no {@code order.placed} row committed), and
+     * the reaction only fires for an order that DID (a {@code PENDING} row
+     * exists for it to transition) — neither can double-compensate the same
+     * reservation.
      *
      * <p>r05/ch.19 S8 (DRQ-043): {@code OrderItem} no longer holds a
      * cross-context JPA/DB FK onto an inventory entity (SMELL[ch.18], now
@@ -131,7 +171,7 @@ public class OrderService {
 
         // r05/ch.19 S7/S11 (DRQ-042): skus this checkout has successfully
         // reserved via the remote gRPC Reserve so far, pending compensation
-        // if checkout fails afterward.
+        // if checkout fails BEFORE the order is handed off to the saga.
         List<ReservedLine> remoteReservations = new ArrayList<>();
 
         try {
@@ -159,48 +199,42 @@ public class OrderService {
 
             order = orderRepository.save(order);
 
-            // SMELL[ch.22]/[ch.26]: payment captured synchronously, in-process, inside
-            // the same transaction as the inventory decrement above. A decline here
-            // can no longer be undone by this transaction, because the decrement
-            // already committed in the inventory service's own database -- the
-            // catch block below issues the compensating Release instead (DRQ-042).
-            paymentService.charge(order, order.getTotalCents(), command.paymentMethod());
-            order.confirm();
-
-            // SMELL[ch.26]: shipping dispatched synchronously from the order's god
-            // service rather than being triggered by an event the order context emits.
-            shippingService.dispatch(order, order.getShippingAddress());
-
-            // ch.17 cure (r04/S8): write the event to the outbox, atomically, in
-            // THIS transaction. No Kafka client is touched here — the
-            // @Scheduled OutboxRelay is the only thing that talks to Kafka, on
-            // its own schedule, after this transaction has committed (or not, if
-            // something downstream still throws). This is now the ONLY
-            // notification path; the synchronous in-transaction call (SMELL[ch.17])
-            // has been removed.
-            writeOrderPlacedOutboxEvent(customer, order);
-
+            // ch.23 (r06/S9, DRQ-047/H1/H4): checkout NEVER calls payment or
+            // shipping in-line. The order is persisted PENDING and the
+            // order.placed outbox event (carrying paymentMethod, DRQ-048) is
+            // the handoff to the payment service, which reacts over Kafka
+            // and emits payment.captured|declined. OrderSagaListener reacts
+            // to those and drives confirm+ship or decline+compensate — see
+            // its class javadoc. order.confirm() and a shipping dispatch
+            // call are deliberately NOT present here.
+            writeOrderPlacedOutboxEvent(customer, order, command.paymentMethod());
             return toDto(order);
         } catch (RuntimeException ex) {
-            // r05/ch.19 S7/S11 (DRQ-042): undo every remote reservation this
-            // checkout already committed before propagating the ORIGINAL
-            // failure (insufficient stock on a later line / payment decline
-            // / shipping failure / any other exception before confirmation).
-            // No-op when nothing was reserved yet.
+            // r06/ch.23 S9 (DRQ-049): this compensates ONLY a pre-handoff
+            // failure now (a later line out of stock, or the save/outbox
+            // write itself throwing) — never a payment decline, since
+            // payment is never called from this method. See this method's
+            // javadoc for why this and OrderSagaListener#onPaymentDeclined
+            // can never double-compensate the same reservation. No-op when
+            // nothing was reserved yet.
             compensateRemoteReservations(remoteReservations);
             throw ex;
         }
     }
 
     /**
-     * Compensating {@code Release} (DRQ-042, a deliberate first taste of
-     * saga — forward-ref ch.23) for every sku {@link #placeOrder} reserved
-     * remotely before the checkout failed. Best-effort: a {@code Release}
-     * failure is logged loudly (never swallowed silently) but does not
-     * replace the ORIGINAL checkout failure being propagated to the caller —
-     * an honest, documented limitation (no idempotency key or saga ledger
-     * yet) rather than speculative full-saga infrastructure this step does
-     * not need.
+     * Compensating {@code Release} (DRQ-042, originally a first taste of
+     * saga compensation, forward-ref'd to ch.23) for every sku {@link
+     * #placeOrder} reserved remotely before a PRE-HANDOFF checkout failure
+     * (insufficient stock on a later line, or the order save/outbox write
+     * throwing) — see {@link #placeOrder}'s javadoc for why this is now
+     * disjoint from the payment-decline compensation, which lives in {@link
+     * OrderSagaListener#onPaymentDeclined} (DRQ-049) since r06/ch.23 S9.
+     * Best-effort: a {@code Release} failure is logged loudly (never
+     * swallowed silently) but does not replace the ORIGINAL checkout failure
+     * being propagated to the caller — an honest, documented limitation (no
+     * idempotency key or saga ledger yet) rather than speculative full-saga
+     * infrastructure this step does not need.
      */
     private void compensateRemoteReservations(List<ReservedLine> remoteReservations) {
         for (ReservedLine reserved : remoteReservations) {
@@ -227,7 +261,7 @@ public class OrderService {
      * write is part of the checkout transaction, not a separate dual-write
      * after commit.
      */
-    private void writeOrderPlacedOutboxEvent(Customer customer, Order order) {
+    private void writeOrderPlacedOutboxEvent(Customer customer, Order order, String paymentMethod) {
         String confirmationMessage =
                 "Order #%d confirmed, total $%.2f".formatted(order.getId(), order.getTotalCents() / 100.0);
         OrderPlacedEvent event = new OrderPlacedEvent(
@@ -235,6 +269,7 @@ public class OrderService {
                 customer.getId(),
                 customer.getEmail(),
                 order.getTotalCents(),
+                paymentMethod,
                 confirmationMessage,
                 Instant.now());
         try {

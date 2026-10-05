@@ -33,6 +33,21 @@ spring:
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
+    # ch.23 (r06/S6, H4; r06/S9 DECOMMISSION): the monolith's FIRST Kafka
+    # CONSUMER config — order.OrderSagaListener reacts to
+    # payment.captured/payment.declined (see Topics.java) to confirm+ship or
+    # decline+compensate. String deserializers are used deliberately (same
+    # as the outbox relay's producer): the listener deserializes the JSON
+    # payload itself via the injected ObjectMapper, matching the plain-JSON
+    # wire contract (DRQ-038). The payment.mode=synchronous|choreographed
+    # reversibility flag that once gated whether this listener's reactions
+    # were ever actually exercised has been removed (S9) — choreographed is
+    # now the only checkout path, so this consumer is always genuinely live.
+    consumer:
+      group-id: monolith-order-saga
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      auto-offset-reset: earliest
 
 server:
   port: 8080
@@ -58,8 +73,10 @@ outbox:
 # see SMELLS.md). OrderService#placeOrder's checkout reserve/release ALWAYS
 # routes through RemoteInventoryClient's gRPC stub to the extracted
 # inventory service (examples/04-inventory-service, :9004), with a
-# compensating Release on any post-reserve checkout failure (DRQ-042).
-# Overridable via the standard Spring Boot env vars
+# compensating Release on any PRE-HANDOFF checkout failure (a later line out
+# of stock, or the order save/outbox write itself throwing, DRQ-042) --
+# post-handoff payment-decline compensation is a separate reaction, see
+# order.OrderSagaListener (DRQ-049). Overridable via the standard Spring Boot env vars
 # INVENTORY_GRPC_HOST/INVENTORY_GRPC_PORT/INVENTORY_GRPC_TIMEOUT_MS, never
 # hard-coded beyond these defaults.
 inventory:
@@ -67,6 +84,16 @@ inventory:
     host: ${INVENTORY_GRPC_HOST:localhost}
     port: ${INVENTORY_GRPC_PORT:9004}
     timeout-ms: ${INVENTORY_GRPC_TIMEOUT_MS:5000}
+
+# r06/ch.23 S9 (DECOMMISSION): the payment.mode=synchronous|choreographed
+# reversibility flag introduced for the S6 cutover has been removed along
+# with the monolith's in-process payment module (payment.PaymentController/
+# PaymentService/Payment/PaymentRepository, SMELL[ch.22] -- now CURED for
+# payment, see SMELLS.md). OrderService#placeOrder ALWAYS persists the order
+# PENDING and hands it off via the order.placed outbox event; there is no
+# more in-line charge to fall back to. The payment service
+# (examples/05-payment-service, :8085) is the sole owner of payment capture,
+# reached exclusively over the choreographed saga.
 
 logging:
   level:
