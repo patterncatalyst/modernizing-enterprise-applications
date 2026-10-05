@@ -80,6 +80,48 @@ Concretely:
   consume — the notification count stayed at exactly one. See `MIGRATION.md`
   for the full before/after metrics and verification record.
 
+## CI equivalence gate (notification-plan.md S9, DRQ-030/DRQ-037)
+
+`.github/workflows/code-ci.yml`'s `notification-equivalence-gate` job is the
+ASYNC sibling of `equivalence-gate` (which covers Review, a synchronous REST
+passthrough). This job brings up a disposable GitHub Actions Postgres
+service container (schema from the monolith's committed
+`V1__init_schema.sql`/`V2__seed_data.sql`/`V3__outbox.sql`) **and** a
+single-broker KRaft-mode Kafka service container (`apache/kafka:3.8.0`,
+matching `compose.yaml`/`.env.example`), builds and starts the monolith
+(`:8080`, outbox write path + Kafka producer), this service (`:8083`, the
+`@Incoming("order-placed")` consumer), and the strangler proxy
+(`:8888`, `strangler.notification.enabled=true`), then runs the
+behavior-equivalence suite's **"Notification Context Contract"** folder
+(`tooling/newman/mea.postman_collection.json`) against the proxy — exercising
+the full outbox → Kafka `order.placed` → consumer → own-schema read surface
+path through the same seam a real client would use. A non-zero `newman` exit
+code fails the job. The folder's DRQ-037 bounded-wait poll (up to 10 x 500ms)
+absorbs the relay's ~2s poll-interval latency; no change to the collection
+itself is needed to run it here (R8, no suite drift).
+
+Before this workflow was committed it was validated locally both ways
+(podman-stack Postgres + Kafka, all three services built and run exactly as
+the CI job runs them, `newman run ... --folder "Notification Context
+Contract" --env-var baseUrl=http://localhost:8888`):
+
+- **Green (baseline):** unmodified, 17/17 assertions passed, exit code `0`
+  — the poll observed the notification after a handful of retries (not on
+  the first attempt), confirming real outbox→Kafka→consumer latency is being
+  exercised, not an instant synchronous hit.
+- **Red:** `OrderPlacedConsumer#consume` had its
+  `service.recordOrderPlaced(event)` call commented out (persist skipped,
+  consumed-but-dropped). Re-running the identical `newman` command then
+  exhausted the full 10-attempt bounded-wait budget and failed:
+  `5b. Confirmation notification becomes observable (bounded-wait poll)` —
+  `no notification with orderId ... for customerId 1 after 10 attempt(s)` —
+  exit code `1`.
+- **Green (reverted):** the persist call was restored (confirmed via diff
+  showing no residual change), the service rebuilt and restarted, and the
+  suite re-run green — 17/17 assertions, exit code `0` — before this
+  workflow file was committed, proving the gate actually gates on the async
+  path rather than racing to a green-only pass.
+
 This project uses Quarkus, the Supersonic Subatomic Java Framework.
 
 If you want to learn more about Quarkus, please visit its website: <https://quarkus.io/>.

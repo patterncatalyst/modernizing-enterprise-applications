@@ -28,6 +28,25 @@
 # reverted and the suite re-run GREEN before this file was committed. See
 # examples/02-review-service/README.md's "CI equivalence gate" note for the
 # full before/after transcript.
+#
+# notification-plan.md S9: a second job, `notification-equivalence-gate`,
+# extends this same workflow (one file, per DRQ-030's "do not fork a new
+# workflow" discipline) to cover the ASYNC notification path — monolith
+# outbox -> Kafka `order.placed` -> examples/03-notification-service's
+# SmallRye consumer -> its own-schema read surface -> through
+# examples/01-strangler-proxy (:8888) — unlike Review (a synchronous REST
+# passthrough), this gate genuinely waits on eventual consistency: the
+# "Notification Context Contract" folder's DRQ-037 bounded-wait poll must
+# retry before succeeding, not just hit on the first attempt, or the gate
+# would be a green-only race rather than real evidence the async pipeline
+# was exercised (see examples/03-notification-service/README.md's "CI
+# equivalence gate" note for the full red->green transcript). The top-level
+# `on.paths` filters above were widened from the original
+# "db/migration/** only" scoping to the full `examples/00-monolith/**`,
+# `examples/01-strangler-proxy/**`, and `examples/03-notification-service/**`
+# trees to cover both jobs — GitHub Actions path filters are workflow-level,
+# not per-job, so the Review job now also runs (and should stay green) on
+# changes to those paths.
 
 name: Code CI
 
@@ -35,14 +54,18 @@ on:
   push:
     branches: ["**"]
     paths:
+      - "examples/00-monolith/**"
+      - "examples/01-strangler-proxy/**"
       - "examples/02-review-service/**"
-      - "examples/00-monolith/src/main/resources/db/migration/**"
+      - "examples/03-notification-service/**"
       - "tooling/newman/**"
       - ".github/workflows/code-ci.yml"
   pull_request:
     paths:
+      - "examples/00-monolith/**"
+      - "examples/01-strangler-proxy/**"
       - "examples/02-review-service/**"
-      - "examples/00-monolith/src/main/resources/db/migration/**"
+      - "examples/03-notification-service/**"
       - "tooling/newman/**"
       - ".github/workflows/code-ci.yml"
   workflow_dispatch:
@@ -144,4 +167,232 @@ jobs:
         run: |
           if [ -f examples/02-review-service/quarkus.pid ]; then
             kill "$(cat examples/02-review-service/quarkus.pid)" || true
+          fi
+
+  # notification-equivalence-gate (notification-plan.md S9) — the ASYNC
+  # sibling of equivalence-gate above. Review is a synchronous REST
+  # passthrough with no messaging involved; Notification is the first
+  # context whose equivalence gate must stand up Kafka and genuinely wait on
+  # eventual consistency: monolith checkout -> transactional outbox ->
+  # OutboxRelay (@Scheduled poll) -> Kafka `order.placed` -> this service's
+  # SmallRye @Incoming consumer -> its own `notification` Postgres schema ->
+  # GET /api/notifications, all exercised THROUGH the strangler proxy
+  # (examples/01-strangler-proxy, :8888) exactly as a real client would see
+  # it. The gate is the "Notification Context Contract" folder's DRQ-037
+  # bounded-wait poll (tooling/newman/mea.postman_collection.json) — it is
+  # written to pass against either a synchronous or an async backend
+  # unchanged, so running it here with NO collection edits is itself part of
+  # the equivalence proof (R8, no suite drift).
+  notification-equivalence-gate:
+    name: notification-equivalence-gate
+    runs-on: ubuntu-latest
+
+    # Postgres (same image tag/creds the podman stack uses, matching
+    # equivalence-gate above) PLUS a single-broker KRaft-mode Kafka,
+    # pinned to the same apache/kafka tag compose.yaml/.env.example use
+    # (KAFKA_IMAGE_TAG=3.8.0) — the SAME contract as local dev, not a
+    # CI-only substitute. Both are GitHub Actions service containers with
+    # health checks, so the job's steps don't start until each is ready.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: monolith
+          POSTGRES_USER: monolith
+          POSTGRES_PASSWORD: monolith_dev_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U monolith -d monolith"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 12
+
+      # Single-node KRaft (broker+controller combined role, no ZooKeeper),
+      # mirroring compose.yaml's kafka service. Trimmed for the GitHub
+      # Actions service-container network model: steps run directly on the
+      # runner VM (not inside a compose network), so there is no "kafka"
+      # container hostname to advertise — every listener below resolves via
+      # the runner's own localhost, the same way service containers already
+      # make Postgres reachable at localhost:5432 above.
+      kafka:
+        image: docker.io/apache/kafka:3.8.0
+        env:
+          KAFKA_NODE_ID: 1
+          KAFKA_PROCESS_ROLES: broker,controller
+          KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+          KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+          KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+          KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+          KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+          KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+          KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+          KAFKA_NUM_PARTITIONS: 3
+          KAFKA_DEFAULT_REPLICATION_FACTOR: 1
+          KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+          KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+          KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+          KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+          CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+        ports:
+          - 9092:9092
+        options: >-
+          --health-cmd "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 24
+          --health-start-period 30s
+
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v5
+
+      - name: Set up JDK 25 (temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+
+      - name: Set up Node (for newman)
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install newman
+        run: npm install -g newman
+
+      - name: Apply the monolith's committed Flyway SQL to Postgres
+        # The notification-service only owns its OWN `notification` schema
+        # (quarkus.flyway.schemas=notification, applied automatically on
+        # boot below) — it never touches `public`. The monolith's `public`
+        # schema (customers/inventory/orders/outbox — V1-V3, incl. V3's
+        # transactional outbox table the relay polls) is applied directly
+        # with psql here, same discipline as equivalence-gate above: the
+        # exact DDL/seed Flyway would run, no extra monolith JVM needed just
+        # to get tables, and schema drift is picked up automatically if
+        # these files change (R8).
+        run: |
+          set -euo pipefail
+          PGPASSWORD=monolith_dev_only psql -h localhost -U monolith -d monolith \
+            -f examples/00-monolith/src/main/resources/db/migration/V1__init_schema.sql
+          PGPASSWORD=monolith_dev_only psql -h localhost -U monolith -d monolith \
+            -f examples/00-monolith/src/main/resources/db/migration/V2__seed_data.sql
+          PGPASSWORD=monolith_dev_only psql -h localhost -U monolith -d monolith \
+            -f examples/00-monolith/src/main/resources/db/migration/V3__outbox.sql
+
+      - name: Build the monolith
+        run: mvn -q -DskipTests -f examples/00-monolith package
+
+      - name: Build the Notification service
+        working-directory: examples/03-notification-service
+        run: ./mvnw -q -DskipTests package
+
+      - name: Build the strangler proxy
+        working-directory: examples/01-strangler-proxy
+        run: ./mvnw -q -DskipTests package
+
+      - name: Start the monolith (outbox write path + Kafka producer) on :8080
+        working-directory: examples/00-monolith
+        env:
+          SPRING_DATASOURCE_PASSWORD: monolith_dev_only
+          SPRING_KAFKA_BOOTSTRAP_SERVERS: localhost:9092
+        run: |
+          nohup java -jar target/monolith.jar > monolith.log 2>&1 &
+          echo $! > monolith.pid
+
+      - name: Start the Notification service (Kafka consumer) on :8083
+        working-directory: examples/03-notification-service
+        env:
+          KAFKA_BOOTSTRAP_SERVERS: localhost:9092
+        run: |
+          nohup java -jar target/quarkus-app/quarkus-run.jar > quarkus.log 2>&1 &
+          echo $! > quarkus.pid
+
+      - name: Start the strangler proxy (notification cutover flag on) on :8888
+        # strangler.notification.enabled defaults to true in the proxy's
+        # committed application.properties (notification-plan.md S7 cutover)
+        # — no override needed here, the routing /api/notifications ->
+        # :8083 is already the proxy's shipped default.
+        working-directory: examples/01-strangler-proxy
+        run: |
+          nohup java -jar target/quarkus-app/quarkus-run.jar > quarkus.log 2>&1 &
+          echo $! > quarkus.pid
+
+      - name: Wait for the monolith to be ready on :8080
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 60); do
+            if curl -sf "http://localhost:8080/api/inventory" > /dev/null; then
+              echo "Monolith is up."
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Monolith did not become ready in time." >&2
+          cat examples/00-monolith/monolith.log || true
+          exit 1
+
+      - name: Wait for the Notification service to be ready on :8083
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 60); do
+            if curl -sf "http://localhost:8083/api/notifications?customerId=1" > /dev/null; then
+              echo "Notification service is up."
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Notification service did not become ready in time." >&2
+          cat examples/03-notification-service/quarkus.log || true
+          exit 1
+
+      - name: Wait for the strangler proxy to be ready on :8888
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 60); do
+            if curl -sf "http://localhost:8888/api/inventory" > /dev/null; then
+              echo "Strangler proxy is up."
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Strangler proxy did not become ready in time." >&2
+          cat examples/01-strangler-proxy/quarkus.log || true
+          exit 1
+
+      - name: Run the behavior-equivalence suite (Notification Context Contract) — the equivalence gate
+        # THE GATE: the async path (outbox -> Kafka -> consumer) exercised
+        # end-to-end through the proxy. A non-zero newman exit code fails the
+        # job. The DRQ-037 bounded-wait poll (up to 10 x 500ms) absorbs the
+        # relay's ~2s poll-interval latency — no sleep/delay is added here,
+        # the collection itself owns the wait.
+        run: |
+          newman run tooling/newman/mea.postman_collection.json \
+            --folder "Notification Context Contract" \
+            --env-var baseUrl=http://localhost:8888
+
+      - name: Dump service logs on failure
+        if: failure()
+        run: |
+          echo "::group::monolith.log"
+          cat examples/00-monolith/monolith.log || true
+          echo "::endgroup::"
+          echo "::group::notification-service quarkus.log"
+          cat examples/03-notification-service/quarkus.log || true
+          echo "::endgroup::"
+          echo "::group::strangler-proxy quarkus.log"
+          cat examples/01-strangler-proxy/quarkus.log || true
+          echo "::endgroup::"
+
+      - name: Stop the services
+        if: always()
+        run: |
+          if [ -f examples/00-monolith/monolith.pid ]; then
+            kill "$(cat examples/00-monolith/monolith.pid)" || true
+          fi
+          if [ -f examples/03-notification-service/quarkus.pid ]; then
+            kill "$(cat examples/03-notification-service/quarkus.pid)" || true
+          fi
+          if [ -f examples/01-strangler-proxy/quarkus.pid ]; then
+            kill "$(cat examples/01-strangler-proxy/quarkus.pid)" || true
           fi
