@@ -22,10 +22,16 @@ import org.junit.jupiter.api.Test;
  * exact {@link StockDto} JSON shape and 404 contract -- unchanged across the
  * Phase A -&gt; Phase B refactor.
  *
- * <p>Seeds via {@link InventoryCdcWriter#upsert} directly -- the same
- * idempotent write path {@link InventoryCdcConsumer} uses in production --
- * rather than a Flyway seed migration, since this service owns no demo data
- * of its own (its data always originates from the monolith via CDC).
+ * <p>Seeds its OWN test-specific rows via {@link InventoryCdcWriter#upsert}
+ * directly -- the same idempotent write path {@link InventoryCdcConsumer}
+ * uses in production -- on top of the canonical 3-SKU catalog this service's
+ * own {@code V2__seed_inventory.sql} Flyway migration now seeds on every
+ * fresh Dev Services container (r05/ch.19 S12, DRQ-044 follow-up: CDC was
+ * retired at S11, so this service owns its baseline demo data instead of
+ * relying on a backfill from an upstream that no longer writes it). {@code
+ * listAll_returns200WithStockDtoArray} therefore asserts against the known
+ * TOTAL of 3 migration-seeded rows + 2 test-seeded rows, not just the rows
+ * this class adds itself.
  */
 @QuarkusTest
 class InventoryResourceTest {
@@ -45,10 +51,21 @@ class InventoryResourceTest {
                 .when().get("/api/inventory")
                 .then()
                 .statusCode(200)
-                .body("$", hasSize(2))
+                // 3 rows from V2__seed_inventory.sql (this service's own
+                // Flyway seed, post-CDC-retirement) + 2 rows this test seeds
+                // itself. The gRPC test class cleans up every row it adds
+                // (see InventoryGrpcServiceTest#cleanup), so this total is
+                // deterministic regardless of test execution order.
+                .body("$", hasSize(5))
                 .body("find { it.sku == 'SKU-TEST-WIDGET' }.name", is("Test Widget"))
                 .body("find { it.sku == 'SKU-TEST-WIDGET' }.priceCents", is(1999))
-                .body("find { it.sku == 'SKU-TEST-WIDGET' }.quantityOnHand", is(100));
+                .body("find { it.sku == 'SKU-TEST-WIDGET' }.quantityOnHand", is(100))
+                // Proves the service's own seed migration actually ran and
+                // is visible through the same read surface -- not just that
+                // the table isn't empty.
+                .body("find { it.sku == 'SKU-WIDGET-001' }.name", is("Standard Widget"))
+                .body("find { it.sku == 'SKU-WIDGET-001' }.priceCents", is(1999))
+                .body("find { it.sku == 'SKU-WIDGET-001' }.quantityOnHand", is(100));
     }
 
     @Test
