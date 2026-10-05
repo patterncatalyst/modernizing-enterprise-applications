@@ -27,12 +27,18 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  * <p>Originally proved all six contexts responded from one running monolith.
  * As of r02/S10, Review has been decommissioned from the monolith (cutover to
  * {@code examples/02-review-service} behind the strangler proxy's
- * {@code strangler.review.enabled} flag is now permanent default-on) — this
- * smoke test now covers the FIVE contexts the monolith still owns
- * (order/inventory/payment/shipping/notification). Review's equivalent
- * coverage lives in the behavior-equivalence suite
- * (tooling/newman/mea.postman_collection.json, "Review Context Contract"
- * folder) run against the extracted service.
+ * {@code strangler.review.enabled} flag is now permanent default-on). As of
+ * r04/S8, Notification has been decommissioned the same way: its read surface
+ * and synchronous send path are gone from the monolith, cutover to
+ * {@code examples/03-notification-service} is permanent default-on behind
+ * {@code strangler.notification.enabled}, and checkout now unconditionally
+ * writes the transactional outbox instead. This smoke test now covers the
+ * FOUR contexts the monolith still fully owns (order/inventory/payment/
+ * shipping), plus two decommission checks. Review's and Notification's
+ * equivalent coverage lives in the behavior-equivalence suite
+ * (tooling/newman/mea.postman_collection.json, "Review Context Contract" and
+ * "Notification Context Contract" folders) run against the extracted
+ * services.
  *
  * <p>This is intentionally a thin smoke test, not the full suite — JUnit
  * unit/integration coverage per service and the Newman behavior-equivalence suite
@@ -87,10 +93,18 @@ class SixContextsSmokeTest { // name kept for history; five contexts + one decom
     }
 
     @Test
-    void notificationContextResponds() {
-        ResponseEntity<Object[]> response = rest.getForEntity("/api/notifications?customerId=1", Object[].class);
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).hasSize(1); // seed order #1's confirmation
+    void notificationIsNoLongerServedByTheMonolith() {
+        // r04/S8 decommission: Notification's controller/service/repository
+        // and its read model (common.NotificationDto) were removed from the
+        // monolith once the strangler proxy's cutover to
+        // examples/03-notification-service became the permanent default
+        // (strangler.notification.enabled=true). The monolith itself now
+        // 404s here — proof the extraction was clean and nothing else
+        // depended on this package. (The underlying `notifications` table is
+        // still present in the shared schema, write-only history now; see
+        // SMELLS.md #4 and ch.18/19.)
+        ResponseEntity<Object> response = rest.getForEntity("/api/notifications?customerId=1", Object.class);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     }
 
     @Test

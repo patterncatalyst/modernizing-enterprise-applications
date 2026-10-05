@@ -11,17 +11,20 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.patterncatalyst.monolith.common.Customer;
 import dev.patterncatalyst.monolith.common.CustomerRepository;
 import dev.patterncatalyst.monolith.common.OrderCreate;
 import dev.patterncatalyst.monolith.common.OrderDto;
 import dev.patterncatalyst.monolith.common.OrderStatus;
+import dev.patterncatalyst.monolith.common.Topics;
 import dev.patterncatalyst.monolith.common.exception.InsufficientStockException;
 import dev.patterncatalyst.monolith.common.exception.PaymentDeclinedException;
 import dev.patterncatalyst.monolith.common.exception.ResourceNotFoundException;
+import dev.patterncatalyst.monolith.common.outbox.OutboxEvent;
+import dev.patterncatalyst.monolith.common.outbox.OutboxRepository;
 import dev.patterncatalyst.monolith.inventory.InventoryItem;
 import dev.patterncatalyst.monolith.inventory.InventoryService;
-import dev.patterncatalyst.monolith.notification.NotificationService;
 import dev.patterncatalyst.monolith.payment.Payment;
 import dev.patterncatalyst.monolith.payment.PaymentService;
 import dev.patterncatalyst.monolith.payment.PaymentStatus;
@@ -33,6 +36,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -62,7 +66,9 @@ class OrderServiceTest {
     private ShippingService shippingService;
 
     @Mock
-    private NotificationService notificationService;
+    private OutboxRepository outboxRepository;
+
+    private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
 
     private OrderService orderService;
     private Customer customer;
@@ -70,11 +76,15 @@ class OrderServiceTest {
 
     @BeforeEach
     void setUp() {
-        orderService = new OrderService(
-                orderRepository, customerRepository, inventoryService, paymentService, shippingService,
-                notificationService);
+        orderService = newOrderService();
         customer = new Customer("Ada Lovelace", "ada@example.com");
         widget = new InventoryItem("SKU-WIDGET-001", "Standard Widget", 1999, 100);
+    }
+
+    private OrderService newOrderService() {
+        return new OrderService(
+                orderRepository, customerRepository, inventoryService, paymentService, shippingService,
+                outboxRepository, objectMapper);
     }
 
     @Test
@@ -103,7 +113,48 @@ class OrderServiceTest {
         verify(inventoryService).reserve("SKU-WIDGET-001", 2);
         verify(paymentService).charge(any(Order.class), eq(1999L * 2), eq("CARD-VISA"));
         verify(shippingService).dispatch(any(Order.class), eq("1 Test Way"));
-        verify(notificationService).sendOrderConfirmation(eq(customer), any(Order.class));
+        // ch.17 cure (r04/S8): checkout ALWAYS writes an order.placed outbox
+        // row now — the synchronous in-transaction notification call (SMELL[ch.17])
+        // no longer exists in this module.
+        verify(outboxRepository).save(any(OutboxEvent.class));
+    }
+
+    @Test
+    void placeOrder_alwaysWritesOrderPlacedOutboxEvent() throws Exception {
+        var command = new OrderCreate(
+                1L, List.of(new OrderCreate.Line("SKU-WIDGET-001", 2)), "CARD-VISA", "1 Test Way");
+
+        when(customerRepository.findById(1L)).thenReturn(Optional.of(customer));
+        when(inventoryService.findBySkuOrThrow("SKU-WIDGET-001")).thenReturn(widget);
+        when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> {
+            Order saved = invocation.getArgument(0);
+            // simulate the DB assigning an id, since OrderPlacedEvent needs it
+            Order spy = org.mockito.Mockito.spy(saved);
+            when(spy.getId()).thenReturn(42L);
+            return spy;
+        });
+        when(paymentService.charge(any(Order.class), anyLong(), anyString()))
+                .thenAnswer(invocation -> new Payment(
+                        invocation.getArgument(0), invocation.getArgument(1), invocation.getArgument(2),
+                        PaymentStatus.CAPTURED));
+        when(shippingService.dispatch(any(Order.class), anyString()))
+                .thenAnswer(invocation -> new Shipment(invocation.getArgument(0), invocation.getArgument(1),
+                        ShipmentStatus.DISPATCHED));
+
+        orderService.placeOrder(command);
+
+        // ch.17 cure (r04/S8): exactly one outbox row is written, atomically
+        // within this same (mocked) @Transactional method call — this is now
+        // the only notification path; there is no synchronous call left to
+        // skip.
+        ArgumentCaptor<OutboxEvent> captor = ArgumentCaptor.forClass(OutboxEvent.class);
+        verify(outboxRepository).save(captor.capture());
+        OutboxEvent event = captor.getValue();
+        assertThat(event.getAggregateType()).isEqualTo("Order");
+        assertThat(event.getAggregateId()).isEqualTo("42");
+        assertThat(event.getEventType()).isEqualTo(Topics.ORDER_PLACED);
+        assertThat(event.getPublishedAt()).isNull();
+        assertThat(event.getPayload()).contains("\"orderId\":42").contains("ada@example.com");
     }
 
     @Test
@@ -123,7 +174,7 @@ class OrderServiceTest {
         verify(orderRepository, never()).save(any());
         verify(paymentService, never()).charge(any(), anyLong(), anyString());
         verify(shippingService, never()).dispatch(any(), anyString());
-        verify(notificationService, never()).sendOrderConfirmation(any(), any());
+        verify(outboxRepository, never()).save(any());
     }
 
     @Test
@@ -147,7 +198,7 @@ class OrderServiceTest {
         // rollback is exercised by the Testcontainers integration tier.
         verify(inventoryService).reserve("SKU-WIDGET-001", 1);
         verify(shippingService, never()).dispatch(any(), anyString());
-        verify(notificationService, never()).sendOrderConfirmation(any(), any());
+        verify(outboxRepository, never()).save(any());
     }
 
     @Test

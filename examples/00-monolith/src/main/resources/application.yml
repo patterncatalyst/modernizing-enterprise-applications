@@ -23,6 +23,16 @@ spring:
     enabled: true
     locations: classpath:db/migration
     baseline-on-migrate: false
+  # Kafka coordinates for the outbox relay's producer (ch.17, r04/S3,
+  # common/outbox/OutboxRelay). Bootstrap defaults to the podman-stack
+  # broker's host listener (compose.yaml, localhost:9092) and is overridable
+  # via the standard Spring Boot env var SPRING_KAFKA_BOOTSTRAP_SERVERS —
+  # never hard-coded beyond this default.
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
 
 server:
   port: 8080
@@ -32,6 +42,14 @@ springdoc:
     path: /v3/api-docs
   swagger-ui:
     path: /swagger-ui.html
+
+# ch.17 (r04/S8): the outbox relay's own tuning. notification.mode (the
+# synchronous|outbox reversibility flag used during the extraction) has been
+# removed — placeOrder now always writes the outbox row; see
+# OrderService#placeOrder and common/outbox/OutboxRelay.
+outbox:
+  relay:
+    poll-interval-ms: 2000
 
 logging:
   level:
