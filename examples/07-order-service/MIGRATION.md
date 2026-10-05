@@ -384,3 +384,152 @@ optional," same choice payment-service's/shipping-service's Phase B made).
   `order_service_phaseb_scratch`) were dropped afterward; the podman stack
   itself (`mea-kafka`, `mea-postgres`, `mea-connect`, `mea-lgtm`) was left
   running untouched throughout.
+
+---
+
+# S6 (ch.26, DRQ-067/074) — CQRS read model: `order_view` projection, rebuildable, read-after-write
+
+**HARD PART H2 — the CQRS teaching core.** Adds the REAL denormalized
+`order_view` read model (replacing S4's empty placeholder) and the
+projection that keeps it in sync with every write, so that all reads are
+served EXCLUSIVELY from the read model — never from the `Order`/`OrderItem`
+write-model aggregate.
+
+## `order_view` shape (`V4__order_view_denormalized.sql`)
+
+S4's placeholder (`V3__order_view.sql`: `order_id`/`payload` JSONB/
+`updated_at`) was empty and unwritten through S4 and S5 (no Java entity ever
+mapped to it) — this migration `DROP`s it and `CREATE`s the real shape, safe
+because there was no data to preserve:
+
+| Column | Type | Notes |
+|---|---|---|
+| `order_id` | `BIGINT PRIMARY KEY` | projection key |
+| `customer_id` | `BIGINT NOT NULL` | |
+| `status` | `VARCHAR(32) NOT NULL` | `OrderStatus` as a string |
+| `total_cents` | `BIGINT NOT NULL` | |
+| `created_at` | `TIMESTAMPTZ NOT NULL` | |
+| `shipping_address` | `VARCHAR(255) NOT NULL` | |
+| `items` | `JSONB NOT NULL` | `[{sku, quantity, unitPriceCents}]` — the item SUMMARY, not a join |
+| `payment_status` | `VARCHAR(32)` (nullable) | latest projected payment-saga outcome (`CAPTURED`/`DECLINED`), read-model-internal — NOT part of `OrderDto` |
+| `shipment_status` | `VARCHAR(32)` (nullable) | latest projected shipment-saga outcome (`DISPATCHED`/`FAILED`), read-model-internal — NOT part of `OrderDto` |
+| `updated_at` | `TIMESTAMPTZ NOT NULL DEFAULT now()` | last-projected-at |
+
+`OrderDto` (id/customerId/status/totalCents/createdAt/shippingAddress/
+items[sku,quantity,unitPriceCents]) is served BYTE-FOR-BYTE from this table
+— `OrderService#toDto(OrderView)` maps the six fields the contract needs and
+never leaks `payment_status`/`shipment_status` into the response body
+(verified by `OrderViewProjectionTest#getById_responseShape_...`).
+
+## The projection (`OrderViewProjector`)
+
+One `@ApplicationScoped` component, invoked from FIVE call sites, all inside
+an ALREADY-OPEN `@Transactional` (the projector itself carries no
+`@Transactional` on `project`/`rebuildOne` — it must run inside its caller's
+transaction, by design, so a bare call outside one throws rather than
+silently dual-writing):
+
+1. `OrderService#placeOrder` — `project(order, null, null)`, the initial
+   `PENDING` row, same transaction as the `Order`/outbox-event writes.
+2. `OrderSagaListener#onPaymentCaptured` — `project(order, "CAPTURED", null)`.
+3. `OrderSagaListener#onPaymentDeclined` — `project(order, "DECLINED", null)`.
+4. `OrderSagaListener#onShipmentDispatched` — `project(order, null, "DISPATCHED")`.
+5. `OrderSagaListener#onShipmentFailed` — `project(order, null, "FAILED")`.
+
+**No dual-write:** because `project` runs in the SAME transaction as the
+aggregate mutation that triggered it, the `Order` row and the `OrderView`
+row commit or roll back together — there is no second datastore and no
+window where one is visible without the other.
+
+**Idempotent by `orderId` (upsert, DRQ-074):** `project` finds the existing
+`OrderView` row (if any) and mutates it in place, or inserts if none exists.
+Calling it twice for the same order (a redelivered saga event re-running a
+reaction) produces exactly one row with the latest values — proven directly
+against a real database by
+`OrderViewProjectionTest#project_calledTwiceForSameOrder_upsertsSingleRow_notDuplicated`,
+independent of `OrderSagaListener`'s own status-guard idempotency (which ALSO
+prevents re-projection on a guarded no-op, since `project` is called only on
+the path past the guard).
+
+**`paymentStatus`/`shipmentStatus` are "set if non-null, else preserve":** a
+reaction that only knows about ONE saga's outcome (e.g.
+`onShipmentDispatched` only knows shipping) must not clobber the other
+saga's already-projected status — `null` means "no new information," not
+"clear it."
+
+## Reads repointed exclusively to the view (DRQ-067)
+
+`OrderService#getById`/`#listAll` now query `OrderViewRepository`
+EXCLUSIVELY — `grep -n "orderRepository\." OrderService.java` shows exactly
+ONE match, inside `placeOrder` (the write path); `OrderResource.java` has
+zero references to `OrderRepository` at all. A broken projection therefore
+cannot be masked by a silent fallback to the aggregate — proven by the
+NEGATIVE check below.
+
+## Non-vacuity: the projection-disabled negative check
+
+`OrderViewProjectionDisabledTest` `@InjectMock`s `OrderViewProjector` (every
+call defaults to delegating to a separately hand-built REAL instance backed
+by the real injected repositories — `doCallRealMethod()` cannot be used here
+because `@InjectMock` installs a bare Mockito mock whose fields were never
+constructor/field-injected). One test:
+
+1. Places an order → `GET` reflects `PENDING`.
+2. Suppresses the projection (`doNothing()`), sends `payment.captured`.
+3. Confirms the AGGREGATE genuinely transitioned to `AWAITING_SHIPMENT`
+   (read directly off `OrderRepository`, bypassing the view) — ruling out
+   "the event was never processed" as a false-negative explanation.
+4. Asserts the READ stays STALE at `PENDING` over a held window — this is
+   the assertion that would go RED if a read ever fell back to the
+   aggregate, proving reads genuinely come from `order_view`.
+5. Re-enables the projection, sends `shipment.dispatched` — the next
+   transition re-derives the FULL view row from the aggregate's current
+   state (projection is a full re-derive, not an incremental patch), so the
+   view self-heals straight to `CONFIRMED` even though `AWAITING_SHIPMENT`
+   was skipped in the view entirely.
+
+## Rebuild-from-aggregate (DRQ-074)
+
+`OrderViewProjector#rebuildAll` (own `@Transactional`) re-derives EVERY
+`order_view` row from `OrderRepository`'s current state, exposed as
+`POST /api/orders/_rebuild-view` (`OrderResource#rebuildView`, unauthenticated
+admin/ops endpoint — no security framework is wired into this teaching
+chapter, deliberately not built as speculative infrastructure). For a
+`PENDING`/`AWAITING_SHIPMENT`/`CONFIRMED`/`PAYMENT_DECLINED`/
+`SHIPPING_FAILED` order, `payment_status`/`shipment_status` are DERIVED from
+`OrderStatus` itself (not left blank), because the lifecycle's reachability
+guarantees documented in `OrderSagaListener`'s class javadoc (each of those
+statuses is reachable via exactly one prior saga outcome) make the mapping
+deterministic. `OrderViewProjectionTest#rebuildFromAggregate_...` corrupts a
+view row directly (bypassing the projector), confirms the corruption took
+via `GET`, calls the rebuild endpoint, and asserts the view matches the
+aggregate again.
+
+## Read-after-write honesty (DRQ-067)
+
+Because the projection commits in the SAME transaction as the write, a
+`GET` issued after this service's own API call sees the new state
+immediately — strongly consistent WITHIN this service (no `await`/polling
+needed for `placeOrder`'s own initial `PENDING` row,
+`OrderViewProjectionTest#placeOrder_getReflectsPendingImmediately_fromTheView`).
+The *cross-service* outcome a transition represents (e.g. the shipping hop
+that eventually yields `CONFIRMED`) is still only as fresh as the Kafka
+event that triggers the corresponding reaction — the system-wide saga
+remains eventually consistent; only this service's own write-then-read path
+is strong. This distinction is documented in `OrderViewProjector`'s javadoc
+to avoid overclaiming whole-system strong consistency.
+
+## Verification (S6)
+
+- `./mvnw -q package`: **BUILD SUCCESS**, 40 tests, 0 failures, 0 errors
+  (the prior 32 — `OrderResourceTest` 6, `OrderServiceTest` 6,
+  `OrderSagaListenerTest` 15, `CheckoutOutboxTest` 2,
+  `OrderSagaListenerIntegrationTest` 3 — plus net-new `OrderViewProjectionTest`
+  7 and `OrderViewProjectionDisabledTest` 1).
+- `grep -n "orderRepository\." OrderService.java` → exactly one match
+  (`placeOrder`'s `orderRepository.persist(order)`); `getById`/`listAll`
+  read only `orderViewRepository`.
+- New migration is `V4__order_view_denormalized.sql` — `V1`–`V3` untouched.
+- Dev Services PostgreSQL used throughout (no live podman-stack run needed
+  for this step; `%dev`/`%prod` continue pointing at the real instance,
+  unchanged).

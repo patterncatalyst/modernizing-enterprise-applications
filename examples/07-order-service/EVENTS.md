@@ -23,8 +23,13 @@ emitter, `outbox` table reused unchanged from S4). The four consumed events
 are reacted to by `OrderSagaListener`'s `@Incoming` consumers
 (`payment-captured`/`payment-declined`/`shipment-dispatched`/
 `shipment-failed` channels), in this service's OWN consumer group
-(defaulted from `quarkus.application.name` = `order-service`). The
-read-model projection (S6) is still not wired.
+(defaulted from `quarkus.application.name` = `order-service`).
+
+**Updated at S6 (DRQ-067/074):** the read-model projection now IS wired.
+Every one of the four reactions above calls `OrderViewProjector#project` in
+the SAME `@Transactional` reaction, after mutating the `Order` aggregate —
+see `MIGRATION.md`'s "S6 — CQRS read model" section for the full
+write-path/read-path story.
 
 ## Produces
 

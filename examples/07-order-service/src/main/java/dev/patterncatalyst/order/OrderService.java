@@ -1,6 +1,7 @@
 package dev.patterncatalyst.order;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
@@ -39,6 +40,21 @@ import org.jboss.logging.Logger;
  * reservation: this catch only runs for a checkout that never reached {@code
  * order.placed} being committed; the reactions only run for an order that
  * DID).
+ *
+ * <p><b>ch.26 S6 (DRQ-067/074) -- the CQRS read model:</b> {@link #getById}/
+ * {@link #listAll} are repointed to read EXCLUSIVELY from the denormalized
+ * {@link OrderView} read model via {@link OrderViewRepository} -- NEVER from
+ * {@link OrderRepository} (the write-model aggregate). {@link #placeOrder}
+ * calls {@link OrderViewProjector#project} in the SAME {@code
+ * @Transactional} as the {@link Order} row write, to create the initial
+ * {@code PENDING} projection; {@link OrderSagaListener}'s four reactions
+ * project every subsequent lifecycle transition the same way. See {@link
+ * OrderViewProjector}'s javadoc for the full write-path/read-path story.
+ * {@link #placeOrder}'s OWN return value is the command's immediate echo of
+ * the aggregate it just created/committed -- not a system "read" -- so it
+ * is built directly from {@code order} (not re-queried from the view);
+ * {@code GET /api/orders}/{@code GET /api/orders/{id}} are this service's
+ * only reads.
  */
 @ApplicationScoped
 public class OrderService {
@@ -54,6 +70,8 @@ public class OrderService {
     private final CustomerRepository customerRepository;
     private final RemoteInventoryClient remoteInventoryClient;
     private final OrderOutboxRepository outboxRepository;
+    private final OrderViewRepository orderViewRepository;
+    private final OrderViewProjector orderViewProjector;
     private final ObjectMapper objectMapper;
 
     public OrderService(
@@ -61,11 +79,15 @@ public class OrderService {
             CustomerRepository customerRepository,
             RemoteInventoryClient remoteInventoryClient,
             OrderOutboxRepository outboxRepository,
+            OrderViewRepository orderViewRepository,
+            OrderViewProjector orderViewProjector,
             ObjectMapper objectMapper) {
         this.orderRepository = orderRepository;
         this.customerRepository = customerRepository;
         this.remoteInventoryClient = remoteInventoryClient;
         this.outboxRepository = outboxRepository;
+        this.orderViewRepository = orderViewRepository;
+        this.orderViewProjector = orderViewProjector;
         this.objectMapper = objectMapper;
     }
 
@@ -111,6 +133,11 @@ public class OrderService {
             }
 
             orderRepository.persist(order);
+            // ch.26 S6 (DRQ-067/074): the CQRS read model's initial PENDING
+            // row, projected in the SAME transaction as the order/outbox
+            // writes above -- no dual-write, no window where the order
+            // exists but order_view does not.
+            orderViewProjector.project(order, null, null);
             writeOrderPlacedOutboxEvent(customer, order, command.paymentMethod());
             return toDto(order);
         } catch (RuntimeException ex) {
@@ -179,24 +206,34 @@ public class OrderService {
     }
 
     /**
-     * {@code @Transactional} here (unlike payment's/shipping's read paths,
-     * which have no nested collections) keeps the Hibernate session open
-     * through {@link #toDto}'s lazy {@code order.getItems()} collection
-     * access -- {@link Order#items} is a lazy {@code @OneToMany}.
+     * ch.26 S6 (DRQ-067): reads EXCLUSIVELY from the {@link OrderView} read
+     * model via {@link #orderViewRepository} -- NEVER {@link
+     * #orderRepository} (see {@link OrderViewRepository}'s javadoc). {@code
+     * @Transactional} is kept for symmetry/repository-access safety even
+     * though {@link OrderView} has no lazy collection to keep a session open
+     * for (unlike {@link Order#items}, the reason the PRE-S6 version of this
+     * method needed it).
      */
     @Transactional
     public OrderDto getById(Long id) {
-        return toDto(orderRepository
+        return toDto(orderViewRepository
                 .findByIdOptional(id)
                 .orElseThrow(() -> new ResourceNotFoundException("No order with id " + id)));
     }
 
-    /** See {@link #getById}'s javadoc for why this stays {@code @Transactional}. */
+    /** See {@link #getById}'s javadoc -- reads EXCLUSIVELY from {@link OrderViewRepository}. */
     @Transactional
     public List<OrderDto> listAll() {
-        return orderRepository.listAll().stream().map(OrderService::toDto).toList();
+        return orderViewRepository.listAll().stream().map(this::toDto).toList();
     }
 
+    /**
+     * Builds {@link OrderDto} directly from the just-persisted {@link
+     * Order} aggregate -- used ONLY by {@link #placeOrder} for its own
+     * command-response echo (not a system "read"; see this class's
+     * javadoc). {@link #getById}/{@link #listAll} use {@link
+     * #toDto(OrderView)} below instead.
+     */
     private static OrderDto toDto(Order order) {
         List<OrderDto.Item> items = order.getItems().stream()
                 .map(i -> new OrderDto.Item(i.getSku(), i.getQuantity(), i.getUnitPriceCents()))
@@ -208,6 +245,33 @@ public class OrderService {
                 order.getTotalCents(),
                 order.getCreatedAt(),
                 order.getShippingAddress(),
+                items);
+    }
+
+    /**
+     * Builds {@link OrderDto} from the {@link OrderView} read-model row --
+     * BYTE-FOR-BYTE the same external shape {@link #toDto(Order)} produces
+     * (the Order Context Contract depends on this). {@link
+     * OrderView#getItems()}'s JSON array deserializes straight into {@link
+     * OrderDto.Item} (field names match exactly: sku/quantity/
+     * unitPriceCents).
+     */
+    private OrderDto toDto(OrderView view) {
+        List<OrderDto.Item> items;
+        try {
+            items = objectMapper.readValue(view.getItems(), new TypeReference<List<OrderDto.Item>>() {
+            });
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException(
+                    "Failed to deserialize order_view items for order " + view.getOrderId(), e);
+        }
+        return new OrderDto(
+                view.getOrderId(),
+                view.getCustomerId(),
+                OrderStatus.valueOf(view.getStatus()),
+                view.getTotalCents(),
+                view.getCreatedAt(),
+                view.getShippingAddress(),
                 items);
     }
 }

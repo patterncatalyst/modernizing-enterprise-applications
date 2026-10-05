@@ -66,6 +66,18 @@ import org.jboss.logging.Logger;
  *   refund path would extend this bounded saga's scope beyond what this
  *   extraction sets out to teach.
  * </ul>
+ *
+ * <p><b>ch.26 S6 (DRQ-067/074) — CQRS read-model projection on every
+ * transition:</b> each reaction below calls {@link
+ * OrderViewProjector#project} AFTER mutating the {@link Order} aggregate,
+ * inside the SAME {@code @Transactional} this reaction already opened — the
+ * read model and the write model commit together, atomically, same as
+ * {@link OrderService#placeOrder}. Because {@link #project} is called only
+ * on the path PAST the status guard above, a redelivered/stray event that
+ * the guard turns into a no-op never re-projects either — the guard
+ * protects both models identically. {@link OrderViewProjector#project}
+ * itself is independently idempotent by {@code orderId} regardless (an
+ * upsert, not an insert) — see its javadoc.
  */
 @ApplicationScoped
 public class OrderSagaListener {
@@ -74,10 +86,15 @@ public class OrderSagaListener {
 
     private final OrderRepository orderRepository;
     private final RemoteInventoryClient remoteInventoryClient;
+    private final OrderViewProjector orderViewProjector;
 
-    public OrderSagaListener(OrderRepository orderRepository, RemoteInventoryClient remoteInventoryClient) {
+    public OrderSagaListener(
+            OrderRepository orderRepository,
+            RemoteInventoryClient remoteInventoryClient,
+            OrderViewProjector orderViewProjector) {
         this.orderRepository = orderRepository;
         this.remoteInventoryClient = remoteInventoryClient;
+        this.orderViewProjector = orderViewProjector;
     }
 
     /**
@@ -102,6 +119,7 @@ public class OrderSagaListener {
             return;
         }
         order.awaitShipment();
+        orderViewProjector.project(order, "CAPTURED", null);
         LOG.infof("order %d AWAITING_SHIPMENT via payment.captured", order.getId());
     }
 
@@ -128,6 +146,7 @@ public class OrderSagaListener {
             return;
         }
         order.confirm();
+        orderViewProjector.project(order, null, "DISPATCHED");
         LOG.infof("order %d CONFIRMED via shipment.dispatched (shipmentId=%d)", order.getId(), event.shipmentId());
     }
 
@@ -168,6 +187,7 @@ public class OrderSagaListener {
                         order.getId(), item.getSku(), item.getQuantity());
             }
         }
+        orderViewProjector.project(order, null, "FAILED");
         LOG.infof(
                 "order %d SHIPPING_FAILED via shipment.failed (reason=%s); compensating Release issued for "
                         + "%d line(s); payment NOT refunded (DRQ-056)",
@@ -208,6 +228,7 @@ public class OrderSagaListener {
                         order.getId(), item.getSku(), item.getQuantity());
             }
         }
+        orderViewProjector.project(order, "DECLINED", null);
         LOG.infof("order %d PAYMENT_DECLINED via payment.declined; compensating Release issued for %d line(s)",
                 order.getId(), order.getItems().size());
     }
