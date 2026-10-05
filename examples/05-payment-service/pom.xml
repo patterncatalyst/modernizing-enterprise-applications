@@ -30,33 +30,25 @@
         </dependencies>
     </dependencyManagement>
 
-    <!-- r06/ch.23 S4 (DRQ-052), Phase A: the monolith's Spring MVC / Spring DI /
-         Spring Data JPA payment READ surface (PaymentController/PaymentService/
-         PaymentRepository/Payment) plus the charge()/CARD-DECLINE capture logic
-         is lifted onto Quarkus largely unchanged via the Quarkiverse
-         Spring-compatibility extensions, mirroring review-service's and
-         notification-service's Phase A (see MIGRATION.md). Phase B (S5) removes
-         this shim for idiomatic Quarkus REST + Panache + the net-new SmallRye
-         Reactive Messaging consumer/producer + transactional outbox; none of
-         that exists yet. This service owns its OWN `payment` Postgres schema
-         from day one (own-schema, DRQ-052), same discipline as notification/
-         inventory, NOT the monolith's shared schema (contrast review-service). -->
+    <!-- r06/ch.23 S5 (DRQ-052), Phase B: the Spring-compat shim (S4) is
+         REMOVED; quarkus-spring-web/-di/-data-jpa are gone. The read surface
+         (PaymentResource/PaymentService/PaymentRepository/Payment) now runs
+         directly on Quarkus REST + Hibernate ORM with Panache + plain CDI, and
+         the net-new choreography core (idiomatic-from-the-start, no Spring
+         original to lift, DRQ-052/DRQ-053) is layered on top:
+         quarkus-messaging-kafka (the order.placed consumer + the
+         payment.captured/payment.declined outbox-relay producer) and
+         quarkus-scheduler (the outbox relay's @Scheduled poll). This service
+         still owns its OWN `payment` Postgres schema from day one
+         (own-schema, DRQ-052), same discipline as notification/inventory. -->
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-spring-web</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-spring-di</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-spring-data-jpa</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-rest-jackson</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-hibernate-orm-panache</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -65,6 +57,14 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-flyway</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-messaging-kafka</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-scheduler</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -93,6 +93,17 @@
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>
             <version>3.27.7</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.smallrye.reactive</groupId>
+            <artifactId>smallrye-reactive-messaging-in-memory</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.awaitility</groupId>
+            <artifactId>awaitility</artifactId>
+            <version>4.3.0</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

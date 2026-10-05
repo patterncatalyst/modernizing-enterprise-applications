@@ -1,20 +1,26 @@
 package dev.patterncatalyst.payment;
 
+import io.quarkus.hibernate.orm.panache.PanacheRepository;
+import jakarta.enterprise.context.ApplicationScoped;
 import java.util.List;
-import java.util.Optional;
-import org.springframework.data.jpa.repository.JpaRepository;
 
 /**
- * Lifted from the monolith's {@code payment.PaymentRepository} via
- * {@code quarkus-spring-data-jpa} (Phase A). The derived query method names
- * are unchanged ({@code findByOrderId}/{@code findAllByOrderId}), but since
- * {@link Payment#getOrderId()} is now a plain scalar column (FK decomposed,
- * not a nested {@code order.id} traversal), the binding is actually simpler
- * than the monolith's original.
+ * REFACTORED to idiomatic Quarkus (r06/ch.23 S5, Phase B, DRQ-052) from the
+ * Phase A Spring Data {@code JpaRepository<Payment, Long>} interface --
+ * mirrors notification-service's/inventory-service's Phase B repositories:
+ * the Panache REPOSITORY pattern (not active-record), a thin, testable,
+ * CDI-managed data-access class. The derived-query methods become explicit
+ * simplified-HQL {@code find(...)} calls -- Panache has no Spring-Data-style
+ * method-name-parsing convention.
  */
-public interface PaymentRepository extends JpaRepository<Payment, Long> {
+@ApplicationScoped
+public class PaymentRepository implements PanacheRepository<Payment> {
 
-    Optional<Payment> findByOrderId(Long orderId);
+    public Payment findByOrderId(Long orderId) {
+        return find("orderId", orderId).firstResult();
+    }
 
-    List<Payment> findAllByOrderId(Long orderId);
+    public List<Payment> findAllByOrderId(Long orderId) {
+        return list("orderId", orderId);
+    }
 }

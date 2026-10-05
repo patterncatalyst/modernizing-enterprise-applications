@@ -4,6 +4,7 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
+import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import java.util.concurrent.atomic.AtomicLong;
@@ -11,25 +12,25 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * r06/ch.23 S4 (Phase A, DRQ-052). Real, end-to-end {@code @QuarkusTest} for
- * the lifted read surface -- no mocking of {@link PaymentService}: the thing
- * worth proving is that Quarkus Dev Services' isolated Testcontainers
- * Postgres, this service's OWN Flyway migration (own `payment` schema), and
- * the Spring-compat stack (quarkus-spring-web/-di/-data-jpa) all work
- * together end-to-end, preserving the monolith's exact {@link PaymentDto}
- * JSON shape and 404 contract -- this is the behavior-equivalence suite's
- * forward-looking "Payment Context Contract" shape (S2/S4), proven here at
- * the service level before the strangler proxy's PaymentAclRoute (S7)
- * exists.
+ * RENAMED from Phase A's {@code PaymentControllerTest} to {@code
+ * PaymentResourceTest} (r06/ch.23 S5, Phase B) to match the {@code
+ * PaymentController} -&gt; {@link PaymentResource} rename -- same real,
+ * end-to-end {@code @QuarkusTest} (Dev Services' isolated Testcontainers
+ * Postgres, self-seeded via {@link PaymentRepository}), now proving the
+ * idiomatic Quarkus REST + Panache stack preserves the exact same {@link
+ * PaymentDto} JSON shape and 404/400 contract Phase A's Spring-compat stack
+ * served -- this IS the behavior-equivalence suite's "Payment Context
+ * Contract" shape (S2/S4), proven unchanged across the Phase A -&gt; B
+ * refactor.
  *
- * <p>Seeds its own test-specific row directly via {@link PaymentRepository}
- * (self-seeded, like inventory-service's {@code InventoryResourceTest} seeds
- * via its writer) ON TOP of the one demo row {@code V2__seed_demo_payment.sql}
- * seeds on every fresh Dev Services container, so assertions don't depend on
- * migration-seed ordering alone.
+ * <p>Seeds via {@link QuarkusTransaction#requiringNew()} in a NEW,
+ * immediately-committed transaction -- not Spring Data's {@code save()}
+ * (Panache's {@code persist()} requires an active transaction, unlike Spring
+ * Data's implicitly-transactional repository methods) -- same technique
+ * notification-service's Phase B {@code NotificationResourceTest} uses.
  */
 @QuarkusTest
-class PaymentControllerTest {
+class PaymentResourceTest {
 
     // The Dev Services Postgres container (and its uq_payments_order_id
     // unique index) persists across all @Test methods in this class -- only
@@ -47,7 +48,11 @@ class PaymentControllerTest {
     @BeforeEach
     void seed() {
         testOrderId = NEXT_ORDER_ID.incrementAndGet();
-        Payment saved = repository.save(new Payment(testOrderId, 5999L, "CARD-MASTERCARD", PaymentStatus.CAPTURED));
+        Payment saved = QuarkusTransaction.requiringNew().call(() -> {
+            Payment payment = new Payment(testOrderId, 5999L, "CARD-MASTERCARD", PaymentStatus.CAPTURED);
+            repository.persist(payment);
+            return payment;
+        });
         testPaymentId = saved.getId();
     }
 
