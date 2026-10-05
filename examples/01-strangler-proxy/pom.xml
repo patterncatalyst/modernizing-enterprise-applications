@@ -60,6 +60,17 @@
             <artifactId>quarkus-junit</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- RestAssured for the Payment route tests (payment-plan.md S7): the
+             same test dependency already used by examples/02-review-service,
+             examples/03-notification-service, and examples/04-inventory-service
+             for their @QuarkusTest REST assertions. This is the first test in
+             this module; there is no pre-existing route-test pattern here to
+             extend. -->
+        <dependency>
+            <groupId>io.rest-assured</groupId>
+            <artifactId>rest-assured</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

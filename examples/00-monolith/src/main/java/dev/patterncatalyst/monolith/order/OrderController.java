@@ -23,10 +23,24 @@ public class OrderController {
         this.service = service;
     }
 
+    /**
+     * ch.23 (r06/S9, DRQ-047, DECOMMISSION): the resource is always created
+     * synchronously and is immediately pollable via {@code GET
+     * /api/orders/{id}}, but the checkout outcome is NOT — {@link
+     * OrderService#placeOrder} now always returns the order {@code PENDING}
+     * (payment is captured out-of-process, over the choreographed saga), so
+     * this always returns {@code 202 Accepted} with a {@code Location}
+     * header. The synchronous {@code 201 Created}/{@code 402} contract this
+     * endpoint used to also support (the {@code payment.mode=synchronous}
+     * path) was removed along with that flag; the real-time terminal status
+     * ({@code CONFIRMED}/{@code PAYMENT_DECLINED}) is reached eventually and
+     * observed by polling {@code GET /api/orders/{id}}.
+     */
     @PostMapping
     public ResponseEntity<OrderDto> placeOrder(@Valid @RequestBody OrderCreate command) {
         OrderDto dto = service.placeOrder(command);
-        return ResponseEntity.created(URI.create("/api/orders/" + dto.id())).body(dto);
+        URI location = URI.create("/api/orders/" + dto.id());
+        return ResponseEntity.accepted().location(location).body(dto);
     }
 
     @GetMapping("/{id}")

@@ -4,10 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -20,17 +17,10 @@ import dev.patterncatalyst.monolith.common.OrderDto;
 import dev.patterncatalyst.monolith.common.OrderStatus;
 import dev.patterncatalyst.monolith.common.Topics;
 import dev.patterncatalyst.monolith.common.exception.InsufficientStockException;
-import dev.patterncatalyst.monolith.common.exception.PaymentDeclinedException;
 import dev.patterncatalyst.monolith.common.exception.ResourceNotFoundException;
 import dev.patterncatalyst.monolith.common.outbox.OutboxEvent;
 import dev.patterncatalyst.monolith.common.outbox.OutboxRepository;
 import dev.patterncatalyst.monolith.inventory.RemoteInventoryClient;
-import dev.patterncatalyst.monolith.payment.Payment;
-import dev.patterncatalyst.monolith.payment.PaymentService;
-import dev.patterncatalyst.monolith.payment.PaymentStatus;
-import dev.patterncatalyst.monolith.shipping.Shipment;
-import dev.patterncatalyst.monolith.shipping.ShipmentStatus;
-import dev.patterncatalyst.monolith.shipping.ShippingService;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -44,8 +34,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
  * Tier 1 (unit): {@code OrderService} is the god service (SMELL[ch.26]) and the
  * one in-process ACID transaction (SMELL[ch.22]) — it is the single most
  * logic-bearing service in the monolith, so it gets the most thorough unit
- * coverage: happy path, out-of-stock, payment-declined, and (r05/ch.19 S7/S11)
- * the gRPC reserve/release compensation seam. All collaborators are mocked;
+ * coverage: happy path (now PENDING + outbox handoff), out-of-stock, customer-
+ * not-found, and (r05/ch.19 S7/S11, still the crux post r06/ch.23 S9) the gRPC
+ * reserve/release PRE-HANDOFF compensation seam. All collaborators are mocked;
  * this test never touches a database or a real gRPC channel.
  *
  * <p>r05/ch.19 S11 (DECOMMISSION): the monolith's local in-JVM
@@ -54,6 +45,20 @@ import org.mockito.junit.jupiter.MockitoExtension;
  * RemoteInventoryClient} (gRPC) is now the ONLY collaborator {@code
  * OrderService} uses to reserve/release/read stock, so every test below
  * exercises that one path.
+ *
+ * <p>r06/ch.23 S9 (DECOMMISSION): the {@code payment.mode=synchronous|
+ * choreographed} flag, the {@code paymentService}/{@code shippingService}
+ * mocks, and every test exercising the now-deleted synchronous in-line
+ * charge (including the synchronous payment-decline compensation test) are
+ * gone — {@code OrderService} no longer takes those collaborators at all.
+ * {@code placeOrder} always persists {@code PENDING} and hands off via the
+ * outbox; the payment-decline compensation this class used to also cover is
+ * now {@link OrderSagaListener#onPaymentDeclined}'s job (see {@code
+ * OrderSagaListenerTest}). The test below named {@code
+ * placeOrder_reserveFailsOnSecondLine_compensatesFirstLine} is THE
+ * regression check that decommissioning the synchronous path did not also
+ * remove the PRE-HANDOFF reserve-failure compensation — it must keep
+ * passing.
  */
 @ExtendWith(MockitoExtension.class)
 class OrderServiceTest {
@@ -68,12 +73,6 @@ class OrderServiceTest {
     private RemoteInventoryClient remoteInventoryClient;
 
     @Mock
-    private PaymentService paymentService;
-
-    @Mock
-    private ShippingService shippingService;
-
-    @Mock
     private OutboxRepository outboxRepository;
 
     private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
@@ -84,50 +83,12 @@ class OrderServiceTest {
     @BeforeEach
     void setUp() {
         orderService = new OrderService(
-                orderRepository, customerRepository, remoteInventoryClient, paymentService,
-                shippingService, outboxRepository, objectMapper);
+                orderRepository, customerRepository, remoteInventoryClient, outboxRepository, objectMapper);
         customer = new Customer("Ada Lovelace", "ada@example.com");
     }
 
     @Test
-    void placeOrder_happyPath_confirmsOrderAndOrchestratesAllFiveContexts() {
-        var command = new OrderCreate(
-                1L, List.of(new OrderCreate.Line("SKU-WIDGET-001", 2)), "CARD-VISA", "1 Test Way");
-
-        when(customerRepository.findById(1L)).thenReturn(Optional.of(customer));
-        when(remoteInventoryClient.reserve("SKU-WIDGET-001", 2))
-                .thenReturn(new RemoteInventoryClient.ReserveResult(true, 98));
-        when(remoteInventoryClient.getStock("SKU-WIDGET-001"))
-                .thenReturn(new RemoteInventoryClient.StockSnapshot("SKU-WIDGET-001", "Standard Widget", 1999L));
-        when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(paymentService.charge(any(Order.class), anyLong(), anyString()))
-                .thenAnswer(invocation -> new Payment(
-                        invocation.getArgument(0), invocation.getArgument(1), invocation.getArgument(2),
-                        PaymentStatus.CAPTURED));
-        when(shippingService.dispatch(any(Order.class), anyString()))
-                .thenAnswer(invocation -> new Shipment(invocation.getArgument(0), invocation.getArgument(1),
-                        ShipmentStatus.DISPATCHED));
-
-        OrderDto dto = orderService.placeOrder(command);
-
-        assertThat(dto.status()).isEqualTo(OrderStatus.CONFIRMED);
-        assertThat(dto.totalCents()).isEqualTo(1999L * 2);
-        assertThat(dto.items()).hasSize(1);
-        assertThat(dto.items().get(0).sku()).isEqualTo("SKU-WIDGET-001");
-
-        verify(remoteInventoryClient).reserve("SKU-WIDGET-001", 2);
-        verify(paymentService).charge(any(Order.class), eq(1999L * 2), eq("CARD-VISA"));
-        verify(shippingService).dispatch(any(Order.class), eq("1 Test Way"));
-        // ch.17 cure (r04/S8): checkout ALWAYS writes an order.placed outbox
-        // row now — the synchronous in-transaction notification call (SMELL[ch.17])
-        // no longer exists in this module.
-        verify(outboxRepository).save(any(OutboxEvent.class));
-        // happy path never issues a compensating Release.
-        verify(remoteInventoryClient, never()).release(anyString(), anyInt());
-    }
-
-    @Test
-    void placeOrder_alwaysWritesOrderPlacedOutboxEvent() throws Exception {
+    void placeOrder_happyPath_staysPendingReservesStockAndWritesOrderPlacedOutboxEvent() throws Exception {
         var command = new OrderCreate(
                 1L, List.of(new OrderCreate.Line("SKU-WIDGET-001", 2)), "CARD-VISA", "1 Test Way");
 
@@ -143,20 +104,25 @@ class OrderServiceTest {
             when(spy.getId()).thenReturn(42L);
             return spy;
         });
-        when(paymentService.charge(any(Order.class), anyLong(), anyString()))
-                .thenAnswer(invocation -> new Payment(
-                        invocation.getArgument(0), invocation.getArgument(1), invocation.getArgument(2),
-                        PaymentStatus.CAPTURED));
-        when(shippingService.dispatch(any(Order.class), anyString()))
-                .thenAnswer(invocation -> new Shipment(invocation.getArgument(0), invocation.getArgument(1),
-                        ShipmentStatus.DISPATCHED));
 
-        orderService.placeOrder(command);
+        OrderDto dto = orderService.placeOrder(command);
 
-        // ch.17 cure (r04/S8): exactly one outbox row is written, atomically
-        // within this same (mocked) @Transactional method call — this is now
-        // the only notification path; there is no synchronous call left to
-        // skip.
+        // ch.23 (r06/S9, DRQ-047): checkout NEVER confirms or charges
+        // in-line anymore — it always stays PENDING, handed off to the
+        // choreographed saga via the order.placed outbox event.
+        assertThat(dto.status()).isEqualTo(OrderStatus.PENDING);
+        assertThat(dto.totalCents()).isEqualTo(1999L * 2);
+        assertThat(dto.items()).hasSize(1);
+        assertThat(dto.items().get(0).sku()).isEqualTo("SKU-WIDGET-001");
+
+        verify(remoteInventoryClient).reserve("SKU-WIDGET-001", 2);
+        // happy path never issues a compensating Release.
+        verify(remoteInventoryClient, never()).release(anyString(), anyInt());
+
+        // ch.17 cure (r04/S8), extended by ch.23 (r06/S9): checkout ALWAYS
+        // writes an order.placed outbox row now — it is the ONLY handoff,
+        // to both notification (unchanged since r04) and payment (since
+        // r06/S9, no more in-line charge to skip this write for).
         ArgumentCaptor<OutboxEvent> captor = ArgumentCaptor.forClass(OutboxEvent.class);
         verify(outboxRepository).save(captor.capture());
         OutboxEvent event = captor.getValue();
@@ -165,6 +131,9 @@ class OrderServiceTest {
         assertThat(event.getEventType()).isEqualTo(Topics.ORDER_PLACED);
         assertThat(event.getPublishedAt()).isNull();
         assertThat(event.getPayload()).contains("\"orderId\":42").contains("ada@example.com");
+        // the handoff payload must carry paymentMethod for the payment
+        // service's DECLINE-in-method demo rule (DRQ-048).
+        assertThat(event.getPayload()).contains("\"paymentMethod\":\"CARD-VISA\"");
     }
 
     @Test
@@ -185,8 +154,6 @@ class OrderServiceTest {
                 .hasMessageContaining("SKU-GIZMO-003");
 
         verify(orderRepository, never()).save(any());
-        verify(paymentService, never()).charge(any(), anyLong(), anyString());
-        verify(shippingService, never()).dispatch(any(), anyString());
         verify(outboxRepository, never()).save(any());
         // r05/ch.19 S8 (DRQ-043): insufficient stock means no snapshot is ever fetched.
         verify(remoteInventoryClient, never()).getStock(anyString());
@@ -194,32 +161,41 @@ class OrderServiceTest {
     }
 
     @Test
-    void placeOrder_paymentDeclined_compensatesWithRelease() {
-        // r05/ch.19 S7/S11 (DRQ-042, THE crux): Reserve succeeds (so the
-        // decrement already committed in the inventory service's own DB,
-        // outside this method's @Transactional), then payment declines. The
-        // catch block MUST issue a compensating Release for the exact
-        // sku/qty this checkout reserved, restoring the observable baseline
-        // (Scenario 3 of the behavior-equivalence suite).
+    void placeOrder_reserveFailsOnSecondLine_compensatesFirstLine() {
+        // THE crux regression check for r06/ch.23 S9 (DRQ-049): decommissioning
+        // the synchronous payment path and narrowing the catch's purpose must
+        // NOT also remove the PRE-HANDOFF reserve-failure compensation. Line 1
+        // reserves successfully (committed in the inventory service's own
+        // database); line 2 is out of stock, so placeOrder throws BEFORE the
+        // order is ever saved or handed off via order.placed -- no saga is
+        // ever started for this checkout, so OrderSagaListener will never see
+        // it. The surrounding try/catch in OrderService#placeOrder MUST still
+        // release line 1's reservation itself, or this would be a stock leak
+        // introduced by the decommission.
         var command = new OrderCreate(
-                1L, List.of(new OrderCreate.Line("SKU-WIDGET-001", 3)), "CARD-DECLINE", "1 Test Way");
+                1L,
+                List.of(new OrderCreate.Line("SKU-WIDGET-001", 2), new OrderCreate.Line("SKU-GIZMO-003", 99)),
+                "CARD-VISA",
+                "1 Test Way");
 
         when(customerRepository.findById(1L)).thenReturn(Optional.of(customer));
-        when(remoteInventoryClient.reserve("SKU-WIDGET-001", 3))
-                .thenReturn(new RemoteInventoryClient.ReserveResult(true, 97));
+        when(remoteInventoryClient.reserve("SKU-WIDGET-001", 2))
+                .thenReturn(new RemoteInventoryClient.ReserveResult(true, 98));
         when(remoteInventoryClient.getStock("SKU-WIDGET-001"))
                 .thenReturn(new RemoteInventoryClient.StockSnapshot("SKU-WIDGET-001", "Standard Widget", 1999L));
-        when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        doThrow(new PaymentDeclinedException("Payment method 'CARD-DECLINE' was declined"))
-                .when(paymentService).charge(any(Order.class), anyLong(), eq("CARD-DECLINE"));
+        when(remoteInventoryClient.reserve("SKU-GIZMO-003", 99))
+                .thenReturn(new RemoteInventoryClient.ReserveResult(false, 5));
 
         assertThatThrownBy(() -> orderService.placeOrder(command))
-                .isInstanceOf(PaymentDeclinedException.class)
-                .hasMessageContaining("declined");
+                .isInstanceOf(InsufficientStockException.class);
 
-        verify(remoteInventoryClient).reserve("SKU-WIDGET-001", 3);
-        verify(remoteInventoryClient).release("SKU-WIDGET-001", 3);
-        verify(shippingService, never()).dispatch(any(), anyString());
+        // the earlier, already-committed reservation IS released...
+        verify(remoteInventoryClient).release("SKU-WIDGET-001", 2);
+        // ...and no saga was ever started for this checkout (no save, no
+        // outbox write) -- so OrderSagaListener#onPaymentDeclined can never
+        // ALSO try to release the same sku (there is nothing for it to react
+        // to: no order.placed event was ever written).
+        verify(orderRepository, never()).save(any());
         verify(outboxRepository, never()).save(any());
     }
 

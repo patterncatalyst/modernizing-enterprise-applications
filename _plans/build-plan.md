@@ -510,15 +510,17 @@ first" guidance (p.18). Each step = a chapter, a `DRQ-NNN` decision, a
 `build-plan.md` row, a `demos/demo-*.sh`, a flag-gated cutover behind the Camel
 strangler proxy, and an equivalence-gate check before the monolith module is decommissioned.
 
-| # | Service | Seam / mechanism | Data & transaction handling | Target | Chapters |
-|---|---|---|---|---|---|
-| 0 | — | Insert the Camel strangler proxy in front of the monolith | n/a | — | ch.14 |
-| 1 | **review** | REST leaf, no sync deps; proxy redirect by URI; ACL | Own schema from day one; no shared-txn entanglement | Quarkus REST + OIDC | ch.15 *(walking skeleton, r02)* |
-| 2 | **notification** | Event consumer; content-based routing; decorating collaborator | **Outbox** in monolith → Kafka; idempotent consumer | Quarkus + Camel (Kafka consumer, WebSockets.Next) | ch.16–17 |
-| 3 | **inventory** | Synchronous gRPC; decomposed DB; decorating collaborator | **CDC (Debezium)** backfill from shared schema → owned DB, then cut writes | Quarkus gRPC server | ch.19 |
-| 4 | **payment** | Event choreography (`order.placed`→`payment.captured`) | Choreographed **saga**; compensations; ACID→ACD realized | Quarkus + Camel (Kafka) | ch.23 |
-| 5 | **shipping** | Completes the chain; alternative orchestration | **Orchestrated saga** via Camel Saga EIP | Quarkus + Camel (Saga EIP) | ch.24 |
-| 6 | **order** (+ gateway) | Core aggregate, extracted last; GraphQL read side | **CQRS** read model; event-sourcing optional; monolith decommissioned | Quarkus REST/Kafka + GraphQL gateway | ch.26 |
+| # | Service | Seam / mechanism | Data & transaction handling | Target | Chapters | Status |
+|---|---|---|---|---|---|---|
+| 0 | — | Insert the Camel strangler proxy in front of the monolith | n/a | — | ch.14 | DONE (r02/r04) |
+| 1 | **review** | REST leaf, no sync deps; proxy redirect by URI; ACL | Own schema from day one; no shared-txn entanglement | Quarkus REST + OIDC | ch.15 *(walking skeleton, r02)* | **DONE** (r02 — extraction 1 of 6) |
+| 2 | **notification** | Event consumer; content-based routing; decorating collaborator | **Outbox** in monolith → Kafka; idempotent consumer | Quarkus + Camel (Kafka consumer, WebSockets.Next) | ch.16–17 | **DONE** (r04 — extraction 2 of 6) |
+| 3 | **inventory** | Synchronous gRPC; decomposed DB; decorating collaborator | **CDC (Debezium)** backfill from shared schema → owned DB, then cut writes | Quarkus gRPC server | ch.19 | **DONE** (r05 — extraction 3 of 6) |
+| 4 | **payment** | Event choreography (`order.placed`→`payment.captured`) | Choreographed **saga**; compensations; ACID→ACD realized | Quarkus + Camel (Kafka) | ch.23 | **DONE** (r06/ch.23, S14 reconcile — extraction 4 of 6; was "in progress" through S1–S13) |
+| 5 | **shipping** | Completes the chain; alternative orchestration | **Orchestrated saga** via Camel Saga EIP | Quarkus + Camel (Saga EIP) | ch.24 | not started (resumes from ch.23, see `payment-plan.md` resume boundary) |
+| 6 | **order** (+ gateway) | Core aggregate, extracted last; GraphQL read side | **CQRS** read model; event-sourcing optional; monolith decommissioned | Quarkus REST/Kafka + GraphQL gateway | ch.26 | not started |
+
+**Extractions done: 4 of 6** (review, notification, inventory, payment) as of r06/ch.23 S14. Status column introduced/backfilled at this reconcile pass (r06/ch.23 S14); ch.15/ch.17/ch.19 marked DONE retroactively from their own `_plans/iterations/{notification,inventory}-plan.md` step annotations and committed `examples/*/CUTOVER.md` evidence — no new work implied by the backfill.
 
 **Migration depth (CONFIRMED, revised DRQ-026):** every extraction above
 (1–6 — review, notification, inventory, payment, shipping, order+gateway) runs

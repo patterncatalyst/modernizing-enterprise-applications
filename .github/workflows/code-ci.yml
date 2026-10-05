@@ -59,6 +59,7 @@ on:
       - "examples/02-review-service/**"
       - "examples/03-notification-service/**"
       - "examples/04-inventory-service/**"
+      - "examples/05-payment-service/**"
       - "tooling/newman/**"
       - ".github/workflows/code-ci.yml"
   pull_request:
@@ -68,6 +69,7 @@ on:
       - "examples/02-review-service/**"
       - "examples/03-notification-service/**"
       - "examples/04-inventory-service/**"
+      - "examples/05-payment-service/**"
       - "tooling/newman/**"
       - ".github/workflows/code-ci.yml"
   workflow_dispatch:
@@ -198,6 +200,19 @@ jobs:
   # Reserve with io.grpc.StatusRuntimeException: UNAVAILABLE and the monolith
   # returns HTTP 500, which was masking the async notification path this job
   # exists to gate.
+  #
+  # S10b FIX (cross-service CI cascade, same shape as the INVENTORY_GRPC addendum
+  # above): after payment-plan S9 decommissioned the monolith's in-process
+  # payment, checkout became choreographed-only — POST /api/orders returns
+  # 202/PENDING, and an order only reaches CONFIRMED/PAYMENT_DECLINED once
+  # examples/05-payment-service consumes order.placed and emits
+  # payment.captured/payment.declined, which the monolith's OrderSagaListener
+  # reacts to. This job's "Notification Context Contract" folder places a
+  # checkout (5a) and bounded-waits it to CONFIRMED (5b) — without the payment
+  # service running, that order stayed PENDING forever and the bounded wait
+  # timed out. This job now also builds/starts/readiness-gates the payment
+  # service and waits for the monolith's order-saga consumer group to stabilize
+  # before running newman, mirroring payment-equivalence-gate's proven template.
   notification-equivalence-gate:
     name: notification-equivalence-gate
     runs-on: ubuntu-latest
@@ -295,6 +310,10 @@ jobs:
         working-directory: examples/04-inventory-service
         run: ./mvnw -q -DskipTests package
 
+      - name: Build the Payment service
+        working-directory: examples/05-payment-service
+        run: ./mvnw -q -DskipTests package
+
       - name: Build the strangler proxy
         working-directory: examples/01-strangler-proxy
         run: ./mvnw -q -DskipTests package
@@ -314,7 +333,31 @@ jobs:
           nohup java -jar target/quarkus-app/quarkus-run.jar > quarkus.log 2>&1 &
           echo $! > quarkus.pid
 
-      - name: Start the monolith (outbox write path + Kafka producer + gRPC inventory client) on :8080
+      - name: Start the Payment service (order.placed consumer + own outbox) on :8085
+        # S10b FIX: checkout is choreographed-only post-S9 — an order only
+        # reaches CONFIRMED/PAYMENT_DECLINED once this service consumes
+        # order.placed and emits payment.captured/payment.declined, which the
+        # monolith's OrderSagaListener reacts to. This job's "Notification
+        # Context Contract" folder (5a/5b) places a checkout and bounded-waits
+        # it to CONFIRMED, so without this service that order stays PENDING
+        # forever and the bounded-wait times out. Started before the monolith,
+        # same ordering payment-equivalence-gate uses, so the consumer is
+        # already subscribed before any order.placed is produced. No datasource
+        # env overrides needed (its %prod profile already points at
+        # localhost:5432/monolith?currentSchema=payment) — only the Kafka
+        # bootstrap, same convention as inventory/notification services.
+        working-directory: examples/05-payment-service
+        env:
+          KAFKA_BOOTSTRAP_SERVERS: localhost:9092
+        run: |
+          nohup java -jar target/quarkus-app/quarkus-run.jar > quarkus.log 2>&1 &
+          echo $! > quarkus.pid
+
+      - name: Start the monolith (outbox write path + Kafka producer/consumer + gRPC inventory client) on :8080
+        # No PAYMENT_MODE override: payment-plan S9 removed that flag entirely —
+        # choreographed is the only checkout path left. This is also the
+        # monolith's order-saga Kafka CONSUMER (OrderSagaListener reacting to
+        # payment.captured/payment.declined), not just an outbox producer.
         working-directory: examples/00-monolith
         env:
           SPRING_DATASOURCE_PASSWORD: monolith_dev_only
@@ -357,6 +400,20 @@ jobs:
           cat examples/04-inventory-service/quarkus.log || true
           exit 1
 
+      - name: Wait for the Payment service to be ready on :8085
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 60); do
+            if curl -sf "http://localhost:8085/api/payments?orderId=1" > /dev/null; then
+              echo "Payment service is up."
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Payment service did not become ready in time." >&2
+          cat examples/05-payment-service/quarkus.log || true
+          exit 1
+
       - name: Wait for the monolith to be ready on :8080
         # NOTE: the monolith's /api/inventory was removed at inventory-plan S11
         # (inventory now extracted; checkout reserves over gRPC against the
@@ -372,6 +429,30 @@ jobs:
             sleep 2
           done
           echo "Monolith did not become ready in time." >&2
+          cat examples/00-monolith/monolith.log || true
+          exit 1
+
+      - name: Wait for the monolith's order-saga Kafka consumer group to stabilize
+        # Load-bearing, not cosmetic (S10b FIX, mirroring payment-equivalence-gate):
+        # a freshly-started consumer group can take up to its session-timeout
+        # window to be assigned partitions, independent of the HTTP health check
+        # above being green. Without this wait, the Notification Context
+        # Contract's 5a/5b bounded-wait-to-CONFIRMED can race the rebalance.
+        # Waiting here for BOTH monolith-order-saga listener containers
+        # (payment.captured and payment.declined) to log "partitions assigned"
+        # before running the suite is what makes a result in the next step
+        # trustworthy rather than a rebalance artifact.
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 60); do
+            count=$(grep -c "monolith-order-saga: partitions assigned" examples/00-monolith/monolith.log || true)
+            if [ "${count:-0}" -ge 2 ]; then
+              echo "monolith-order-saga consumer group stabilized (both listeners assigned)."
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "monolith-order-saga consumer group did not stabilize in time." >&2
           cat examples/00-monolith/monolith.log || true
           exit 1
 
@@ -423,6 +504,9 @@ jobs:
           echo "::group::inventory-service quarkus.log"
           cat examples/04-inventory-service/quarkus.log || true
           echo "::endgroup::"
+          echo "::group::payment-service quarkus.log"
+          cat examples/05-payment-service/quarkus.log || true
+          echo "::endgroup::"
           echo "::group::monolith.log"
           cat examples/00-monolith/monolith.log || true
           echo "::endgroup::"
@@ -438,6 +522,9 @@ jobs:
         run: |
           if [ -f examples/04-inventory-service/quarkus.pid ]; then
             kill "$(cat examples/04-inventory-service/quarkus.pid)" || true
+          fi
+          if [ -f examples/05-payment-service/quarkus.pid ]; then
+            kill "$(cat examples/05-payment-service/quarkus.pid)" || true
           fi
           if [ -f examples/00-monolith/monolith.pid ]; then
             kill "$(cat examples/00-monolith/monolith.pid)" || true
@@ -493,18 +580,39 @@ jobs:
   # before this file was committed. See
   # examples/04-inventory-service/README.md's "CI equivalence gate" note (if
   # present) or this job's own history for the full before/after transcript.
+  #
+  # S10b FIX (cross-service CI cascade): after payment-plan S9 decommissioned
+  # the monolith's in-process payment, checkout became choreographed-only —
+  # POST /api/orders returns 202/PENDING, and an order only reaches
+  # CONFIRMED/PAYMENT_DECLINED once examples/05-payment-service consumes
+  # order.placed and emits payment.captured/payment.declined, which the
+  # monolith's OrderSagaListener reacts to. Scenario 1 and Scenario 3 above
+  # both bounded-wait a checkout to one of those terminal states — without the
+  # payment service running, those orders stayed PENDING forever and the
+  # bounded waits timed out (real CI failure: "order 2 status ... expected
+  # 'PENDING' to deeply equal 'CONFIRMED'"). Kafka is therefore now genuinely
+  # load-bearing in this job, not just "present so the outbox producer boots
+  # clean" as the service-container comment below originally said — this job
+  # now also builds/starts/readiness-gates the payment service and waits for
+  # the monolith's order-saga consumer group to stabilize before running
+  # newman, mirroring payment-equivalence-gate's proven template. Scenario 2
+  # (out-of-stock) does not need this: the order is rejected with 409 before
+  # a checkout is ever placed, so there is no terminal-status bounded-wait to
+  # race.
   inventory-equivalence-gate:
     name: inventory-equivalence-gate
     runs-on: ubuntu-latest
 
     # Postgres (same image tag/creds the podman stack and the other gates
     # use) PLUS Kafka (same apache/kafka:3.8.0 tag, pinned in
-    # .env.example's KAFKA_IMAGE_TAG) — the monolith needs a reachable
-    # broker for its outbox producer to start cleanly, even though this
-    # job's assertions don't exercise the async notification path. No Kafka
-    # Connect / Debezium service here — CDC is retired (see header note
-    # above); the inventory service seeds itself via its own Flyway
-    # migration instead.
+    # .env.example's KAFKA_IMAGE_TAG). Kafka is genuinely load-bearing here
+    # (S10b FIX) — it is no longer just "present so the outbox producer boots
+    # cleanly": Scenario 1 and Scenario 3's checkout-driven bounded-waits
+    # depend on the real order.placed -> payment-service ->
+    # payment.captured/payment.declined -> monolith OrderSagaListener
+    # round-trip (see header note above). No Kafka Connect / Debezium service
+    # here — CDC is retired (see header note above); the inventory service
+    # seeds itself via its own Flyway migration instead.
     services:
       postgres:
         image: postgres:16-alpine
@@ -579,6 +687,10 @@ jobs:
         working-directory: examples/04-inventory-service
         run: ./mvnw -q -DskipTests package
 
+      - name: Build the Payment service
+        working-directory: examples/05-payment-service
+        run: ./mvnw -q -DskipTests package
+
       - name: Build the strangler proxy
         working-directory: examples/01-strangler-proxy
         run: ./mvnw -q -DskipTests package
@@ -595,7 +707,32 @@ jobs:
           nohup java -jar target/quarkus-app/quarkus-run.jar > quarkus.log 2>&1 &
           echo $! > quarkus.pid
 
-      - name: Start the monolith (gRPC Reserve/Release client + outbox) on :8080
+      - name: Start the Payment service (order.placed consumer + own outbox) on :8085
+        # S10b FIX: checkout is choreographed-only post-S9 — an order only
+        # reaches CONFIRMED/PAYMENT_DECLINED once this service consumes
+        # order.placed and emits payment.captured/payment.declined, which the
+        # monolith's OrderSagaListener reacts to. This job's Scenario 1
+        # (happy-path) and Scenario 3 (payment-declined, incl. the
+        # compensating gRPC Release, DRQ-042) both bounded-wait a checkout to
+        # a terminal status, so without this service those orders stay
+        # PENDING forever and the bounded waits time out. Started before the
+        # monolith, same ordering payment-equivalence-gate uses, so the
+        # consumer is already subscribed before any order.placed is produced.
+        # No datasource env overrides needed (its %prod profile already points
+        # at localhost:5432/monolith?currentSchema=payment) — only the Kafka
+        # bootstrap, same convention as the Inventory service above.
+        working-directory: examples/05-payment-service
+        env:
+          KAFKA_BOOTSTRAP_SERVERS: localhost:9092
+        run: |
+          nohup java -jar target/quarkus-app/quarkus-run.jar > quarkus.log 2>&1 &
+          echo $! > quarkus.pid
+
+      - name: Start the monolith (gRPC Reserve/Release client + outbox producer/order-saga consumer) on :8080
+        # No PAYMENT_MODE override: payment-plan S9 removed that flag entirely —
+        # choreographed is the only checkout path left. This is also the
+        # monolith's order-saga Kafka CONSUMER (OrderSagaListener reacting to
+        # payment.captured/payment.declined), not just an outbox producer.
         working-directory: examples/00-monolith
         env:
           SPRING_DATASOURCE_PASSWORD: monolith_dev_only
@@ -630,6 +767,20 @@ jobs:
           cat examples/04-inventory-service/quarkus.log || true
           exit 1
 
+      - name: Wait for the Payment service to be ready on :8085
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 60); do
+            if curl -sf "http://localhost:8085/api/payments?orderId=1" > /dev/null; then
+              echo "Payment service is up."
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Payment service did not become ready in time." >&2
+          cat examples/05-payment-service/quarkus.log || true
+          exit 1
+
       - name: Wait for the monolith to be ready on :8080
         # NOTE: the monolith's own /api/inventory was removed at S11
         # (decommission) — it now 404s by design (RemoteInventoryClient is
@@ -646,6 +797,30 @@ jobs:
             sleep 2
           done
           echo "Monolith did not become ready in time." >&2
+          cat examples/00-monolith/monolith.log || true
+          exit 1
+
+      - name: Wait for the monolith's order-saga Kafka consumer group to stabilize
+        # Load-bearing, not cosmetic (S10b FIX, mirroring payment-equivalence-gate):
+        # a freshly-started consumer group can take up to its session-timeout
+        # window to be assigned partitions, independent of the HTTP health check
+        # above being green. Without this wait, Scenario 1's bounded-wait-to-
+        # CONFIRMED and Scenario 3's bounded-wait-to-PAYMENT_DECLINED can race
+        # the rebalance. Waiting here for BOTH monolith-order-saga listener
+        # containers (payment.captured and payment.declined) to log "partitions
+        # assigned" before running the suite is what makes a result in the next
+        # step trustworthy rather than a rebalance artifact.
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 60); do
+            count=$(grep -c "monolith-order-saga: partitions assigned" examples/00-monolith/monolith.log || true)
+            if [ "${count:-0}" -ge 2 ]; then
+              echo "monolith-order-saga consumer group stabilized (both listeners assigned)."
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "monolith-order-saga consumer group did not stabilize in time." >&2
           cat examples/00-monolith/monolith.log || true
           exit 1
 
@@ -685,6 +860,9 @@ jobs:
           echo "::group::inventory-service quarkus.log"
           cat examples/04-inventory-service/quarkus.log || true
           echo "::endgroup::"
+          echo "::group::payment-service quarkus.log"
+          cat examples/05-payment-service/quarkus.log || true
+          echo "::endgroup::"
           echo "::group::monolith.log"
           cat examples/00-monolith/monolith.log || true
           echo "::endgroup::"
@@ -697,6 +875,431 @@ jobs:
         run: |
           if [ -f examples/04-inventory-service/quarkus.pid ]; then
             kill "$(cat examples/04-inventory-service/quarkus.pid)" || true
+          fi
+          if [ -f examples/05-payment-service/quarkus.pid ]; then
+            kill "$(cat examples/05-payment-service/quarkus.pid)" || true
+          fi
+          if [ -f examples/00-monolith/monolith.pid ]; then
+            kill "$(cat examples/00-monolith/monolith.pid)" || true
+          fi
+          if [ -f examples/01-strangler-proxy/quarkus.pid ]; then
+            kill "$(cat examples/01-strangler-proxy/quarkus.pid)" || true
+          fi
+
+  # payment-equivalence-gate (payment-plan.md S10) — the CHOREOGRAPHED-SAGA
+  # sibling of equivalence-gate (Review), notification-equivalence-gate
+  # (async outbox->Kafka), and inventory-equivalence-gate (gRPC) above. Covers
+  # the payment extraction (examples/05-payment-service): checkout is now
+  # fully async end-to-end (payment-plan.md S6/S8/S9, DRQ-047) — `POST
+  # /api/orders` returns 202+PENDING, the monolith's transactional outbox
+  # relays `order.placed` to Kafka, examples/05-payment-service's SmallRye
+  # consumer captures/declines the payment and emits
+  # `payment.captured`/`payment.declined` via its OWN outbox, and the
+  # monolith's `OrderSagaListener` (its first Kafka CONSUMER, not just
+  # producer) reacts: confirm + dispatch shipping on capture, or
+  # PAYMENT_DECLINED + a compensating gRPC `Release` on decline (DRQ-049 —
+  # this choreographed reaction fully replaces the ch.19 in-line `catch`
+  # compensation; see OrderSagaListener's class javadoc). There is no
+  # payment.mode flag left to gate this behind (payment-plan.md S9
+  # DECOMMISSION removed it) — choreographed is the only path, and
+  # `strangler.payment.enabled=true` is the proxy's committed default, so NO
+  # runtime flag overrides are needed anywhere in this job, unlike
+  # notification-equivalence-gate's historical flag-flip era.
+  #
+  # THE GATE: this job runs the FULL, unedited Newman collection (every
+  # folder — Smoke, Scenario 1/2/3, Review/Notification/Inventory/Payment
+  # Context Contract — no --folder filter, R8 no suite drift) through the
+  # proxy on :8888, exactly as demos/demo-equivalence.sh does for a full-suite
+  # run. Scenario 1 and Scenario 3 are the load-bearing async assertions:
+  # Scenario 1 bounded-waits to CONFIRMED (payment captured over the saga,
+  # shipping dispatched); Scenario 3 bounded-waits to PAYMENT_DECLINED AND
+  # THEN bounded-waits inventory back to net-zero via the choreographed
+  # Release (DRQ-049) — the single most dangerous regression in this
+  # extraction (payment-plan.md H1, "Highest risk"). A non-zero Newman exit
+  # fails the job. Because the async saga needs Kafka and the payment
+  # consumer healthy BEFORE the suite runs (or the bounded-waits flake/false-
+  # fail), every service below is readiness-gated with its own wait step
+  # ahead of the "Run the behavior-equivalence suite" step — mirroring
+  # inventory-equivalence-gate's and notification-equivalence-gate's
+  # discipline, extended with the payment service and (since this is the
+  # FULL suite, not an inventory-only folder subset) the Review and
+  # Notification services too, since the proxy's committed defaults route
+  # /api/reviews and /api/notifications to them and a full-suite run 500s on
+  # those requests otherwise.
+  #
+  # Red->green proof (acceptance criterion, payment-plan.md S10(b)/(g)): this
+  # job was validated LOCALLY before being committed (GitHub Actions cannot be
+  # triggered from this environment) by bringing up the exact topology below
+  # against the local podman stack (mea-postgres/mea-kafka) and running this
+  # job's exact commands by hand:
+  #
+  #   1. GREEN baseline: full suite through the proxy — 108/108 assertions,
+  #      0 failed, 11.3s (newman exit 0). Scenario 1 and Scenario 3 both
+  #      resolved over genuine bounded-wait retries (not instant hits),
+  #      confirming the choreography was actually exercised, not raced.
+  #   2. DELIBERATE BREAK: in a LOCAL working copy only, the compensating
+  #      Release loop in OrderSagaListener#onPaymentDeclined (monolith) was
+  #      commented out (the `for (OrderItem item : order.getItems())` block
+  #      that calls `remoteInventoryClient.release(...)`), the monolith was
+  #      rebuilt (`mvn -q -DskipTests -f examples/00-monolith package`) and
+  #      restarted. Re-running "Scenario 3 — Payment-Declined" alone (after
+  #      letting the restarted consumer group's rebalance settle, isolating
+  #      the failure to the break itself rather than a restart-timing
+  #      artifact) went RED: newman exit 1, 1/22 assertions failed —
+  #      "3d. Bounded-wait poll: inventory returns to net-zero after the
+  #      decline ... quantityOnHand after 10 attempt(s): expected 60 to
+  #      deeply equal 61" — while 3c (order reaches PAYMENT_DECLINED) still
+  #      passed, proving the RED is isolated to the missing compensation, not
+  #      a flaky consumer group. This is exactly payment-plan.md S10(b)'s
+  #      required proof: "Scenario 3 net-zero goes RED".
+  #   3. REVERT: the local edit was reverted byte-for-byte (confirmed via
+  #      `git status`/`git diff` showing zero changes to OrderSagaListener.java
+  #      before this workflow file was committed), the monolith rebuilt and
+  #      restarted clean, and the full suite re-run GREEN again — 99/99
+  #      assertions, 0 failed, 6.2s (newman exit 0; the small assertion-count
+  #      delta from run 1 is the same documented bounded-wait retry-count
+  #      variance CUTOVER.md's own runs show, not a correctness difference).
+  #   4. NEGATIVE CHECK (DRQ-055) re-confirmed cheaply: with the payment
+  #      service process killed, "Scenario 1 — Happy-Path Checkout" alone went
+  #      RED (newman exit 1, 1/23 failed — order stuck PENDING past the
+  #      bounded wait); restarting the payment service and re-running the same
+  #      folder went GREEN again (19/19, newman exit 0).
+  #
+  # All services started during this local proof were stopped afterward; the
+  # podman stack (mea-postgres/mea-kafka/mea-connect/mea-lgtm) was left
+  # running, as required. The real GitHub Actions run of the job below is
+  # unverifiable from this environment and is watched post-push.
+  payment-equivalence-gate:
+    name: payment-equivalence-gate
+    runs-on: ubuntu-latest
+
+    # Postgres + Kafka (same images/tags/creds as the other gates — the SAME
+    # contract as local dev, not a CI-only substitute). Kafka is load-bearing
+    # here, not just "present so the producer boots clean" as in
+    # inventory-equivalence-gate's reasoning: the payment service's
+    # OrderPlacedConsumer and the monolith's OrderSagaListener are both real
+    # consumers this job's assertions depend on.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: monolith
+          POSTGRES_USER: monolith
+          POSTGRES_PASSWORD: monolith_dev_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U monolith -d monolith"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 12
+
+      kafka:
+        image: docker.io/apache/kafka:3.8.0
+        env:
+          KAFKA_NODE_ID: 1
+          KAFKA_PROCESS_ROLES: broker,controller
+          KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+          KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+          KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+          KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+          KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+          KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+          KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+          KAFKA_NUM_PARTITIONS: 3
+          KAFKA_DEFAULT_REPLICATION_FACTOR: 1
+          KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+          KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+          KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+          KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+          CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+        ports:
+          - 9092:9092
+        options: >-
+          --health-cmd "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 24
+          --health-start-period 30s
+
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v5
+
+      - name: Set up JDK 25 (temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+
+      - name: Set up Node (for newman)
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install newman
+        run: npm install -g newman
+
+      # No psql pre-apply: every service below runs its OWN Flyway migrations
+      # on boot against the fresh Postgres service container (monolith:
+      # `public`, incl. V3's outbox; inventory: own `inventory` schema;
+      # payment: own `payment` schema; review/notification likewise own or
+      # share as already established). Pre-applying DDL with psql would leave
+      # a non-empty schema with no flyway_schema_history and make a service's
+      # own Flyway refuse to start.
+      - name: Build the monolith
+        run: mvn -q -DskipTests -f examples/00-monolith package
+
+      - name: Build the Inventory service
+        working-directory: examples/04-inventory-service
+        run: ./mvnw -q -DskipTests package
+
+      - name: Build the Payment service
+        working-directory: examples/05-payment-service
+        run: ./mvnw -q -DskipTests package
+
+      - name: Build the Review service
+        working-directory: examples/02-review-service
+        run: ./mvnw -q -DskipTests package
+
+      - name: Build the Notification service
+        working-directory: examples/03-notification-service
+        run: ./mvnw -q -DskipTests package
+
+      - name: Build the strangler proxy
+        working-directory: examples/01-strangler-proxy
+        run: ./mvnw -q -DskipTests package
+
+      - name: Start the Inventory service (REST :8084 + gRPC :9004) — seeds itself via Flyway
+        # Checkout's synchronous gRPC Reserve has no in-JVM fallback
+        # (inventory-plan S11) — started first, same discipline as the other
+        # gates.
+        working-directory: examples/04-inventory-service
+        run: |
+          nohup java -jar target/quarkus-app/quarkus-run.jar > quarkus.log 2>&1 &
+          echo $! > quarkus.pid
+
+      - name: Start the Payment service (order.placed consumer + own outbox) on :8085
+        # No env overrides needed for the datasource (its %prod profile
+        # already points at localhost:5432/monolith?currentSchema=payment,
+        # matching the Postgres service container above) — only the Kafka
+        # bootstrap, same convention as inventory/notification services.
+        working-directory: examples/05-payment-service
+        env:
+          KAFKA_BOOTSTRAP_SERVERS: localhost:9092
+        run: |
+          nohup java -jar target/quarkus-app/quarkus-run.jar > quarkus.log 2>&1 &
+          echo $! > quarkus.pid
+
+      - name: Start the Review service on :8081
+        # The proxy's committed strangler.review.enabled=true default routes
+        # /api/reviews here — required for the FULL suite's Review Context
+        # Contract folder, which this job (unlike inventory-equivalence-gate's
+        # folder subset) does not filter out.
+        working-directory: examples/02-review-service
+        run: |
+          nohup java -jar target/quarkus-app/quarkus-run.jar > quarkus.log 2>&1 &
+          echo $! > quarkus.pid
+
+      - name: Start the Notification service (Kafka consumer) on :8083
+        # Likewise required for the FULL suite's Notification Context
+        # Contract folder (strangler.notification.enabled=true, committed
+        # default).
+        working-directory: examples/03-notification-service
+        env:
+          KAFKA_BOOTSTRAP_SERVERS: localhost:9092
+        run: |
+          nohup java -jar target/quarkus-app/quarkus-run.jar > quarkus.log 2>&1 &
+          echo $! > quarkus.pid
+
+      - name: Start the monolith (order-saga Kafka CONSUMER + outbox producer + gRPC inventory client) on :8080
+        # No PAYMENT_MODE override: payment-plan S9 removed that flag entirely
+        # — choreographed is the only checkout path left, committed. This is
+        # the monolith's FIRST Kafka consumer (OrderSagaListener, reacting to
+        # payment.captured/payment.declined), not just a producer.
+        working-directory: examples/00-monolith
+        env:
+          SPRING_DATASOURCE_PASSWORD: monolith_dev_only
+          SPRING_KAFKA_BOOTSTRAP_SERVERS: localhost:9092
+          INVENTORY_GRPC_HOST: localhost
+          INVENTORY_GRPC_PORT: "9004"
+        run: |
+          nohup java -jar target/monolith.jar > monolith.log 2>&1 &
+          echo $! > monolith.pid
+
+      - name: Start the strangler proxy (all cutover flags at their committed defaults) on :8888
+        # strangler.review.enabled / .notification.enabled / .inventory.enabled
+        # / .payment.enabled all default to true in the proxy's committed
+        # application.properties — no runtime overrides needed, unlike
+        # notification-equivalence-gate's historical flag-flip era. /api/orders
+        # (monolith), /api/reviews, /api/notifications, /api/inventory, and
+        # /api/payments are all genuinely routed by committed default.
+        working-directory: examples/01-strangler-proxy
+        run: |
+          nohup java -jar target/quarkus-app/quarkus-run.jar > quarkus.log 2>&1 &
+          echo $! > quarkus.pid
+
+      - name: Wait for the Inventory service to be ready on :8084
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 60); do
+            if curl -sf "http://localhost:8084/api/inventory" > /dev/null; then
+              echo "Inventory service is up."
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Inventory service did not become ready in time." >&2
+          cat examples/04-inventory-service/quarkus.log || true
+          exit 1
+
+      - name: Wait for the Payment service to be ready on :8085
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 60); do
+            if curl -sf "http://localhost:8085/api/payments?orderId=1" > /dev/null; then
+              echo "Payment service is up."
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Payment service did not become ready in time." >&2
+          cat examples/05-payment-service/quarkus.log || true
+          exit 1
+
+      - name: Wait for the Review service to be ready on :8081
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 60); do
+            if curl -sf "http://localhost:8081/api/reviews?sku=SKU-WIDGET-001" > /dev/null; then
+              echo "Review service is up."
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Review service did not become ready in time." >&2
+          cat examples/02-review-service/quarkus.log || true
+          exit 1
+
+      - name: Wait for the Notification service to be ready on :8083
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 60); do
+            if curl -sf "http://localhost:8083/api/notifications?customerId=1" > /dev/null; then
+              echo "Notification service is up."
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Notification service did not become ready in time." >&2
+          cat examples/03-notification-service/quarkus.log || true
+          exit 1
+
+      - name: Wait for the monolith to be ready on :8080
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 60); do
+            if curl -sf "http://localhost:8080/api/orders" > /dev/null; then
+              echo "Monolith is up."
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Monolith did not become ready in time." >&2
+          cat examples/00-monolith/monolith.log || true
+          exit 1
+
+      - name: Wait for the monolith's order-saga Kafka consumer group to stabilize
+        # Load-bearing, not cosmetic: a freshly-started consumer group can take
+        # up to its session-timeout window to be assigned partitions,
+        # independent of the HTTP health check above being green. This
+        # job's own local red-then-green proof (see header) hit exactly this
+        # — a stale-member rebalance delay produced a FALSE red on Scenario 3
+        # unrelated to any real regression. Waiting here for BOTH
+        # monolith-order-saga listener containers (payment.captured and
+        # payment.declined) to log "partitions assigned" before running the
+        # suite is what makes a RED result in the next step trustworthy
+        # evidence of a real regression rather than a rebalance artifact.
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 60); do
+            count=$(grep -c "monolith-order-saga: partitions assigned" examples/00-monolith/monolith.log || true)
+            if [ "${count:-0}" -ge 2 ]; then
+              echo "monolith-order-saga consumer group stabilized (both listeners assigned)."
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "monolith-order-saga consumer group did not stabilize in time." >&2
+          cat examples/00-monolith/monolith.log || true
+          exit 1
+
+      - name: Wait for the strangler proxy to be ready on :8888
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 60); do
+            if curl -sf "http://localhost:8888/api/orders" > /dev/null; then
+              echo "Strangler proxy is up."
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Strangler proxy did not become ready in time." >&2
+          cat examples/01-strangler-proxy/quarkus.log || true
+          exit 1
+
+      - name: Run the FULL behavior-equivalence suite through the proxy — the equivalence gate
+        # THE GATE: every folder in the unedited collection (Smoke, Scenario
+        # 1/2/3, Review/Notification/Inventory/Payment Context Contract),
+        # through the proxy on :8888 — the same invocation
+        # demos/demo-equivalence.sh uses for a full-suite run (the
+        # environment file supplies reviewUsername/reviewPassword the Review
+        # Context Contract folder needs; baseUrl is overridden to the proxy).
+        # Scenario 1 and Scenario 3's bounded-wait polls are the genuine
+        # async assertions (confirm-over-the-saga and
+        # decline-then-compensate-via-choreography respectively) — a
+        # non-zero newman exit code fails the job.
+        run: |
+          newman run tooling/newman/mea.postman_collection.json \
+            --environment tooling/newman/local.postman_environment.json \
+            --env-var baseUrl=http://localhost:8888
+
+      - name: Dump service logs on failure
+        if: failure()
+        run: |
+          echo "::group::inventory-service quarkus.log"
+          cat examples/04-inventory-service/quarkus.log || true
+          echo "::endgroup::"
+          echo "::group::payment-service quarkus.log"
+          cat examples/05-payment-service/quarkus.log || true
+          echo "::endgroup::"
+          echo "::group::review-service quarkus.log"
+          cat examples/02-review-service/quarkus.log || true
+          echo "::endgroup::"
+          echo "::group::notification-service quarkus.log"
+          cat examples/03-notification-service/quarkus.log || true
+          echo "::endgroup::"
+          echo "::group::monolith.log"
+          cat examples/00-monolith/monolith.log || true
+          echo "::endgroup::"
+          echo "::group::strangler-proxy quarkus.log"
+          cat examples/01-strangler-proxy/quarkus.log || true
+          echo "::endgroup::"
+
+      - name: Stop the services
+        if: always()
+        run: |
+          if [ -f examples/04-inventory-service/quarkus.pid ]; then
+            kill "$(cat examples/04-inventory-service/quarkus.pid)" || true
+          fi
+          if [ -f examples/05-payment-service/quarkus.pid ]; then
+            kill "$(cat examples/05-payment-service/quarkus.pid)" || true
+          fi
+          if [ -f examples/02-review-service/quarkus.pid ]; then
+            kill "$(cat examples/02-review-service/quarkus.pid)" || true
+          fi
+          if [ -f examples/03-notification-service/quarkus.pid ]; then
+            kill "$(cat examples/03-notification-service/quarkus.pid)" || true
           fi
           if [ -f examples/00-monolith/monolith.pid ]; then
             kill "$(cat examples/00-monolith/monolith.pid)" || true
