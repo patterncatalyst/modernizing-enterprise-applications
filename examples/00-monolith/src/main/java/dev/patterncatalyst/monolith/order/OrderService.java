@@ -310,6 +310,7 @@ public class OrderService {
                 order.getStatus(),
                 order.getTotalCents(),
                 order.getCreatedAt(),
+                order.getShippingAddress(),
                 items);
     }
 }
