@@ -21,10 +21,38 @@ package dev.patterncatalyst.monolith.common;
  * common.events.PaymentDeclined}) exist — zero producer/consumer wiring is
  * attached yet; that is S5 (payment service) and S6 (monolith order-saga).
  *
- * <p>{@code SHIPMENT_DISPATCHED} remains reserved for a future extraction;
- * naming it here now (with zero messaging infrastructure attached) keeps the
- * monolith's vocabulary aligned 1:1 with the sibling target projects' Kafka
- * topics (reuse-map.md section 6).
+ * <p>{@code SHIPMENT_DISPATCHED} and {@code SHIPMENT_FAILED} are the two
+ * outcomes of the ORCHESTRATED shipping saga (ch.24, DRQ-056/058) — the
+ * deliberate contrast to payment's choreography: {@code
+ * payment.captured} (DRQ-048) is consumed by the new shipping service
+ * (future {@code examples/06-shipping-service}, r07/S4+S5), whose Camel
+ * Saga EIP route acts as the coordinator for the fulfilment steps
+ * (enrich → dispatch shipment → book carrier → emit outcome, DRQ-059) and
+ * produces exactly one of these two via its own transactional outbox
+ * (DRQ-063, mirroring DRQ-053). As of r07/S3 only the topic names and the
+ * JSON payload contracts ({@code common.events.ShipmentDispatched} / {@code
+ * common.events.ShipmentFailed}) exist — zero producer/consumer wiring is
+ * attached yet; that is S5 (shipping service) and S6 (monolith order-saga).
+ *
+ * <p>{@code SHIPMENT_DISPATCHED} was previously reserved (naming only, no
+ * contract) and is now WIRED by this saga: produced by the shipping
+ * service's saga on successful dispatch, and consumed by the monolith
+ * order context's future reaction (r07/S6) to transition the order from
+ * {@code AWAITING_SHIPMENT} to {@code CONFIRMED} — the order's {@code
+ * CONFIRMED} transition moves one hop later than ch.23 ({@code
+ * payment.captured} → {@code shipment.dispatched}, DRQ-058/061).
+ *
+ * <p>{@code SHIPMENT_FAILED} is new: produced by the shipping service's
+ * saga compensation (the coordinator-decided, reverse-ordered undo invoked
+ * on any abort/timeout — {@code direct:ship-compensate}, DRQ-059) after it
+ * cancels the local {@code Shipment} row. It is consumed by the monolith
+ * order context's future reaction (r07/S6), which transitions the order to
+ * the terminal {@code SHIPPING_FAILED} state and issues the compensating
+ * gRPC inventory {@code Release} for every reserved sku — the order
+ * context owns that compensation because it owns the reserved-line
+ * snapshot, not the shipping service (DRQ-060/043), reusing the exact
+ * ch.23 {@code OrderSagaListener} + {@code RemoteInventoryClient}
+ * machinery (DRQ-042/049).
  */
 public final class Topics {
 
@@ -32,6 +60,7 @@ public final class Topics {
     public static final String PAYMENT_CAPTURED = "payment.captured";
     public static final String PAYMENT_DECLINED = "payment.declined";
     public static final String SHIPMENT_DISPATCHED = "shipment.dispatched";
+    public static final String SHIPMENT_FAILED = "shipment.failed";
 
     private Topics() {
     }
