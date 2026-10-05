@@ -2,7 +2,7 @@
   "info": {
     "name": "Modernizing Enterprise Applications — Behavior-Equivalence Suite",
     "_postman_id": "mea-equivalence-suite",
-    "description": "The behavior-equivalence suite (r02-plan S6, notification-plan S2, inventory-plan S2, payment-plan S2, build-plan.md §G/§D). Captured against the running Spring Boot monolith (examples/00-monolith). This collection is the project's equivalence gate: it is re-run UNCHANGED against each extracted service (starting with the Quarkus Review service, ch.15) and a service is only considered 'done' once it passes this same suite with no edits (build-plan.md §G load-bearing rule). Every request targets {{baseUrl}} so the identical collection can point at the monolith or at an extracted service's own port. Covers: (1) happy-path checkout — ADAPTED for the forthcoming ASYNC checkout contract (payment-plan.md S2, DRQ-047/DRQ-055): the POST is tolerant of `201` (today's synchronous monolith) or `202` (the future choreographed-saga payment service), and a BOUNDED-WAIT poll of GET /api/orders/{id} asserts the order strictly reaches the terminal `CONFIRMED` status — only the transport is relaxed, the terminal outcome and the stock-decrement side effect are unchanged and strict; (2) out-of-stock — left untouched/fully synchronous (inventory Reserve stays synchronous even after the payment extraction, so POST still returns `409` immediately); (3) payment-declined — ADAPTED the same way (DRQ-047/DRQ-055): POST tolerant of `402` (today's synchronous monolith — the whole checkout transaction is rolled back/compensated before the response, so there is no order to poll) or `202` (the saga — order persists PENDING, decline arrives later), then a BOUNDED-WAIT poll of GET /api/orders/{id} strictly asserting `PAYMENT_DECLINED` (saga path only) AND a BOUNDED-WAIT poll of GET /api/inventory/{sku} strictly asserting stock returns to net-zero (both paths) — the crux assertion (compensation via an in-line Release today, via the payment.declined choreography reaction later, DRQ-049) is never weakened; (4) the Review context contract (list, get-by-id, unauthenticated POST -> 401, authenticated POST -> 201, validation -> 400) — the first extraction's externally-observable surface — (5) the Notification context contract (DRQ-037): a checkout followed by a BOUNDED-WAIT poll of GET /api/notifications?customerId= so the identical assertion is correct whether the order-confirmation notification is written synchronously in-transaction (today's monolith, hits on the first attempt) or eventually via outbox -> Kafka -> consumer (the future async notification service, ch.17) — and (6) the Inventory Context Contract (inventory-plan.md S2, DRQ-046): the `/api/inventory` READ surface (list + get-by-sku + 404 for an unknown sku), asserted as a synchronous request/response (no bounded-wait — Reserve stays synchronous, DRQ-041) — distinct from, and NOT a duplicate of, the cross-seam inventory-mutation behavior already proven by Scenario 1 (stock decrements by ordered qty), Scenario 2 (out-of-stock -> 409, stock unchanged) and Scenario 3 (payment-declined -> stock rolled back, not left decremented), which remain the load-bearing inventory-equivalence checks the ch.19/ch.23 extractions must keep green across the seam.",
+    "description": "The behavior-equivalence suite (r02-plan S6, notification-plan S2, inventory-plan S2, payment-plan S2, build-plan.md §G/§D). Captured against the running Spring Boot monolith (examples/00-monolith). This collection is the project's equivalence gate: it is re-run UNCHANGED against each extracted service (starting with the Quarkus Review service, ch.15) and a service is only considered 'done' once it passes this same suite with no edits (build-plan.md §G load-bearing rule). Every request targets {{baseUrl}} so the identical collection can point at the monolith or at an extracted service's own port. Covers: (1) happy-path checkout — ADAPTED for the forthcoming ASYNC checkout contract (payment-plan.md S2, DRQ-047/DRQ-055): the POST is tolerant of `201` (today's synchronous monolith) or `202` (the future choreographed-saga payment service), and a BOUNDED-WAIT poll of GET /api/orders/{id} asserts the order strictly reaches the terminal `CONFIRMED` status — only the transport is relaxed, the terminal outcome and the stock-decrement side effect are unchanged and strict; (2) out-of-stock — left untouched/fully synchronous (inventory Reserve stays synchronous even after the payment extraction, so POST still returns `409` immediately); (3) payment-declined — ADAPTED the same way (DRQ-047/DRQ-055): POST tolerant of `402` (today's synchronous monolith — the whole checkout transaction is rolled back/compensated before the response, so there is no order to poll) or `202` (the saga — order persists PENDING, decline arrives later), then a BOUNDED-WAIT poll of GET /api/orders/{id} strictly asserting `PAYMENT_DECLINED` (saga path only) AND a BOUNDED-WAIT poll of GET /api/inventory/{sku} strictly asserting stock returns to net-zero (both paths) — the crux assertion (compensation via an in-line Release today, via the payment.declined choreography reaction later, DRQ-049) is never weakened; (4) the Review context contract (list, get-by-id, unauthenticated POST -> 401, authenticated POST -> 201, validation -> 400) — the first extraction's externally-observable surface — (5) the Notification context contract (DRQ-037): a checkout followed by a BOUNDED-WAIT poll of GET /api/notifications?customerId= so the identical assertion is correct whether the order-confirmation notification is written synchronously in-transaction (today's monolith, hits on the first attempt) or eventually via outbox -> Kafka -> consumer (the future async notification service, ch.17) — and (6) the Inventory Context Contract (inventory-plan.md S2, DRQ-046): the `/api/inventory` READ surface (list + get-by-sku + 404 for an unknown sku), asserted as a synchronous request/response (no bounded-wait — Reserve stays synchronous, DRQ-041) — distinct from, and NOT a duplicate of, the cross-seam inventory-mutation behavior already proven by Scenario 1 (stock decrements by ordered qty), Scenario 2 (out-of-stock -> 409, stock unchanged) and Scenario 3 (payment-declined -> stock rolled back, not left decremented), which remain the load-bearing inventory-equivalence checks the ch.19/ch.23 extractions must keep green across the seam — and (7) the Payment Context Contract (payment-plan.md S2b, DRQ-055), added after an S8 cutover run found it missing from S2's delivery: the `/api/payments` READ surface (list by orderId + get-by-id, PaymentDto-shaped), correlated with Scenario 1's confirmed order (reusing `happyPathOrderId`) so a CAPTURED payment row is guaranteed in both the synchronous-monolith and choreographed-saga states — plus the Notification Context Contract's checkout step (formerly 5a), which S8 also found still asserting the stale synchronous 201/CONFIRMED contract; it is now adapted to the same 201|202-tolerant, bounded-wait-to-CONFIRMED pattern as Scenario 1's 1b/1c before the downstream notification check runs.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -816,7 +816,7 @@
       "name": "Notification Context Contract",
       "item": [
         {
-          "name": "5a. Place order to trigger a confirmation notification -> 201 Created",
+          "name": "5a. Place order to trigger a confirmation notification -> 201 (monolith, synchronous) or 202 (saga, PENDING) — DRQ-047/DRQ-055",
           "request": {
             "method": "POST",
             "header": [
@@ -838,30 +838,113 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('Order created returns 201', function () {",
-                  "    pm.response.to.have.status(201);",
+                  "// DRQ-055: relax ONLY the transport — the POST may return 201 (today's",
+                  "// synchronous monolith, outcome already known) or 202 (the future",
+                  "// choreographed saga, DRQ-047 — payment hasn't happened yet). Any other",
+                  "// code is a hard failure, not silently accepted. (This folder shipped",
+                  "// with a stale synchronous-only 201/CONFIRMED assertion that would have",
+                  "// gone RED after cutover — fixed here, payment-plan S2b.)",
+                  "var statusCode = pm.response.code;",
+                  "pm.test('Order creation is accepted — 201 (monolith, synchronous) or 202 (saga, DRQ-047)', function () {",
+                  "    pm.expect(statusCode).to.be.oneOf([201, 202]);",
                   "});",
                   "pm.test('Content-Type is application/json', function () {",
                   "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
                   "});",
                   "var json = pm.response.json();",
-                  "pm.test('Order status transitions straight to CONFIRMED', function () {",
-                  "    pm.expect(json.status).to.eql('CONFIRMED');",
-                  "});",
-                  "// Before-state for the poll below: the order/customer this checkout just",
-                  "// created, plus a fresh retry budget — captured as collection variables so",
+                  "// Before-state for the polls below: the order/customer this checkout just",
+                  "// created, plus fresh retry budgets — captured as collection variables so",
                   "// the folder is idempotent/re-runnable without a DB reset (mirrors the",
                   "// 'before' captures in Scenarios 1-3).",
                   "pm.collectionVariables.set('notificationOrderId', json.id);",
                   "pm.collectionVariables.set('notificationCustomerId', json.customerId);",
-                  "pm.collectionVariables.set('notificationPollAttempts', 0);"
+                  "pm.collectionVariables.set('notificationConfirmPollAttempts', 0);",
+                  "pm.collectionVariables.set('notificationPollAttempts', 0);",
+                  "if (statusCode === 201) {",
+                  "    pm.test('201 (synchronous monolith): order already CONFIRMED at POST time', function () {",
+                  "        pm.expect(json.status).to.eql('CONFIRMED');",
+                  "    });",
+                  "} else {",
+                  "    pm.test('202 (choreographed saga): order is PENDING at POST time — payment outcome not yet known (DRQ-047)', function () {",
+                  "        pm.expect(json.status).to.eql('PENDING');",
+                  "    });",
+                  "}"
                 ]
               }
             }
           ]
         },
         {
-          "name": "5b. Confirmation notification becomes observable (bounded-wait poll)",
+          "name": "5b. Bounded-wait poll: order reaches CONFIRMED (DRQ-055)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/orders/{{notificationOrderId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "orders", "{{notificationOrderId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Same DRQ-037 bounded-wait idiom as Scenario 1's 1c: only delay on a",
+                  "// RETRY, never on the first attempt.",
+                  "var attempts = Number(pm.collectionVariables.get('notificationConfirmPollAttempts') || 0);",
+                  "if (attempts > 0) {",
+                  "    var delayMs = Number(pm.collectionVariables.get('notificationConfirmPollDelayMs'));",
+                  "    var start = Date.now();",
+                  "    while (Date.now() - start < delayMs) { /* intentional bounded busy-wait */ }",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Order lookup returns 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "var maxAttempts = Number(pm.collectionVariables.get('notificationConfirmPollMaxAttempts'));",
+                  "var delayMs = Number(pm.collectionVariables.get('notificationConfirmPollDelayMs'));",
+                  "var attempts = Number(pm.collectionVariables.get('notificationConfirmPollAttempts') || 0);",
+                  "",
+                  "if (json.status !== 'CONFIRMED' && (attempts + 1) < maxAttempts) {",
+                  "    // Not terminal yet and the bounded-wait budget is not exhausted: retry.",
+                  "    // Against the synchronous monolith (201 above) this branch is never",
+                  "    // taken — attempt 0 already matched CONFIRMED. Against the future",
+                  "    // choreographed saga (202 above) this gives payment.captured time to",
+                  "    // be consumed and the order-saga reaction to confirm the order.",
+                  "    pm.collectionVariables.set('notificationConfirmPollAttempts', attempts + 1);",
+                  "    postman.setNextRequest(pm.info.requestName);",
+                  "    return;",
+                  "}",
+                  "",
+                  "// Either CONFIRMED, or the bounded-wait budget is exhausted: assert the",
+                  "// TERMINAL business outcome strictly (goes RED here, not hung, if the",
+                  "// order never reaches CONFIRMED). This is what keeps the 201|202",
+                  "// tolerance at POST from being vacuous (DRQ-055) — a stuck PENDING order",
+                  "// fails this test, it does not pass it, and the downstream notification",
+                  "// check below never gets a chance to paper over it.",
+                  "pm.test('Order reaches CONFIRMED within the bounded-wait budget (' + maxAttempts + ' x ' + delayMs + 'ms)', function () {",
+                  "    pm.expect(json.status, 'order ' + pm.collectionVariables.get('notificationOrderId') + ' status after ' + (attempts + 1) + ' attempt(s)').to.eql('CONFIRMED');",
+                  "});",
+                  "pm.test('Persisted order id matches the created id', function () {",
+                  "    pm.expect(json.id).to.eql(Number(pm.collectionVariables.get('notificationOrderId')));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5c. Confirmation notification becomes observable (bounded-wait poll)",
           "request": {
             "method": "GET",
             "header": [],
@@ -1081,6 +1164,123 @@
           ]
         }
       ]
+    },
+    {
+      "name": "Payment Context Contract",
+      "item": [
+        {
+          "name": "7a. List payments by orderId -> 200, array of PaymentDto (payment-plan S2b, DRQ-055)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/payments?orderId={{happyPathOrderId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "payments"],
+              "query": [ { "key": "orderId", "value": "{{happyPathOrderId}}" } ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Correlates with Scenario 1's confirmed order (happyPathOrderId) —",
+                  "// the same pattern the other Context Contract folders use: reuse an id",
+                  "// the suite already placed rather than seeding a payment of its own.",
+                  "// By the time this folder runs, Scenario 1 has already bounded-wait-",
+                  "// confirmed that order (1c), which is only possible once the payment",
+                  "// was captured — synchronously in-process against today's monolith, or",
+                  "// via the payment.captured choreography reaction against the future",
+                  "// cutover saga — so a CAPTURED payment row is guaranteed to exist here",
+                  "// in BOTH states (payment-plan S2 HARD PART H2).",
+                  "pm.test('List payments by orderId returns 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Content-Type is application/json', function () {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "});",
+                  "var expectedOrderId = Number(pm.collectionVariables.get('happyPathOrderId'));",
+                  "var json = pm.response.json();",
+                  "pm.test('Response is a non-empty array', function () {",
+                  "    pm.expect(json).to.be.an('array');",
+                  "    pm.expect(json.length).to.be.at.least(1);",
+                  "});",
+                  "pm.test('Each payment has the documented PaymentDto shape (id, orderId, amountCents, method, status, createdAt)', function () {",
+                  "    json.forEach(function (p) {",
+                  "        pm.expect(p.id).to.be.a('number');",
+                  "        pm.expect(p.orderId).to.be.a('number');",
+                  "        pm.expect(p.amountCents).to.be.a('number');",
+                  "        pm.expect(p.method).to.be.a('string');",
+                  "        pm.expect(p.status).to.be.oneOf(['CAPTURED', 'DECLINED']);",
+                  "        pm.expect(p.createdAt).to.not.be.undefined;",
+                  "    });",
+                  "});",
+                  "var match = json.find(function (p) { return p.orderId === expectedOrderId; });",
+                  "pm.test('A payment for the correlated Scenario-1 order is present', function () {",
+                  "    pm.expect(match, 'no payment with orderId ' + expectedOrderId).to.not.be.undefined;",
+                  "});",
+                  "if (match) {",
+                  "    pm.test('Payment is correlated to the Scenario-1 happy-path order', function () {",
+                  "        pm.expect(match.orderId).to.eql(expectedOrderId);",
+                  "    });",
+                  "    pm.test('Scenario 1 was a successful checkout, so this payment is CAPTURED (not DECLINED) in both the synchronous and choreographed states', function () {",
+                  "        pm.expect(match.status).to.eql('CAPTURED');",
+                  "    });",
+                  "    pm.collectionVariables.set('paymentContractPaymentId', match.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "7b. Get payment by id -> 200, the PaymentDto for that payment (payment-plan S2b, DRQ-055)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/payments/{{paymentContractPaymentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "payments", "{{paymentContractPaymentId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Get payment by id returns 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Content-Type is application/json', function () {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test('Payment id matches the requested id', function () {",
+                  "    pm.expect(json.id).to.eql(Number(pm.collectionVariables.get('paymentContractPaymentId')));",
+                  "});",
+                  "pm.test('Payment has the documented PaymentDto shape (orderId, amountCents, method, status, createdAt)', function () {",
+                  "    pm.expect(json.orderId).to.be.a('number');",
+                  "    pm.expect(json.amountCents).to.be.a('number');",
+                  "    pm.expect(json.method).to.be.a('string');",
+                  "    pm.expect(json.status).to.be.oneOf(['CAPTURED', 'DECLINED']);",
+                  "    pm.expect(json.createdAt).to.not.be.undefined;",
+                  "});",
+                  "pm.test('Payment is correlated to the Scenario-1 happy-path order', function () {",
+                  "    pm.expect(json.orderId).to.eql(Number(pm.collectionVariables.get('happyPathOrderId')));",
+                  "});",
+                  "pm.test('Scenario 1 was a successful checkout, so this payment is CAPTURED in both the synchronous and choreographed states', function () {",
+                  "    pm.expect(json.status).to.eql('CAPTURED');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
     }
   ],
   "variable": [
@@ -1106,6 +1306,10 @@
     { "key": "notificationCustomerId", "value": "", "type": "string" },
     { "key": "notificationPollAttempts", "value": "0", "type": "string" },
     { "key": "notificationPollMaxAttempts", "value": "10", "type": "string" },
-    { "key": "notificationPollDelayMs", "value": "500", "type": "string" }
+    { "key": "notificationPollDelayMs", "value": "500", "type": "string" },
+    { "key": "notificationConfirmPollAttempts", "value": "0", "type": "string" },
+    { "key": "notificationConfirmPollMaxAttempts", "value": "10", "type": "string" },
+    { "key": "notificationConfirmPollDelayMs", "value": "500", "type": "string" },
+    { "key": "paymentContractPaymentId", "value": "", "type": "string" }
   ]
 }
