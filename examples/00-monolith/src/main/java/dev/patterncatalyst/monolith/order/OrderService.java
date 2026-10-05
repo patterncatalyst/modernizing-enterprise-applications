@@ -1,16 +1,24 @@
 package dev.patterncatalyst.monolith.order;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.patterncatalyst.monolith.common.Customer;
 import dev.patterncatalyst.monolith.common.CustomerRepository;
 import dev.patterncatalyst.monolith.common.OrderCreate;
 import dev.patterncatalyst.monolith.common.OrderDto;
+import dev.patterncatalyst.monolith.common.Topics;
 import dev.patterncatalyst.monolith.common.exception.ResourceNotFoundException;
+import dev.patterncatalyst.monolith.common.outbox.OrderPlacedEvent;
+import dev.patterncatalyst.monolith.common.outbox.OutboxEvent;
+import dev.patterncatalyst.monolith.common.outbox.OutboxRepository;
 import dev.patterncatalyst.monolith.inventory.InventoryItem;
 import dev.patterncatalyst.monolith.inventory.InventoryService;
 import dev.patterncatalyst.monolith.notification.NotificationService;
 import dev.patterncatalyst.monolith.payment.PaymentService;
 import dev.patterncatalyst.monolith.shipping.ShippingService;
+import java.time.Instant;
 import java.util.List;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,6 +40,23 @@ public class OrderService {
     private final PaymentService paymentService;
     private final ShippingService shippingService;
     private final NotificationService notificationService;
+    private final OutboxRepository outboxRepository;
+    private final ObjectMapper objectMapper;
+
+    /**
+     * ch.17 (r04/S3, DRQ-036) — the reversibility flag. {@code synchronous}
+     * (the default) is today's unchanged behavior: {@code placeOrder} calls
+     * {@code notificationService.sendOrderConfirmation} directly, in-process,
+     * inside this transaction (SMELL[ch.17]). {@code outbox} instead writes an
+     * {@code order.placed} event row to the transactional outbox — atomically,
+     * in the SAME transaction — and skips the synchronous call; a separate
+     * {@code @Scheduled} relay (common.outbox.OutboxRelay) publishes it to
+     * Kafka later. Both code paths are kept side by side on purpose: this is
+     * what makes the cutover (S7) reversible by flipping one property, and
+     * what lets S2's equivalence suite prove zero regression before S3's
+     * behavior change ships.
+     */
+    private final String notificationMode;
 
     public OrderService(
             OrderRepository orderRepository,
@@ -39,13 +64,19 @@ public class OrderService {
             InventoryService inventoryService,
             PaymentService paymentService,
             ShippingService shippingService,
-            NotificationService notificationService) {
+            NotificationService notificationService,
+            OutboxRepository outboxRepository,
+            ObjectMapper objectMapper,
+            @Value("${notification.mode:synchronous}") String notificationMode) {
         this.orderRepository = orderRepository;
         this.customerRepository = customerRepository;
         this.inventoryService = inventoryService;
         this.paymentService = paymentService;
         this.shippingService = shippingService;
         this.notificationService = notificationService;
+        this.outboxRepository = outboxRepository;
+        this.objectMapper = objectMapper;
+        this.notificationMode = notificationMode;
     }
 
     /**
@@ -59,9 +90,15 @@ public class OrderService {
      *
      * <p>Flow: validate customer -> check+reserve stock (inventory, SMELL[ch.16]
      * no ACL) -> persist the order -> charge payment (payment; a decline rolls
-     * back everything written so far) -> dispatch shipment (shipping) -> send the
-     * confirmation notification SYNCHRONOUSLY inside this same transaction
-     * (notification, SMELL[ch.17]).
+     * back everything written so far) -> dispatch shipment (shipping) -> notify.
+     *
+     * <p>The notification step is flag-gated (DRQ-036,
+     * {@code notification.mode}): {@code synchronous} (default) still sends
+     * the confirmation SYNCHRONOUSLY inside this same transaction
+     * (notification, SMELL[ch.17] — unchanged, uncured behavior); {@code
+     * outbox} instead writes an {@code order.placed} outbox row atomically in
+     * this same transaction (ch.17's cure, S3) and lets a separate
+     * {@code @Scheduled} relay publish it to Kafka asynchronously.
      */
     @Transactional
     public OrderDto placeOrder(OrderCreate command) {
@@ -90,11 +127,53 @@ public class OrderService {
         // service rather than being triggered by an event the order context emits.
         shippingService.dispatch(order, order.getShippingAddress());
 
-        // SMELL[ch.17]: notification sent synchronously inside the checkout
-        // transaction instead of via an outbox + async consumer.
-        notificationService.sendOrderConfirmation(customer, order);
+        if ("outbox".equals(notificationMode)) {
+            // ch.17 cure (S3): write the event to the outbox, atomically, in
+            // THIS transaction. No Kafka client is touched here — the
+            // @Scheduled OutboxRelay is the only thing that talks to Kafka,
+            // on its own schedule, after this transaction has committed (or
+            // not, if something downstream still throws).
+            writeOrderPlacedOutboxEvent(customer, order);
+        } else {
+            // SMELL[ch.17]: notification sent synchronously inside the
+            // checkout transaction instead of via an outbox + async consumer.
+            // This is the default (notification.mode=synchronous) and
+            // remains today's unchanged, uncured behavior.
+            notificationService.sendOrderConfirmation(customer, order);
+        }
 
         return toDto(order);
+    }
+
+    /**
+     * ch.17 (r04/S3): builds the {@code order.placed} payload and persists it
+     * as an {@link OutboxEvent} row via the same {@link OutboxRepository} used
+     * by {@link dev.patterncatalyst.monolith.common.outbox.OutboxRelay} —
+     * called from inside {@link #placeOrder}'s {@code @Transactional}, so this
+     * write is part of the checkout transaction, not a separate dual-write
+     * after commit.
+     */
+    private void writeOrderPlacedOutboxEvent(Customer customer, Order order) {
+        String confirmationMessage =
+                "Order #%d confirmed, total $%.2f".formatted(order.getId(), order.getTotalCents() / 100.0);
+        OrderPlacedEvent event = new OrderPlacedEvent(
+                order.getId(),
+                customer.getId(),
+                customer.getEmail(),
+                order.getTotalCents(),
+                confirmationMessage,
+                Instant.now());
+        try {
+            String payload = objectMapper.writeValueAsString(event);
+            outboxRepository.save(new OutboxEvent(
+                    "Order", String.valueOf(order.getId()), Topics.ORDER_PLACED, payload));
+        } catch (JsonProcessingException e) {
+            // A record of primitives/Strings/Instant never fails to
+            // serialize in practice; wrapping keeps placeOrder's signature
+            // unchanged and still fails the checkout (and rolls back the
+            // transaction) rather than silently dropping the notification.
+            throw new IllegalStateException("Failed to serialize OrderPlacedEvent for order " + order.getId(), e);
+        }
     }
 
     @Transactional(readOnly = true)

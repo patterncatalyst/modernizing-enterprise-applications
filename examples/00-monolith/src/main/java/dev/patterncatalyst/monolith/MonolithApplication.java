@@ -2,6 +2,7 @@ package dev.patterncatalyst.monolith;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
  * The reference monolith: one deployable, one shared Postgres schema, one JVM.
@@ -26,8 +27,15 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * <p>Six deliberate smells were planted on purpose and tagged in-code with
  * {@code // SMELL[ch.NN]: ...} comments; see {@code SMELLS.md} in this module's
  * root for the full catalogue and curing-chapter map (smell #6 is now cured).
+ *
+ * <p><b>r04/S3 (ch.17):</b> {@code @EnableScheduling} activates the
+ * transactional-outbox relay ({@code common.outbox.OutboxRelay}), which polls
+ * for unpublished {@code outbox} rows and publishes them to Kafka. It is a
+ * harmless no-op while {@code notification.mode=synchronous} (the default) —
+ * nothing is ever written to the outbox in that mode.
  */
 @SpringBootApplication
+@EnableScheduling
 public class MonolithApplication {
 
     public static void main(String[] args) {

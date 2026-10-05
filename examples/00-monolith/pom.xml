@@ -80,7 +80,20 @@
       <version>${springdoc.version}</version>
     </dependency>
 
+    <!-- ch.17 (r04/S3): the transactional-outbox relay publishes order.placed to
+         Kafka via a plain KafkaTemplate. notification.mode=synchronous (default)
+         never touches this producer; notification.mode=outbox does. -->
+    <dependency>
+      <groupId>org.springframework.kafka</groupId>
+      <artifactId>spring-kafka</artifactId>
+    </dependency>
+
     <!-- Test scope -->
+    <dependency>
+      <groupId>org.springframework.kafka</groupId>
+      <artifactId>spring-kafka-test</artifactId>
+      <scope>test</scope>
+    </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-test</artifactId>
