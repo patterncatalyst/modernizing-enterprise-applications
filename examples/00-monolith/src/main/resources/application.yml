@@ -43,16 +43,10 @@ springdoc:
   swagger-ui:
     path: /swagger-ui.html
 
-# ch.17 (r04/S3, DRQ-036): notification.mode=synchronous is the DEFAULT —
-# today's unchanged behavior (OrderService calls NotificationService
-# in-transaction). Set to `outbox` (e.g. NOTIFICATION_MODE=outbox) to switch
-# placeOrder to writing a transactional-outbox row instead; see
+# ch.17 (r04/S8): the outbox relay's own tuning. notification.mode (the
+# synchronous|outbox reversibility flag used during the extraction) has been
+# removed — placeOrder now always writes the outbox row; see
 # OrderService#placeOrder and common/outbox/OutboxRelay.
-notification:
-  mode: synchronous
-
-# ch.17 (r04/S3): the outbox relay's own tuning, independent of notification.mode
-# so it can be adjusted without touching the write-path flag.
 outbox:
   relay:
     poll-interval-ms: 2000

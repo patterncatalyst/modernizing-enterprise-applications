@@ -19,11 +19,11 @@ import org.springframework.stereotype.Component;
  * this reads a small batch of unpublished {@link OutboxEvent} rows and
  * publishes each one to Kafka.
  *
- * <p>This relay runs regardless of {@code notification.mode}: it is cheap
- * infrastructure that is simply idle (an empty query result) whenever the
- * monolith is in {@code synchronous} mode and nothing is ever written to the
- * outbox. Only {@code order.OrderService#placeOrder} decides whether a row
- * exists to relay at all.
+ * <p>As of r04/S8, {@code order.OrderService#placeOrder} unconditionally
+ * writes an outbox row on every checkout (the earlier {@code
+ * notification.mode=synchronous|outbox} reversibility flag has been removed),
+ * so this relay always has work to do rather than idling on an empty query
+ * result.
  *
  * <p><b>Delivery guarantee: AT LEAST ONCE.</b> The Kafka send and the
  * {@code published_at} stamp are two separate operations, not one atomic

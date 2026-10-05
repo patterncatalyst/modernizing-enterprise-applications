@@ -11,12 +11,12 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 /**
- * ch.17 (r04/S3) — a row in the transactional outbox. Written by {@code
- * order.OrderService#placeOrder} in the SAME {@code @Transactional} as the
- * order/payment/shipment writes (when {@code notification.mode=outbox}), so
- * the event is atomic with the business change it describes: either both the
- * order and this row commit, or neither does (a payment decline rolls both
- * back together, same as every other write in that transaction).
+ * ch.17 (r04/S3, decommissioned to outbox-only in r04/S8) — a row in the
+ * transactional outbox. Written by {@code order.OrderService#placeOrder} in
+ * the SAME {@code @Transactional} as the order/payment/shipment writes, every
+ * time, so the event is atomic with the business change it describes: either
+ * both the order and this row commit, or neither does (a payment decline
+ * rolls both back together, same as every other write in that transaction).
  *
  * <p>{@link OutboxRelay} is a separate, asynchronous reader of this table — it
  * polls for rows where {@code publishedAt IS NULL}, publishes each to Kafka,
