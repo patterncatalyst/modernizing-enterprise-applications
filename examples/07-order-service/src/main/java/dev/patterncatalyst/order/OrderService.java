@@ -1,86 +1,95 @@
 package dev.patterncatalyst.order;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.context.annotation.Scope;
-import org.springframework.stereotype.Service;
+import org.jboss.logging.Logger;
 
 /**
- * Lifted from the monolith's {@code order.OrderService} (ch.26 S4,
- * DRQ-068/073, Phase A) — the read+command surface via Quarkiverse
- * Spring-compat. {@code @Scope("application")} is an added-during-lift
- * adjustment (maps to CDI {@code @ApplicationScoped} per the migration
- * skill's annotation map) so this bean is normal-scoped and therefore
- * mockable with {@code @InjectMock} in {@code OrderControllerTest} — plain
- * {@code @Service} alone compiles to a {@code @Singleton} pseudo-scope bean,
- * which Quarkus cannot mock (no client proxy to swap).
+ * REFACTORED to idiomatic Quarkus (ch.26 S5, Phase B, DRQ-073) from Phase A's
+ * {@code @Service @Scope("application")} Spring-compat bean -- plain CDI
+ * {@code @ApplicationScoped} plus Quarkus's simplified constructor injection,
+ * exactly mirroring payment-service's/shipping-service's Phase B services.
+ * {@code @Scope("application")}'s only job (making the bean mockable with
+ * {@code @InjectMock}) is now automatic: a plain {@code @ApplicationScoped}
+ * CDI bean always gets a client proxy.
  *
- * <p><b>Divergence from the monolith's {@code @Transactional}:</b> this class
- * uses {@code jakarta.transaction.Transactional}, NOT Spring's {@code
- * org.springframework.transaction.annotation.Transactional} — per the
- * migration skill's annotation map, quarkus-spring-data-jpa does not process
- * Spring's own annotation; jakarta's is required even under compat.
+ * <p>{@link #placeOrder} is THE CQRS write model's command handler (DRQ-073):
+ * validate the customer, reserve every line over gRPC via {@link
+ * RemoteInventoryClient} (unchanged from S4), persist the {@link Order}
+ * {@code PENDING}, and -- net-new for this step, closing the gap S4's
+ * javadoc documented as deferred -- write {@code order.placed} to this
+ * service's OWN transactional outbox ({@link OrderOutboxEvent}) in the SAME
+ * {@code @Transactional} as the order row. Either both rows commit, or
+ * neither does: no dual-write (DRQ-073). {@link OrderOutboxRelay} then
+ * publishes the row to Kafka asynchronously, replacing the monolith's {@code
+ * common.outbox.OutboxRelay} as the external producer of this topic.
  *
- * <p><b>What's the SAME as the monolith's lifted shape:</b> {@link
- * #placeOrder} validates the customer, reserves every line synchronously over
- * gRPC via {@link RemoteInventoryClient} (now a quarkus-grpc client, DRQ-068/
- * 073 scaffold), persists the order {@code PENDING}, and — on a pre-handoff
- * failure (a later line out of stock, or the save itself throwing) —
- * compensates every reservation already committed this checkout, exactly the
- * monolith's try/catch shape.
- *
- * <p><b>What's deliberately NOT here (deferred to S5/S6, per this step's
- * scope):</b> the monolith's {@code placeOrder} ALSO writes an {@code
- * order.placed} outbox event as its handoff to the choreographed saga — that
- * write (and the {@code OrderOutboxEvent}/{@code OrderOutboxRelay} machinery
- * backing it, and the event contract itself) is explicitly S3/S5 scope, not
- * this step's. This service's Flyway migrations already reserve the {@code
- * outbox} table (empty, unwritten) so S5 can add the Java-side wiring without
- * a schema change. Likewise, no saga reactions exist yet to ever move an
- * order OUT of {@code PENDING} (S5), and no read-model projection exists yet
- * to populate the reserved {@code order_view} table (S6) — an order placed
- * against this Phase A service will sit {@code PENDING} forever until those
- * steps land, which is the expected, documented state of an isolated Phase A
- * scaffold, not a bug.
+ * <p><b>The pre-handoff compensation catch (DRQ-042), moved in UNCHANGED:</b>
+ * the surrounding {@code try/catch} compensates a PRE-HANDOFF failure -- a
+ * later checkout line out of stock, or the order/outbox write itself
+ * throwing -- by releasing every sku ALREADY reserved this checkout, exactly
+ * the monolith's {@code OrderService#placeOrder} shape (see that class's
+ * javadoc, and {@code OrderSagaListener}'s for why this catch and the four
+ * saga reactions' compensations can never double-fire on the same
+ * reservation: this catch only runs for a checkout that never reached {@code
+ * order.placed} being committed; the reactions only run for an order that
+ * DID).
  */
-@Service
-@Scope("application")
+@ApplicationScoped
 public class OrderService {
 
-    private static final Logger LOG = LoggerFactory.getLogger(OrderService.class);
+    private static final Logger LOG = Logger.getLogger(OrderService.class);
+
+    /** Aggregate type recorded on every {@link OrderOutboxEvent} this service writes. */
+    static final String AGGREGATE_TYPE = "order";
+
+    static final String ORDER_PLACED_EVENT_TYPE = "order.placed";
 
     private final OrderRepository orderRepository;
     private final CustomerRepository customerRepository;
     private final RemoteInventoryClient remoteInventoryClient;
+    private final OrderOutboxRepository outboxRepository;
+    private final ObjectMapper objectMapper;
 
     public OrderService(
             OrderRepository orderRepository,
             CustomerRepository customerRepository,
-            RemoteInventoryClient remoteInventoryClient) {
+            RemoteInventoryClient remoteInventoryClient,
+            OrderOutboxRepository outboxRepository,
+            ObjectMapper objectMapper) {
         this.orderRepository = orderRepository;
         this.customerRepository = customerRepository;
         this.remoteInventoryClient = remoteInventoryClient;
+        this.outboxRepository = outboxRepository;
+        this.objectMapper = objectMapper;
     }
 
     /**
-     * Flow: validate customer -&gt; check+reserve stock (inventory, over gRPC)
-     * -&gt; persist the order {@code PENDING} -&gt; return. See this class's
-     * javadoc for what the monolith's version ALSO does (the {@code
-     * order.placed} outbox handoff) that is deliberately deferred to S5.
+     * Flow: validate customer -&gt; check+reserve stock (inventory, over
+     * gRPC) -&gt; persist the order {@code PENDING} -&gt; write the {@code
+     * order.placed} outbox event (the handoff to the choreographed saga) -&gt;
+     * return. Payment capture and order confirmation/shipping dispatch
+     * happen OUT OF PROCESS and asynchronously, driven by {@link
+     * OrderSagaListener} reacting to the payment/shipping services' outcome
+     * events.
      *
      * <p>r05/ch.19-lineage (DRQ-042/043, preserved unchanged): each line's
      * sku/name/unit-price-at-order-time is captured as a denormalized
      * snapshot from the inventory service's {@code GetStock} gRPC reply (not
      * a local join), and any EARLIER line's reservation is compensated via
-     * {@code Release} if a LATER line fails or the save throws, before
-     * propagating the original failure. No-op when nothing was reserved yet.
+     * {@code Release} if a LATER line fails, or the order/outbox write
+     * itself throws, before propagating the original failure. No-op when
+     * nothing was reserved yet.
      */
     @Transactional
     public OrderDto placeOrder(OrderCreate command) {
-        Customer customer = customerRepository.findById(command.customerId())
+        Customer customer = customerRepository
+                .findByIdOptional(command.customerId())
                 .orElseThrow(() -> new ResourceNotFoundException("No customer with id " + command.customerId()));
 
         Order order = new Order(customer.getId(), customer.getEmail(), command.shippingAddress());
@@ -101,11 +110,45 @@ public class OrderService {
                 order.addItem(orderItem);
             }
 
-            order = orderRepository.save(order);
+            orderRepository.persist(order);
+            writeOrderPlacedOutboxEvent(customer, order, command.paymentMethod());
             return toDto(order);
         } catch (RuntimeException ex) {
             compensateRemoteReservations(remoteReservations);
             throw ex;
+        }
+    }
+
+    /**
+     * Builds the {@code order.placed} payload and persists it as an {@link
+     * OrderOutboxEvent} row via the SAME {@link OrderOutboxRepository} {@link
+     * OrderOutboxRelay} polls -- called from inside {@link #placeOrder}'s
+     * {@code @Transactional}, so this write is part of the checkout
+     * transaction, not a separate dual-write after commit (DRQ-073).
+     */
+    private void writeOrderPlacedOutboxEvent(Customer customer, Order order, String paymentMethod) {
+        String confirmationMessage =
+                "Order #%d confirmed, total $%.2f".formatted(order.getId(), order.getTotalCents() / 100.0);
+        OrderPlacedEvent event = new OrderPlacedEvent(
+                order.getId(),
+                customer.getId(),
+                customer.getEmail(),
+                order.getTotalCents(),
+                paymentMethod,
+                confirmationMessage,
+                Instant.now());
+        try {
+            String payload = objectMapper.writeValueAsString(event);
+            outboxRepository.persist(new OrderOutboxEvent(
+                    AGGREGATE_TYPE, String.valueOf(order.getId()), ORDER_PLACED_EVENT_TYPE, payload));
+        } catch (JsonProcessingException e) {
+            // A record of primitives/Strings/Instant never fails to
+            // serialize in practice; wrapping keeps placeOrder's signature
+            // unchanged and still fails (and rolls back) the checkout rather
+            // than silently dropping the saga handoff -- caught by this
+            // method's own try/catch, which compensates every reservation
+            // already made this checkout.
+            throw new IllegalStateException("Failed to serialize OrderPlacedEvent for order " + order.getId(), e);
         }
     }
 
@@ -115,17 +158,18 @@ public class OrderService {
      * {@code Release} failure is logged loudly but does not replace the
      * ORIGINAL checkout failure being propagated to the caller — lifted
      * unchanged from the monolith's documented limitation (no idempotency
-     * key or saga ledger in this service yet; the full saga ledger is S5).
+     * key or saga ledger in this service).
      */
     private void compensateRemoteReservations(List<ReservedLine> remoteReservations) {
         for (ReservedLine reserved : remoteReservations) {
             try {
                 remoteInventoryClient.release(reserved.sku(), reserved.quantity());
             } catch (RuntimeException releaseFailure) {
-                LOG.error(
-                        "compensation FAILED for sku={} qty={} — stock NOT restored "
-                                + "(full saga/idempotency deferred to ch.26 S5)",
-                        reserved.sku(), reserved.quantity(), releaseFailure);
+                LOG.errorf(
+                        releaseFailure,
+                        "compensation FAILED for sku=%s qty=%d — stock NOT restored "
+                                + "(DRQ-042: no saga ledger/retry)",
+                        reserved.sku(), reserved.quantity());
             }
         }
     }
@@ -134,15 +178,23 @@ public class OrderService {
     private record ReservedLine(String sku, int quantity) {
     }
 
+    /**
+     * {@code @Transactional} here (unlike payment's/shipping's read paths,
+     * which have no nested collections) keeps the Hibernate session open
+     * through {@link #toDto}'s lazy {@code order.getItems()} collection
+     * access -- {@link Order#items} is a lazy {@code @OneToMany}.
+     */
     @Transactional
     public OrderDto getById(Long id) {
-        return toDto(orderRepository.findById(id)
+        return toDto(orderRepository
+                .findByIdOptional(id)
                 .orElseThrow(() -> new ResourceNotFoundException("No order with id " + id)));
     }
 
+    /** See {@link #getById}'s javadoc for why this stays {@code @Transactional}. */
     @Transactional
     public List<OrderDto> listAll() {
-        return orderRepository.findAll().stream().map(OrderService::toDto).toList();
+        return orderRepository.listAll().stream().map(OrderService::toDto).toList();
     }
 
     private static OrderDto toDto(Order order) {

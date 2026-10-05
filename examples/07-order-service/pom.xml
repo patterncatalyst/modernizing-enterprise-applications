@@ -30,32 +30,29 @@
         </dependencies>
     </dependencyManagement>
 
-    <!-- ch.26 S4 (DRQ-068/073), Phase A: the monolith's Spring MVC / Spring DI /
-         Spring Data JPA order READ+COMMAND surface (OrderController/
-         OrderService#getById,listAll,placeOrder/Order+OrderItem/
-         OrderRepository/Customer+CustomerRepository) is lifted onto Quarkus
-         largely unchanged via the Quarkiverse Spring-compatibility extensions
-         (quarkus-spring-web, quarkus-spring-di, quarkus-spring-data-jpa),
-         already pointed at its OWN `order_service` Postgres schema from day
-         one (own-schema, same discipline as inventory/payment/shipping — NOT
-         review's shared-schema approach; `order_service`, not `order`,
-         since ORDER is a reserved Postgres keyword). quarkus-hibernate-validator
-         backs OrderCreate's @Valid bean-validation constraints (lifted from
-         the monolith's jakarta.validation annotations). quarkus-grpc carries
-         RemoteInventoryClient (proto + blocking-stub client), WIRED into
-         placeOrder's reserve/release/getStock path exactly like the
-         monolith's lifted shape — see MIGRATION.md for what's deferred to S5
-         (idiomatic refactor, CQRS write model, own outbox, lifted saga
-         reactions) and S6 (read-model projection into the order_view table
-         reserved by Flyway below). -->
+    <!-- ch.26 S5 (DRQ-073), Phase B: the Spring-compat shim (S4) is REMOVED;
+         quarkus-spring-web/-di/-data-jpa are gone. The read+command surface
+         (OrderResource/OrderService/OrderRepository+CustomerRepository/
+         Order+OrderItem+Customer) now runs directly on Quarkus REST +
+         Hibernate ORM with Panache + plain CDI, still pointed at its OWN
+         `order_service` Postgres schema from day one (own-schema, same
+         discipline as inventory/payment/shipping). The net-new CQRS write
+         core (idiomatic-from-the-start, DRQ-073) is layered on top:
+         quarkus-messaging-kafka (the four lifted OrderSagaListener @Incoming
+         reactions + the order.placed outbox-relay producer) and
+         quarkus-scheduler (the outbox relay's @Scheduled poll).
+         quarkus-hibernate-validator backs OrderCreate's @Valid bean-validation
+         constraints, now via Quarkus REST's own JAX-RS integration (no
+         compat shim underneath, see GlobalExceptionMapper). quarkus-grpc
+         carries RemoteInventoryClient (unchanged from S4). -->
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-spring-data-jpa</artifactId>
+            <artifactId>quarkus-rest-jackson</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-smallrye-health</artifactId>
+            <artifactId>quarkus-hibernate-orm-panache</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -63,25 +60,23 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-flyway</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-spring-di</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-jdbc-postgresql</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-spring-web</artifactId>
+            <artifactId>quarkus-flyway</artifactId>
         </dependency>
-        <!-- quarkus-spring-web's exception-handling build step requires the
-             underlying Jakarta REST stack to be present explicitly. -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-rest-jackson</artifactId>
+            <artifactId>quarkus-messaging-kafka</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-scheduler</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-health</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -110,6 +105,17 @@
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>
             <version>3.27.7</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.smallrye.reactive</groupId>
+            <artifactId>smallrye-reactive-messaging-in-memory</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.awaitility</groupId>
+            <artifactId>awaitility</artifactId>
+            <version>4.3.0</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

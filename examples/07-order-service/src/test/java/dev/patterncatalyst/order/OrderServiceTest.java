@@ -5,10 +5,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -18,11 +20,14 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
- * Tier 1 (unit), mirroring the monolith's {@code OrderServiceTest} (ch.26 S4,
- * DRQ-068/073, Phase A) minus the outbox-handoff assertions (no {@code
- * order.placed} write exists in this step's scope — see {@link
- * OrderService}'s javadoc for what's deferred to S5). All collaborators are
- * mocked; this test never touches a database or a real gRPC channel.
+ * Tier 1 (unit), REFACTORED for ch.26 S5 (Phase B, DRQ-073). All collaborators
+ * are mocked; this test never touches a database, a real gRPC channel, or
+ * Kafka. Net-new cases cover {@link OrderService#placeOrder}'s outbox-write
+ * behavior (atomic with the order row, no dual-write) at the unit level with
+ * a mocked {@link OrderOutboxRepository} -- the full Reactive Messaging +
+ * real-outbox-row round trip is covered by {@code CheckoutOutboxTest}. The
+ * pre-handoff compensation regression checks carried over from Phase A are
+ * extended to also assert the outbox is NEVER written on a failed checkout.
  */
 @ExtendWith(MockitoExtension.class)
 class OrderServiceTest {
@@ -36,31 +41,39 @@ class OrderServiceTest {
     @Mock
     private RemoteInventoryClient remoteInventoryClient;
 
+    @Mock
+    private OrderOutboxRepository outboxRepository;
+
     private OrderService orderService;
     private Customer customer;
 
     @BeforeEach
     void setUp() {
-        orderService = new OrderService(orderRepository, customerRepository, remoteInventoryClient);
+        orderService = new OrderService(
+                orderRepository,
+                customerRepository,
+                remoteInventoryClient,
+                outboxRepository,
+                new ObjectMapper().findAndRegisterModules());
         customer = TestFixtures.customer(1L, "Ada Lovelace", "ada@example.com");
     }
 
     @Test
-    void placeOrder_happyPath_staysPendingAndReservesStock() {
+    void placeOrder_happyPath_staysPendingAndReservesStock_writesExactlyOneOrderPlacedOutboxEvent() {
         var command = new OrderCreate(
                 1L, List.of(new OrderCreate.Line("SKU-WIDGET-001", 2)), "CARD-VISA", "1 Test Way");
 
-        when(customerRepository.findById(1L)).thenReturn(Optional.of(customer));
+        when(customerRepository.findByIdOptional(1L)).thenReturn(Optional.of(customer));
         when(remoteInventoryClient.reserve("SKU-WIDGET-001", 2))
                 .thenReturn(new RemoteInventoryClient.ReserveResult(true, 98));
         when(remoteInventoryClient.getStock("SKU-WIDGET-001"))
                 .thenReturn(new RemoteInventoryClient.StockSnapshot("SKU-WIDGET-001", "Standard Widget", 1999L));
-        when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         OrderDto dto = orderService.placeOrder(command);
 
-        // ch.26 S4 (Phase A): checkout always stays PENDING -- no saga
-        // reactions exist yet to transition it further (that's S5).
+        // ch.26 S5 (Phase B): checkout stays PENDING synchronously -- the
+        // saga reactions (OrderSagaListener) are what eventually move it,
+        // out of process, off the order.placed handoff this test proves.
         assertThat(dto.status()).isEqualTo(OrderStatus.PENDING);
         assertThat(dto.customerId()).isEqualTo(1L);
         assertThat(dto.totalCents()).isEqualTo(1999L * 2);
@@ -71,14 +84,24 @@ class OrderServiceTest {
         verify(remoteInventoryClient).reserve("SKU-WIDGET-001", 2);
         // happy path never issues a compensating Release.
         verify(remoteInventoryClient, never()).release(anyString(), anyInt());
+
+        // DRQ-073: exactly one order.placed outbox row, atomic with the
+        // order persist (both happen inside the same @Transactional method;
+        // this unit test proves the Java-side call shape, not the DB commit
+        // atomicity itself -- that's CheckoutOutboxTest's job).
+        verify(orderRepository).persist(any(Order.class));
+        verify(outboxRepository)
+                .persist(argThat((OrderOutboxEvent e) -> e.getEventType().equals("order.placed")
+                        && e.getAggregateType().equals("order")
+                        && e.getPayload().contains("\"paymentMethod\":\"CARD-VISA\"")));
     }
 
     @Test
-    void placeOrder_outOfStock_throwsInsufficientStockAndNeverReleases() {
+    void placeOrder_outOfStock_throwsInsufficientStockAndNeverReleasesOrWritesOutbox() {
         var command = new OrderCreate(
                 1L, List.of(new OrderCreate.Line("SKU-GIZMO-003", 99)), "CARD-VISA", "1 Test Way");
 
-        when(customerRepository.findById(1L)).thenReturn(Optional.of(customer));
+        when(customerRepository.findByIdOptional(1L)).thenReturn(Optional.of(customer));
         when(remoteInventoryClient.reserve("SKU-GIZMO-003", 99))
                 .thenReturn(new RemoteInventoryClient.ReserveResult(false, 5));
 
@@ -86,18 +109,20 @@ class OrderServiceTest {
                 .isInstanceOf(InsufficientStockException.class)
                 .hasMessageContaining("SKU-GIZMO-003");
 
-        verify(orderRepository, never()).save(any());
+        verify(orderRepository, never()).persist(any(Order.class));
+        verify(outboxRepository, never()).persist(any(OrderOutboxEvent.class));
         // insufficient stock means no snapshot is ever fetched.
         verify(remoteInventoryClient, never()).getStock(anyString());
         verify(remoteInventoryClient, never()).release(anyString(), anyInt());
     }
 
     @Test
-    void placeOrder_reserveFailsOnSecondLine_compensatesFirstLine() {
-        // THE pre-handoff compensation regression check, lifted from the
-        // monolith: line 1 reserves successfully (committed in the inventory
-        // service's own database); line 2 is out of stock, so placeOrder
-        // throws BEFORE the order is ever saved. The surrounding try/catch in
+    void placeOrder_reserveFailsOnSecondLine_compensatesFirstLine_neverWritesOutbox() {
+        // THE pre-handoff compensation regression check (DRQ-042), lifted
+        // from the monolith unchanged: line 1 reserves successfully
+        // (committed in the inventory service's own database); line 2 is
+        // out of stock, so placeOrder throws BEFORE the order (or the
+        // outbox event) is ever persisted. The surrounding try/catch in
         // OrderService#placeOrder must still release line 1's reservation.
         var command = new OrderCreate(
                 1L,
@@ -105,7 +130,7 @@ class OrderServiceTest {
                 "CARD-VISA",
                 "1 Test Way");
 
-        when(customerRepository.findById(1L)).thenReturn(Optional.of(customer));
+        when(customerRepository.findByIdOptional(1L)).thenReturn(Optional.of(customer));
         when(remoteInventoryClient.reserve("SKU-WIDGET-001", 2))
                 .thenReturn(new RemoteInventoryClient.ReserveResult(true, 98));
         when(remoteInventoryClient.getStock("SKU-WIDGET-001"))
@@ -117,26 +142,28 @@ class OrderServiceTest {
                 .isInstanceOf(InsufficientStockException.class);
 
         verify(remoteInventoryClient).release("SKU-WIDGET-001", 2);
-        verify(orderRepository, never()).save(any());
+        verify(orderRepository, never()).persist(any(Order.class));
+        verify(outboxRepository, never()).persist(any(OrderOutboxEvent.class));
     }
 
     @Test
-    void placeOrder_customerNotFound_throwsAndNeverTouchesInventory() {
+    void placeOrder_customerNotFound_throwsAndNeverTouchesInventoryOrOutbox() {
         var command = new OrderCreate(
                 404L, List.of(new OrderCreate.Line("SKU-WIDGET-001", 1)), "CARD-VISA", "1 Test Way");
-        when(customerRepository.findById(404L)).thenReturn(Optional.empty());
+        when(customerRepository.findByIdOptional(404L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> orderService.placeOrder(command))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("404");
 
         verify(remoteInventoryClient, never()).reserve(anyString(), anyInt());
-        verify(orderRepository, never()).save(any());
+        verify(orderRepository, never()).persist(any(Order.class));
+        verify(outboxRepository, never()).persist(any(OrderOutboxEvent.class));
     }
 
     @Test
     void getById_notFound_throwsResourceNotFoundException() {
-        when(orderRepository.findById(99L)).thenReturn(Optional.empty());
+        when(orderRepository.findByIdOptional(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> orderService.getById(99L))
                 .isInstanceOf(ResourceNotFoundException.class)
@@ -147,7 +174,7 @@ class OrderServiceTest {
     void listAll_delegatesToRepositoryAndMapsToDto() {
         Order order = new Order(1L, "ada@example.com", "1 Test Way");
         order.addItem(new OrderItem("SKU-WIDGET-001", "Standard Widget", 1, 1999L));
-        when(orderRepository.findAll()).thenReturn(List.of(order));
+        when(orderRepository.listAll()).thenReturn(List.of(order));
 
         List<OrderDto> result = orderService.listAll();
 

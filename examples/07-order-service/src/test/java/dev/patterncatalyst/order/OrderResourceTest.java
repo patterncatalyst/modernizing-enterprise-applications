@@ -1,6 +1,7 @@
 package dev.patterncatalyst.order;
 
 import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -14,23 +15,34 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 /**
- * Lifted from the monolith's {@code order.OrderControllerTest} (ch.26 S4,
- * DRQ-068/073, Phase A) — same role (a controller-layer slice test that mocks
- * {@link OrderService} entirely), translated from Spring's {@code
- * @WebMvcTest}/{@code @MockitoBean} to Quarkus's {@code @QuarkusTest}/{@code
- * @InjectMock}. {@link OrderService} must be normal-scoped ({@code
- * @Scope("application")}, see its javadoc) for {@code @InjectMock} to work —
- * Quarkus cannot mock a {@code @Singleton} bean (no client proxy to swap).
+ * REFACTORED to idiomatic Quarkus (ch.26 S5, Phase B, DRQ-073) — renamed from
+ * Phase A's {@code OrderControllerTest} to match {@link OrderResource}'s
+ * JAX-RS rename, same role (a resource-layer slice test that mocks {@link
+ * OrderService} entirely). {@link OrderService} is a plain CDI {@code
+ * @ApplicationScoped} bean now (no more {@code @Scope("application")}
+ * Spring-compat workaround) — Quarkus always gives such a bean a client
+ * proxy, so {@code @InjectMock} works unchanged.
  *
  * <p>Proves the {@code /api/orders} read+command contract — including the
- * {@link OrderDto} shape (byte-for-byte match with the monolith's) and the
- * 404/400 error-mapping surface — without touching a database or a real gRPC
- * channel (this is a controller-layer slice test; {@link OrderServiceTest}
- * covers the service-layer reserve/compensate logic against mocked
+ * {@link OrderDto} shape (byte-for-byte match with the monolith's/Phase A's)
+ * and the 404/400/409 error-mapping surface (see {@link
+ * GlobalExceptionMapper}) — without touching a database or a real gRPC
+ * channel (this is a resource-layer slice test; {@link OrderServiceTest}
+ * covers the service-layer reserve/compensate/outbox logic against mocked
  * collaborators).
+ *
+ * <p>The {@code Location} header assertion is relaxed from an exact-match to
+ * {@code endsWith(...)}, same divergence review-service's Phase B {@code
+ * ReviewResourceTest} documents: Jakarta REST's {@code Response.accepted(...)
+ * .location(URI)} resolves a relative location URI against the request's
+ * base URI (unlike Spring's {@code ResponseEntity.location(URI)}, which
+ * echoed the literal string), so the header value is now an absolute URL
+ * ending in the same path — a test-assertion-strictness adjustment, not a
+ * contract change (the Order Context Contract only asserts the header is
+ * present).
  */
 @QuarkusTest
-class OrderControllerTest {
+class OrderResourceTest {
 
     @InjectMock
     OrderService orderService;
@@ -50,7 +62,7 @@ class OrderControllerTest {
                 .when().post("/api/orders")
                 .then()
                 .statusCode(202)
-                .header("Location", "/api/orders/8")
+                .header("Location", endsWith("/api/orders/8"))
                 .body("status", is("PENDING"))
                 .body("totalCents", is(3998))
                 .body("shippingAddress", is("1 Test Way"))
@@ -68,6 +80,22 @@ class OrderControllerTest {
                 .then()
                 .statusCode(400)
                 .body("error", is("VALIDATION_FAILED"));
+    }
+
+    @Test
+    void placeOrder_insufficientStock_returns409OutOfStock() {
+        var command = new OrderCreate(
+                1L, List.of(new OrderCreate.Line("SKU-GIZMO-003", 99)), "CARD-VISA", "1 Test Way");
+        when(orderService.placeOrder(any(OrderCreate.class)))
+                .thenThrow(new InsufficientStockException("Requested 99 of SKU-GIZMO-003 but only 5 on hand"));
+
+        given()
+                .contentType(ContentType.JSON)
+                .body(command)
+                .when().post("/api/orders")
+                .then()
+                .statusCode(409)
+                .body("error", is("OUT_OF_STOCK"));
     }
 
     @Test
