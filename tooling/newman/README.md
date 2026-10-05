@@ -24,6 +24,7 @@ then Notification, Inventory, Payment, Shipping, Order+gateway in r04–r07).
 | `mea.postman_collection.json` | The collection itself. Every request is parameterized by `{{baseUrl}}` so it can target any service without modification. |
 | `local.postman_environment.json` | Points `{{baseUrl}}` at the monolith baseline, `http://localhost:8080`. Used for the S6 baseline run. |
 | `review-service.postman_environment.json` | Forward-reference environment for the extracted Quarkus Review service (`examples/15-review-service/`, arrives in S8+), on its own port so it can run side-by-side with the monolith during the strangler cutover. Only the "Review Context Contract" folder is meaningful against this target until Order/Inventory/Payment are themselves extracted. |
+| `notification-service.postman_environment.json` | Forward-reference environment for the extracted Quarkus Notification service (`examples/03-notification-service/`, arrives in notification-plan S4+), on its own port (`:8083`). Only the "Notification Context Contract" folder is meaningful against this target. |
 | `../../demos/demo-equivalence.sh` | Thin runner: `demos/demo-equivalence.sh [baseUrl]`. Defaults to the monolith baseline. |
 
 ## Scenarios asserted
@@ -56,6 +57,21 @@ then Notification, Inventory, Payment, Shipping, Order+gateway in r04–r07).
      Created` echoing the submitted fields, with a `Location` header.
    - `POST /api/reviews` (authenticated) with an out-of-range `rating` -> `400`
      with `{ "error": "VALIDATION_FAILED", ... }`.
+6. **Notification context contract** (notification-plan.md S2, ch.17, DRQ-037):
+   a checkout (`POST /api/orders`), then `GET /api/notifications?customerId=`
+   until the resulting order-confirmation notification is observable, shaped
+   `{ id, customerId, orderId, channel: "EMAIL", message, sentAt }`. This
+   assertion is a **bounded-wait poll** (retries the GET up to 10 times with a
+   500ms busy-wait between retries, never delaying before the first attempt)
+   so the *same* collection is correct against both a **synchronous** backend
+   (today's monolith — the notification is already there on attempt 1, so the
+   loop never actually waits) and a **future asynchronous** one (outbox ->
+   Kafka -> consumer — later attempts give the event time to be consumed). If
+   the budget is exhausted with no match, the folder fails (goes RED) rather
+   than hanging — the same bounded loop is what makes a later "stop the
+   consumer" negative check meaningful instead of a false positive
+   (notification-plan.md DRQ-037, the false-equivalence trap documented in
+   `examples/01-strangler-proxy/CUTOVER.md` §2).
 
 All assertions target status codes, response-body fields, and `Content-Type` —
 the externally-observable contract — never internal DB rows directly, so the
