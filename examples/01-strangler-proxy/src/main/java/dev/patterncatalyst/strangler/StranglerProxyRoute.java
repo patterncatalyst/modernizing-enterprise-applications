@@ -138,40 +138,46 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
  * project's README.md ("The flag: strangler.payment.enabled") for the full
  * field-by-field writeup.
  *
- * <p><b>The Shipping seam (shipping-plan.md S7, ch.24, DRQ-065):</b>
+ * <p><b>The Shipping seam (shipping-plan.md S7/S9, ch.24, DRQ-065):</b>
  * {@code strangler.shipping.enabled} is the fifth cutover flag, added
  * alongside Review's, Notification's, Inventory's, and Payment's, with the
  * identical content-based routing shape on the {@code /api/shipments} path
  * prefix (full path, not a route-relative prefix, per the CUTOVER.md
- * paragraph 2 lesson, applied here for a fifth time). It defaults to
- * {@code false} (not yet cut over) — {@code /api/shipments} is still served
- * by the monolith's in-process {@code ShippingController}/{@code
- * ShippingService}. The cutover (this flag plus the monolith's
- * {@code shipping.mode} flipped to {@code orchestrated} together) is
- * shipping-plan S8; decommission of the monolith's in-process shipping path
- * is S9 — both out of scope here.
+ * paragraph 2 lesson, applied here for a fifth time). <b>shipping-plan S9
+ * DECOMMISSION (committed default, now permanent, irreversible step):</b> it
+ * now defaults to {@code true} — the monolith's in-process shipping module
+ * ({@code shipping.ShippingController}/{@code ShippingService}/{@code
+ * Shipment}/{@code ShipmentStatus}/{@code ShipmentDto}/{@code
+ * ShipmentRepository}) has been decommissioned and its {@code
+ * shipping.mode=inprocess|orchestrated} flag removed entirely, so {@code
+ * /api/shipments} on the monolith now 404s — flipping this flag back to
+ * {@code false} today would just reach that 404. Before this flip, S8
+ * proved the cutover (and its reversibility) with both flags flipped back
+ * afterward; see {@code examples/01-strangler-proxy/application.properties}
+ * for the full evidence trail (reversibility baseline, cutover run with the
+ * bounded-wait Scenario 1/4 proof, and the negative check).
  *
- * <p><b>ACL honesty note (shipping-plan S7, DRQ-065):</b> the same call
- * already made for Inventory and Payment above applies here too. The
- * monolith's {@code shipping.ShipmentDto} and the shipping service's
- * {@code dev.patterncatalyst.shipping.ShipmentDto} are byte-for-byte
+ * <p><b>ACL honesty note (shipping-plan S7):</b> the same call already made
+ * for Inventory and Payment above applies here too. The monolith's
+ * {@code shipping.ShipmentDto} and the shipping service's
+ * {@code dev.patterncatalyst.shipping.ShipmentDto} were byte-for-byte
  * identical records — {@code id}, {@code orderId}, {@code address},
  * {@code status}, {@code createdAt}, same names/types/order (the shipping
- * service's copy was lifted unchanged). The shipping service's
- * {@code ShipmentStatus} enum adds {@code PENDING}/{@code CANCELLED}/
- * {@code FAILED} (needed by the shipping-plan S5 saga's compensation leg)
- * alongside the monolith's single {@code DISPATCHED} value, but that does not
- * change the wire shape — {@code status} is still a plain JSON string, and
- * {@code DISPATCHED} is the only value either side has ever produced so far.
- * There is therefore nothing for a Camel message translator to translate at
- * this seam — building one would fabricate a no-op ACL for a contract that
- * does not differ, the same speculative-infrastructure trap the Inventory and
- * Payment precedents above already ruled out. This branch is therefore an
- * honest, transparent reverse proxy, exactly like the Review, Notification,
- * Inventory, and Payment branches above it — there is no
- * {@code ShippingAclRoute} class in this package. See this project's
- * README.md ("The flag: strangler.shipping.enabled") for the full
- * field-by-field writeup.
+ * service's copy was lifted unchanged) — before the monolith's copy was
+ * deleted in S9. The shipping service's {@code ShipmentStatus} enum adds
+ * {@code PENDING}/{@code CANCELLED}/{@code FAILED} (needed by the
+ * shipping-plan S5 saga's compensation leg) alongside the monolith's single
+ * {@code DISPATCHED} value, but that never changed the wire shape — {@code
+ * status} is still a plain JSON string, and {@code DISPATCHED} is the only
+ * value either side has ever produced so far. There is therefore nothing
+ * for a Camel message translator to translate at this seam — building one
+ * would fabricate a no-op ACL for a contract that does not differ, the same
+ * speculative-infrastructure trap the Inventory and Payment precedents
+ * above already ruled out. This branch is therefore an honest, transparent
+ * reverse proxy, exactly like the Review, Notification, Inventory, and
+ * Payment branches above it — there is no {@code ShippingAclRoute} class in
+ * this package. See this project's README.md ("The flag:
+ * strangler.shipping.enabled") for the full field-by-field writeup.
  *
  * <p>Explicitly {@code @ApplicationScoped} so Quarkus/CDI — not plain
  * reflection — constructs this bean and resolves the {@code @ConfigProperty}
@@ -201,8 +207,11 @@ public class StranglerProxyRoute extends RouteBuilder {
     @ConfigProperty(name = "strangler.payment.enabled", defaultValue = "false")
     boolean paymentEnabled;
 
-    /** The strangler cutover flag for Shipping traffic (shipping-plan.md S7, ch.24, DRQ-065).
-     *  Defaults to the monolith; read-side only (see class javadoc for the ACL honesty note). */
+    /** The strangler cutover flag for Shipping traffic (shipping-plan.md S7/S9, ch.24, DRQ-065).
+     *  Permanently defaults to the shipping service as of S9's decommission — the monolith no
+     *  longer has anything to serve at {@code /api/shipments} (see class javadoc). The
+     *  {@code defaultValue} below is an unreached fallback: {@code application.properties}
+     *  always sets this property explicitly. */
     @ConfigProperty(name = "strangler.shipping.enabled", defaultValue = "false")
     boolean shippingEnabled;
 

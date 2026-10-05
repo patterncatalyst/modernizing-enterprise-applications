@@ -9,10 +9,8 @@ import dev.patterncatalyst.monolith.common.events.PaymentDeclined;
 import dev.patterncatalyst.monolith.common.events.ShipmentDispatched;
 import dev.patterncatalyst.monolith.common.events.ShipmentFailed;
 import dev.patterncatalyst.monolith.inventory.RemoteInventoryClient;
-import dev.patterncatalyst.monolith.shipping.ShippingService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,29 +34,27 @@ import org.springframework.transaction.annotation.Transactional;
  * more synchronous fallback where an order is already terminal before this
  * listener could react.
  *
- * <p><b>ch.24 (r07/S6, DRQ-056/058/061, H3/H4) — {@code shipping.mode=
- * inprocess|orchestrated} (default {@code inprocess}):</b> this is the
- * SOLE branch point for the orchestrated-shipping cutover. In {@code
- * inprocess} mode {@link #onPaymentCaptured} behaves EXACTLY as it did
- * before this step — confirm + in-process {@code shippingService.dispatch}
- * — and the full behavior-equivalence suite stays byte-for-byte green
- * (H4). In {@code orchestrated} mode {@link #onPaymentCaptured} instead
+ * <p><b>ch.24 (r07/S6, DRQ-056/058/061, H3/H4):</b> {@link #onPaymentCaptured}
  * transitions the order to {@code AWAITING_SHIPMENT} and does NOT dispatch
- * in-process; fulfilment is now owned by the shipping service's Camel Saga
- * EIP coordinator ({@code examples/06-shipping-service}, r07/S5), which
+ * in-process; fulfilment is owned by the shipping service's Camel Saga EIP
+ * coordinator ({@code examples/06-shipping-service}, r07/S5), which
  * independently consumes this SAME {@code payment.captured} topic (its own
  * consumer group — this listener and the shipping service are two
  * unrelated consumer groups reacting to one event, not a hand-off) and
  * eventually emits exactly one of {@link #onShipmentDispatched}/{@link
- * #onShipmentFailed} below. {@link #onShipmentDispatched}/{@link
- * #onShipmentFailed} are registered UNCONDITIONALLY, regardless of {@code
- * shipping.mode} — they need no mode check of their own because their
- * idempotency guard (order must be {@code AWAITING_SHIPMENT}) already makes
- * them dormant in {@code inprocess} mode: an order never reaches {@code
- * AWAITING_SHIPMENT} there, so even if the shipping service is deployed and
- * redelivers one of these events anyway, the guard below no-ops it — the
- * identical "guard makes the flag redundant for this path" shape ch.23's
- * own javadoc (above) once relied on for {@code payment.mode}.
+ * #onShipmentFailed} below.
+ *
+ * <p>r07/ch.24 S9 (DECOMMISSION): the {@code shipping.mode=inprocess|
+ * orchestrated} reversibility flag this listener's {@link #onPaymentCaptured}
+ * reaction used to branch on is gone, along with the monolith's in-process
+ * {@code shipping.ShippingController}/{@code ShippingService}/{@code
+ * Shipment}/{@code ShipmentRepository} module it used to dispatch into
+ * directly — orchestrated is now the ONLY shipping path, so {@link
+ * #onPaymentCaptured} unconditionally transitions {@code PENDING ->
+ * AWAITING_SHIPMENT} and never dispatches in-process; {@link
+ * #onShipmentDispatched}/{@link #onShipmentFailed} are correspondingly
+ * always genuinely live (SMELL[ch.22] — now CURED for shipping too, see
+ * SMELLS.md).
  *
  * <p><b>No double-compensation between the payment and shipping failure
  * paths (H3):</b> {@link #onPaymentDeclined} only fires for an order still
@@ -95,48 +91,31 @@ public class OrderSagaListener {
 
     private static final Logger LOG = LoggerFactory.getLogger(OrderSagaListener.class);
 
-    /** ch.24 (r07/S6, DRQ-065): the cutover flag's "orchestrated" value. */
-    private static final String SHIPPING_MODE_ORCHESTRATED = "orchestrated";
-
     private final OrderRepository orderRepository;
     private final RemoteInventoryClient remoteInventoryClient;
-    private final ShippingService shippingService;
     private final ObjectMapper objectMapper;
-    private final String shippingMode;
 
     public OrderSagaListener(
             OrderRepository orderRepository,
             RemoteInventoryClient remoteInventoryClient,
-            ShippingService shippingService,
-            ObjectMapper objectMapper,
-            @Value("${shipping.mode:inprocess}") String shippingMode) {
+            ObjectMapper objectMapper) {
         this.orderRepository = orderRepository;
         this.remoteInventoryClient = remoteInventoryClient;
-        this.shippingService = shippingService;
         this.objectMapper = objectMapper;
-        this.shippingMode = shippingMode;
-    }
-
-    private boolean isOrchestrated() {
-        return SHIPPING_MODE_ORCHESTRATED.equals(shippingMode);
     }
 
     /**
      * Happy-path saga reaction: the payment service captured funds for this
      * order.
      *
-     * <p>{@code shipping.mode=inprocess} (default, H4 — unchanged baseline):
-     * confirms the order and dispatches shipping in-process, exactly as
-     * before ch.24 — shipping stays in the monolith's own transaction,
-     * triggered by the event rather than the request thread (SMELL[ch.26]
-     * is unchanged by this step; only WHO triggers the call moves).
-     *
-     * <p>{@code shipping.mode=orchestrated} (DRQ-061): does NOT confirm or
-     * dispatch in-process. Instead transitions the order {@code PENDING ->
-     * AWAITING_SHIPMENT} and persists — fulfilment and the eventual {@code
-     * CONFIRMED} transition are now owned by {@link #onShipmentDispatched}/
-     * {@link #onShipmentFailed} below, reacting to the shipping service's
-     * saga outcome.
+     * <p>r07/ch.24 S9 (DECOMMISSION): unconditionally transitions the order
+     * {@code PENDING -> AWAITING_SHIPMENT} and persists — never confirms or
+     * dispatches shipping in-process (the monolith's in-process {@code
+     * ShippingService} this used to call directly in {@code
+     * shipping.mode=inprocess} is deleted). Fulfilment and the eventual
+     * {@code CONFIRMED} transition are owned entirely by {@link
+     * #onShipmentDispatched}/{@link #onShipmentFailed} below, reacting to
+     * the shipping service's saga outcome.
      */
     @KafkaListener(topics = Topics.PAYMENT_CAPTURED)
     @Transactional
@@ -156,18 +135,9 @@ public class OrderSagaListener {
                     order.getId(), order.getStatus());
             return;
         }
-        if (isOrchestrated()) {
-            order.awaitShipment();
-            orderRepository.save(order);
-            LOG.info("order {} AWAITING_SHIPMENT via payment.captured (shipping.mode=orchestrated)",
-                    order.getId());
-            return;
-        }
-        order.confirm();
+        order.awaitShipment();
         orderRepository.save(order);
-        shippingService.dispatch(order, order.getShippingAddress());
-        LOG.info("order {} CONFIRMED via payment.captured; shipping dispatched (shipping.mode=inprocess)",
-                order.getId());
+        LOG.info("order {} AWAITING_SHIPMENT via payment.captured", order.getId());
     }
 
     /**
@@ -175,18 +145,14 @@ public class OrderSagaListener {
      * the shipping service's Camel Saga EIP coordinator dispatched the
      * shipment and emitted exactly one {@code shipment.dispatched}.
      * Transitions the order {@code AWAITING_SHIPMENT -> CONFIRMED}. No
-     * order may reach {@code CONFIRMED} in {@code shipping.mode=
-     * orchestrated} without this reaction firing — there is no other path
-     * to {@code CONFIRMED} once {@link #onPaymentCaptured} stops confirming
-     * directly.
+     * order may reach {@code CONFIRMED} without this reaction firing —
+     * there is no other path to {@code CONFIRMED} since {@link
+     * #onPaymentCaptured} never confirms directly (r07/ch.24 S9).
      *
      * <p>Idempotent (DRQ-064): a redelivered event for an order that has
      * already left {@code AWAITING_SHIPMENT} (already {@code CONFIRMED}, or
      * — impossible by construction, see class javadoc — {@code
-     * SHIPPING_FAILED}) is a no-op. Also a no-op in {@code shipping.mode=
-     * inprocess}: an order never reaches {@code AWAITING_SHIPMENT} there,
-     * so this guard alone keeps the reaction dormant without a separate
-     * mode check (see class javadoc).
+     * SHIPPING_FAILED}) is a no-op.
      */
     @KafkaListener(topics = Topics.SHIPMENT_DISPATCHED)
     @Transactional
@@ -240,9 +206,7 @@ public class OrderSagaListener {
      * already left {@code AWAITING_SHIPMENT} is a no-op, which also
      * guarantees the compensating {@code Release} fires AT MOST ONCE per
      * order — only reachable on the one {@code AWAITING_SHIPMENT ->
-     * SHIPPING_FAILED} transition. Also a no-op in {@code shipping.mode=
-     * inprocess} for the same reason {@link #onShipmentDispatched} is (see
-     * class javadoc). Best-effort, same shape as {@link #onPaymentDeclined}:
+     * SHIPPING_FAILED} transition. Best-effort, same shape as {@link #onPaymentDeclined}:
      * a {@code Release} failure is logged loudly, never silently swallowed,
      * and is not retried on redelivery once the order has already left
      * {@code AWAITING_SHIPMENT}.

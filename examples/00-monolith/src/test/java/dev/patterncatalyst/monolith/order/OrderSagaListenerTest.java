@@ -18,9 +18,6 @@ import dev.patterncatalyst.monolith.common.events.PaymentDeclined;
 import dev.patterncatalyst.monolith.common.events.ShipmentDispatched;
 import dev.patterncatalyst.monolith.common.events.ShipmentFailed;
 import dev.patterncatalyst.monolith.inventory.RemoteInventoryClient;
-import dev.patterncatalyst.monolith.shipping.Shipment;
-import dev.patterncatalyst.monolith.shipping.ShipmentStatus;
-import dev.patterncatalyst.monolith.shipping.ShippingService;
 import java.time.Instant;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,28 +31,24 @@ import org.mockito.junit.jupiter.MockitoExtension;
  * consumer (ch.23/r06/S6, H4) — the choreographed-saga reaction to {@code
  * payment.captured}/{@code payment.declined} — extended in ch.24/r07/S6
  * (H3/H4) with the orchestrated-shipping reactions ({@code
- * shipment.dispatched}/{@code shipment.failed}) and the {@code
- * shipping.mode=inprocess|orchestrated} branch in {@code onPaymentCaptured}.
- * All collaborators are mocked; this test never touches Kafka or a
- * database, and calls the {@code @KafkaListener}-annotated methods directly
- * with a hand-built JSON payload (exactly what Spring Kafka would hand the
- * method body after its StringDeserializer, per {@code application.yml}'s
- * consumer config).
+ * shipment.dispatched}/{@code shipment.failed}). r07/ch.24 S9
+ * (DECOMMISSION): the {@code shipping.mode=inprocess|orchestrated} flag and
+ * the {@code shippingService} mock/collaborator are gone — orchestrated is
+ * now the ONLY shipping path, so {@code onPaymentCaptured} unconditionally
+ * transitions the order to {@code AWAITING_SHIPMENT}. All collaborators are
+ * mocked; this test never touches Kafka or a database, and calls the
+ * {@code @KafkaListener}-annotated methods directly with a hand-built JSON
+ * payload (exactly what Spring Kafka would hand the method body after its
+ * StringDeserializer, per {@code application.yml}'s consumer config).
  */
 @ExtendWith(MockitoExtension.class)
 class OrderSagaListenerTest {
-
-    private static final String INPROCESS = "inprocess";
-    private static final String ORCHESTRATED = "orchestrated";
 
     @Mock
     private OrderRepository orderRepository;
 
     @Mock
     private RemoteInventoryClient remoteInventoryClient;
-
-    @Mock
-    private ShippingService shippingService;
 
     private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
 
@@ -64,16 +57,8 @@ class OrderSagaListenerTest {
 
     @BeforeEach
     void setUp() {
-        // default baseline construction: shipping.mode=inprocess (H4 —
-        // every pre-existing test below must keep behaving exactly as it
-        // did before ch.24).
-        listener = newListener(INPROCESS);
+        listener = new OrderSagaListener(orderRepository, remoteInventoryClient, objectMapper);
         customer = new Customer("Ada Lovelace", "ada@example.com");
-    }
-
-    private OrderSagaListener newListener(String shippingMode) {
-        return new OrderSagaListener(
-                orderRepository, remoteInventoryClient, shippingService, objectMapper, shippingMode);
     }
 
     private Order pendingOrderWithId(long id, OrderItem... items) {
@@ -93,34 +78,30 @@ class OrderSagaListenerTest {
     // ---- payment.captured ----
 
     @Test
-    void onPaymentCaptured_pendingOrder_confirmsAndDispatchesShipping() throws Exception {
+    void onPaymentCaptured_pendingOrder_awaitsShipment() throws Exception {
         Order order = pendingOrderWithId(42L);
         when(orderRepository.findById(42L)).thenReturn(Optional.of(order));
-        when(shippingService.dispatch(any(Order.class), anyString()))
-                .thenAnswer(inv -> new Shipment(inv.getArgument(0), inv.getArgument(1), ShipmentStatus.DISPATCHED));
 
         String payload = json(new PaymentCaptured(42L, 100L, 3998L, "CARD-VISA", "CAPTURED", Instant.now()));
 
         listener.onPaymentCaptured(payload);
 
-        assertThat(order.getStatus()).isEqualTo(OrderStatus.CONFIRMED);
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.AWAITING_SHIPMENT);
         verify(orderRepository).save(order);
-        verify(shippingService).dispatch(order, "1 Test Way");
     }
 
     @Test
-    void onPaymentCaptured_redeliveredForAlreadyConfirmedOrder_isNoOp() throws Exception {
+    void onPaymentCaptured_redeliveredForAwaitingShipmentOrder_isNoOp() throws Exception {
         Order order = pendingOrderWithId(42L);
-        order.confirm(); // simulate the first delivery already having landed
+        order.awaitShipment(); // simulate the first delivery already having landed
         when(orderRepository.findById(42L)).thenReturn(Optional.of(order));
 
         String payload = json(new PaymentCaptured(42L, 100L, 3998L, "CARD-VISA", "CAPTURED", Instant.now()));
 
         listener.onPaymentCaptured(payload);
 
-        assertThat(order.getStatus()).isEqualTo(OrderStatus.CONFIRMED);
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.AWAITING_SHIPMENT);
         verify(orderRepository, never()).save(any());
-        verify(shippingService, never()).dispatch(any(), anyString());
     }
 
     @Test
@@ -132,7 +113,6 @@ class OrderSagaListenerTest {
         listener.onPaymentCaptured(payload); // must not throw
 
         verify(orderRepository, never()).save(any());
-        verify(shippingService, never()).dispatch(any(), anyString());
     }
 
     // ---- payment.declined ----
@@ -208,40 +188,6 @@ class OrderSagaListenerTest {
         verify(remoteInventoryClient, never()).release(anyString(), anyInt());
     }
 
-    // ---- ch.24 (r07/S6): shipping.mode=orchestrated — onPaymentCaptured branch ----
-
-    @Test
-    void onPaymentCaptured_orchestratedMode_pendingOrder_awaitsShipmentAndDoesNotConfirmOrDispatch()
-            throws Exception {
-        listener = newListener(ORCHESTRATED);
-        Order order = pendingOrderWithId(42L);
-        when(orderRepository.findById(42L)).thenReturn(Optional.of(order));
-
-        String payload = json(new PaymentCaptured(42L, 100L, 3998L, "CARD-VISA", "CAPTURED", Instant.now()));
-
-        listener.onPaymentCaptured(payload);
-
-        assertThat(order.getStatus()).isEqualTo(OrderStatus.AWAITING_SHIPMENT);
-        verify(orderRepository).save(order);
-        verify(shippingService, never()).dispatch(any(), anyString());
-    }
-
-    @Test
-    void onPaymentCaptured_orchestratedMode_redeliveredForAwaitingShipmentOrder_isNoOp() throws Exception {
-        listener = newListener(ORCHESTRATED);
-        Order order = pendingOrderWithId(42L);
-        order.awaitShipment(); // simulate the first delivery already having landed
-        when(orderRepository.findById(42L)).thenReturn(Optional.of(order));
-
-        String payload = json(new PaymentCaptured(42L, 100L, 3998L, "CARD-VISA", "CAPTURED", Instant.now()));
-
-        listener.onPaymentCaptured(payload);
-
-        assertThat(order.getStatus()).isEqualTo(OrderStatus.AWAITING_SHIPMENT);
-        verify(orderRepository, never()).save(any());
-        verify(shippingService, never()).dispatch(any(), anyString());
-    }
-
     // ---- ch.24 (r07/S6): shipment.dispatched ----
 
     @Test
@@ -274,12 +220,11 @@ class OrderSagaListenerTest {
     }
 
     @Test
-    void onShipmentDispatched_orderStillPending_isNoOp_inprocessModeDormancy() throws Exception {
-        // shipping.mode=inprocess: an order never reaches AWAITING_SHIPMENT,
-        // so a stray/redelivered shipment.dispatched (e.g. the shipping
-        // service deployed alongside an inprocess monolith) is a no-op —
-        // the idempotency guard alone keeps this reaction dormant, no
-        // separate mode check needed.
+    void onShipmentDispatched_orderStillPending_isNoOp() throws Exception {
+        // A stray/out-of-order shipment.dispatched for an order that hasn't
+        // yet reacted to payment.captured (still PENDING, not
+        // AWAITING_SHIPMENT) is a no-op — the idempotency guard alone keeps
+        // this reaction safe, no separate mode check needed.
         Order order = pendingOrderWithId(51L);
         when(orderRepository.findById(51L)).thenReturn(Optional.of(order));
 
@@ -366,10 +311,11 @@ class OrderSagaListenerTest {
     }
 
     @Test
-    void onShipmentFailed_orderStillPending_isNoOp_inprocessModeDormancy() throws Exception {
-        // shipping.mode=inprocess: an order never reaches AWAITING_SHIPMENT,
-        // so a stray/redelivered shipment.failed is a no-op — same dormancy
-        // argument as onShipmentDispatched above.
+    void onShipmentFailed_orderStillPending_isNoOp() throws Exception {
+        // A stray/out-of-order shipment.failed for an order that hasn't yet
+        // reacted to payment.captured (still PENDING, not
+        // AWAITING_SHIPMENT) is a no-op — same guard argument as
+        // onShipmentDispatched above.
         OrderItem line = new OrderItem("SKU-WIDGET-001", "Standard Widget", 2, 1999L);
         Order order = pendingOrderWithId(62L, line);
         when(orderRepository.findById(62L)).thenReturn(Optional.of(order));

@@ -80,21 +80,21 @@ public class Order {
     }
 
     /**
-     * ch.24 (r07/S6, DRQ-061) — {@code shipping.mode=orchestrated} only:
-     * {@code OrderSagaListener#onPaymentCaptured} transitions a {@code
-     * PENDING} order here instead of confirming it directly, handing
-     * fulfilment off to the shipping service's Camel Saga EIP coordinator.
-     * The order leaves this intermediate state via exactly one of {@link
-     * #confirm()} (on {@code shipment.dispatched}) or {@link
-     * #failShipping()} (on {@code shipment.failed}).
+     * ch.24 (r07/S6, DRQ-061; r07/S9 the ONLY path): {@code
+     * OrderSagaListener#onPaymentCaptured} transitions a {@code PENDING}
+     * order here instead of confirming it directly, handing fulfilment off
+     * to the shipping service's Camel Saga EIP coordinator. The order
+     * leaves this intermediate state via exactly one of {@link #confirm()}
+     * (on {@code shipment.dispatched}) or {@link #failShipping()} (on
+     * {@code shipment.failed}).
      */
     public void awaitShipment() {
         this.status = OrderStatus.AWAITING_SHIPMENT;
     }
 
     /**
-     * ch.24 (r07/S6, DRQ-061/060) — {@code shipping.mode=orchestrated} only:
-     * {@code OrderSagaListener#onShipmentFailed} transitions an {@code
+     * ch.24 (r07/S6, DRQ-061/060; r07/S9 the ONLY path): {@code
+     * OrderSagaListener#onShipmentFailed} transitions an {@code
      * AWAITING_SHIPMENT} order here on the shipping saga's compensating
      * {@code shipment.failed} outcome. Terminal, mirroring {@link
      * #declinePayment()}'s shape. Payment is NOT refunded by this
