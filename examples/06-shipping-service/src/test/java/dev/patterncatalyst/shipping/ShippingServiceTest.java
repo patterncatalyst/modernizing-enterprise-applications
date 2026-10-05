@@ -1,13 +1,21 @@
 package dev.patterncatalyst.shipping;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import org.apache.camel.ProducerTemplate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -15,13 +23,15 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
- * Tier 1 (unit). r07/ch.24 S4 (DRQ-063, Phase A). Mirrors
- * examples/05-payment-service's {@code PaymentServiceTest} style for the
- * lifted read paths: a plain Mockito test of {@link ShippingService}'s
- * {@link ShippingService#getById(Long)}/{@link ShippingService#listByOrderId(Long)}
- * against a mocked {@link ShipmentRepository}, proving the DTO mapping
- * (FK-decomposed {@code orderId} value, not a JPA relationship traversal)
- * and the 404 contract.
+ * Tier 1 (unit), REFACTORED for r07/ch.24 S5 (Phase B). The read paths
+ * ({@link ShippingService#getById(Long)}/{@link ShippingService#listByOrderId(Long)})
+ * are retested against the Panache repository's {@code findByIdOptional}
+ * shape (Spring Data's {@code findById}, unchanged return contract). Net-new
+ * cases cover {@link ShippingService#processPaymentCaptured}'s idempotency
+ * guard (DRQ-064) at the unit level with a mocked {@link ProducerTemplate}
+ * -- the real Camel Saga EIP route (enrich/dispatch/book-carrier/emit/
+ * compensate) is covered end-to-end by {@code PaymentCapturedConsumerTest}
+ * and the route-level AdviceWith test ({@code ShipmentSagaRouteAdviceWithTest}).
  */
 @ExtendWith(MockitoExtension.class)
 class ShippingServiceTest {
@@ -29,19 +39,21 @@ class ShippingServiceTest {
     @Mock
     private ShipmentRepository repository;
 
+    @Mock
+    private ProducerTemplate producerTemplate;
+
     private ShippingService shippingService;
 
     @BeforeEach
     void setUp() {
-        shippingService = new ShippingService(repository);
+        shippingService = new ShippingService(repository, producerTemplate);
     }
 
     @Test
     void getById_found_returnsShipmentDtoShape() {
-        Instant createdAt = Instant.parse("2026-01-07T12:00:10Z");
         Shipment shipment = new Shipment(1L, "1 Analytical Engine Way, London", ShipmentStatus.DISPATCHED);
         setId(shipment, 7L);
-        when(repository.findById(7L)).thenReturn(Optional.of(shipment));
+        when(repository.findByIdOptional(7L)).thenReturn(Optional.of(shipment));
 
         ShipmentDto dto = shippingService.getById(7L);
 
@@ -54,7 +66,7 @@ class ShippingServiceTest {
 
     @Test
     void getById_unknown_throwsResourceNotFoundException() {
-        when(repository.findById(anyLong())).thenReturn(Optional.empty());
+        when(repository.findByIdOptional(anyLong())).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> shippingService.getById(999_999L))
                 .isInstanceOf(ResourceNotFoundException.class)
@@ -79,6 +91,38 @@ class ShippingServiceTest {
         when(repository.findAllByOrderId(anyLong())).thenReturn(List.of());
 
         assertThat(shippingService.listByOrderId(1_000_000L)).isEmpty();
+    }
+
+    @Test
+    void processPaymentCaptured_newOrder_startsSagaViaProducerTemplate() {
+        when(repository.findByOrderId(700L)).thenReturn(Optional.empty());
+        PaymentCaptured event = new PaymentCaptured(700L, 1L, 1999L, "CARD-VISA", "CAPTURED", Instant.now());
+
+        shippingService.processPaymentCaptured(event);
+
+        verify(producerTemplate).sendBodyAndHeader(eq("direct:ship-start"), eq(event), eq("orderId"), eq(700L));
+    }
+
+    @Test
+    void processPaymentCaptured_duplicateOrderId_isIdempotentNoOp_doesNotStartSaga() {
+        Shipment existing = new Shipment(701L, "1 Analytical Engine Way, London", ShipmentStatus.DISPATCHED);
+        when(repository.findByOrderId(701L)).thenReturn(Optional.of(existing));
+        PaymentCaptured event = new PaymentCaptured(701L, 2L, 1999L, "CARD-VISA", "CAPTURED", Instant.now());
+
+        shippingService.processPaymentCaptured(event);
+
+        verify(producerTemplate, never()).sendBodyAndHeader(anyString(), any(), anyString(), any());
+    }
+
+    @Test
+    void processPaymentCaptured_sagaAborts_doesNotPropagateException() {
+        when(repository.findByOrderId(702L)).thenReturn(Optional.empty());
+        PaymentCaptured event = new PaymentCaptured(702L, 3L, 1999L, "SHIP-FAIL", "CAPTURED", Instant.now());
+        doThrow(new RuntimeException("saga compensated"))
+                .when(producerTemplate)
+                .sendBodyAndHeader(eq("direct:ship-start"), eq(event), eq("orderId"), eq(702L));
+
+        assertThatCode(() -> shippingService.processPaymentCaptured(event)).doesNotThrowAnyException();
     }
 
     /** Reflection helper: {@code id} is JPA-generated, no public setter. */

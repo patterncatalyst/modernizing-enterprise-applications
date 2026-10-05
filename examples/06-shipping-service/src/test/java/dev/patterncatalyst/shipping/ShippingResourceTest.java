@@ -5,6 +5,7 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 
+import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import java.util.concurrent.atomic.AtomicLong;
@@ -12,30 +13,31 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * Tier 2, real end-to-end {@code @QuarkusTest} (Dev Services' isolated
- * Testcontainers Postgres, migrated by this service's OWN Flyway history).
- * r07/ch.24 S4 (DRQ-063, Phase A): proves the lifted
- * {@code quarkus-spring-web}/{@code quarkus-spring-data-jpa} stack serves
- * the EXACT same {@link ShipmentDto} JSON shape and 404/400 contract as the
- * monolith's {@code ShippingControllerTest} -- this IS the behavior-
- * equivalence suite's forward-referenced "Shipping Context Contract" shape
- * (S2/S4) that S7's transparent strangler-proxy route depends on staying
- * byte-for-byte unchanged (DRQ-065, ACL honesty: no translator needed).
+ * RENAMED from Phase A's {@code ShippingControllerTest} to {@code
+ * ShippingResourceTest} (r07/ch.24 S5, Phase B) to match the {@code
+ * ShippingController} -&gt; {@link ShippingResource} rename -- same real,
+ * end-to-end {@code @QuarkusTest} (Dev Services' isolated Testcontainers
+ * Postgres, migrated by this service's OWN Flyway history incl. the S5
+ * {@code uq_shipments_order_id} unique constraint), now proving the
+ * idiomatic Quarkus REST + Panache stack preserves the EXACT same {@link
+ * ShipmentDto} JSON shape and 404/400 contract Phase A's Spring-compat
+ * stack served -- this IS the behavior-equivalence suite's "Shipping
+ * Context Contract" shape, proven unchanged across the Phase A -&gt; B
+ * refactor (DRQ-065, ACL honesty).
  *
- * <p>{@link ShipmentRepository#save} is automatically {@code @Transactional}
- * under {@code quarkus-spring-data-jpa} (unlike Panache's {@code persist()},
- * which needs an explicit active transaction) -- so this seed, unlike
- * payment-service's Phase B {@code PaymentResourceTest}, needs no
- * {@code QuarkusTransaction.requiringNew()} wrapper; this is the genuine
- * Phase A Spring-compat behavior being proven, not a simplification.
+ * <p>Seeds via {@link QuarkusTransaction#requiringNew()} in a NEW,
+ * immediately-committed transaction -- Panache's {@code persist()} needs an
+ * active transaction, unlike Phase A's Spring Data {@code save()} -- same
+ * technique payment-service's Phase B {@code PaymentResourceTest} uses.
  */
 @QuarkusTest
-class ShippingControllerTest {
+class ShippingResourceTest {
 
-    // The Dev Services Postgres container persists across all @Test methods
-    // in this class -- only one @QuarkusTest-managed instance is started for
-    // the whole class, not reset per method -- so each test seeds a distinct
-    // orderId rather than a fixed constant.
+    // The Dev Services Postgres container (and its uq_shipments_order_id
+    // unique index) persists across all @Test methods in this class -- only
+    // one @QuarkusTest-managed instance is started for the whole class, not
+    // reset per method -- so each test seeds a distinct orderId rather than
+    // a fixed constant.
     private static final AtomicLong NEXT_ORDER_ID = new AtomicLong(424_242_000L);
 
     @Inject
@@ -47,8 +49,12 @@ class ShippingControllerTest {
     @BeforeEach
     void seed() {
         testOrderId = NEXT_ORDER_ID.incrementAndGet();
-        Shipment saved = repository.save(
-                new Shipment(testOrderId, "1 Analytical Engine Way, London", ShipmentStatus.DISPATCHED));
+        Shipment saved = QuarkusTransaction.requiringNew().call(() -> {
+            Shipment shipment =
+                    new Shipment(testOrderId, "1 Analytical Engine Way, London", ShipmentStatus.DISPATCHED);
+            repository.persist(shipment);
+            return shipment;
+        });
         testShipmentId = saved.getId();
     }
 

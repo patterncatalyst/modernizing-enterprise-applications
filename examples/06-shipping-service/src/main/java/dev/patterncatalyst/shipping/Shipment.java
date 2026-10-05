@@ -31,6 +31,24 @@ import java.time.Instant;
  * does not resolve to this service's own schema -- without the explicit
  * schema, Hibernate would read/write the wrong (default/public) schema even
  * though Flyway correctly created and migrated {@code shipping.shipments}.
+ *
+ * <p>r07/ch.24 S5 (DRQ-059/DRQ-063): {@link #markDispatched()}/
+ * {@link #markCancelled()} are net-new status-transition mutators used by
+ * the saga body ({@code ShipmentSagaSteps#emitDispatched}, step 4 --
+ * PENDING-&gt;DISPATCHED, atomically with the {@code shipment.dispatched}
+ * outbox write) and its compensation ({@code ShipmentSagaSteps#compensate}
+ * -- PENDING-&gt;CANCELLED, atomically with the {@code shipment.failed}
+ * outbox write). A row is persisted as {@link ShipmentStatus#PENDING} by
+ * the saga's "dispatch shipment" step (step 2) -- BEFORE the "book
+ * carrier" step (step 3, the deterministic {@code SHIP-FAIL} throw point,
+ * DRQ-062) runs -- precisely so that on a forced failure there is always a
+ * persisted row for the compensation to find and cancel (DRQ-062: "the
+ * injection fires after the Shipment row is persisted so that both
+ * compensations... are exercised"). Choosing PENDING-then-transition
+ * (rather than persisting DISPATCHED immediately in step 2) is what gives
+ * DRQ-063's "written atomically with the Shipment state change" guarantee
+ * real teeth for BOTH outcomes, not just the happy path -- see
+ * {@code ShipmentSagaSteps}'s class javadoc for the full rationale.
  */
 @Entity
 @Table(name = "shipments", schema = "shipping")
@@ -82,5 +100,13 @@ public class Shipment {
 
     public Instant getCreatedAt() {
         return createdAt;
+    }
+
+    public void markDispatched() {
+        this.status = ShipmentStatus.DISPATCHED;
+    }
+
+    public void markCancelled() {
+        this.status = ShipmentStatus.CANCELLED;
     }
 }

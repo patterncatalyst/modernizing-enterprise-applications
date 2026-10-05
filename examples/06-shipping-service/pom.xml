@@ -27,24 +27,38 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+            <!-- Camel-on-Quarkus, version-aligned to the Quarkus platform (same
+                 pattern examples/01-strangler-proxy's pom.xml already uses):
+                 brings in camel-quarkus-saga's managed version below. -->
+            <dependency>
+                <groupId>${quarkus.platform.group-id}</groupId>
+                <artifactId>quarkus-camel-bom</artifactId>
+                <version>${quarkus.platform.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
-    <!-- r07/ch.24 S4 (DRQ-063), Phase A ("lift the read surface onto Quarkus"):
-         the monolith's Spring MVC / Spring DI / Spring Data JPA shipping READ
-         surface (ShippingController/ShippingService#getById,listByOrderId/
-         Shipment entity+repository) is lifted largely unchanged via the
-         Quarkiverse Spring-compatibility extensions (quarkus-spring-web,
-         quarkus-spring-di, quarkus-spring-data-jpa), already pointed at its
-         OWN `shipping` Postgres schema from day one (own-schema, mirrors
-         payment/inventory/notification, NOT review's shared-schema
-         approach). No saga/consumer/producer yet (S5): the store starts
-         empty and is filled forward by the saga, so there is no backfill
-         migration, just a small Flyway demo seed (V2) to exercise the read
-         surface before the saga exists. This mirrors
-         examples/05-payment-service's Phase A exactly (see that service's
-         MIGRATION.md for the Phase A to Phase B template this will follow in
-         S5). -->
+    <!-- r07/ch.24 S5 (DRQ-063), Phase B ("make it idiomatic" + "make it
+         live"): the Phase A (S4) Quarkiverse Spring-compatibility shim
+         (quarkus-spring-web/-di/-data-jpa) is REMOVED; the read surface
+         now runs on Quarkus REST + Panache + plain CDI, and the net-new
+         ORCHESTRATED core is added, idiomatic from the start (DRQ-063: no
+         Spring original to lift for the saga/consumer/outbox, mirrors
+         examples/05-payment-service's Phase B exactly, see that service's
+         MIGRATION.md for the template this follows):
+           - camel-quarkus-saga (DRQ-057): the Camel Saga EIP coordinator
+             (InMemorySagaService, in-JVM, no new infra container).
+           - quarkus-messaging-kafka: the payment.captured consumer + the
+             shipment.dispatched/shipment.failed outbox-relay producers.
+           - quarkus-hibernate-orm-panache: the lifted read surface +
+             the saga's own Shipment/outbox persistence.
+           - quarkus-rest-client-jackson: the order-service enrichment
+             client (GET /api/orders/{id} for the shipping address;
+             see OrderReadClient's javadoc for the S6 flag: the monolith's
+             real OrderDto does not expose shippingAddress yet).
+           - quarkus-scheduler: the outbox relay's @Scheduled poll. -->
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -52,15 +66,11 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-spring-web</artifactId>
+            <artifactId>quarkus-rest-client-jackson</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-spring-di</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-spring-data-jpa</artifactId>
+            <artifactId>quarkus-hibernate-orm-panache</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -69,6 +79,26 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-flyway</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-messaging-kafka</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-scheduler</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel.quarkus</groupId>
+            <artifactId>camel-quarkus-saga</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel.quarkus</groupId>
+            <artifactId>camel-quarkus-direct</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel.quarkus</groupId>
+            <artifactId>camel-quarkus-bean</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -89,6 +119,11 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>org.apache.camel.quarkus</groupId>
+            <artifactId>camel-quarkus-mock</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>io.rest-assured</groupId>
             <artifactId>rest-assured</artifactId>
             <scope>test</scope>
@@ -97,6 +132,17 @@
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>
             <version>3.27.7</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.smallrye.reactive</groupId>
+            <artifactId>smallrye-reactive-messaging-in-memory</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.awaitility</groupId>
+            <artifactId>awaitility</artifactId>
+            <version>4.3.0</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
