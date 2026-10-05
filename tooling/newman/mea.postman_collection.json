@@ -2,7 +2,7 @@
   "info": {
     "name": "Modernizing Enterprise Applications — Behavior-Equivalence Suite",
     "_postman_id": "mea-equivalence-suite",
-    "description": "The behavior-equivalence suite (r02-plan S6, notification-plan S2, build-plan.md §G/§D). Captured against the running Spring Boot monolith (examples/00-monolith). This collection is the project's equivalence gate: it is re-run UNCHANGED against each extracted service (starting with the Quarkus Review service, ch.15) and a service is only considered 'done' once it passes this same suite with no edits (build-plan.md §G load-bearing rule). Every request targets {{baseUrl}} so the identical collection can point at the monolith or at an extracted service's own port. Covers: (1) happy-path checkout, (2) out-of-stock, (3) payment-declined (asserting inventory is NOT left decremented, per the monolith's actual rollback behavior), (4) the Review context contract (list, get-by-id, unauthenticated POST -> 401, authenticated POST -> 201, validation -> 400) — the first extraction's externally-observable surface — and (5) the Notification context contract (DRQ-037): a checkout followed by a BOUNDED-WAIT poll of GET /api/notifications?customerId= so the identical assertion is correct whether the order-confirmation notification is written synchronously in-transaction (today's monolith, hits on the first attempt) or eventually via outbox -> Kafka -> consumer (the future async notification service, ch.17).",
+    "description": "The behavior-equivalence suite (r02-plan S6, notification-plan S2, inventory-plan S2, build-plan.md §G/§D). Captured against the running Spring Boot monolith (examples/00-monolith). This collection is the project's equivalence gate: it is re-run UNCHANGED against each extracted service (starting with the Quarkus Review service, ch.15) and a service is only considered 'done' once it passes this same suite with no edits (build-plan.md §G load-bearing rule). Every request targets {{baseUrl}} so the identical collection can point at the monolith or at an extracted service's own port. Covers: (1) happy-path checkout, (2) out-of-stock, (3) payment-declined (asserting inventory is NOT left decremented, per the monolith's actual rollback behavior), (4) the Review context contract (list, get-by-id, unauthenticated POST -> 401, authenticated POST -> 201, validation -> 400) — the first extraction's externally-observable surface — (5) the Notification context contract (DRQ-037): a checkout followed by a BOUNDED-WAIT poll of GET /api/notifications?customerId= so the identical assertion is correct whether the order-confirmation notification is written synchronously in-transaction (today's monolith, hits on the first attempt) or eventually via outbox -> Kafka -> consumer (the future async notification service, ch.17) — and (6) the Inventory Context Contract (inventory-plan.md S2, DRQ-046): the `/api/inventory` READ surface (list + get-by-sku + 404 for an unknown sku), asserted as a synchronous request/response (no bounded-wait — Reserve stays synchronous, DRQ-041) — distinct from, and NOT a duplicate of, the cross-seam inventory-mutation behavior already proven by Scenario 1 (stock decrements by ordered qty), Scenario 2 (out-of-stock -> 409, stock unchanged) and Scenario 3 (payment-declined -> stock rolled back, not left decremented), which remain the load-bearing inventory-equivalence checks the ch.19 extraction must keep green across the seam.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -762,6 +762,130 @@
                   "        pm.expect(match.sentAt).to.not.be.undefined;",
                   "    });",
                   "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Inventory Context Contract",
+      "item": [
+        {
+          "name": "6a. List inventory -> 200, array of StockDto",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/inventory",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "inventory"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('List inventory returns 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Content-Type is application/json', function () {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test('Response is a non-empty array', function () {",
+                  "    pm.expect(json).to.be.an('array');",
+                  "    pm.expect(json.length).to.be.at.least(1);",
+                  "});",
+                  "pm.test('Each item has the documented StockDto shape (sku, name, priceCents, quantityOnHand)', function () {",
+                  "    json.forEach(function (i) {",
+                  "        pm.expect(i.sku).to.be.a('string');",
+                  "        pm.expect(i.name).to.be.a('string');",
+                  "        pm.expect(i.priceCents).to.be.a('number');",
+                  "        pm.expect(i.quantityOnHand).to.be.a('number');",
+                  "    });",
+                  "});",
+                  "pm.test('Seed inventory includes SKU-WIDGET-001 and SKU-GIZMO-003', function () {",
+                  "    var skus = json.map(function (i) { return i.sku; });",
+                  "    pm.expect(skus).to.include('SKU-WIDGET-001');",
+                  "    pm.expect(skus).to.include('SKU-GIZMO-003');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "6b. Get by sku -> 200, the StockDto for that item",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/inventory/SKU-WIDGET-001",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "inventory", "SKU-WIDGET-001"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Get by sku returns 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Content-Type is application/json', function () {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test('Returned item is the requested sku, with the documented StockDto shape', function () {",
+                  "    pm.expect(json.sku).to.eql('SKU-WIDGET-001');",
+                  "    pm.expect(json.name).to.be.a('string');",
+                  "    pm.expect(json.priceCents).to.be.a('number');",
+                  "    pm.expect(json.quantityOnHand).to.be.a('number');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "6c. Get by unknown sku -> 404, NOT_FOUND",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/inventory/SKU-DOES-NOT-EXIST",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "inventory", "SKU-DOES-NOT-EXIST"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Unknown sku returns 404 Not Found', function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "pm.test('Content-Type is application/json', function () {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test('Documented error contract: error=NOT_FOUND', function () {",
+                  "    pm.expect(json.error).to.eql('NOT_FOUND');",
+                  "});",
+                  "pm.test('Error body names the missing SKU', function () {",
+                  "    pm.expect(json.message).to.include('SKU-DOES-NOT-EXIST');",
+                  "});",
+                  "pm.test('Error body carries a timestamp', function () {",
+                  "    pm.expect(json.timestamp).to.not.be.undefined;",
+                  "});"
                 ]
               }
             }

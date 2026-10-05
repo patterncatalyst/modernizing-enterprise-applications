@@ -107,6 +107,71 @@ surface still exist (decommission is notification-plan S8, not yet run) —
 flipping this flag back to `false` today still reaches a working monolith
 notification surface.
 
+## The flag: `strangler.inventory.enabled` (inventory-plan.md S9, ch.19, DRQ-045)
+
+| Value | Backend for `/api/inventory/**` | Backend for everything else |
+|---|---|---|
+| `false` (**default**, inventory-plan S9 — not yet cut over) | monolith `:8080` | unaffected |
+| `true` (inventory-plan S10 — cutover) | inventory-service `:8084` | unaffected |
+
+Identical shape to the Review and Notification flags — content-based routing
+on the `/api/inventory` path prefix, matching the **full** incoming path (the
+same CUTOVER.md §2 lesson applied a third time). This is the **read-side**
+half of a two-flag reversibility story (DRQ-045): the monolith's own
+`inventory.mode=local|remote` config (a *different* file,
+`examples/00-monolith/src/main/resources/application.yml`) is the
+write/reserve-side half — it governs whether `OrderService#placeOrder`
+reserves stock in-JVM against the shared schema, or over gRPC against
+`examples/04-inventory-service/`. A real cutover (inventory-plan S10) flips
+both together.
+
+### ACL honesty: why this branch is a transparent proxy, not a translator
+
+Chapter 16 sketched `InventoryAclRoute` — a content-based router feeding an
+`enrich()` + `AggregationStrategy` message translator — as the shape this seam
+would eventually need. This route does **not** build that translator, and
+that is a deliberate, documented choice rather than a shortcut:
+
+- The monolith's `/api/inventory` read surface returns
+  `dev.patterncatalyst.monolith.common.StockDto` (`sku`, `name`, `priceCents`,
+  `quantityOnHand`).
+- The inventory service's `/api/inventory` read surface returns
+  `dev.patterncatalyst.inventory.StockDto` — lifted **unchanged** from the
+  monolith's record (same field names, types, and order; see its javadoc).
+- Both backends therefore produce **byte-for-byte identical JSON** for this
+  read surface. A Camel message translator here would have nothing to
+  translate — adding one would fabricate a redundant ACL for a contract that
+  does not actually differ, which is exactly the kind of speculative
+  infrastructure this project's scope discipline rules out. So the
+  `/api/inventory` branch above is an honest, transparent reverse proxy,
+  structurally identical to the Review and Notification branches.
+
+**The real anti-corruption layer for the order→inventory seam is realized at
+the gRPC boundary, not in this proxy.** `inventory.proto`
+(`examples/00-monolith/src/main/proto/.../inventory.proto`, mirrored in
+`examples/04-inventory-service/src/main/proto/.../inventory.proto`) defines a
+wire vocabulary that **does** genuinely differ from the internal model:
+`stock_keeping_unit` / `unit_price_cents` / `on_hand_qty` on the wire versus
+`sku` / `priceCents` / `quantityOnHand` internally. Two classes do the actual
+translation work ch.16 described:
+
+- `examples/00-monolith/src/main/java/dev/patterncatalyst/monolith/inventory/RemoteInventoryClient.java`
+  — the **client-side** translator: converts the gRPC reply vocabulary into
+  plain internal values the rest of the monolith understands. The generated
+  proto types never leak past this class.
+- `examples/04-inventory-service/src/main/java/dev/patterncatalyst/inventory/InventoryGrpcServiceImpl.java`
+  — the **server-side** translator: converts the inventory service's internal
+  `InventoryItem`/`StockDto` shape into the proto `StockReply`/`ReserveReply`
+  wire vocabulary.
+
+This is ch.16's `InventoryAclRoute` sketch, realized for real — just one layer
+over from where the sketch originally proposed it, because that is where the
+seam's vocabulary actually diverges. Content-based routing (this proxy, the
+"which door to knock on" decision) and the anti-corruption layer (the gRPC
+translators, the "what's safe to carry back" decision) remain the two
+independent concerns ch.16 named; they simply don't both have to live in the
+same Camel route when one side of the seam hasn't diverged.
+
 ## Backend targets
 
 Properties name the fixed backend targets each flag chooses between. The
@@ -118,6 +183,7 @@ header or path value can redirect the proxy to an arbitrary host):
 strangler.monolith.base-url=http://localhost:8080
 strangler.review.base-url=http://localhost:8081
 strangler.notification.base-url=http://localhost:8083
+strangler.inventory.base-url=http://localhost:8084
 ```
 
 ## Ports
@@ -128,6 +194,7 @@ strangler.notification.base-url=http://localhost:8083
 | Monolith (`examples/00-monolith/`) | 8080 | default target, always |
 | Review service (`examples/02-review-service/`) | 8081 | only reachable through the proxy once the Review flag flips (S10) |
 | Notification service (`examples/03-notification-service/`) | 8083 | only reachable through the proxy once the Notification flag is on (notification-plan S7) |
+| Inventory service (`examples/04-inventory-service/`) | 8084 | only reachable through the proxy once the Inventory flag is on (inventory-plan S10); gRPC server at :9004 is used by the monolith directly, not via this proxy |
 
 ## Running it
 

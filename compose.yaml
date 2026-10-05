@@ -15,9 +15,17 @@
 #   - lgtm      : Grafana + Tempo + Mimir + Loki + an embedded OTel Collector
 #                 (config replaced by infra/otelcol/config.yaml)
 #   - postgres  : the monolith's database (examples/00-monolith owns the
-#                 schema/migrations; this stack only provisions the server)
+#                 schema/migrations; this stack only provisions the server).
+#                 Reconfigured for LOGICAL replication (r05/ch.19, step S3)
+#                 so Debezium can tail the WAL — see `command:` below.
 #   - kafka     : single-broker KRaft-mode Kafka (no ZooKeeper) for the
 #                 event-driven extractions from r04 onward
+#   - connect   : Kafka Connect running the Debezium Postgres connector
+#                 (r05/ch.19 step S3, DRQ-040) — CDC source for the inventory
+#                 extraction's initial-snapshot backfill + streaming sync.
+#                 REST API on host port ${CONNECT_HOST_PORT:-8086}, NOT 8083
+#                 (examples/03-notification-service binds :8083 locally —
+#                 see infra/debezium/README.md).
 #
 # Apicurio is deliberately NOT included here (deferred per r02-plan S3 —
 # Review, the r02 extraction, is REST-only and has no schema-registry need).
@@ -67,6 +75,13 @@ services:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_INITDB_ARGS=--encoding=UTF8 --locale=C
+    # LOGICAL replication (r05/ch.19 step S3, DRQ-040) — required for the
+    # Debezium Postgres connector to tail the WAL via pgoutput. Requires a
+    # restart of this container to take effect (handled by `podman compose
+    # up -d`); the postgres-data volume persists across it, so no data is
+    # lost. max_replication_slots/max_wal_senders=4 leaves headroom beyond
+    # the single `mea_inventory_slot` this stack currently uses.
+    command: ["postgres", "-c", "wal_level=logical", "-c", "max_replication_slots=4", "-c", "max_wal_senders=4"]
     volumes:
       - postgres-data:/var/lib/postgresql/data:Z
       - ./infra/db/init:/docker-entrypoint-initdb.d:Z
@@ -114,6 +129,42 @@ services:
       timeout: 5s
       retries: 12
       start_period: 30s
+    restart: unless-stopped
+
+  # ─── Kafka Connect (Debezium Postgres connector) — CDC, r05/ch.19 S3 ────
+  # Standalone Kafka Connect distributed-mode worker running the Debezium
+  # Postgres connector image. NOT Debezium Embedded (DRQ-040) — a visible,
+  # inspectable connector is the teaching artifact for log-tailing CDC.
+  # Registration (idempotent create-or-update) is a separate step — see
+  # scripts/register-debezium.sh — not baked into this compose file, so the
+  # connector config (infra/debezium/inventory-connector.json) can evolve
+  # without a container rebuild.
+  connect:
+    image: docker.io/debezium/connect:${CONNECT_IMAGE_TAG}
+    container_name: mea-connect
+    ports:
+      - "${CONNECT_HOST_PORT:-8086}:8083"   # host 8086 (NOT 8083 — see header note); container always binds 8083
+    environment:
+      - BOOTSTRAP_SERVERS=kafka:9094
+      - GROUP_ID=mea-connect-cluster
+      - CONFIG_STORAGE_TOPIC=mea-connect-configs
+      - OFFSET_STORAGE_TOPIC=mea-connect-offsets
+      - STATUS_STORAGE_TOPIC=mea-connect-status
+      - CONFIG_STORAGE_REPLICATION_FACTOR=1
+      - OFFSET_STORAGE_REPLICATION_FACTOR=1
+      - STATUS_STORAGE_REPLICATION_FACTOR=1
+    depends_on:
+      kafka:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    mem_limit: 1g
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8083/connectors"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 45s
     restart: unless-stopped
 
 volumes:

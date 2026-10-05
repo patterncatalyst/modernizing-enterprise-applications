@@ -25,6 +25,7 @@ then Notification, Inventory, Payment, Shipping, Order+gateway in r04–r07).
 | `local.postman_environment.json` | Points `{{baseUrl}}` at the monolith baseline, `http://localhost:8080`. Used for the S6 baseline run. |
 | `review-service.postman_environment.json` | Forward-reference environment for the extracted Quarkus Review service (`examples/15-review-service/`, arrives in S8+), on its own port so it can run side-by-side with the monolith during the strangler cutover. Only the "Review Context Contract" folder is meaningful against this target until Order/Inventory/Payment are themselves extracted. |
 | `notification-service.postman_environment.json` | Forward-reference environment for the extracted Quarkus Notification service (`examples/03-notification-service/`, arrives in notification-plan S4+), on its own port (`:8083`). Only the "Notification Context Contract" folder is meaningful against this target. |
+| `inventory-service.postman_environment.json` | Forward-reference environment for the extracted Quarkus Inventory service (`examples/04-inventory-service/`, arrives in inventory-plan S5+), on its own port (`:8084`). Only the "Inventory Context Contract" folder is meaningful against this target until the order->inventory gRPC seam (inventory-plan S6/S7) and the proxy's cutover (S9/S10) are wired — see the scenario note below. |
 | `../../demos/demo-equivalence.sh` | Thin runner: `demos/demo-equivalence.sh [baseUrl]`. Defaults to the monolith baseline. |
 
 ## Scenarios asserted
@@ -72,6 +73,29 @@ then Notification, Inventory, Payment, Shipping, Order+gateway in r04–r07).
    consumer" negative check meaningful instead of a false positive
    (notification-plan.md DRQ-037, the false-equivalence trap documented in
    `examples/01-strangler-proxy/CUTOVER.md` §2).
+7. **Inventory context contract** (inventory-plan.md S2, ch.19, DRQ-046): the
+   `/api/inventory` READ surface — `GET /api/inventory` -> `200`, a non-empty
+   array of `StockDto`-shaped items (`sku`, `name`, `priceCents`,
+   `quantityOnHand`); `GET /api/inventory/{sku}` -> `200` with that same shape
+   for a known sku; `GET /api/inventory/{sku}` for an unknown sku -> `404`
+   with the documented `{ "error": "NOT_FOUND", "message": "...<sku>...",
+   "timestamp": ... }` body, per `InventoryController`/`InventoryService` in
+   `examples/00-monolith`. This folder asserts status + fields + content-type
+   only — never raw DB rows — and, unlike the Notification folder, needs **no
+   bounded-wait**: inventory's hot path (`CheckStock`/`Reserve`) stays
+   synchronous end-to-end even after extraction (DRQ-041), so a plain
+   request/response assertion is correct against both the monolith and the
+   future extracted service. **This folder does NOT duplicate the
+   cross-seam inventory-*mutation* behavior** — that is, and remains, the job
+   of the existing checkout folders: **Scenario 1** (happy path — stock
+   decrements by exactly the ordered quantity), **Scenario 2** (out-of-stock
+   -> `409`, stock left unchanged) and **Scenario 3** (payment-declined ->
+   stock **not** left decremented, i.e. the reservation is rolled back/
+   compensated). Those three scenarios are the load-bearing
+   inventory-equivalence checks the ch.19 extraction (synchronous gRPC
+   reserve + a compensating `Release` on decline, per inventory-plan.md
+   DRQ-042) must keep green **across the seam**, unchanged, alongside this
+   new read-surface folder.
 
 All assertions target status codes, response-body fields, and `Content-Type` —
 the externally-observable contract — never internal DB rows directly, so the

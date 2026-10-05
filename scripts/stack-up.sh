@@ -32,3 +32,5 @@ echo
 echo "Grafana:    http://localhost:3000"
 echo "Postgres:   localhost:${POSTGRES_PORT:-5432} (see .env for db/user/password)"
 echo "Kafka:      localhost:${KAFKA_HOST_PORT:-9092} (host) / kafka:9094 (compose network)"
+echo "Connect:    http://localhost:${CONNECT_HOST_PORT:-8086}/connectors (Debezium CDC — see infra/debezium/README.md)"
+echo "            Register the inventory connector: scripts/register-debezium.sh"

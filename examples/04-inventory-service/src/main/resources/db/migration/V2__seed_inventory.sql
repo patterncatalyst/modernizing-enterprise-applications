@@ -1,0 +1,52 @@
+-- Seeds inventory.inventory_items with the canonical demo catalog (r05/ch.19
+-- S12, DRQ-044/DRQ-040 follow-up).
+--
+-- WHY THIS EXISTS NOW: this service was originally seeded/kept current by
+-- Debezium CDC tailing the monolith's public.inventory_items WAL (see V1's
+-- header). S11 decommissioned the monolith's in-JVM inventory module and
+-- retired that CDC role (inventory-plan.md S11/S12) -- there is no longer
+-- any upstream writer whose WAL a connector could tail, so a fresh
+-- environment (a clean CI run, a new developer's first `podman compose up`)
+-- would boot this service against an EMPTY inventory.inventory_items table
+-- with no way to populate it. Post-CDC-retirement, this service must own its
+-- data end to end -- this migration is that: Flyway-managed, versioned
+-- seed data, exactly the same mechanism examples/00-monolith's own
+-- V2__seed_data.sql already uses for its (now-frozen, write-only) copy.
+--
+-- Mirrors examples/00-monolith/src/main/resources/db/migration/V2__seed_data.sql's
+-- canonical 3 SKUs byte-for-byte (same names/price_cents/quantity_on_hand),
+-- so the read contract (GET /api/inventory, GET /api/inventory/{sku}) and the
+-- gRPC CheckStock/Reserve/Release hot path serve identical demo data whether
+-- a client talks to the monolith's frozen historical copy or this service's
+-- live one.
+--
+-- id is explicit, not generated (InventoryItem#id has no @GeneratedValue --
+-- see its javadoc): these three ids (1/2/3) are exactly what the monolith's
+-- own BIGSERIAL inventory_items sequence assigned for these same three rows
+-- (see V1__init_schema.sql's insertion order), which is also exactly what
+-- CDC carried over verbatim when it owned this table's backfill. Keeping the
+-- same ids here is not load-bearing for correctness (sku is this table's
+-- real business key, and StockDto never exposes id) but keeps this table's
+-- identity space consistent with its CDC-fed history instead of silently
+-- renumbering rows a prior CDC backfill may already have written under 1/2/3.
+--
+-- IDEMPOTENT BY DESIGN (ON CONFLICT DO NOTHING, no conflict target -- fires
+-- on either the `id` primary key or the `sku` unique constraint): this
+-- migration must be safe to apply against TWO different starting states --
+-- (1) a fresh/empty schema (CI, a brand-new local podman stack) where it is
+-- the only source of these three rows, and (2) the long-lived local podman
+-- stack's Postgres volume, where CDC may have already backfilled these exact
+-- three rows (same ids, same skus) before being retired -- running this
+-- migration there must NOT duplicate rows or clobber any quantity_on_hand
+-- that live traffic (gRPC Reserve/Release) has since moved away from the
+-- seed values. A plain INSERT (or an upsert that overwrites on conflict,
+-- like InventoryCdcWriter#upsert's ON CONFLICT DO UPDATE -- correct for its
+-- own use case, wrong here) would either fail outright on a non-empty table
+-- or silently reset live stock counts back to the demo baseline every time
+-- Flyway's migration history was replayed onto a fresh container; DO NOTHING
+-- avoids both.
+INSERT INTO inventory.inventory_items (id, sku, name, price_cents, quantity_on_hand, updated_at) VALUES
+    (1, 'SKU-WIDGET-001', 'Standard Widget', 1999, 100, TIMESTAMPTZ '2026-01-05 08:00:00+00'),
+    (2, 'SKU-GADGET-002', 'Deluxe Gadget', 4999, 50, TIMESTAMPTZ '2026-01-05 08:00:00+00'),
+    (3, 'SKU-GIZMO-003', 'Pocket Gizmo', 999, 5, TIMESTAMPTZ '2026-01-05 08:00:00+00')
+ON CONFLICT DO NOTHING;

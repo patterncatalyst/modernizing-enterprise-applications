@@ -60,6 +60,40 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
  * the cutover evidence trail (reversibility baseline, cutover run, and the
  * negative check that proves the async pipeline is genuinely exercised).
  *
+ * <p><b>The Inventory seam (inventory-plan.md S9, ch.19, DRQ-045):</b>
+ * {@code strangler.inventory.enabled} is the third cutover flag, added
+ * alongside Review's and Notification's, with the identical content-based
+ * routing shape on the {@code /api/inventory} path prefix (full path, not a
+ * route-relative prefix, per the CUTOVER.md paragraph 2 lesson). It is the
+ * read-side half of a two-flag reversibility story (DRQ-045): the monolith's
+ * own {@code inventory.mode=local|remote} config (a different file,
+ * {@code examples/00-monolith/.../application.yml}) is the write/reserve-side
+ * half, governing whether {@code OrderService#placeOrder} reserves stock
+ * in-JVM or over gRPC against {@code examples/04-inventory-service/}. This
+ * proxy flag only ever affects the public REST read surface,
+ * {@code GET /api/inventory} and {@code GET /api/inventory/{sku}}.
+ *
+ * <p><b>ACL honesty note (DRQ-045/H4, ch.16's InventoryAclRoute sketch):</b>
+ * unlike the sketch in {@code _docs/16-content-based-routing-acl.md}, this
+ * route does not enrich-and-translate. Both backends --
+ * {@code examples/00-monolith/.../common/StockDto.java} and
+ * {@code examples/04-inventory-service/.../StockDto.java} (lifted unchanged,
+ * same field names/types/order) -- already return byte-for-byte identical
+ * JSON for this read surface, so a translating message translator here would
+ * have nothing to translate; it would be a no-op ACL fabricated for a
+ * contract that does not differ. This branch is therefore an honest,
+ * transparent reverse proxy, exactly like the Review and Notification
+ * branches above it. The real anti-corruption layer for the order-to-inventory
+ * seam lives at the gRPC boundary instead -- {@code inventory.proto}'s
+ * distinct wire vocabulary ({@code stock_keeping_unit}/
+ * {@code unit_price_cents}/{@code on_hand_qty}) versus the internal
+ * {@code sku}/{@code priceCents}/{@code quantityOnHand} fields, translated by
+ * the monolith's {@code RemoteInventoryClient} (proto to internal, client
+ * side) and the inventory service's {@code InventoryGrpcServiceImpl}
+ * (internal to proto, server side). See this project's README.md ("The
+ * flag: strangler.inventory.enabled") for the full writeup of where ch.16's
+ * sketch actually gets realized.
+ *
  * <p>Explicitly {@code @ApplicationScoped} so Quarkus/CDI — not plain
  * reflection — constructs this bean and resolves the {@code @ConfigProperty}
  * fields before {@link #configure()} runs.
@@ -75,6 +109,11 @@ public class StranglerProxyRoute extends RouteBuilder {
     @ConfigProperty(name = "strangler.notification.enabled", defaultValue = "false")
     boolean notificationEnabled;
 
+    /** The strangler cutover flag for Inventory traffic (inventory-plan.md S9, ch.19, DRQ-045).
+     *  Defaults to the monolith; read-side only (see class javadoc for the ACL honesty note). */
+    @ConfigProperty(name = "strangler.inventory.enabled", defaultValue = "false")
+    boolean inventoryEnabled;
+
     /** The monolith — the default backend for everything until a context is cut over. */
     @ConfigProperty(name = "strangler.monolith.base-url")
     String monolithBaseUrl;
@@ -87,9 +126,15 @@ public class StranglerProxyRoute extends RouteBuilder {
     @ConfigProperty(name = "strangler.notification.base-url")
     String notificationServiceBaseUrl;
 
+    /** The extracted Inventory service (examples/04-inventory-service, :8084) — only
+     *  selected once strangler.inventory.enabled is on. */
+    @ConfigProperty(name = "strangler.inventory.base-url")
+    String inventoryServiceBaseUrl;
+
     private static final String TARGET_PROPERTY = "stranglerTarget";
     private static final String TARGET_REVIEW = "review";
     private static final String TARGET_NOTIFICATION = "notification";
+    private static final String TARGET_INVENTORY = "inventory";
     private static final String TARGET_MONOLITH = "monolith";
 
     @Override
@@ -133,6 +178,15 @@ public class StranglerProxyRoute extends RouteBuilder {
                         simple("${header.CamelHttpPath} startsWith '/api/notifications'"),
                         exchange -> notificationEnabled))
                     .setProperty(TARGET_PROPERTY, constant(TARGET_NOTIFICATION))
+                // NOTE (inventory-plan S9): the Inventory seam reuses the exact lesson
+                // CUTOVER.md paragraph 2 paid for on Review -- match the FULL incoming
+                // path "/api/inventory", never a route-relative "/inventory", or the
+                // predicate silently never matches and every request falls through to
+                // the monolith regardless of the flag.
+                .when(PredicateBuilder.and(
+                        simple("${header.CamelHttpPath} startsWith '/api/inventory'"),
+                        exchange -> inventoryEnabled))
+                    .setProperty(TARGET_PROPERTY, constant(TARGET_INVENTORY))
                 .otherwise()
                     .setProperty(TARGET_PROPERTY, constant(TARGET_MONOLITH))
             .end()
@@ -150,6 +204,8 @@ public class StranglerProxyRoute extends RouteBuilder {
                     .to(reviewServiceBaseUrl + "?bridgeEndpoint=true&throwExceptionOnFailure=false")
                 .when(simple("${exchangeProperty." + TARGET_PROPERTY + "} == '" + TARGET_NOTIFICATION + "'"))
                     .to(notificationServiceBaseUrl + "?bridgeEndpoint=true&throwExceptionOnFailure=false")
+                .when(simple("${exchangeProperty." + TARGET_PROPERTY + "} == '" + TARGET_INVENTORY + "'"))
+                    .to(inventoryServiceBaseUrl + "?bridgeEndpoint=true&throwExceptionOnFailure=false")
                 .otherwise()
                     .to(monolithBaseUrl + "?bridgeEndpoint=true&throwExceptionOnFailure=false")
             .end();
