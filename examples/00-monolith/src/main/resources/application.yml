@@ -51,6 +51,23 @@ outbox:
   relay:
     poll-interval-ms: 2000
 
+# r05/ch.19 S7 (DRQ-045 — "reversibility via two flags", call/write side).
+# inventory.mode=local (default) keeps OrderService#placeOrder's in-JVM
+# reserve against the shared schema completely unchanged (zero regression).
+# inventory.mode=remote routes the checkout's reserve/release through
+# RemoteInventoryClient's gRPC stub to the extracted inventory service
+# (examples/04-inventory-service, :9004) instead, with a compensating
+# Release on any post-reserve checkout failure (DRQ-042). Overridable via
+# the standard Spring Boot env var INVENTORY_MODE (and
+# INVENTORY_GRPC_HOST/INVENTORY_GRPC_PORT for the gRPC target), never
+# hard-coded beyond these defaults.
+inventory:
+  mode: ${INVENTORY_MODE:local}
+  grpc:
+    host: ${INVENTORY_GRPC_HOST:localhost}
+    port: ${INVENTORY_GRPC_PORT:9004}
+    timeout-ms: ${INVENTORY_GRPC_TIMEOUT_MS:5000}
+
 logging:
   level:
     dev.patterncatalyst.monolith: INFO

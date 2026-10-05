@@ -29,6 +29,18 @@
     <java.version>25</java.version>
     <maven.compiler.release>25</maven.compiler.release>
     <springdoc.version>2.8.17</springdoc.version>
+    <!-- r05/ch.19 S7 (DRQ-039): the gRPC CLIENT to the extracted inventory
+         service's Reserve/Release/CheckStock/GetStock hot path. Versions
+         need not match examples/04-inventory-service's quarkus-grpc-managed
+         versions exactly: the proto wire format is stable across
+         compatible grpc-java/protobuf releases; only the .proto SOURCE
+         (copied verbatim, see src/main/proto) must agree. protobuf.version
+         is pinned to the SAME protobuf-java release io.grpc:grpc-protobuf
+         1.73.0 itself depends on (verified via `mvn dependency:tree`):
+         protoc's generated-code API surface is tied to the protobuf-java
+         runtime version it targets, so protoc and protobuf-java must match. -->
+    <grpc.version>1.73.0</grpc.version>
+    <protobuf.version>3.25.5</protobuf.version>
   </properties>
 
   <dependencies>
@@ -114,14 +126,80 @@
       <artifactId>postgresql</artifactId>
       <scope>test</scope>
     </dependency>
+
+    <!-- r05/ch.19 S7 (DRQ-039, decorating collaborator): gRPC CLIENT deps for
+         RemoteInventoryClient's blocking stub against the extracted inventory
+         service's :9004 gRPC server. grpc-netty-shaded supplies the client
+         transport (shaded, no netty-version collision with anything Spring
+         Boot brings in); grpc-protobuf/grpc-stub are the generated-code
+         runtime for the Mutiny-free, plain blocking stub the protobuf-maven-
+         plugin below generates from src/main/proto. -->
+    <dependency>
+      <groupId>io.grpc</groupId>
+      <artifactId>grpc-netty-shaded</artifactId>
+      <version>${grpc.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.grpc</groupId>
+      <artifactId>grpc-protobuf</artifactId>
+      <version>${grpc.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.grpc</groupId>
+      <artifactId>grpc-stub</artifactId>
+      <version>${grpc.version}</version>
+    </dependency>
+    <!-- Generated gRPC stub classes carry @javax.annotation.Generated, which
+         the JDK no longer ships (removed from java.se in JDK 11+); this is
+         the standard grpc-java workaround (provided scope: compile-time only). -->
+    <dependency>
+      <groupId>org.apache.tomcat</groupId>
+      <artifactId>annotations-api</artifactId>
+      <version>6.0.53</version>
+      <scope>provided</scope>
+    </dependency>
   </dependencies>
 
   <build>
     <finalName>monolith</finalName>
+    <!-- r05/ch.19 S7: os-maven-plugin resolves ${os.detected.classifier} so
+         the protobuf-maven-plugin below can pull the right protoc/
+         protoc-gen-grpc-java native executable for this build machine. -->
+    <extensions>
+      <extension>
+        <groupId>kr.motd.maven</groupId>
+        <artifactId>os-maven-plugin</artifactId>
+        <version>1.7.1</version>
+      </extension>
+    </extensions>
     <plugins>
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
+      </plugin>
+
+      <!-- r05/ch.19 S7 (DRQ-039): compiles src/main/proto/.../inventory.proto
+           into the plain Java message classes + the InventoryGrpcServiceGrpc
+           blocking-stub client RemoteInventoryClient wraps. compile-custom
+           (pluginId=grpc-java) is what generates the gRPC stub on top of the
+           plain `compile` goal's protobuf messages. -->
+      <plugin>
+        <groupId>org.xolstice.maven.plugins</groupId>
+        <artifactId>protobuf-maven-plugin</artifactId>
+        <version>0.6.1</version>
+        <configuration>
+          <protocArtifact>com.google.protobuf:protoc:${protobuf.version}:exe:${os.detected.classifier}</protocArtifact>
+          <pluginId>grpc-java</pluginId>
+          <pluginArtifact>io.grpc:protoc-gen-grpc-java:${grpc.version}:exe:${os.detected.classifier}</pluginArtifact>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>compile</goal>
+              <goal>compile-custom</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
 
       <!-- Surefire (Tier 1 unit + Tier 2 slice tests, *Test) keeps its default

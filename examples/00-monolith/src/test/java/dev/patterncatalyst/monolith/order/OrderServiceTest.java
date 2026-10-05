@@ -25,6 +25,7 @@ import dev.patterncatalyst.monolith.common.outbox.OutboxEvent;
 import dev.patterncatalyst.monolith.common.outbox.OutboxRepository;
 import dev.patterncatalyst.monolith.inventory.InventoryItem;
 import dev.patterncatalyst.monolith.inventory.InventoryService;
+import dev.patterncatalyst.monolith.inventory.RemoteInventoryClient;
 import dev.patterncatalyst.monolith.payment.Payment;
 import dev.patterncatalyst.monolith.payment.PaymentService;
 import dev.patterncatalyst.monolith.payment.PaymentStatus;
@@ -60,6 +61,9 @@ class OrderServiceTest {
     private InventoryService inventoryService;
 
     @Mock
+    private RemoteInventoryClient remoteInventoryClient;
+
+    @Mock
     private PaymentService paymentService;
 
     @Mock
@@ -82,9 +86,18 @@ class OrderServiceTest {
     }
 
     private OrderService newOrderService() {
+        // r05/ch.19 S7: inventory.mode="local" here keeps every existing test
+        // in this class exercising the unchanged in-JVM reserve path;
+        // remote-mode + compensation behavior is covered separately below.
         return new OrderService(
-                orderRepository, customerRepository, inventoryService, paymentService, shippingService,
-                outboxRepository, objectMapper);
+                orderRepository, customerRepository, inventoryService, remoteInventoryClient, paymentService,
+                shippingService, outboxRepository, objectMapper, "local");
+    }
+
+    private OrderService newRemoteOrderService() {
+        return new OrderService(
+                orderRepository, customerRepository, inventoryService, remoteInventoryClient, paymentService,
+                shippingService, outboxRepository, objectMapper, "remote");
     }
 
     @Test
@@ -213,6 +226,89 @@ class OrderServiceTest {
 
         verify(inventoryService, never()).findBySkuOrThrow(anyString());
         verify(orderRepository, never()).save(any());
+    }
+
+    @Test
+    void placeOrder_remoteMode_outOfStock_throws409EquivalentAndNeverReleases() {
+        // r05/ch.19 S7 (DRQ-041): inventory.mode=remote, server-side Reserve
+        // reports insufficient stock (reservation_ok=false, on_hand_qty
+        // unchanged) -- same external contract as the local path: a 409 via
+        // InsufficientStockException, and because NOTHING was reserved, no
+        // compensating Release should ever be issued.
+        OrderService remoteOrderService = newRemoteOrderService();
+        var command = new OrderCreate(
+                1L, List.of(new OrderCreate.Line("SKU-GIZMO-003", 99)), "CARD-VISA", "1 Test Way");
+
+        when(customerRepository.findById(1L)).thenReturn(Optional.of(customer));
+        when(inventoryService.findBySkuOrThrow("SKU-GIZMO-003")).thenReturn(widget);
+        when(remoteInventoryClient.reserve("SKU-GIZMO-003", 99))
+                .thenReturn(new RemoteInventoryClient.ReserveResult(false, 5));
+
+        assertThatThrownBy(() -> remoteOrderService.placeOrder(command))
+                .isInstanceOf(InsufficientStockException.class)
+                .hasMessageContaining("SKU-GIZMO-003");
+
+        verify(orderRepository, never()).save(any());
+        verify(paymentService, never()).charge(any(), anyLong(), anyString());
+        verify(remoteInventoryClient, never()).release(anyString(), org.mockito.ArgumentMatchers.anyInt());
+    }
+
+    @Test
+    void placeOrder_remoteMode_paymentDeclined_compensatesWithRelease() {
+        // r05/ch.19 S7 (DRQ-042, THE crux): inventory.mode=remote, Reserve
+        // succeeds (so the decrement already committed in the inventory
+        // service's own DB, outside this method's @Transactional), then
+        // payment declines. The catch block MUST issue a compensating
+        // Release for the exact sku/qty this checkout reserved, restoring
+        // the observable baseline (Scenario 3 of the equivalence suite).
+        OrderService remoteOrderService = newRemoteOrderService();
+        var command = new OrderCreate(
+                1L, List.of(new OrderCreate.Line("SKU-WIDGET-001", 3)), "CARD-DECLINE", "1 Test Way");
+
+        when(customerRepository.findById(1L)).thenReturn(Optional.of(customer));
+        when(inventoryService.findBySkuOrThrow("SKU-WIDGET-001")).thenReturn(widget);
+        when(remoteInventoryClient.reserve("SKU-WIDGET-001", 3))
+                .thenReturn(new RemoteInventoryClient.ReserveResult(true, 97));
+        when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        doThrow(new PaymentDeclinedException("Payment method 'CARD-DECLINE' was declined"))
+                .when(paymentService).charge(any(Order.class), anyLong(), eq("CARD-DECLINE"));
+
+        assertThatThrownBy(() -> remoteOrderService.placeOrder(command))
+                .isInstanceOf(PaymentDeclinedException.class)
+                .hasMessageContaining("declined");
+
+        verify(remoteInventoryClient).reserve("SKU-WIDGET-001", 3);
+        verify(remoteInventoryClient).release("SKU-WIDGET-001", 3);
+        verify(shippingService, never()).dispatch(any(), anyString());
+        verify(outboxRepository, never()).save(any());
+    }
+
+    @Test
+    void placeOrder_remoteMode_happyPath_neverCompensates() {
+        // Contrast case: a successful remote-mode checkout must NOT issue a
+        // compensating Release -- compensation is strictly a failure-path
+        // behavior.
+        OrderService remoteOrderService = newRemoteOrderService();
+        var command = new OrderCreate(
+                1L, List.of(new OrderCreate.Line("SKU-WIDGET-001", 2)), "CARD-VISA", "1 Test Way");
+
+        when(customerRepository.findById(1L)).thenReturn(Optional.of(customer));
+        when(inventoryService.findBySkuOrThrow("SKU-WIDGET-001")).thenReturn(widget);
+        when(remoteInventoryClient.reserve("SKU-WIDGET-001", 2))
+                .thenReturn(new RemoteInventoryClient.ReserveResult(true, 98));
+        when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(paymentService.charge(any(Order.class), anyLong(), anyString()))
+                .thenAnswer(invocation -> new Payment(
+                        invocation.getArgument(0), invocation.getArgument(1), invocation.getArgument(2),
+                        PaymentStatus.CAPTURED));
+        when(shippingService.dispatch(any(Order.class), anyString()))
+                .thenAnswer(invocation -> new Shipment(invocation.getArgument(0), invocation.getArgument(1),
+                        ShipmentStatus.DISPATCHED));
+
+        OrderDto dto = remoteOrderService.placeOrder(command);
+
+        assertThat(dto.status()).isEqualTo(OrderStatus.CONFIRMED);
+        verify(remoteInventoryClient, never()).release(anyString(), org.mockito.ArgumentMatchers.anyInt());
     }
 
     @Test
