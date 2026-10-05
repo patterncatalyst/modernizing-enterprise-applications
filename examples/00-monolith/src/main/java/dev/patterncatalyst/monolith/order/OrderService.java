@@ -7,35 +7,44 @@ import dev.patterncatalyst.monolith.common.CustomerRepository;
 import dev.patterncatalyst.monolith.common.OrderCreate;
 import dev.patterncatalyst.monolith.common.OrderDto;
 import dev.patterncatalyst.monolith.common.Topics;
+import dev.patterncatalyst.monolith.common.exception.InsufficientStockException;
 import dev.patterncatalyst.monolith.common.exception.ResourceNotFoundException;
 import dev.patterncatalyst.monolith.common.outbox.OrderPlacedEvent;
 import dev.patterncatalyst.monolith.common.outbox.OutboxEvent;
 import dev.patterncatalyst.monolith.common.outbox.OutboxRepository;
-import dev.patterncatalyst.monolith.inventory.InventoryItem;
-import dev.patterncatalyst.monolith.inventory.InventoryService;
+import dev.patterncatalyst.monolith.inventory.RemoteInventoryClient;
 import dev.patterncatalyst.monolith.payment.PaymentService;
 import dev.patterncatalyst.monolith.shipping.ShippingService;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
  * SMELL[ch.26]: this is the "god service" — it is the single orchestration point
- * for checkout and it reaches directly into inventory, payment, and shipping's
+ * for checkout and it reaches directly into payment and shipping's
  * services/repositories/entities instead of those contexts being independently
  * deployable collaborators reached over a stable contract. Order is deliberately
  * the HARDEST and LAST extraction in the roadmap (ch.26) precisely because every
  * other context's extraction has to first remove one of this service's direct
  * dependencies — notification's was the first to go (ch.17/r04/S8): checkout
- * now reaches only its own outbox, not a notification-context collaborator.
+ * now reaches only its own outbox, not a notification-context collaborator; as
+ * of r05/ch.19 S11, inventory is the second: the raw in-JVM
+ * entity/repository reach-in is gone (SMELL #5, CURED — see SMELLS.md) and
+ * checkout now reaches inventory only through {@link RemoteInventoryClient}'s
+ * typed gRPC contract.
  */
 @Service
 public class OrderService {
 
+    private static final Logger LOG = LoggerFactory.getLogger(OrderService.class);
+
     private final OrderRepository orderRepository;
     private final CustomerRepository customerRepository;
-    private final InventoryService inventoryService;
+    private final RemoteInventoryClient remoteInventoryClient;
     private final PaymentService paymentService;
     private final ShippingService shippingService;
     private final OutboxRepository outboxRepository;
@@ -44,14 +53,14 @@ public class OrderService {
     public OrderService(
             OrderRepository orderRepository,
             CustomerRepository customerRepository,
-            InventoryService inventoryService,
+            RemoteInventoryClient remoteInventoryClient,
             PaymentService paymentService,
             ShippingService shippingService,
             OutboxRepository outboxRepository,
             ObjectMapper objectMapper) {
         this.orderRepository = orderRepository;
         this.customerRepository = customerRepository;
-        this.inventoryService = inventoryService;
+        this.remoteInventoryClient = remoteInventoryClient;
         this.paymentService = paymentService;
         this.shippingService = shippingService;
         this.outboxRepository = outboxRepository;
@@ -72,10 +81,10 @@ public class OrderService {
      * Notification (ch.17/r04/S8) was the first context removed from this
      * transaction's blast radius entirely.
      *
-     * <p>Flow: validate customer -> check+reserve stock (inventory, SMELL[ch.16]
-     * no ACL) -> persist the order -> charge payment (payment; a decline rolls
-     * back everything written so far) -> dispatch shipment (shipping) -> write
-     * the {@code order.placed} outbox event.
+     * <p>Flow: validate customer -> check+reserve stock (inventory, over gRPC
+     * -- see below) -> persist the order -> charge payment (payment; a
+     * decline triggers the compensating Release below) -> dispatch shipment
+     * (shipping) -> write the {@code order.placed} outbox event.
      *
      * <p>ch.17 (r04/S8) CURE: the notification step is no longer flag-gated —
      * the synchronous in-transaction call to a local NotificationService
@@ -87,6 +96,31 @@ public class OrderService {
      * {@code examples/03-notification-service} consumes it and owns
      * notification delivery entirely outside this transaction's latency and
      * failure domain.
+     *
+     * <p>r05/ch.19 S11 (DECOMMISSION, DRQ-039/DRQ-041/DRQ-042/DRQ-045): the
+     * monolith's own in-JVM inventory read/reserve surface
+     * ({@code inventory.InventoryController}/{@code InventoryService}/
+     * {@code InventoryItem}/{@code InventoryRepository}) has been removed
+     * entirely, along with the {@code inventory.mode=local|remote}
+     * reversibility flag introduced for the cutover (r05/ch.19 S7) — {@link
+     * RemoteInventoryClient}'s gRPC {@code Reserve} against the extracted
+     * inventory service's OWN database (SMELL #5, now CURED — see
+     * SMELLS.md) is the ONLY path. That decrement commits OUTSIDE this
+     * {@code @Transactional} and therefore can no longer be undone by it; the
+     * surrounding try/catch issues a compensating gRPC {@code Release} for
+     * every sku this checkout successfully reserved remotely, on ANY failure
+     * that happens afterward (insufficient stock on a later line, a payment
+     * decline, a shipping failure, or any other exception before the order
+     * confirms) — a deliberate first taste of saga compensation, forward-ref
+     * ch.23.
+     *
+     * <p>r05/ch.19 S8 (DRQ-043): {@code OrderItem} no longer holds a
+     * cross-context JPA/DB FK onto an inventory entity (SMELL[ch.18], now
+     * CURED for this seam). Each line's sku/name/unit-price-at-order-time is
+     * captured as a denormalized snapshot from the remote inventory
+     * service's {@code GetStock} gRPC reply (see {@link
+     * RemoteInventoryClient#getStock}). {@code common.OrderDto}'s shape is
+     * unchanged.
      */
     @Transactional
     public OrderDto placeOrder(OrderCreate command) {
@@ -95,36 +129,94 @@ public class OrderService {
 
         Order order = new Order(customer, command.shippingAddress());
 
-        // SMELL[ch.16]: reaching directly into inventory's entities/repository from
-        // the order context, with no anti-corruption layer at the seam.
-        for (OrderCreate.Line line : command.items()) {
-            InventoryItem inventoryItem = inventoryService.findBySkuOrThrow(line.sku());
-            inventoryService.reserve(line.sku(), line.quantity()); // throws InsufficientStockException, no writes yet
-            order.addItem(new OrderItem(inventoryItem, line.quantity(), inventoryItem.getPriceCents()));
+        // r05/ch.19 S7/S11 (DRQ-042): skus this checkout has successfully
+        // reserved via the remote gRPC Reserve so far, pending compensation
+        // if checkout fails afterward.
+        List<ReservedLine> remoteReservations = new ArrayList<>();
+
+        try {
+            for (OrderCreate.Line line : command.items()) {
+                // r05/ch.19 S7/S11: the decorating collaborator -- the actual
+                // reserve/decrement happens in the extracted inventory
+                // service's OWN database over gRPC (the proto IS the ACL,
+                // curing SMELL #5 -- see SMELLS.md), never against a local
+                // inventory_items row in this monolith.
+                RemoteInventoryClient.ReserveResult result =
+                        remoteInventoryClient.reserve(line.sku(), line.quantity());
+                if (!result.ok()) {
+                    throw new InsufficientStockException("Requested %d of %s but only %d on hand"
+                            .formatted(line.quantity(), line.sku(), result.onHandQty()));
+                }
+                remoteReservations.add(new ReservedLine(line.sku(), line.quantity()));
+                // r05/ch.19 S8 (DRQ-043): the OrderItem snapshot is captured
+                // from the extracted inventory service's OWN GetStock reply --
+                // never from a local inventory_items table -- curing SMELL #5
+                // (raw-entity leak) at the source for the snapshot path too.
+                RemoteInventoryClient.StockSnapshot stock = remoteInventoryClient.getStock(line.sku());
+                OrderItem orderItem = new OrderItem(stock.sku(), stock.name(), line.quantity(), stock.priceCents());
+                order.addItem(orderItem);
+            }
+
+            order = orderRepository.save(order);
+
+            // SMELL[ch.22]/[ch.26]: payment captured synchronously, in-process, inside
+            // the same transaction as the inventory decrement above. A decline here
+            // can no longer be undone by this transaction, because the decrement
+            // already committed in the inventory service's own database -- the
+            // catch block below issues the compensating Release instead (DRQ-042).
+            paymentService.charge(order, order.getTotalCents(), command.paymentMethod());
+            order.confirm();
+
+            // SMELL[ch.26]: shipping dispatched synchronously from the order's god
+            // service rather than being triggered by an event the order context emits.
+            shippingService.dispatch(order, order.getShippingAddress());
+
+            // ch.17 cure (r04/S8): write the event to the outbox, atomically, in
+            // THIS transaction. No Kafka client is touched here — the
+            // @Scheduled OutboxRelay is the only thing that talks to Kafka, on
+            // its own schedule, after this transaction has committed (or not, if
+            // something downstream still throws). This is now the ONLY
+            // notification path; the synchronous in-transaction call (SMELL[ch.17])
+            // has been removed.
+            writeOrderPlacedOutboxEvent(customer, order);
+
+            return toDto(order);
+        } catch (RuntimeException ex) {
+            // r05/ch.19 S7/S11 (DRQ-042): undo every remote reservation this
+            // checkout already committed before propagating the ORIGINAL
+            // failure (insufficient stock on a later line / payment decline
+            // / shipping failure / any other exception before confirmation).
+            // No-op when nothing was reserved yet.
+            compensateRemoteReservations(remoteReservations);
+            throw ex;
         }
+    }
 
-        order = orderRepository.save(order);
+    /**
+     * Compensating {@code Release} (DRQ-042, a deliberate first taste of
+     * saga — forward-ref ch.23) for every sku {@link #placeOrder} reserved
+     * remotely before the checkout failed. Best-effort: a {@code Release}
+     * failure is logged loudly (never swallowed silently) but does not
+     * replace the ORIGINAL checkout failure being propagated to the caller —
+     * an honest, documented limitation (no idempotency key or saga ledger
+     * yet) rather than speculative full-saga infrastructure this step does
+     * not need.
+     */
+    private void compensateRemoteReservations(List<ReservedLine> remoteReservations) {
+        for (ReservedLine reserved : remoteReservations) {
+            try {
+                remoteInventoryClient.release(reserved.sku(), reserved.quantity());
+            } catch (RuntimeException releaseFailure) {
+                LOG.error(
+                        "compensation FAILED for sku={} qty={} — stock NOT restored "
+                                + "(DRQ-042: full saga/idempotency deferred to ch.23)",
+                        reserved.sku(), reserved.quantity(), releaseFailure);
+            }
+        }
+    }
 
-        // SMELL[ch.22]/[ch.26]: payment captured synchronously, in-process, inside
-        // the same transaction as the inventory decrement above. A decline here
-        // rolls back the inventory reservation too (see PaymentDeclinedException).
-        paymentService.charge(order, order.getTotalCents(), command.paymentMethod());
-        order.confirm();
-
-        // SMELL[ch.26]: shipping dispatched synchronously from the order's god
-        // service rather than being triggered by an event the order context emits.
-        shippingService.dispatch(order, order.getShippingAddress());
-
-        // ch.17 cure (r04/S8): write the event to the outbox, atomically, in
-        // THIS transaction. No Kafka client is touched here — the
-        // @Scheduled OutboxRelay is the only thing that talks to Kafka, on
-        // its own schedule, after this transaction has committed (or not, if
-        // something downstream still throws). This is now the ONLY
-        // notification path; the synchronous in-transaction call (SMELL[ch.17])
-        // has been removed.
-        writeOrderPlacedOutboxEvent(customer, order);
-
-        return toDto(order);
+    /** r05/ch.19 S7 (DRQ-042): one remotely-reserved checkout line pending compensation if checkout fails. */
+    private record ReservedLine(String sku, int quantity) {
     }
 
     /**
@@ -170,8 +262,12 @@ public class OrderService {
     }
 
     private static OrderDto toDto(Order order) {
+        // r05/ch.19 S8 (DRQ-043): projects from OrderItem's own denormalized
+        // snapshot fields now, not a cross-context InventoryItem join -- the
+        // external shape (OrderDto.Item: sku/quantity/unitPriceCents) is
+        // byte-for-byte unchanged.
         List<OrderDto.Item> items = order.getItems().stream()
-                .map(i -> new OrderDto.Item(i.getInventoryItem().getSku(), i.getQuantity(), i.getUnitPriceCents()))
+                .map(i -> new OrderDto.Item(i.getSku(), i.getQuantity(), i.getUnitPriceCents()))
                 .toList();
         return new OrderDto(
                 order.getId(),
