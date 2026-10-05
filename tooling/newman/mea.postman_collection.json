@@ -2,7 +2,7 @@
   "info": {
     "name": "Modernizing Enterprise Applications — Behavior-Equivalence Suite",
     "_postman_id": "mea-equivalence-suite",
-    "description": "The behavior-equivalence suite (r02-plan S6, notification-plan S2, inventory-plan S2, payment-plan S2, build-plan.md §G/§D). Captured against the running Spring Boot monolith (examples/00-monolith). This collection is the project's equivalence gate: it is re-run UNCHANGED against each extracted service (starting with the Quarkus Review service, ch.15) and a service is only considered 'done' once it passes this same suite with no edits (build-plan.md §G load-bearing rule). Every request targets {{baseUrl}} so the identical collection can point at the monolith or at an extracted service's own port. Covers: (1) happy-path checkout — ADAPTED for the forthcoming ASYNC checkout contract (payment-plan.md S2, DRQ-047/DRQ-055): the POST is tolerant of `201` (today's synchronous monolith) or `202` (the future choreographed-saga payment service), and a BOUNDED-WAIT poll of GET /api/orders/{id} asserts the order strictly reaches the terminal `CONFIRMED` status — only the transport is relaxed, the terminal outcome and the stock-decrement side effect are unchanged and strict; (2) out-of-stock — left untouched/fully synchronous (inventory Reserve stays synchronous even after the payment extraction, so POST still returns `409` immediately); (3) payment-declined — ADAPTED the same way (DRQ-047/DRQ-055): POST tolerant of `402` (today's synchronous monolith — the whole checkout transaction is rolled back/compensated before the response, so there is no order to poll) or `202` (the saga — order persists PENDING, decline arrives later), then a BOUNDED-WAIT poll of GET /api/orders/{id} strictly asserting `PAYMENT_DECLINED` (saga path only) AND a BOUNDED-WAIT poll of GET /api/inventory/{sku} strictly asserting stock returns to net-zero (both paths) — the crux assertion (compensation via an in-line Release today, via the payment.declined choreography reaction later, DRQ-049) is never weakened; (4) the Review context contract (list, get-by-id, unauthenticated POST -> 401, authenticated POST -> 201, validation -> 400) — the first extraction's externally-observable surface — (5) the Notification context contract (DRQ-037): a checkout followed by a BOUNDED-WAIT poll of GET /api/notifications?customerId= so the identical assertion is correct whether the order-confirmation notification is written synchronously in-transaction (today's monolith, hits on the first attempt) or eventually via outbox -> Kafka -> consumer (the future async notification service, ch.17) — and (6) the Inventory Context Contract (inventory-plan.md S2, DRQ-046): the `/api/inventory` READ surface (list + get-by-sku + 404 for an unknown sku), asserted as a synchronous request/response (no bounded-wait — Reserve stays synchronous, DRQ-041) — distinct from, and NOT a duplicate of, the cross-seam inventory-mutation behavior already proven by Scenario 1 (stock decrements by ordered qty), Scenario 2 (out-of-stock -> 409, stock unchanged) and Scenario 3 (payment-declined -> stock rolled back, not left decremented), which remain the load-bearing inventory-equivalence checks the ch.19/ch.23 extractions must keep green across the seam — and (7) the Payment Context Contract (payment-plan.md S2b, DRQ-055), added after an S8 cutover run found it missing from S2's delivery: the `/api/payments` READ surface (list by orderId + get-by-id, PaymentDto-shaped), correlated with Scenario 1's confirmed order (reusing `happyPathOrderId`) so a CAPTURED payment row is guaranteed in both the synchronous-monolith and choreographed-saga states — plus the Notification Context Contract's checkout step (formerly 5a), which S8 also found still asserting the stale synchronous 201/CONFIRMED contract; it is now adapted to the same 201|202-tolerant, bounded-wait-to-CONFIRMED pattern as Scenario 1's 1b/1c before the downstream notification check runs.",
+    "description": "The behavior-equivalence suite (r02-plan S6, notification-plan S2, inventory-plan S2, payment-plan S2, build-plan.md §G/§D). Captured against the running Spring Boot monolith (examples/00-monolith). This collection is the project's equivalence gate: it is re-run UNCHANGED against each extracted service (starting with the Quarkus Review service, ch.15) and a service is only considered 'done' once it passes this same suite with no edits (build-plan.md §G load-bearing rule). Every request targets {{baseUrl}} so the identical collection can point at the monolith or at an extracted service's own port. Covers: (1) happy-path checkout — ADAPTED for the forthcoming ASYNC checkout contract (payment-plan.md S2, DRQ-047/DRQ-055): the POST is tolerant of `201` (today's synchronous monolith) or `202` (the future choreographed-saga payment service), and a BOUNDED-WAIT poll of GET /api/orders/{id} asserts the order strictly reaches the terminal `CONFIRMED` status — only the transport is relaxed, the terminal outcome and the stock-decrement side effect are unchanged and strict; (2) out-of-stock — left untouched/fully synchronous (inventory Reserve stays synchronous even after the payment extraction, so POST still returns `409` immediately); (3) payment-declined — ADAPTED the same way (DRQ-047/DRQ-055): POST tolerant of `402` (today's synchronous monolith — the whole checkout transaction is rolled back/compensated before the response, so there is no order to poll) or `202` (the saga — order persists PENDING, decline arrives later), then a BOUNDED-WAIT poll of GET /api/orders/{id} strictly asserting `PAYMENT_DECLINED` (saga path only) AND a BOUNDED-WAIT poll of GET /api/inventory/{sku} strictly asserting stock returns to net-zero (both paths) — the crux assertion (compensation via an in-line Release today, via the payment.declined choreography reaction later, DRQ-049) is never weakened; (4) the Review context contract (list, get-by-id, unauthenticated POST -> 401, authenticated POST -> 201, validation -> 400) — the first extraction's externally-observable surface — (5) the Notification context contract (DRQ-037): a checkout followed by a BOUNDED-WAIT poll of GET /api/notifications?customerId= so the identical assertion is correct whether the order-confirmation notification is written synchronously in-transaction (today's monolith, hits on the first attempt) or eventually via outbox -> Kafka -> consumer (the future async notification service, ch.17) — and (6) the Inventory Context Contract (inventory-plan.md S2, DRQ-046): the `/api/inventory` READ surface (list + get-by-sku + 404 for an unknown sku), asserted as a synchronous request/response (no bounded-wait — Reserve stays synchronous, DRQ-041) — distinct from, and NOT a duplicate of, the cross-seam inventory-mutation behavior already proven by Scenario 1 (stock decrements by ordered qty), Scenario 2 (out-of-stock -> 409, stock unchanged) and Scenario 3 (payment-declined -> stock rolled back, not left decremented), which remain the load-bearing inventory-equivalence checks the ch.19/ch.23 extractions must keep green across the seam — and (7) the Payment Context Contract (payment-plan.md S2b, DRQ-055), added after an S8 cutover run found it missing from S2's delivery: the `/api/payments` READ surface (list by orderId + get-by-id, PaymentDto-shaped), correlated with Scenario 1's confirmed order (reusing `happyPathOrderId`) so a CAPTURED payment row is guaranteed in both the synchronous-monolith and choreographed-saga states — plus the Notification Context Contract's checkout step (formerly 5a), which S8 also found still asserting the stale synchronous 201/CONFIRMED contract; it is now adapted to the same 201|202-tolerant, bounded-wait-to-CONFIRMED pattern as Scenario 1's 1b/1c before the downstream notification check runs; (8) Scenario 4 — Shipping-Failure (shipping-plan.md S2, ch.24, DRQ-059/060/062/065 — the H2/H3 crux): a checkout carrying the deterministic `SHIP-FAIL` sentinel in `shippingAddress` (DRQ-062, the shipping analogue of payment's `CARD-DECLINE`), then a BOUNDED-WAIT poll of GET /api/orders/{id} strictly asserting the terminal `SHIPPING_FAILED` status AND a BOUNDED-WAIT poll of GET /api/inventory/{sku} strictly asserting stock returns to net-zero — the orchestrated, coordinator-initiated, cross-context compensation (DRQ-060) this scenario exists to prove genuinely fires. Today's in-process monolith has no shipping-failure path at all, so this scenario is honestly gated PENDING at baseline (a `shippingSagaEnabled` collection variable, default `false`, plus a `setNextRequest` skip guard — NOT Postman's `disabled` flag, which newman's CLI runner does not honor) and is enabled for real at S8 cutover; and (9) the Shipping Context Contract (shipping-plan.md S2, DRQ-063): the `/api/shipments` READ surface (list by orderId + get-by-id + 404 on an unknown id, ShipmentDto-shaped: id/orderId/address/status/createdAt), correlated with Scenario 1's confirmed order — this folder asserts only the read contract, never a mode-specific status, so it is green both before and after the shipping cutover.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -193,6 +193,13 @@
                   "    // taken — attempt 0 already matched CONFIRMED. Against the future",
                   "    // choreographed saga (202 above) this gives payment.captured time to",
                   "    // be consumed and the order-saga reaction to confirm the order.",
+                  "    // shipping-plan S2/DRQ-065/H2: once shipping is cut over (ch.24) this",
+                  "    // same poll also has to ride out one MORE hop —",
+                  "    // order.placed -> payment.captured -> shipping saga -> shipment.dispatched",
+                  "    // -> CONFIRMED — so the budget was WIDENED here (20 x 750ms, was",
+                  "    // 10 x 500ms) to give that extra Kafka round-trip + saga-route time to",
+                  "    // land; the terminal assertion below is NOT relaxed — a too-short budget",
+                  "    // would go falsely RED post-cutover, not falsely green.",
                   "    pm.collectionVariables.set('checkoutConfirmPollAttempts', attempts + 1);",
                   "    postman.setNextRequest(pm.info.requestName);",
                   "    return;",
@@ -598,6 +605,255 @@
       ]
     },
     {
+      "name": "Scenario 4 — Shipping-Failure (orchestrated compensation, shipping-plan S2, DRQ-059/060/062/065 — H2/H3)",
+      "item": [
+        {
+          "name": "SF-gate. Shipping-failure scenario gate — PENDING at baseline until S8 cutover",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "description": "BASELINE/HONESTY GUARD (shipping-plan S2, HARD PART H2). Today's in-process monolith has NO shipping-failure path — OrderSagaListener#onPaymentCaptured always confirms + dispatches (ShippingService#dispatch never fails) — so this whole scenario cannot pass against it. Rather than relying on Postman's per-item `disabled: true` flag (VERIFIED by hand against newman 6.2.2: the CLI runner does NOT honor `disabled` — it still executes the item — so `disabled: true` alone would make this folder run-and-fail the baseline), this item is a cheap, harmless, always-true reachability check whose test script is the REAL gate: it inspects the `shippingSagaEnabled` collection variable (default `false`) and, when disabled, calls `postman.setNextRequest('4a. List reviews by sku -> 200, array')` to jump straight past SF-a..SF-d — so the actual SHIP-FAIL order placement and its SHIPPING_FAILED/net-zero assertions never execute at baseline (they cannot falsely pass OR falsely fail an unexercised path). Flip `shippingSagaEnabled` to `true` at S8 (shipping.mode=orchestrated, strangler.shipping.enabled=true) to enable this scenario for real.",
+            "url": {
+              "raw": "{{baseUrl}}/api/inventory",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "inventory"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// This assertion is real but deliberately unrelated to shipping-failure",
+                  "// semantics — it only proves the target is reachable, so this gate item",
+                  "// never itself constitutes a false pass/fail of the shipping-failure path.",
+                  "pm.test('Gate check: inventory read surface reachable', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "var sagaEnabled = (pm.collectionVariables.get('shippingSagaEnabled') || 'false') === 'true';",
+                  "pm.collectionVariables.set('shipFailStatusPollAttempts', 0);",
+                  "pm.collectionVariables.set('shipFailStockPollAttempts', 0);",
+                  "if (!sagaEnabled) {",
+                  "    console.log('Scenario 4 (Shipping-Failure) is PENDING at baseline (shippingSagaEnabled=false): ' +",
+                  "        'the in-process monolith has no SHIP-FAIL injection point to exercise (shipping-plan S2, H2). ' +",
+                  "        'Skipping SF-a..SF-d; enable at S8 cutover.');",
+                  "    postman.setNextRequest('4a. List reviews by sku -> 200, array');",
+                  "} else {",
+                  "    console.log('Scenario 4 (Shipping-Failure) ENABLED (shippingSagaEnabled=true) — running the SHIP-FAIL saga assertions.');",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "SF-a. Capture stock before the shipping-failure checkout",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/inventory/SKU-WIDGET-001",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "inventory", "SKU-WIDGET-001"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Stock lookup returns 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.collectionVariables.set('widgetStockBeforeShipFail', json.quantityOnHand);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "SF-b. Place order carrying the deterministic SHIP-FAIL sentinel -> 201|202 (DRQ-062)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "description": "SENTINEL CHOICE (DRQ-062, documented here per shipping-plan S2): the `SHIP-FAIL` marker goes in `shippingAddress`, NOT a sentinel sku. DRQ-059's saga sequence is enrich (fetch the order's address from the order read surface) -> dispatch shipment -> book carrier (the deterministic SHIP-FAIL throw point) -> emit; the address is the one field the saga already reads for enrichment, so an exact-match sentinel there is the most direct analogue to payment's exact-match `paymentMethod: \"CARD-DECLINE\"` (DRQ-048) — a sentinel sku would require the book-carrier step to additionally inspect order line items, which DRQ-059's sequence gives it no documented reason to do. `shippingAddress` is set to the exact value `SHIP-FAIL` (mirroring `CARD-DECLINE`'s exact-match convention). This request only runs when `shippingSagaEnabled=true` (post S8 cutover) — see SF-gate.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": 1,\n  \"items\": [ { \"sku\": \"SKU-WIDGET-001\", \"quantity\": 1 } ],\n  \"paymentMethod\": \"CARD-VISA\",\n  \"shippingAddress\": \"SHIP-FAIL\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/orders",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "orders"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Same transport tolerance as Scenario 1/3 (DRQ-047/DRQ-055) — only the",
+                  "// transport is relaxed here, never the terminal outcome asserted below",
+                  "// in SF-c/SF-d.",
+                  "var statusCode = pm.response.code;",
+                  "pm.test('Order creation is accepted — 201 (monolith, synchronous) or 202 (saga, DRQ-047)', function () {",
+                  "    pm.expect(statusCode).to.be.oneOf([201, 202]);",
+                  "});",
+                  "pm.test('Content-Type is application/json', function () {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.collectionVariables.set('shipFailOrderId', json.id);",
+                  "pm.collectionVariables.set('shipFailStatusPollAttempts', 0);",
+                  "pm.test('Order id is a number', function () {",
+                  "    pm.expect(json.id).to.be.a('number');",
+                  "});",
+                  "// Payment must succeed (CARD-VISA) for this order to reach the shipping",
+                  "// saga at all — the failure under test is injected at the BOOK-CARRIER",
+                  "// step (DRQ-062), after payment.captured and after the Shipment row is",
+                  "// persisted, not at payment. No assertion on order status at POST time:",
+                  "// whether it is PENDING/AWAITING_SHIPMENT is an intermediate detail",
+                  "// (DRQ-061) this suite does not pin — only the terminal state (SF-c)."
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "SF-c. Bounded-wait poll: order reaches SHIPPING_FAILED (orchestrated compensation, DRQ-059/061)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/orders/{{shipFailOrderId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "orders", "{{shipFailOrderId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Same DRQ-037 bounded-wait idiom as Scenario 1c/3c: only delay on a",
+                  "// RETRY, never on the first attempt.",
+                  "var attempts = Number(pm.collectionVariables.get('shipFailStatusPollAttempts') || 0);",
+                  "if (attempts > 0) {",
+                  "    var delayMs = Number(pm.collectionVariables.get('shipFailStatusPollDelayMs'));",
+                  "    var start = Date.now();",
+                  "    while (Date.now() - start < delayMs) { /* intentional bounded busy-wait */ }",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Order lookup returns 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "var maxAttempts = Number(pm.collectionVariables.get('shipFailStatusPollMaxAttempts'));",
+                  "var delayMs = Number(pm.collectionVariables.get('shipFailStatusPollDelayMs'));",
+                  "var attempts = Number(pm.collectionVariables.get('shipFailStatusPollAttempts') || 0);",
+                  "",
+                  "if (json.status !== 'SHIPPING_FAILED' && (attempts + 1) < maxAttempts) {",
+                  "    // Not terminal yet and the bounded-wait budget is not exhausted: retry",
+                  "    // while payment.captured -> shipping saga -> book-carrier SHIP-FAIL",
+                  "    // throw -> coordinator compensation -> shipment.failed -> the order",
+                  "    // reaction catch up (DRQ-059/060).",
+                  "    pm.collectionVariables.set('shipFailStatusPollAttempts', attempts + 1);",
+                  "    postman.setNextRequest(pm.info.requestName);",
+                  "    return;",
+                  "}",
+                  "",
+                  "// STRICT terminal assertion — never 'any 2xx', never relaxed to tolerate",
+                  "// CONFIRMED or a stuck PENDING/AWAITING_SHIPMENT. Goes RED here, not",
+                  "// hung, if the orchestrated compensation never fires or the saga never",
+                  "// aborts on the SHIP-FAIL injection (the H1/H3 failure mode this",
+                  "// scenario exists to catch).",
+                  "pm.test('Order reaches SHIPPING_FAILED within the bounded-wait budget (' + maxAttempts + ' x ' + delayMs + 'ms) — the orchestrated saga compensation (DRQ-059/060)', function () {",
+                  "    pm.expect(json.status, 'order ' + pm.collectionVariables.get('shipFailOrderId') + ' status after ' + (attempts + 1) + ' attempt(s)').to.eql('SHIPPING_FAILED');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "SF-d. Bounded-wait poll: inventory returns to net-zero after the shipping failure (DRQ-060)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/inventory/SKU-WIDGET-001",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "inventory", "SKU-WIDGET-001"]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var attempts = Number(pm.collectionVariables.get('shipFailStockPollAttempts') || 0);",
+                  "if (attempts > 0) {",
+                  "    var delayMs = Number(pm.collectionVariables.get('shipFailStockPollDelayMs'));",
+                  "    var start = Date.now();",
+                  "    while (Date.now() - start < delayMs) { /* intentional bounded busy-wait */ }",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Stock lookup returns 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "var before = Number(pm.collectionVariables.get('widgetStockBeforeShipFail'));",
+                  "var maxAttempts = Number(pm.collectionVariables.get('shipFailStockPollMaxAttempts'));",
+                  "var delayMs = Number(pm.collectionVariables.get('shipFailStockPollDelayMs'));",
+                  "var attempts = Number(pm.collectionVariables.get('shipFailStockPollAttempts') || 0);",
+                  "",
+                  "if (json.quantityOnHand !== before && (attempts + 1) < maxAttempts) {",
+                  "    // Not restored yet and the bounded-wait budget is not exhausted: retry",
+                  "    // while the coordinator-delegated compensating Release (order context",
+                  "    // -> RemoteInventoryClient, DRQ-060) catches up.",
+                  "    pm.collectionVariables.set('shipFailStockPollAttempts', attempts + 1);",
+                  "    postman.setNextRequest(pm.info.requestName);",
+                  "    return;",
+                  "}",
+                  "",
+                  "// STRICT net-zero assertion — never 'stock is lower than before' or any",
+                  "// other weakened form. Goes RED here, not hung, if stock stays",
+                  "// decremented after a shipping failure — the H3/biggest-risk failure",
+                  "// mode (a missed, mis-ordered, or non-idempotent cross-context Release).",
+                  "pm.test('Quantity on hand returns to net-zero after the shipping failure (' + maxAttempts + ' x ' + delayMs + 'ms budget) — restored by the orchestrated compensation (coordinator-decided, delegated to the order context, DRQ-059/060)', function () {",
+                  "    pm.expect(json.quantityOnHand, 'quantityOnHand after ' + (attempts + 1) + ' attempt(s)').to.eql(before);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "Review Context Contract",
       "item": [
         {
@@ -921,6 +1177,11 @@
                   "    // taken — attempt 0 already matched CONFIRMED. Against the future",
                   "    // choreographed saga (202 above) this gives payment.captured time to",
                   "    // be consumed and the order-saga reaction to confirm the order.",
+                  "    // shipping-plan S2: this is the SAME CONFIRMED bounded-wait idiom as",
+                  "    // Scenario 1's 1c, so its budget was widened in lock-step (20 x 750ms,",
+                  "    // was 10 x 500ms) to also tolerate the extra shipping-saga Kafka hop",
+                  "    // introduced by ch.24 — kept consistent so this folder does not become",
+                  "    // the one stale, too-short budget once Scenario 1's is widened.",
                   "    pm.collectionVariables.set('notificationConfirmPollAttempts', attempts + 1);",
                   "    postman.setNextRequest(pm.info.requestName);",
                   "    return;",
@@ -1281,6 +1542,142 @@
           ]
         }
       ]
+    },
+    {
+      "name": "Shipping Context Contract",
+      "item": [
+        {
+          "name": "8a. List shipments by orderId -> 200, array of ShipmentDto (shipping-plan S2, DRQ-063)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "description": "Correlates with Scenario 1's confirmed order (happyPathOrderId), the same pattern the Payment Context Contract folder uses: reuse an id the suite already placed rather than seeding a shipment of its own. By the time this folder runs, Scenario 1 has already bounded-wait-confirmed that order (1c), which (both today and after cutover) only happens once a shipment has been dispatched for it — in-process via ShippingService#dispatch against today's monolith, or via the orchestrated saga's dispatch-shipment step against the future cutover — so a DISPATCHED ShipmentDto for this order is guaranteed to exist here in BOTH states. This folder asserts only the read contract (shape + status code), never a mode-specific status value, so it stays green before AND after cutover.",
+            "url": {
+              "raw": "{{baseUrl}}/api/shipments?orderId={{happyPathOrderId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "shipments"],
+              "query": [ { "key": "orderId", "value": "{{happyPathOrderId}}" } ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('List shipments by orderId returns 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Content-Type is application/json', function () {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "});",
+                  "var expectedOrderId = Number(pm.collectionVariables.get('happyPathOrderId'));",
+                  "var json = pm.response.json();",
+                  "pm.test('Response is a non-empty array', function () {",
+                  "    pm.expect(json).to.be.an('array');",
+                  "    pm.expect(json.length).to.be.at.least(1);",
+                  "});",
+                  "pm.test('Each shipment has the documented ShipmentDto shape (id, orderId, address, status, createdAt)', function () {",
+                  "    json.forEach(function (s) {",
+                  "        pm.expect(s.id).to.be.a('number');",
+                  "        pm.expect(s.orderId).to.be.a('number');",
+                  "        pm.expect(s.address).to.be.a('string');",
+                  "        pm.expect(s.status).to.be.a('string');",
+                  "        pm.expect(s.createdAt).to.not.be.undefined;",
+                  "    });",
+                  "});",
+                  "var match = json.find(function (s) { return s.orderId === expectedOrderId; });",
+                  "pm.test('A shipment for the correlated Scenario-1 order is present', function () {",
+                  "    pm.expect(match, 'no shipment with orderId ' + expectedOrderId).to.not.be.undefined;",
+                  "});",
+                  "if (match) {",
+                  "    pm.test('Shipment is correlated to the Scenario-1 happy-path order', function () {",
+                  "        pm.expect(match.orderId).to.eql(expectedOrderId);",
+                  "    });",
+                  "    pm.collectionVariables.set('shippingContractShipmentId', match.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "8b. Get shipment by id -> 200, the ShipmentDto for that shipment (shipping-plan S2, DRQ-063)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/shipments/{{shippingContractShipmentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "shipments", "{{shippingContractShipmentId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Get shipment by id returns 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Content-Type is application/json', function () {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test('Shipment id matches the requested id', function () {",
+                  "    pm.expect(json.id).to.eql(Number(pm.collectionVariables.get('shippingContractShipmentId')));",
+                  "});",
+                  "pm.test('Shipment has the documented ShipmentDto shape (orderId, address, status, createdAt)', function () {",
+                  "    pm.expect(json.orderId).to.be.a('number');",
+                  "    pm.expect(json.address).to.be.a('string');",
+                  "    pm.expect(json.status).to.be.a('string');",
+                  "    pm.expect(json.createdAt).to.not.be.undefined;",
+                  "});",
+                  "pm.test('Shipment is correlated to the Scenario-1 happy-path order', function () {",
+                  "    pm.expect(json.orderId).to.eql(Number(pm.collectionVariables.get('happyPathOrderId')));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "8c. Get shipment by unknown id -> 404, NOT_FOUND",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/shipments/999999999",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "shipments", "999999999"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Unknown shipment id returns 404 Not Found', function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "pm.test('Content-Type is application/json', function () {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test('Documented error contract: error=NOT_FOUND', function () {",
+                  "    pm.expect(json.error).to.eql('NOT_FOUND');",
+                  "});",
+                  "pm.test('Error body carries a timestamp', function () {",
+                  "    pm.expect(json.timestamp).to.not.be.undefined;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
     }
   ],
   "variable": [
@@ -1292,8 +1689,8 @@
     { "key": "gizmoStockBeforeOverorder", "value": "", "type": "string" },
     { "key": "widgetStockBeforeDecline", "value": "", "type": "string" },
     { "key": "checkoutConfirmPollAttempts", "value": "0", "type": "string" },
-    { "key": "checkoutConfirmPollMaxAttempts", "value": "10", "type": "string" },
-    { "key": "checkoutConfirmPollDelayMs", "value": "500", "type": "string" },
+    { "key": "checkoutConfirmPollMaxAttempts", "value": "20", "type": "string" },
+    { "key": "checkoutConfirmPollDelayMs", "value": "750", "type": "string" },
     { "key": "declinePostStatus", "value": "", "type": "string" },
     { "key": "declineOrderId", "value": "", "type": "string" },
     { "key": "declineStatusPollAttempts", "value": "0", "type": "string" },
@@ -1308,8 +1705,18 @@
     { "key": "notificationPollMaxAttempts", "value": "10", "type": "string" },
     { "key": "notificationPollDelayMs", "value": "500", "type": "string" },
     { "key": "notificationConfirmPollAttempts", "value": "0", "type": "string" },
-    { "key": "notificationConfirmPollMaxAttempts", "value": "10", "type": "string" },
-    { "key": "notificationConfirmPollDelayMs", "value": "500", "type": "string" },
-    { "key": "paymentContractPaymentId", "value": "", "type": "string" }
+    { "key": "notificationConfirmPollMaxAttempts", "value": "20", "type": "string" },
+    { "key": "notificationConfirmPollDelayMs", "value": "750", "type": "string" },
+    { "key": "paymentContractPaymentId", "value": "", "type": "string" },
+    { "key": "shippingSagaEnabled", "value": "false", "type": "string" },
+    { "key": "widgetStockBeforeShipFail", "value": "", "type": "string" },
+    { "key": "shipFailOrderId", "value": "", "type": "string" },
+    { "key": "shipFailStatusPollAttempts", "value": "0", "type": "string" },
+    { "key": "shipFailStatusPollMaxAttempts", "value": "20", "type": "string" },
+    { "key": "shipFailStatusPollDelayMs", "value": "750", "type": "string" },
+    { "key": "shipFailStockPollAttempts", "value": "0", "type": "string" },
+    { "key": "shipFailStockPollMaxAttempts", "value": "20", "type": "string" },
+    { "key": "shipFailStockPollDelayMs", "value": "750", "type": "string" },
+    { "key": "shippingContractShipmentId", "value": "", "type": "string" }
   ]
 }

@@ -130,7 +130,7 @@ success it emits `shipment.dispatched` (→ order `CONFIRMED`), on abort/timeout
   cross-referenced to ch.25 (resilience) / ch.28 (contracts).
 
 ## What this extraction delivers (from build-plan §E row 5, §G, DRQ-032)
-1. A new **Quarkus shipping service** at **`examples/06-shipping-service`** (:8086) that **owns its
+1. A new **Quarkus shipping service** at **`examples/06-shipping-service`** (:8088) that **owns its
    own schema/database** (its own `shipment` table + Flyway), exposes the lifted REST
    **`/api/shipments`** read surface, and hosts the **Camel Saga EIP orchestrator**: it **consumes
    `payment.captured`** (SmallRye Reactive Messaging / Kafka), runs the saga route (enrich from the
@@ -147,7 +147,7 @@ success it emits `shipment.dispatched` (→ order `CONFIRMED`), on abort/timeout
    `SHIPPING_FAILED` **and** the compensating gRPC `Release` for every reserved sku — reusing the
    ch.23 machinery). New `OrderStatus.SHIPPING_FAILED` (+ `AWAITING_SHIPMENT`).
 3. The **Camel strangler proxy** gains `strangler.shipping.enabled` routing `/api/shipments` to the
-   new service (base-url :8086). **ACL honesty (DRQ-065, following the inventory/payment precedent):**
+   new service (base-url :8088). **ACL honesty (DRQ-065, following the inventory/payment precedent):**
    `ShipmentDto` is byte-for-byte portable (`id, orderId:Long, address, status, createdAt`), so the
    branch is a **transparent reverse proxy**, *no* `ShippingAclRoute` translator — building one would
    be the "speculative-infrastructure trap" the proxy's own javadoc already warns against. (If, at
@@ -390,7 +390,7 @@ status-guarded; with the flag off the full suite stays green (asserted in S6).
 - **(c) Creates/touches:** `tooling/newman/mea.postman_collection.json` (widen Scenario 1 bounded-wait
   budget; add "Scenario 4 — Shipping-Failure" + "Shipping Context Contract" folders after the Payment
   Context Contract folder; Scenario 2/3 untouched),
-  `tooling/newman/shipping-service.postman_environment.json` (forward-ref env on :8086).
+  `tooling/newman/shipping-service.postman_environment.json` (forward-ref env on :8088).
   **Collection versioned with the monolith (R8).** Reuse the existing `setNextRequest` self-rerun
   bounded-wait idiom (Scenario 1c/3c).
 - **(d) Skills/MCP:** Newman (reuse the bounded-wait pattern from Scenario 1c/3c / DRQ-037/055). Runs
@@ -432,7 +432,7 @@ status-guarded; with the flag off the full suite stays green (asserted in S6).
 - **(i) Checkpoint commit:** `feat(shipping): event contract — wire shipment.dispatched + add shipment.failed topic + JSON payloads (the orchestration vocabulary)`
 
 ## S4 — Shipping service: scaffold + Phase A read-surface lift (own schema)  *(PARALLEL lane N, after S1)*  **[Opus gate]**
-- **(b) Goal / DoD:** A new Quarkus module `examples/06-shipping-service` (:8086) that **owns its own
+- **(b) Goal / DoD:** A new Quarkus module `examples/06-shipping-service` (:8088) that **owns its own
   schema/database** (its own `shipment` table + Flyway). The monolith's Spring read surface is
   **lifted via Quarkiverse Spring-compat** (`quarkus-spring-web`/`-di`/`-data-jpa`):
   `ShippingController` → `/api/shipments` + `/api/shipments/{id}`,
@@ -443,7 +443,7 @@ status-guarded; with the flag off the full suite stays green (asserted in S6).
   compensation; and a `PENDING`/`FAILED` as the model requires). No saga/consumer/producer yet (S5).
   Owned store starts empty and is filled forward by the saga — **no CDC backfill** (contrast
   inventory/DRQ-040), documented as deliberate (shipments are created forward, not migrated).
-- **(c) Creates/touches:** `examples/06-shipping-service/**` (pom, `application.properties` on :8086
+- **(c) Creates/touches:** `examples/06-shipping-service/**` (pom, `application.properties` on :8088
   with its own datasource + Flyway, controller/service/entity/repo, tests), `src/main/docker/*`.
   Isolated subtree.
 - **(d) Skills/MCP:** **quarkus-agent** — `quarkus_skills` against the monolith dir to discover +
@@ -451,7 +451,7 @@ status-guarded; with the flag off the full suite stays green (asserted in S6).
   `quarkus_create`/`quarkus_start`/`quarkus_searchDocs`; **lgtm-quarkus**.
 - **(e) Deps / parallel:** scaffold after S1; **PARALLEL with S3**. Isolated dir.
 - **(f) Collision risk:** low — isolated under `examples/06-shipping-service/`.
-- **(g) Acceptance:** service boots on :8086 against its own DB; `/api/shipments` read contract matches
+- **(g) Acceptance:** service boots on :8088 against its own DB; `/api/shipments` read contract matches
   the monolith's `ShipmentDto` shape byte-for-byte; Spring-compat extensions present (Phase A);
   `Shipment` holds `orderId` as a value (no cross-context FK); unit tests green. **[Opus gate]:** Opus
   confirms it owns its schema (no reach into the shared monolith table), the read contract matches, and
@@ -539,7 +539,7 @@ status-guarded; with the flag off the full suite stays green (asserted in S6).
 
 ## S7 — Strangler proxy: shipping flag + /api/shipments route (transparent — ACL honesty)  *(SEQUENTIAL, after S3 + S5; may overlap S6)*
 - **(b) Goal / DoD:** Append to `StranglerProxyRoute` a `strangler.shipping.enabled` flag (default
-  **false** → monolith) + `strangler.shipping.base-url` (:8086), content-based routing on the **full
+  **false** → monolith) + `strangler.shipping.base-url` (:8088), content-based routing on the **full
   `/api/shipments`** path prefix (heeding the Review `/reviews`-prefix bug), reverse-proxied
   transparently (`bridgeEndpoint=true&throwExceptionOnFailure=false`), with a `TARGET_SHIPPING`
   property constant. **ACL honesty (DRQ-065):** `ShipmentDto` is byte-for-byte portable, so **no
