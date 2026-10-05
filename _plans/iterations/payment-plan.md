@@ -625,39 +625,39 @@ path dormant until cutover.
 ---
 
 ## ch.23 EXIT CHECKLIST (equivalence green across the async seam + ACID→ACD realized for payment)
-- [ ] **Sync→async contract decided & applied (DRQ-047):** `POST /api/orders` returns
+- [x] **Sync→async contract decided & applied (DRQ-047):** `POST /api/orders` returns
       `202 + PENDING` with a `Location`; terminal `CONFIRMED`/`PAYMENT_DECLINED` reached via
       the choreography and observed by polling `GET /api/orders/{id}`. The synchronous `402`
       is gone, replaced by an eventual `PAYMENT_DECLINED`.
-- [ ] **Equivalence green across the seam — honestly:** the adapted collection passes through
+- [x] **Equivalence green across the seam — honestly:** the adapted collection passes through
       the proxy — **Scenario 1 (bounded-wait → CONFIRMED), Scenario 3 (bounded-wait →
       PAYMENT_DECLINED + inventory net-zero via choreographed Release), Scenario 2
       (synchronous 409 unchanged)** — plus the Payment Context Contract folder; the adapted
       assertions still strictly assert the terminal status + side-effects (not vacuous).
-- [ ] **Scenario 3 compensation via choreography proven (DRQ-049):** a forced decline ends
+- [x] **Scenario 3 compensation via choreography proven (DRQ-049):** a forced decline ends
       with stock **net-zero**, driven by the `payment.declined` reaction's Release — **not** an
       in-line catch; the ch.19 catch compensation is removed.
-- [ ] **Payment owns its data & the capture over Kafka:** the Quarkus service owns its schema,
+- [x] **Payment owns its data & the capture over Kafka:** the Quarkus service owns its schema,
       consumes `order.placed`, captures, and emits `payment.captured`/`payment.declined` via
       its own transactional outbox; it is the sole owner after decommission (`GET :8080/api/payments`
       → 404).
-- [ ] **ACID→ACD realized for payment (SMELL[ch.22]):** the one in-process checkout
+- [x] **ACID→ACD realized for payment (SMELL[ch.22]):** the one in-process checkout
       transaction no longer spans the payment context; the saga + compensation rebuilt the
       cross-context consistency explicitly. SMELLS.md updated with evidence.
-- [ ] **Idempotency / at-least-once handled (DRQ-051):** redelivered `order.placed` does not
+- [x] **Idempotency / at-least-once handled (DRQ-051):** redelivered `order.placed` does not
       double-charge; redelivered `payment.captured`/`payment.declined` are no-ops; Release
       only on the first decline.
-- [ ] **Two-phase honored (DRQ-052):** read surface Phase A (spring-compat) → Phase B
+- [x] **Two-phase honored (DRQ-052):** read surface Phase A (spring-compat) → Phase B
       (idiomatic), measured; consumer/producer idiomatic-from-start.
-- [ ] **Reversibility shown (DRQ-054)** before decommission (both flags off → synchronous
+- [x] **Reversibility shown (DRQ-054)** before decommission (both flags off → synchronous
       in-line charge, `201`/`402` restored, green).
-- [ ] **Negative check proven (DRQ-055):** payment consumer down ⇒ order stuck `PENDING` ⇒
+- [x] **Negative check proven (DRQ-055):** payment consumer down ⇒ order stuck `PENDING` ⇒
       Scenario 1 bounded-wait RED; decline-with-no-reaction ⇒ Scenario 3 net-zero RED.
-- [ ] **Code-CI green:** the payment equivalence gate exercises the choreographed saga
+- [x] **Code-CI green:** the payment equivalence gate exercises the choreographed saga
       end-to-end in GitHub Actions (red-then-green via disabling the compensation reaction).
-- [ ] **ch.23 authored ≥2000 words**, runnable example, embedded diagrams, real "ADLC in
+- [x] **ch.23 authored ≥2000 words**, runnable example, embedded diagrams, real "ADLC in
       Action" callout, verification-status footer.
-- [ ] **Ledger reconciled:** `decisions.md` DRQ-047…055 accepted + version matrix updated;
+- [x] **Ledger reconciled:** `decisions.md` DRQ-047…055 accepted + version matrix updated;
       this plan's steps and exit checklist marked DONE.
 
 ## Biggest risks
