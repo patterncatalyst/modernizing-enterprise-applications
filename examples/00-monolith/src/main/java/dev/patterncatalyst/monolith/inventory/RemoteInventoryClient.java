@@ -20,9 +20,12 @@ import org.springframework.stereotype.Component;
 
 /**
  * r05/ch.19 S7 (DRQ-039/DRQ-041/DRQ-042) -- the monolith's gRPC CLIENT
- * decorating collaborator for the order-&gt;inventory checkout seam, gated
- * behind {@code inventory.mode=remote} ({@link
- * dev.patterncatalyst.monolith.order.OrderService#placeOrder}).
+ * decorating collaborator for the order-&gt;inventory checkout seam. As of
+ * r05/ch.19 S11 (DECOMMISSION), this is the ONLY path {@link
+ * dev.patterncatalyst.monolith.order.OrderService#placeOrder} uses to
+ * reserve/release/read stock -- the {@code inventory.mode=local|remote}
+ * reversibility flag introduced for the cutover has been removed along with
+ * the monolith's local in-JVM inventory module (SMELL #5, now CURED).
  *
  * <p>This is the client side of the ACL (curing SMELL #5 at the source):
  * every method here translates the gRPC wire vocabulary
@@ -128,11 +131,11 @@ public class RemoteInventoryClient {
 
     /**
      * r05/ch.19 S8 (DRQ-043): full read of one sku's current stock record,
-     * used by {@code OrderService#placeOrder} (in {@code
-     * inventory.mode=remote}) to populate {@code OrderItem}'s denormalized
-     * snapshot (sku/name/unit-price-at-order-time) from the extracted
-     * inventory service's OWN data, instead of reaching into this
-     * monolith's local {@code inventory_items} table -- the same {@code
+     * used by {@code OrderService#placeOrder} to populate {@code OrderItem}'s
+     * denormalized snapshot (sku/name/unit-price-at-order-time) from the
+     * extracted inventory service's OWN data -- this monolith no longer has
+     * a local {@code inventory_items} table reader at all (SMELL #5, CURED,
+     * S11 decommission) -- the same {@code
      * GetStock} RPC the ch.16 {@code InventoryAclRoute} content enricher
      * uses on the read side (S9).
      */

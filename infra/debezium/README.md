@@ -1,10 +1,24 @@
 # Debezium CDC — Kafka Connect + Postgres connector
 
-r05/ch.19 step S3 (`_plans/iterations/inventory-plan.md`), DRQ-040. This is
-the CDC infrastructure the inventory extraction (ch.19) uses to
+> **RETIRED post-cutover (r05/ch.19 step S11, `_plans/iterations/inventory-plan.md`).**
+> This connector was deliberately **transition-only**. Once the monolith's
+> inventory write/reserve path was decommissioned (S11 — `RemoteInventoryClient`'s
+> gRPC `Reserve`/`Release` against `examples/04-inventory-service`'s OWN
+> database is the only writer left; the monolith no longer touches
+> `inventory_items` at all), the connector had nothing left to replicate.
+> `scripts/retire-debezium.sh` deletes `mea-inventory-connector` and drops
+> its replication slot (`mea_inventory_slot`) and publication
+> (`mea_inventory_publication`) so WAL isn't retained indefinitely on
+> `mea-postgres` — see "Retiring the connector" below. The rest of this
+> document is kept as the historical record of what the connector did
+> during the transition window (S3–S10) and remains accurate for anyone
+> re-registering it (e.g. to replay the teaching demo from a fresh stack).
+
+r05/ch.19 step S3 (`_plans/iterations/inventory-plan.md`), DRQ-040. This was
+the CDC infrastructure the inventory extraction (ch.19) used to
 initial-snapshot backfill, and then keep current, the new inventory
 service's owned database from the monolith's `public.inventory_items` table
-during the transition window.
+during the transition window (S3 through S10's cutover).
 
 **Tool decision (DRQ-040):** a standalone **Debezium Postgres connector
 running on Kafka Connect** — not Debezium Embedded. A visible, inspectable
@@ -102,6 +116,43 @@ object to `/connectors/mea-inventory-connector/config` — Kafka Connect's
 `PUT .../config` endpoint creates the connector if it doesn't exist yet, or
 updates it in place otherwise, so re-running is always safe.
 
+## Retiring the connector (post-cutover, r05/ch.19 S11)
+
+```bash
+scripts/retire-debezium.sh            # idempotent: delete connector, drop slot + publication
+scripts/retire-debezium.sh --status   # report connector/slot/publication state, no changes
+```
+
+`scripts/retire-debezium.sh`:
+
+1. `DELETE /connectors/mea-inventory-connector` against Kafka Connect
+   (`:8086`). A `404` (already deleted) is treated as success — the script
+   is idempotent.
+2. Drops the replication slot `mea_inventory_slot` via
+   `pg_drop_replication_slot(...)` against `mea-postgres`, guarded by an
+   existence check (`pg_replication_slots`) so a re-run is a no-op.
+3. Drops the publication `mea_inventory_publication` via
+   `DROP PUBLICATION IF EXISTS`.
+
+This does **not** touch the podman stack itself (`mea-postgres`,
+`mea-connect`, `mea-kafka` all keep running) and does **not** revert
+`wal_level=logical` on `mea-postgres` (harmless to leave set — see "Postgres:
+logical replication" above; it only affects what's recorded in the WAL, not
+SQL semantics, and other future connectors could reuse it).
+
+**The inventory service's own CDC consumer becomes idle, not broken.**
+`examples/04-inventory-service` historically consumed `mea.public.inventory_items`
+during the S3–S10 transition window to seed/keep its owned database current
+while the monolith was still the writer of record. Post-S11, the monolith
+never writes `inventory_items` again, so that topic receives no new events
+and the consumer (if still wired up) simply has nothing to consume — it is
+not a correctness problem (the inventory service is now the sole writer of
+its own data via gRPC `Reserve`/`Release`, not a CDC reader of someone
+else's writes). Removing that now-idle consumer code from
+`examples/04-inventory-service` is a cleanup, not a correctness fix, and is
+explicitly **out of scope for S11** (scope discipline — a separate, later
+step if ever done).
+
 ## Verifying CDC end-to-end
 
 ```bash
@@ -132,8 +183,10 @@ dropped, WAL will grow unbounded.
 - **`podman compose down -v`** (wipes `postgres-data`): removes the slot
   along with all Postgres state. Do not run this against a shared/working
   stack — see the standing "no destructive `down -v`" constraint for this task.
-- At decommission (ch.19 S11), drop the slot/publication once the inventory
-  service is the sole writer and CDC is no longer needed for backfill.
+- **At decommission (ch.19 S11): DONE.** `scripts/retire-debezium.sh`
+  deletes the connector and drops the slot/publication now that the
+  inventory service is the sole writer and CDC is no longer needed for
+  backfill — see "Retiring the connector" above.
 
 ## Known trade-off vs ch.17's polling outbox (DRQ-034)
 

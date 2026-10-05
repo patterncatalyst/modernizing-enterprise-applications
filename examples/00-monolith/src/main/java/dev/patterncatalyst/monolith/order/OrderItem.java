@@ -19,10 +19,10 @@ import jakarta.persistence.Table;
  * fields the order context needs to render a line item — {@link #sku} (a
  * plain string, a SOFT reference only — no DB-level FK, no JPA association),
  * {@link #productName}, and {@link #unitPriceCents} — captured once, at
- * checkout time, by {@code OrderService#placeOrder} (from the local {@code
- * InventoryItem} in {@code inventory.mode=local}, or from the remote
- * inventory service's gRPC {@code GetStock} reply in {@code
- * inventory.mode=remote}). Because the snapshot is captured at order time,
+ * checkout time, by {@code OrderService#placeOrder} from the extracted
+ * inventory service's gRPC {@code GetStock} reply (r05/ch.19 S11: this is
+ * now the ONLY source — the monolith's own local inventory entity/table is
+ * decommissioned; see SMELLS.md #5). Because the snapshot is captured at order time,
  * later price/name changes in inventory never retroactively alter a
  * historical order's line items — which is also the correct read-model
  * behavior, not just a decomposition side effect. {@code common.OrderDto}

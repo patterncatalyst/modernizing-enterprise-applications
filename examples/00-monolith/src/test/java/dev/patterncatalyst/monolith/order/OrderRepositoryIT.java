@@ -3,7 +3,6 @@ package dev.patterncatalyst.monolith.order;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.patterncatalyst.monolith.common.Customer;
-import dev.patterncatalyst.monolith.inventory.InventoryItem;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
@@ -26,8 +25,15 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  * and (2) {@code Order}'s {@code cascade = ALL} on {@code items} really
  * persists {@code OrderItem} rows transitively, not just in memory.
  *
- * <p>Owns its own Testcontainers Postgres instance (see the note on
- * {@code InventoryRepositoryIT} for why it isn't shared via a base class).
+ * <p>r05/ch.19 S11 (DECOMMISSION): the monolith no longer has a JPA entity
+ * for {@code inventory_items} at all (SMELL #5, CURED — see SMELLS.md), so
+ * the second test below builds its {@code OrderItem} snapshot from plain
+ * literal values matching {@code V2__seed_data.sql}'s seeded
+ * {@code SKU-GADGET-002} row, instead of an {@code entityManager.find}
+ * lookup against a now-deleted entity class.
+ *
+ * <p>Owns its own Testcontainers Postgres instance (its own
+ * {@code @Container} below, not shared via a base class).
  */
 @Testcontainers
 @DataJpaTest
@@ -68,18 +74,27 @@ class OrderRepositoryIT {
     @Test
     void save_newOrderWithItems_cascadesOrderItemsOnFlushAndReload() {
         Customer customer = entityManager.find(Customer.class, 2L); // Grace Hopper
-        InventoryItem gadget = entityManager.find(InventoryItem.class, 2L); // SKU-GADGET-002
+
+        // r05/ch.19 S11: these literals mirror V2__seed_data.sql's seeded
+        // SKU-GADGET-002 row -- the monolith no longer has an InventoryItem
+        // JPA entity to look this up through (SMELL #5, CURED). In the real
+        // (non-test) flow, OrderService#placeOrder captures this same
+        // snapshot from the extracted inventory service's gRPC GetStock
+        // reply, not a local entity lookup.
+        String gadgetSku = "SKU-GADGET-002";
+        String gadgetName = "Deluxe Gadget";
+        long gadgetPriceCents = 4999L;
 
         Order order = new Order(customer, "99 Test Street");
-        order.addItem(new OrderItem(gadget.getSku(), gadget.getName(), 2, gadget.getPriceCents()));
+        order.addItem(new OrderItem(gadgetSku, gadgetName, 2, gadgetPriceCents));
 
         Order saved = orderRepository.saveAndFlush(order);
         entityManager.clear(); // force a real reload, proving the OrderItem rows were persisted
 
         Order reloaded = orderRepository.findById(saved.getId()).orElseThrow();
         assertThat(reloaded.getItems()).hasSize(1);
-        assertThat(reloaded.getItems().get(0).getSku()).isEqualTo("SKU-GADGET-002");
-        assertThat(reloaded.getItems().get(0).getProductName()).isEqualTo(gadget.getName());
-        assertThat(reloaded.getTotalCents()).isEqualTo(gadget.getPriceCents() * 2);
+        assertThat(reloaded.getItems().get(0).getSku()).isEqualTo(gadgetSku);
+        assertThat(reloaded.getItems().get(0).getProductName()).isEqualTo(gadgetName);
+        assertThat(reloaded.getTotalCents()).isEqualTo(gadgetPriceCents * 2);
     }
 }
