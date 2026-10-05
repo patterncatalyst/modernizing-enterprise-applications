@@ -41,7 +41,7 @@ to express "these rows are related" in 2019, or whether it is one of this
 book's five remaining deliberate smells rather than a real invariant. Schema
 is implementation residue. It encodes decisions, but it doesn't encode the
 decisions' reasons, and reasons are exactly what you need to tell a
-load-bearing boundary from an accidental one.
+critical boundary from an accidental one.
 
 Event storming, a facilitation technique introduced by Alberto Brandolini,
 inverts the question. Instead of "what tables exist and how are they joined,"
@@ -155,12 +155,12 @@ A session runs at three altitudes, and conflating them is the most common way
 a storm produces a useless wall. **Big-picture** storming surveys an entire
 business — weeks of activity across every process a company runs — to find
 candidate bounded contexts and spot where two groups use the same word to
-mean different things; it stays at the orange-only, no-detail level on
-purpose, because its job is breadth, not depth. **Process-level** storming
+mean different things; it stays at the orange-only, no-detail level
+because its job is breadth, not depth. **Process-level** storming
 picks one process — checkout, in this chapter — and works it end to end with
 the full grammar: events, commands, actors, policies, external systems, read
-models. This is the altitude that produces a decomposition backlog, and it is
-the altitude the rest of this chapter runs at. **Design-level** storming goes
+models. This is the altitude that produces a decomposition backlog, and
+process-level storming is this chapter's focus. **Design-level** storming goes
 one layer deeper still, inside a single aggregate, to work out the exact
 commands, validation rules, and events needed to implement it — this is where
 a storm hands off directly to the tactical DDD vocabulary Chapter 11 already
@@ -183,7 +183,7 @@ constant:
 public static final String ORDER_PLACED = "order.placed";
 ```
 
-That line is worth pausing on, because it is the clearest evidence in this
+That line is the clearest evidence in this
 codebase that the event-storming questions this chapter is asking were
 already being asked by whoever wrote `Topics.java`, well before this chapter
 existed — the javadoc on that class says so directly: the names are reserved
@@ -193,7 +193,7 @@ yet. An event-storming wall and a reserved-topic-names file are the same
 artifact at two different levels of formality.
 
 The next policy on the wall is *whenever OrderPlaced, then reserve stock* —
-and here the storm earns its keep by catching something a straight code read
+and here storming proves its value by catching something a straight code read
 can miss. In `placeOrder`, the inventory check-and-reserve loop runs *before*
 the order is even persisted:
 
@@ -243,7 +243,7 @@ On the wall, **PaymentCaptured** and **PaymentDeclined** are two separate
 orange stickies coming off one blue command, and the question the facilitator
 asks at exactly this point — "when payment is declined, what undoes the
 stock reservation?" — is the question this monolith currently answers with
-"nothing has to; Postgres's rollback does it for free." That answer is
+"nothing has to; Postgres's rollback does it by default." That answer is
 Smell 3 stated out loud, by the wall itself, before Chapter 22 ever names ACID
 versus ACD. A storm doesn't just find seams; it finds the exact question
 whose current answer — "the database handles it" — stops being true the
@@ -257,7 +257,7 @@ flags the call as synchronous and in-transaction — producing
 (`SHIPMENT_DISPATCHED = "shipment.dispatched"`). The final policy, *whenever
 ShipmentDispatched, then notify customer*, is where this chapter's wall
 converges exactly with Chapter 9's fourth smell. `NotificationService`'s own
-javadoc states the cost plainly: a confirmation send happening synchronously,
+javadoc states the cost: a confirmation send happening synchronously,
 inside checkout's own transaction, means checkout latency is coupled to
 however long "sending" takes, and a thrown exception there rolls the entire
 order back over a concern the customer's confirmed order doesn't actually

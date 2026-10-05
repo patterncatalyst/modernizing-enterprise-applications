@@ -10,7 +10,7 @@ the decision log, the build plan, the reconciliation record. This chapter
 asks the question that every entry in that ledger ultimately has to answer:
 why are you doing any of this at all? Before this book builds a single line
 of the reference monolith, before it names a strategy or chooses an
-extraction order, it owes you an argument, stated plainly enough to survive
+extraction order, it owes you an argument, clear enough to survive
 contact with a budget meeting: modernization is worth doing when it solves a
 problem you can name and measure, and it should be executed as a disciplined
 engineering activity with a safety net, not as a leap of faith toward a
@@ -82,7 +82,7 @@ changing the *boundaries* in the system: where one deployable ends and
 another begins, where one team's change can ship without another team's
 sign-off, where one schema ends and another team owns its own. That is what
 this book means by modernization, and it is why Part 3 builds a monolith
-with those exact boundary problems planted on purpose rather than a
+with those exact boundary problems built in, rather than a
 monolith that merely runs on an old version of Java.
 
 Kleppmann names the property underneath all four of these symptoms directly
@@ -188,11 +188,11 @@ naming them rather than treating "modernize" as an unconditional good:
 
 None of these cases describes this book's own reference monolith, and that
 is a deliberate choice, not an accident: its six bounded contexts are
-genuinely distinct domains (orders are not reviews), the organization behind
+distinct domains (orders are not reviews), the organization behind
 it is assumed to already run CI and automated tests, and every extraction
 in this book is tied to a named engineering problem in the deliberate-smells
 catalogue of Chapter 9. But stating the counter-case here, before a single
-service is extracted, is what keeps the rest of this book's enthusiasm for
+service is extracted, is what keeps this book's enthusiasm for
 the strangler pattern from reading as uncritical. A reader whose own system
 fails more of the tests above than it passes should walk away from this
 book having learned when *not* to apply it — which Chapter 4 turns into an
@@ -237,7 +237,7 @@ The strangler fig pattern, which Chapter 14 introduces in full, is the
 engineering answer to exactly this failure mode, and its value is almost
 entirely in what it refuses to do. It refuses to require a complete
 rewrite before anything ships: the first extraction in this book, the
-review service in Chapter 15, is a genuinely small slice of the system, and
+review service in Chapter 15, is a small slice of the system, and
 it is in production, behind a flag, before any other context has been
 touched. It refuses to require the team to fully understand the legacy
 system's behavior in advance: each extraction captures the *actual*
@@ -327,7 +327,7 @@ clean boundary nobody has time to build.
 
 This book does not ask you to take that claim in the abstract either — it
 is the entire premise of Part 3. The reference monolith built in Chapter 8
-has five smells planted on purpose and catalogued by name in Chapter 9: a
+has five smells, each named and catalogued in Chapter 9: a
 shared schema with cross-context foreign keys and joins that make inventory
 and order data inseparable at the database level; a god `OrderService` that
 reaches directly into payment, shipping, and inventory rather than calling
@@ -381,7 +381,7 @@ Modernize and Extend, and Rip and Rewrite menu this book's own monolith is
 run through, the strategic-value-versus-change-frequency framing that turns
 "should we modernize this" into a defensible, measured answer rather than a
 guess, and the specific strategy — a strangler-fig migration executed
-within the Modernize and Extend family — that the rest of this book commits
+within the Modernize and Extend family — that every later chapter commits
 to and builds. From there,
 Part 3 puts the argument this chapter made into running code: Chapter 8
 builds the monolith, Chapter 9 catalogues its five remaining deliberate

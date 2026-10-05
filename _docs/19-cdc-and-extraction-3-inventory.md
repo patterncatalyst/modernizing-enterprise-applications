@@ -17,7 +17,7 @@ call guarded by a pessimistic lock into a request-response call across a real
 network boundary, against a database checkout's own transaction no longer
 controls, while keeping every one of this project's equivalence-gate scenarios
 green — including the one, payment-declined, that depends on a write being
-undone. Everything described below is real, running code already committed in
+undone. Everything described below is running code already committed in
 this repository: `examples/04-inventory-service/` (the extracted Quarkus
 service, its gRPC server, its CDC consumer, and its `MIGRATION.md`'s measured
 record), `examples/00-monolith/` (`RemoteInventoryClient`, `OrderService`'s
@@ -86,7 +86,7 @@ That divergence is not an accident of two teams picking different words for
 the same thing — it is the chapter's anti-corruption layer made structural.
 A translator that happens to map identical field names to each other proves
 nothing about whether a real translation step exists; a translator that has
-to rename every field earns its keep, and both sides of this seam — the
+to rename every field is doing real translation work, and both sides of this seam — the
 monolith's `RemoteInventoryClient` on the call side, `InventoryGrpcServiceImpl`
 on the serve side — are exactly that translator, with the generated proto
 types never crossing past either class's boundary. This is also the chapter
@@ -133,11 +133,11 @@ public record ReserveResult(boolean ok, int onHandQty) {}
 `RemoteInventoryClient` also carries an explicit per-call deadline
 (`inventory.grpc.timeout-ms`, default 5000ms). If the inventory service is
 slow or unreachable, the blocking stub throws an unchecked
-`StatusRuntimeException`, and that exception is deliberately left
+`StatusRuntimeException`, and that exception is left
 *uncaught* by `reserve` — it is not a logical "insufficient stock" outcome, so
 it must never be mapped to `InsufficientStockException`'s `409`. Spring's
-default handling turns the unmapped exception into a `500`, which is the
-honest answer: checkout fails cleanly rather than silently confirming an
+default handling turns the unmapped exception into a `500`, the correct
+outcome: checkout fails cleanly rather than silently confirming an
 order whose reservation status nobody actually knows.
 
 ## Transaction log tailing: Debezium reads the write-ahead log
@@ -241,7 +241,7 @@ delivery.
 ```
 
 This is also where the deferred decision Chapter 17 named actually gets
-spent. Chapter 17 deliberately reached for a polling relay, not CDC, for
+spent. Chapter 17 reached for a polling relay, not CDC, for
 notification's outbox — the right default, because notification's latency
 tolerance doesn't demand sub-second delivery and a two-line `@Scheduled`
 method carries none of a replication slot's operational weight — and it
@@ -251,7 +251,7 @@ product page and every checkout attempt across the system, so a multi-second
 lag between a reservation committing and that fact becoming visible
 downstream is a far more direct cost than a slightly delayed confirmation
 email. This chapter is where that cost finally justifies the connector, the
-replication slot, and the Kafka Connect process Chapter 17 deliberately
+replication slot, and the Kafka Connect process Chapter 17
 avoided paying for one extraction early. Chapter 20 later generalizes this
 same outbox-vs-CDC tradeoff beyond this one pair of extractions; it is a
 later reference point, not the origin of the deferral.
@@ -271,7 +271,7 @@ deletes it and drops its replication slot and publication — an un-drained
 slot would otherwise retain WAL on the monolith's Postgres indefinitely, a
 disk-fill risk with no offsetting benefit once CDC's job is done.
 
-That retirement creates an honest problem a CDC-only story would paper over: a
+That retirement creates a problem a CDC-only story would paper over: a
 fresh environment — a clean CI run, a new developer's first `podman compose up`
 — has no upstream writer left whose log a connector could tail, so without
 something else, `inventory.inventory_items` would boot empty. The fix is a
@@ -329,7 +329,7 @@ public class InventoryRepository implements PanacheRepository<InventoryItem> {
 }
 ```
 
-`MIGRATION.md`'s measured before/after tells the same honest, non-triumphalist
+`MIGRATION.md`'s measured before/after tells the same non-triumphalist
 story review-service's and notification-service's own measurements told:
 
 | Build | Startup time | RSS | Installed features |
@@ -375,7 +375,7 @@ it does *not* yet guard against: unlike `Reserve`'s conditional predicate,
 `Release` carries no idempotency key, so a retried call whose effect already
 landed server-side (the same at-least-once hazard the CDC consumer's upsert
 guards against) would over-restore stock. That gap is documented, not
-silently built around — an honest limitation deliberately deferred to Chapter
+silently built around — a limitation deferred to Chapter
 23's full saga, not speculative compensation infrastructure this extraction
 does not need yet.
 
@@ -384,13 +384,13 @@ does not need yet.
 Smell 3, named back in Chapter 9 and the subject of Chapter 22's own
 treatment, is the monolith's single in-process ACID transaction spanning
 order, inventory, payment, and shipping. One concrete, valuable property fell
-out of that design for free: when `PaymentService#charge` threw a declined
+out of that design automatically: when `PaymentService#charge` threw a declined
 exception, Postgres rolled back *everything* in that transaction, including
 the inventory decrement that had already executed a few lines earlier. No
 application code anywhere had to be written to make that happen. It was a
 side effect of one database's write-ahead log, not a designed guarantee.
 
-{% include excalidraw.html file="inventory-reserve-compensation-sequence" alt="Two stacked sequence diagrams: the old flow where a single in-process ACID transaction rolls back a payment decline's inventory decrement automatically and for free; the new flow where Reserve commits in the inventory service's own database outside the monolith's transaction, so a payment decline must trigger an explicit compensating Release instead." caption="Figure 19.2 — Reserve/Release: the cross-seam saga-lite that replaces the in-process free rollback a shared transaction used to provide" %}
+{% include excalidraw.html file="inventory-reserve-compensation-sequence" alt="Two stacked sequence diagrams: the old flow where a single in-process ACID transaction rolls back a payment decline's inventory decrement automatically; the new flow where Reserve commits in the inventory service's own database outside the monolith's transaction, so a payment decline must trigger an explicit compensating Release instead." caption="Figure 19.2 — Reserve/Release: the cross-seam saga-lite that replaces the in-process free rollback a shared transaction used to provide" %}
 
 The instant inventory's decrement commits in its own database, over its own
 gRPC call, that free rollback is structurally gone — there is no longer one
@@ -478,7 +478,7 @@ projected sku/quantity/unit-price from these same fields before the cut, so
 `GET /api/orders/{id}` is byte-for-byte unchanged; the equivalence suite's
 order-read assertions prove it rather than merely assert it should be true.
 
-## Cutover: two flags, a hard negative check, and an honest finding
+## Cutover: two flags, a hard negative check, and a documented finding
 
 Inventory's reversibility story uses the same two-flag shape every prior
 extraction used — a monolith-side flag (`inventory.mode=local|remote`) for
@@ -487,7 +487,7 @@ read path — flipped together at cutover. `CUTOVER.md`'s recorded timeline is
 the strongest evidence yet produced in this book for two separate claims.
 
 The first is the negative check Chapter 17 introduced and this chapter had to
-extend to a genuinely cross-database seam: with both flags in the cutover
+extend to a cross-database seam: with both flags in the cutover
 state, the inventory service's process was killed outright.
 
 ```
@@ -519,7 +519,7 @@ The second claim is harder-won, and this project chose to publish it rather
 than quietly avoid it. Between cutover (S10) and the eventual decommission of
 the monolith's local inventory module (S11), an operator could, in principle,
 flip only the proxy's read-side flag and leave the monolith's write-side flag
-at its own bare default (`local`). That combination was run, deliberately, as
+at its own bare default (`local`). That combination was run as
 a documented finding rather than a defect:
 
 ```
@@ -542,7 +542,7 @@ read folder, which was written with a bounded-wait precisely for this reason,
 not on a checkout scenario's immediate read-after-write. No code was changed
 to paper over the finding: the Newman collection stayed unedited, and the
 monolith's `inventory.mode` default stayed `local`, because resolving it
-honestly is S11's job, not S10's. The resolution is unglamorous and correct —
+is S11's job, not S10's. The resolution is unglamorous and correct —
 decommission the monolith's local inventory write path entirely, so
 `inventory.mode=remote` becomes the only path that exists, closing the
 CDC-replica/shared-table hybrid state by removing one of its two writers.
@@ -571,11 +571,11 @@ strangler proxy up, the job runs the Smoke, Scenario 1, Scenario 2, Scenario
 through the proxy, failing the build on any non-zero `newman` exit code.
 Before that job was trusted, it was proven red-then-green the same
 disciplined way every negative check in this book has been: the compensating
-`Release` call was deliberately disabled, which left stock decremented after a
+`Release` call was disabled, which left stock decremented after a
 forced decline and turned Scenario 3's "3c" assertion red in CI exactly as
 expected; then the call was restored and the suite went green again. A CI job
 that only ever reports green is not proof of anything; a CI job caught
-genuinely failing on a deliberate break, then passing once the break is
+failing on a deliberate break, then passing once the break is
 reverted, is.
 
 > **ADLC in Action** — This extraction ran the identical Frame → Map → Plan →
@@ -595,8 +595,8 @@ reverted, is.
 > monolith's compensating client under quarkus-agent and lgtm-quarkus
 > tooling, following the `migrate-spring-to-quarkus` process for the lifted
 > read surface. Verify is this chapter's negative check and its hybrid-state
-> finding, both run for real and both reported honestly, including the one
-> that didn't go the way the plan first assumed. Operate is the two-flag
+> finding, both run against the real services and both included in the
+> record, including the one that didn't go the way the plan first assumed. Operate is the two-flag
 > cutover `CUTOVER.md` records end to end. Reconcile is `SMELLS.md` marking
 > Smell 5 — and the foreign-key portion of Smell 1 — cured, with the
 > replication-slot teardown as the closing housekeeping step.
@@ -606,8 +606,8 @@ reverted, is.
 - A **synchronous collaborator that mutates** cannot be extracted the way a
   read-only leaf or an asynchronous consumer can — the call has to cross the
   network before the caller can proceed, and the database that used to
-  guarantee atomicity for free no longer spans both sides of the write.
-- A **proto with a deliberately distinct wire vocabulary** is a stronger
+  guarantee atomicity automatically no longer spans both sides of the write.
+- A **proto with a distinct wire vocabulary** is a stronger
   anti-corruption layer than one whose field names happen to already agree —
   `stock_keeping_unit`/`on_hand_qty` versus `sku`/`quantityOnHand` forces a
   real translation step to exist on both sides of the seam, curing the
@@ -640,7 +640,7 @@ idempotency key, no saga ledger — and builds it out fully. Chapter 23's
 choreographed saga for Payment coordinates multiple events across multiple
 services with the opposite control style from what you just read here;
 Chapter 24 does the same for Shipping through an explicit orchestrator. Both
-inherit the exact honest limitation this chapter's `Release` javadoc names
+inherit the exact limitation this chapter's `Release` javadoc names
 and leaves open. Chapter 26, extracting Order itself last, is where this
 project's CQRS read side is finally built from the event stream these
 extractions have been feeding since Chapter 17 — and where the gRPC seam and
@@ -650,7 +650,7 @@ become one of several services that read side has to federate.
 ---
 
 *Verification status: <span class="status status--unverified">unverified</span>.
-Every artifact cited above is real, runnable code and real, dated evidence
+Every artifact cited above is runnable code and dated evidence
 already in this repository: `examples/04-inventory-service/` (`inventory.proto`,
 `InventoryGrpcServiceImpl`, `InventoryRepository`, `InventoryCdcConsumer`/`InventoryCdcConsumerTest`,
 `V1__create_inventory_items_table.sql`/`V2__seed_inventory.sql`, and `MIGRATION.md`'s

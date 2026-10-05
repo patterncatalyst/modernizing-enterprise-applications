@@ -28,8 +28,8 @@ its *behavior* must survive it. At one end, you touch almost nothing about
 the system's internal shape and simply move where it runs. At the other, you
 discard the shape entirely and rebuild behavior from a blank editor. The
 industry has accumulated a family of names for stops along that spectrum —
-sometimes called the "Rs" — and it is worth naming them plainly once, because
-the rest of this chapter, and this book's strategy choice, only makes sense
+sometimes called the "Rs" — and naming them once up front matters, because
+this chapter's argument, and this book's strategy choice, only makes sense
 against the full menu:
 
 - **Retain** — change nothing; the system stays exactly where and how it is.
@@ -67,7 +67,7 @@ against the full menu:
   integration points connecting old and new, cut over incrementally rather
   than all at once.
 - **Rebuild / Replace** — discard most or all of the existing codebase and
-  write new software against the same (or a deliberately changed) set of
+  write new software against the same (or a changed) set of
   requirements. The deck's **Rip and Rewrite**: legacy interfaces and data
   are fully replaced, a handful of data elements or features are re-wrapped
   for continuity, and the rest is retired outright. This is the strategy of
@@ -113,7 +113,7 @@ system type, rated easy, moderate, or difficult — a second axis orthogonal to
 strategic value, because a system can be strategically critical *and*
 difficult to touch at the same time, and that combination is precisely where
 sequencing, not strategy choice, becomes the hard problem. This book's
-monolith sits in exactly that quadrant on purpose: high strategic value (it
+monolith sits in exactly that quadrant by design: high strategic value (it
 is the order-taking and fulfillment path for a shipping business), and, on
 the ease-of-migration rubric, difficult on data (one shared schema with
 cross-context foreign keys) and moderate everywhere else — a believable,
@@ -129,7 +129,7 @@ lands on top of a well-worn arc, not a blank slate. The deck this book
 draws its house style from traces that arc in four stops: **Monolith** →
 **SOA/ESB** → **Microservices 1.0** → **Cloud-Native (Microservices
 2.0)**. SOA's promise was integration through a central bus, and its
-failure mode, named plainly in the deck's own framing, was centralization —
+failure mode, named in the deck's own framing, was centralization —
 "the main issue with SOA and ESBs is centralization, from both
 architectural and organizational points of view" — the same coupling
 problem Chapter 3 diagnosed inside a single monolith, just moved up to the
@@ -159,7 +159,7 @@ Config's externalized configuration as an annotation and an
 `application.properties` entry, not a separate client and server to run and
 patch. The pattern persisted; only its
 implementation moved, from something every service bundled to something the
-platform now provides for free. That persistence-of-pattern,
+platform now provides by default. That persistence-of-pattern,
 relocation-of-implementation is exactly why this book targets Quarkus on
 Kubernetes rather than inventing its own chassis from scratch: the chassis
 already exists, and building on it is what lets Chapter 15 onward spend its
@@ -279,15 +279,15 @@ state of data separation is acceptable along the way:
   Part 6 spends an entire arc (Chapters 18 through 22) on exactly the cost
   of shared data and the path off it — but as a *transitional* state inside
   a single extraction, it is sometimes the only defensible option, and this
-  book's own review extraction uses it deliberately: the review service is
+  book's own review extraction uses it: the review service is
   served independently behind the strangler proxy while its underlying table
   stays in the monolith's shared schema a while longer, because the service
-  boundary and the data boundary are genuinely separable decisions, and
+  boundary and the data boundary are separable decisions, and
   forcing them to happen in the same step buys nothing.
 
 Knowing the family exists, and which variant answers which question, is
 what a strategy-level decision needs. Deciding *where* to point the proxy
-first is a different problem — the one the rest of this chapter solves.
+first is a different problem, the one the next section solves.
 
 ## Assessing the monolith: how do you choose an order
 
@@ -358,7 +358,7 @@ not just a boundary-drawing one, when the capabilities are evaluated against
 exactly these kinds of structural signals rather than against which one
 feels most important to the business. Strategic importance decides *whether*
 to modernize a system at all, back in the earlier sections of this chapter;
-it is deliberately the wrong signal for deciding *which seam to cut
+it is the wrong signal for deciding *which seam to cut
 first* inside a system you have already committed to modernizing, because
 the most important context is almost never the least risky one to practice
 on.
@@ -440,7 +440,7 @@ than only a code-boundary problem.
 **Payment and shipping come fourth and fifth** because extracting either one
 removes a piece of the monolith's single ACID checkout transaction, which is
 the point at which the system can no longer get distributed-transaction
-safety for free — payment forces a choreographed saga, shipping the same
+safety by default — payment forces a choreographed saga, shipping the same
 problem solved by an orchestrated one, so the two extractions teach both
 coordination styles back to back on one codebase rather than in the
 abstract.
@@ -464,7 +464,7 @@ This chapter picked a strategy — incremental, strangler-fig re-architecture,
 gated on behavioral equivalence — and the method for ordering the cuts
 inside it, and showed both applied to this book's own system as worked
 evidence rather than assertion. Two things still have to happen before any
-of that method can run for real: the lifecycle that will actually *execute*
+of that method can run: the lifecycle that will actually *execute*
 each step, and the system the method will be run against. **Part 2, "The AI
 Development Lifecycle (ADLC),"** names that lifecycle in full, starting with
 **Chapter 5, "From SDLC to ADLC."** **Part 3, "The Reference Monolith,"**

@@ -15,7 +15,7 @@ context's transaction, whose caller does not wait for an answer it actually
 needs, and whose extraction therefore cannot just move code from one runtime
 to another — it has to change *when* the work happens, not just *where*.
 Notification is this book's first event-driven extraction, and everything in
-it is real, running code from this project's own r04 iteration:
+it is running code from this project's own r04 iteration:
 `examples/00-monolith/` (the transactional outbox and its polling relay),
 `examples/03-notification-service/` (the Quarkus consumer, its own schema,
 and its WebSocket push), `examples/01-strangler-proxy/` (the second cutover
@@ -31,7 +31,7 @@ covers what it does and how to drive it.
 ## Why notification leaves second, and why it's harder than it looks
 
 Chapter 9 tagged this as Smell 4 the moment the monolith existed, and the
-language it used was deliberately clinical: `OrderService#placeOrder` called
+language it used was clinical: `OrderService#placeOrder` called
 `NotificationService#sendOrderConfirmation(customer, order)` as an ordinary
 Java method, on the same call stack, inside the same `@Transactional` that
 also reserved inventory, persisted the order, and charged a card. Two
@@ -69,8 +69,7 @@ The fix for the failure-domain half of Smell 4 is the **transactional
 outbox** pattern, and the one sentence that matters most about it is this:
 the event row and the business change it describes are written by the *same*
 `@Transactional`, so either both commit or neither does. Here is the entity
-that row becomes, `OutboxEvent`, and the javadoc on it states the guarantee
-plainly:
+that row becomes, `OutboxEvent`, and the javadoc on it states the guarantee:
 
 ```java
 // examples/00-monolith/.../common/outbox/OutboxEvent.java
@@ -89,7 +88,7 @@ plainly:
  */
 ```
 
-That javadoc is also an honest admission of where the atomicity guarantee
+That javadoc also makes clear where the atomicity guarantee
 *stops*. The write into Postgres is atomic with checkout; the publish to
 Kafka is not, and cannot be, because it is a second system reached over a
 second network hop on a separate schedule. `OutboxRelay` is a plain Spring
@@ -130,14 +129,14 @@ decision log (DRQ-034) states explicitly: a polling relay is the simplest
 mechanism that teaches the outbox's real guarantee (atomic write,
 at-least-once publish) without pulling a CDC connector and a replication slot
 into the stack a chapter early. CDC — reading the Postgres write-ahead log
-directly instead of polling a table — is deliberately deferred to Chapter 19,
+directly instead of polling a table — is deferred to Chapter 19,
 where the inventory extraction needs its lower latency and its freedom from a
 periodic table scan badly enough to justify the added operational
 complexity; this chapter's poll interval and steady read load are the
-honestly-stated cost of choosing the simpler mechanism first.
+measured cost of choosing the simpler mechanism first.
 
 The reason this beats a naive "call Kafka directly after the transaction
-commits" dual-write is worth stating precisely, because it's the exact trap
+commits" dual-write matters, because it's the exact trap
 an inexperienced reader of this pattern falls into. A post-commit publish has
 a gap no amount of careful code can close: the transaction can commit and the
 process can crash (or the publish call can simply fail) *before* the Kafka
@@ -240,7 +239,7 @@ public void recordOrderPlaced(OrderPlacedEvent event) {
 
 That's layer one: check-then-insert, deduped by the order id the event
 already carries. It is sufficient for the common case — a single consumer
-replica processing redeliveries one at a time — but it has an honest gap:
+replica processing redeliveries one at a time — but it has a gap:
 two deliveries racing concurrently (two replicas, or a redelivery landing
 while the first write is still in flight) can both pass the `findByOrderId`
 check before either commits. Layer two closes that gap at the only place a
@@ -382,7 +381,7 @@ consumer's idempotency story is the one this chapter needs readers to trust,
 and a second consumer with its own write path would only dilute that
 argument.
 
-## The measured cost of Phase B — and why it's honest, not a regression
+## The measured cost of Phase B — not a regression
 
 Phase A lifted the read surface — `NotificationController` →
 `NotificationService.listByCustomerId` → `Notification` — onto Quarkus via
@@ -412,7 +411,7 @@ Phase B is not a pure refactor — it adds two live Kafka consumers, each with
 its own background poll thread and broker connection, plus a Netty/Vert.x
 WebSocket server, none of which existed in Phase A at all. That is real
 runtime capability added in the same step as the idiomatic rewrite, and the
-honest reading is that the idiomatic-rewrite effect (a modest win, the same
+accurate reading is that the idiomatic-rewrite effect (a modest win, the same
 direction as Review's) is simply masked by the larger net-new footprint
 added alongside it. A reader who expected every Phase A→B table in this book
 to show the same improvement would be generalizing from one data point;
@@ -452,7 +451,7 @@ Captured — examples/01-strangler-proxy/CUTOVER.md,
 ```
 
 Run 2's note — "the bounded-wait poll in the Notification folder *genuinely
-retried*" — is worth dwelling on for a sentence: against the synchronous
+retried*" — matters: against the synchronous
 monolith (run 1), the notification was already there on the very first GET,
 so the poll loop never had cause to retry at all. Against the async service,
 several attempts came back `200` with no matching notification yet before
@@ -473,7 +472,7 @@ answered. That lesson was discovered on Review by accident — a routing
 predicate bug that happened to be invisible because both backends shared one
 table. This chapter's job was to make sure the *same* trap, in its async
 form, couldn't repeat by accident a second time, and DRQ-037 is the decision
-that did it on purpose rather than waiting to get lucky again.
+that did it by design rather than waiting to get lucky again.
 
 The async version of the trap is sharper than Review's. A synchronous
 assertion — "checkout returns 201, now immediately `GET
@@ -488,7 +487,7 @@ miss with budget remaining, it retries up to ten times at 500ms. Written
 this way, the same collection is correct against *both* backends without
 being edited for either: synchronous backends satisfy it on attempt zero and
 the loop never engages; asynchronous backends get a bounded window to catch
-up. That symmetry — one assertion, unedited, correct against two genuinely
+up. That symmetry — one assertion, unedited, correct against two
 different timing models — is what makes it reusable rather than a
 one-off hack for this chapter.
 
@@ -566,13 +565,13 @@ monolith, the notification service, and the strangler proxy exactly as the
 local runs above did, and runs the Notification Context Contract folder
 against the proxy — a non-zero `newman` exit code fails the build. Before
 that workflow file was committed, it was validated red-then-green the same
-way the negative check was: green at 17/17 with the poll genuinely retrying
+way the negative check was: green at 17/17 with the poll retrying
 across a handful of attempts (not an instant hit); then `OrderPlacedConsumer`'s
 persist call commented out, which exhausted the full ten-attempt bounded-wait
 budget and failed with exit code `1`; then the call restored and the suite
 green again at 17/17 before the job was trusted. The async notification path
 is not a special local-machine ritual in this project — it is exercised,
-end to end, on every push and pull request, by a CI job that genuinely waits
+end to end, on every push and pull request, by a CI job that waits
 for and asserts eventual consistency rather than racing a hopeful green.
 
 > **ADLC in Action** — This extraction ran the identical Frame → Map → Plan →
@@ -586,7 +585,7 @@ for and asserts eventual consistency rather than racing a hopeful green.
 > and named every Opus validation gate before a line of outbox or consumer
 > code existed. Generate produced the outbox, the relay, the two-phase
 > service, and the consumers under quarkus-agent and lgtm-quarkus tooling.
-> Verify is this chapter's negative-check story, run for real, not narrated.
+> Verify is this chapter's negative-check story, executed, not narrated.
 > Operate is the two-flag cutover recorded in `CUTOVER.md`. Reconcile is
 > `SMELLS.md` marking Smell 4 cured, in the same ledger discipline Chapter 7
 > already showed you reading commit messages that name their own Verify
@@ -603,7 +602,7 @@ for and asserts eventual consistency rather than racing a hopeful green.
   atomic together) is a stated tradeoff, not a hidden flaw, and it is only
   safe because the consumer is idempotent by two independent layers: an
   application-level check-then-insert for the common case, and a database
-  partial unique index as the backstop for a genuine race.
+  partial unique index as the backstop for a race.
 - An event-driven read model **must own its data** — this chapter's
   deliberate contrast with Review's shared-schema deferral is the concrete
   argument for why: two independent writers racing on one shared table is a

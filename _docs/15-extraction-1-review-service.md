@@ -28,7 +28,7 @@ covers what it does and how to drive it.
 
 Chapter 11 already measured this in terms of ports, and Chapter 13 already
 measured it in terms of coupling numbers, so this chapter will not re-derive
-either argument — it will just state the conclusion plainly enough to build
+either argument — it will just state the conclusion clearly enough to build
 on. Review has an afferent coupling of approximately zero (nothing else in
 the monolith calls into it) and an efferent coupling of approximately zero
 (it calls into nothing else at runtime): it reads customer and inventory data
@@ -55,7 +55,7 @@ risk-free, and two sections below show exactly how it was not: a defect that
 only a native build could expose, and a routing bug that forty-nine green
 assertions failed to catch. Review being the easiest context to cut is
 precisely why it is the right context to prove the seam machinery on first —
-difficulty was deliberately deferred, not avoided, and Chapter 17's
+difficulty was deferred, not avoided, and Chapter 17's
 notification extraction is where the first dose of that deferred difficulty
 (a synchronous call sitting inside the monolith's one ACID transaction)
 actually arrives.
@@ -137,7 +137,7 @@ from("platform-http:/api?matchOnUriPrefix=true")
     .end();
 ```
 
-Every piece of this earns its place. The `platform-http` consumer is declared
+Every piece of this route is necessary. The `platform-http` consumer is declared
 with `matchOnUriPrefix=true` so the single route can absorb every path under
 `/api`, not just one; the first `choice()` is the content-based router
 proper, and it evaluates two conditions together with `PredicateBuilder.and`
@@ -159,7 +159,7 @@ error envelope back instead of the real status code — which would silently
 break every assertion in the equivalence suite that checks for a specific
 4xx, because the suite would never see the backend's actual response.
 
-One more design choice is worth calling out because it is a security
+One more design choice is a security
 property, not just a convenience: the two fixed base URLs,
 `strangler.monolith.base-url` and `strangler.review.base-url`, are both
 read from configuration, and the route only ever selects between those two
@@ -180,8 +180,8 @@ Review's Quarkus code existed anywhere to route traffic toward.
 
 ## Phase A: lift onto Quarkus via the Spring-compatibility extensions
 
-With the gate captured and the seam standing, Generate's first pass is
-deliberately the least interesting possible version of a migration: take the
+With the gate captured and the seam standing, Generate's first pass is,
+by design, the least interesting possible version of a migration: take the
 monolith's `review` package — its Spring MVC controller, its Spring Data
 repositories, its `@Service`-annotated service class — and get it running on
 Quarkus with as few edits as the Quarkiverse Spring-compatibility extensions
@@ -367,7 +367,7 @@ value — without the business logic itself moving a single line.
 
 The exception-mapping layer is where Quarkus's extension point diverges most
 visibly from Spring's, because the two frameworks solve "translate a thrown
-exception into an HTTP response" with genuinely different mechanisms rather
+exception into an HTTP response" with different mechanisms rather
 than a thin renaming:
 
 {% include codetabs.html langs="Spring Boot (Phase A lift)|Quarkus (Phase B idiomatic)" %}
@@ -476,7 +476,7 @@ last step was making the Camel proxy actually prefer the new service — and
 proving, before anything irreversible happened, that the choice could be
 reversed if it needed to be. `examples/01-strangler-proxy/CUTOVER.md` is the
 dated record of exactly how that was done, and the mechanics are worth
-restating plainly: flipping `strangler.review.enabled` from `false` to
+restating: flipping `strangler.review.enabled` from `false` to
 `true` is a configuration change and a process restart, nothing more — no
 route code changes, because the content-based router built in the seam
 section above was already written to read that flag on every request. That
@@ -516,11 +516,11 @@ what was removed and what was not. `review/Review.java`,
 `review/ReviewRepository.java`, `review/ReviewCreate.java`,
 `review/ReviewService.java`, `review/ReviewController.java`, and
 `common/ReviewDto.java` were deleted from the monolith outright, along with
-their tests. `security/SecurityConfig.java` was deliberately left in place
+their tests. `security/SecurityConfig.java` was left in place
 even though its one authenticated rule no longer matches any surviving
 route — deleting it was out of scope for a change that was supposed to touch
 only Review's own files, and a vacuous security rule is harmless, not a
-smell in its own right. The `reviews` Postgres table was deliberately *not*
+smell in its own right. The `reviews` Postgres table was *not*
 dropped, because `examples/02-review-service` is still in its Phase A data
 posture, reading and writing that exact shared table with no schema of its
 own — true per-context data ownership is Chapter 18 and 19's subject, not
@@ -534,7 +534,7 @@ flag's committed default flipped permanently to `true`, flipping it back to
 `false` today is still mechanically possible, but it no longer reaches a
 working Review endpoint, because the one thing that made reversal meaningful
 — a live monolith copy to fall back to — is the thing that was just
-deliberately, permanently removed.
+permanently removed.
 
 ## The measured payoff
 
@@ -574,7 +574,7 @@ actually come from.
   with a single boolean feature flag is enough to make a service cutover a
   configuration change rather than a deploy — but only as reversible as the
   backend it falls back to, which is why decommissioning that backend is the
-  one deliberately irreversible step in the sequence.
+  one irreversible step in the sequence.
 - The two-phase migration template — lift via the Spring-compatibility
   extensions first, refactor to idiomatic Quarkus second, measure both —
   de-risks a framework migration by separating "does this still behave

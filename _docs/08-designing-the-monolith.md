@@ -8,14 +8,14 @@ description: "The six bounded contexts as one Spring Boot deployable: domain mod
 Chapter 7 proved the loop by running it once, end to end, on a real
 extraction. This chapter builds the system that loop will spend the rest of
 this book strangling. Before anything can be modernized, it has to exist as
-something worth modernizing — not a toy with three classes and a `TODO`, but a
-believable "before": a system a real team could have shipped, that does real
-work, that a customer would actually notice if it went down. That system is
+something worth modernizing — a believable "before": a system a real team
+could have shipped, that does real work, that a customer would actually
+notice if it went down. That system is
 `examples/00-monolith/`, a plain Spring Boot 3.5 application on JDK 25, one
 deployable JAR, one PostgreSQL schema, one JVM, built around a shipping and
 e-commerce domain split into six bounded contexts. This chapter walks its
 design — the domain, the layering, the schema, the API surface — and makes
-explicit a choice that will matter for the rest of this book: every framework
+explicit a choice that will matter throughout the book: every framework
 API this monolith uses was picked because it has a clean bridge to Quarkus,
 not in spite of it.
 
@@ -66,8 +66,7 @@ is five context packages (`order`, `inventory`, `payment`, `shipping`,
 that extraction, and `review` now lives on as `examples/02-review-service`,
 reached through the Camel strangler proxy described later in this book.
 
-That is a deliberate narrative choice, not a continuity error, and it is
-worth stating plainly rather than quietly stepping around: this chapter
+That is a deliberate narrative choice, not a continuity error: this chapter
 describes the monolith **as designed** — all six contexts, Review included —
 because that is the "before" picture every later chapter needs as its
 starting point, and because Review's design (a REST-only context sharing one
@@ -143,7 +142,7 @@ string (`@Enumerated(EnumType.STRING)`, so the database stores `CONFIRMED`
 rather than an ordinal integer that would silently shift meaning if the enum
 were ever reordered), a running `totalCents` total, and a `@OneToMany` list
 of `OrderItem`s with `cascade = CascadeType.ALL, orphanRemoval = true` — which
-means saving an `Order` saves its items for free, and removing an item from
+means saving an `Order` saves its items automatically, and removing an item from
 the in-memory list actually deletes its row, not just the association.
 `Order`'s own `addItem` method is where the running total gets maintained:
 it appends the item, calls back into it to set the owning side of the
@@ -166,7 +165,7 @@ schema, following the same pattern.
 ### The DTOs: a shared vocabulary that survives extraction
 
 The `common` package's records are not incidental — they are named and
-shaped on purpose to match the "reuse-map" vocabulary this project's sibling
+shaped to match the "reuse-map" vocabulary this project's sibling
 example projects already use, specifically so that when a context is
 extracted later in this book, its API contract doesn't have to be renamed or
 reshaped to match. `OrderCreate` is the checkout request: a Java `record`
@@ -181,8 +180,8 @@ outer `items` field is itself annotated `@Valid` — before `OrderService` ever
 sees it; a missing SKU or a zero quantity never reaches the service layer at
 all; it comes back as a 400 from `GlobalExceptionHandler`'s
 `MethodArgumentNotValidException` handler. `OrderStatus` is a three-value
-enum (`PENDING`, `CONFIRMED`, `PAYMENT_DECLINED`) deliberately kept this
-small because the monolith's checkout flow is itself deliberately simple —
+enum (`PENDING`, `CONFIRMED`, `PAYMENT_DECLINED`) kept
+small because the monolith's checkout flow is itself simple —
 there is no partial-fulfillment or multi-shipment state machine here, because
 that complexity would obscure the smells this monolith exists to demonstrate
 rather than illuminate them.
@@ -225,8 +224,8 @@ public OrderDto placeOrder(OrderCreate command) {
 The first call resolves the customer or fails fast with a `404`-mapped
 `ResourceNotFoundException` — there is no point building an order for a
 customer that does not exist, so this check happens before any other work.
-The `for` loop over `command.items()` does two things per line, deliberately
-kept separate: `findBySkuOrThrow` fetches the actual `InventoryItem` entity
+The `for` loop over `command.items()` does two things per line, kept
+separate: `findBySkuOrThrow` fetches the actual `InventoryItem` entity
 (not a DTO — more on that in a moment) so the order item can capture its
 current price, and `reserve` performs the actual stock check and decrement
 inside the same loop iteration. Splitting "look up" from "reserve" instead of
@@ -245,16 +244,16 @@ notes "throws ..., no writes yet."
 `orderRepository.save(order)` persists the order and, thanks to the
 cascading `@OneToMany`, its items in the same call. Only after that succeeds
 does `paymentService.charge` run — and this is the line that makes the
-`@Transactional` boundary load-bearing rather than decorative. `charge`'s
-demo decline rule is intentionally simple: any payment method string
+`@Transactional` boundary matter rather than being decorative. `charge`'s
+demo decline rule is simple: any payment method string
 containing `DECLINE` (case-insensitively) throws
 `PaymentDeclinedException`, deterministically, with no real payment gateway
 involved — a design choice made specifically so the behavior-equivalence
 suite Chapter 10 builds can exercise the decline path without flaky external
 dependencies. When that exception is thrown, Spring's default rollback
 behavior unwinds the *entire* transaction: the order row, its items, and the
-inventory decrement from the loop above all revert, because Postgres is
-giving this method atomic rollback across five tables for free. That is
+inventory decrement from the loop above all revert, because Postgres
+gives this method atomic rollback across five tables by default. That is
 exactly the "it works today because one database can do this" smell Chapter
 9 names and Chapter 22/23/24 eventually replace with an explicit saga — this
 chapter's job is only to make sure you have seen, concretely, what "it works
@@ -297,7 +296,7 @@ call inside checkout's transaction — not the delivery mechanism.
 `MonolithApplication` is an unremarkable `@SpringBootApplication` with a
 `main` method that calls `SpringApplication.run` — the only thing worth
 noting is its class-level Javadoc, already discussed above, documenting the
-module's own history accurately instead of erasing the fact that Review was ever there.
+module's own history accurately instead of erasing that Review was ever there.
 `application.yml` configures a Postgres datasource pointed at the project's
 local podman-stack coordinates (`jdbc:postgresql://localhost:5432/monolith`),
 sets `spring.jpa.hibernate.ddl-auto: validate` — meaning Hibernate checks the
@@ -309,7 +308,7 @@ because it recurs throughout this book: Flyway, not Hibernate, owns the
 schema's shape, and JPA's job is only to describe how Java objects map onto
 tables Flyway already created. `spring.jpa.open-in-view: false` closes the
 Open Session In View anti-pattern — a lazy-loading exception outside a
-service method's transaction boundary is a bug to be fixed deliberately, not
+service method's transaction boundary is a bug to be fixed at the source, not
 papered over by keeping a Hibernate session open through the whole web
 request.
 
@@ -335,11 +334,11 @@ deleting it outright: it is left in place as the fossil record of the smell
 Chapter 15 actually cured, for a reader who wants to see what "tangled into
 shared security" looked like in code before it was fixed.
 
-### The fragile bits, named plainly
+### The fragile bits
 
-A few choices in this module are simplifications made on purpose for a
-teaching artifact, and they are worth naming rather than leaving a reader to
-discover them by surprise. The payment decline rule — any method string
+A few choices in this module are simplifications made for a
+reference example, and naming them here keeps a reader from
+discovering them by surprise. The payment decline rule — any method string
 containing `DECLINE`, case-insensitively — is not a real fraud or
 risk-scoring model; it exists purely so the equivalence suite Chapter 10
 builds has a deterministic way to exercise the decline path. The single
@@ -374,7 +373,7 @@ book away from here.
 `V2__seed_data.sql` is the deterministic demo fixture every later chapter's
 examples assume exists: two customers (Ada Lovelace, Grace Hopper), three
 inventory items (a Standard Widget with 100 units on hand, a Deluxe Gadget
-with 50, and a Pocket Gizmo with only 5 — deliberately scarce, so the
+with 50, and a Pocket Gizmo with only 5, kept scarce so the
 insufficient-stock path has a real SKU to exercise), one fully confirmed and
 shipped order for Ada, and two product reviews. The file's own header
 comment is explicit about the one constraint that makes it work at all: it
@@ -384,9 +383,8 @@ later `INSERT` reliably means Ada. That is a fine assumption for a Flyway
 migration that only ever runs once per fresh database — which is exactly
 what both the local podman-stack Postgres and the Testcontainers-backed
 integration tests give it — and it would be a dangerous assumption anywhere
-IDs might already be in use, which is worth flagging precisely because the
-pattern is common enough in demo fixtures that it is easy to copy
-uncritically into a context where it no longer holds.
+IDs might already be in use. The pattern is common enough in demo fixtures
+that it is easy to copy uncritically into a context where it no longer holds.
 
 ## The REST API surface
 
@@ -415,12 +413,12 @@ behavior-equivalence suite in Chapter 10 captures as a Newman collection, and
 a surface this ordinary is exactly what makes that capture mechanical rather
 than an exercise in working around framework idiosyncrasies.
 
-## Why mainstream Spring, on purpose
+## Why mainstream Spring
 
 Every one of the frameworks wired into this module — Spring MVC for REST,
 Spring Data JPA for persistence, Spring Security for the one authenticated
 route, Bean Validation for request shapes — was chosen for a reason this
-chapter can now state plainly, because you have just seen the code that
+chapter can now state directly, because you have just seen the code that
 proves it: each one has a direct counterpart in the Quarkiverse
 Spring-compatibility bridge (`quarkus-spring-web`, `quarkus-spring-di`,
 `quarkus-spring-data-jpa`, `quarkus-spring-security`) that Part 5's
@@ -461,7 +459,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 }
 ```
 
-The two tabs are identical on purpose. That sameness is the entire point of
+The two tabs are identical by design. That sameness is the entire point of
 DRQ-029's two-phase strategy: Phase A proves an extraction behaves correctly
 against the equivalence suite *before* anyone spends effort making the code
 idiomatic, and it can prove that quickly precisely because nothing in the
@@ -478,7 +476,7 @@ tangled spaghetti nobody would ship — and call that realistic. This one is
 not that. `mvn verify` passes 38 tests green; the OpenAPI surface is
 complete and browsable; the checkout flow correctly rolls back a declined
 payment and an out-of-stock line; the error responses are consistent across
-every context. This is software a small team would genuinely ship, review,
+every context. This is software a small team would ship, review,
 and run in production — which is exactly why it is the right "before." The
 six smells `SMELLS.md` catalogues (shared schema and cross-context joins,
 the god `OrderService`, one ACID transaction spanning five contexts, a

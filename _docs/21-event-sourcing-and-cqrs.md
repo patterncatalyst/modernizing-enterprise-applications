@@ -2,7 +2,7 @@
 title: "Event Sourcing & CQRS"
 order: 21
 part: "Data Across the Seam"
-description: "CQRS read/write split, load-bearing for the gateway read side; event sourcing covered but kept light and optional; the trade-offs of each."
+description: "CQRS read/write split, central to the gateway read side; event sourcing covered but kept light and optional; the trade-offs of each."
 ---
 
 Chapter 17 built a pipeline — an atomic outbox write, a polling relay, a
@@ -16,7 +16,7 @@ that log: once a fact is out there, reliably, what do you *do* with it — and
 when is building a whole second model around "reacting to facts" the right
 call rather than a self-inflicted wound? That is the question CQRS and event
 sourcing both answer, in two different and often-confused ways, and it is the
-question this chapter answers honestly about its own codebase before it
+question this chapter answers about its own codebase first, before it
 answers it in the abstract: `examples/03-notification-service` is already,
 right now, a CQRS read model. It was built that way in Chapter 17 without
 either chapter using the term, and seeing why it qualifies — and exactly
@@ -39,7 +39,7 @@ to be the same shape, stored the same way, scaled the same way, or kept
 consistent on the same schedule. A conventional CRUD service collapses both
 responsibilities into one: one table, one entity, one repository, serving
 both an `INSERT` that enforces an invariant and a `SELECT` that renders a
-dashboard. That collapse is free when the two responsibilities genuinely want
+dashboard. That collapse is free when the two responsibilities want
 the same shape — which is most of the time, and is exactly why `OrderService`
 in this book's monolith, and `review-service` after its extraction in
 Chapter 15, are plain CRUD and are correct to be plain CRUD. CQRS earns its
@@ -65,7 +65,7 @@ matrix inherits almost unchanged, lists the benefits side first: loose
 coupling between the service that writes and the service that reads, the
 ability to scale each independently (notification's read traffic has nothing
 to do with checkout's write traffic, and should never have to share a
-connection pool with it), a schema genuinely optimized for its own query
+connection pool with it), a schema optimized for its own query
 shape instead of a compromise, and — the easiest benefit to undersell — a
 query that finally matches a user's actual intent instead of reverse-engineering
 intent from a general-purpose row. The considerations side is just as
@@ -79,7 +79,7 @@ names an architectural decision about splitting models; event-driven
 plumbing is one way — this book's way — of keeping the split models in sync,
 not the thing being decided.
 
-## `notification-service` is already a CQRS read model — and already honest about not being more than that
+## `notification-service` is already a CQRS read model, and nothing more
 
 Go back to `NotificationService#recordOrderPlaced`, quoted in full in
 Chapter 17, and read it again with "is this CQRS" as the question instead of
@@ -129,7 +129,7 @@ already decided. That is a **materialized view**, Kleppmann's term for it in
 cache of a derived answer, kept current by incrementally folding new facts
 into it, rebuildable from the source facts if it were ever lost, but not
 itself the source of truth for anything. A CQRS read model, in other words —
-built the honest, minimal way this book commits to, and not, on its own, an
+built the minimal way this book commits to, and not, on its own, an
 event-sourced aggregate. The gap between those two things is worth making
 precise, because it is exactly the gap this chapter spends its second half
 explaining why this book declines to close.
@@ -181,7 +181,7 @@ the log, rather than the log (when one exists at all, as an audit trail or a
 CDC byproduct) being an afterthought bolted onto a database that was always
 the real source of truth. Event sourcing and CQRS are frequently paired for
 a structural reason that follows directly from this: an append-only event
-log is a genuinely poor structure to query directly — "all orders over $500
+log is a poor structure to query directly — "all orders over $500
 placed by this customer last month" against a raw stream of
 `OrderPlaced`/`PaymentCaptured`/... events means scanning and refolding the
 entire relevant history on every question — so an event-sourced write side
@@ -197,13 +197,13 @@ event-sourced system.
 
 ## Why this book builds CQRS-lite and not event sourcing — stated as a decision, not a shortcut
 
-This book's own pattern-coverage ledger states the choice plainly: event
-sourcing is demoted to light and optional while CQRS is load-bearing,
-because the gateway chapter genuinely needs a read/write split and nothing
+This book's own pattern-coverage ledger states the choice: event
+sourcing is demoted to light and optional while CQRS is central,
+because the gateway chapter needs a read/write split and nothing
 in this house migration needs a fully event-sourced aggregate to prove its
-point. It is worth spelling out *why* that is the right call rather than a
-concession, because event sourcing's cost is easy to underestimate from a
-diagram and easy to feel only after you've paid it. An event-sourced
+point. This is the right call rather than a concession, because event
+sourcing's cost is easy to underestimate from a diagram and easy to feel
+only after you've paid it. An event-sourced
 aggregate commits you to **schema evolution of every event type, forever**:
 `OrderPlaced` v1 is part of your system's permanent history the moment the
 first order is placed, and every future code change that wants to read an
@@ -213,7 +213,7 @@ written by code that no longer exists — a discipline usually called
 *upcasting*, and one that adds real, ongoing engineering cost with no
 equivalent in a mutable-row system, where an `ALTER TABLE` and a migration
 script retire the old shape outright. It commits you to **bounding replay
-cost** deliberately, via periodic snapshots, because an aggregate with
+cost**, via periodic snapshots, because an aggregate with
 years of history and no snapshot strategy gets slower to load with every
 event it has ever emitted, a failure mode that is invisible on day one and
 only shows up once the log is long enough to matter. It commits you to
@@ -225,13 +225,13 @@ question a product manager asks might mean standing up a new projection
 before it can be answered at all. None of these costs are hypothetical, and
 none of them are free just because a framework makes the event store easy to
 wire up. They are the reason Chapter 3's discipline — *microservices are not
-themselves the goal*, each pattern earns its place against the smell it
+themselves the goal*, each pattern justified by the smell it
 cures, not the elegance it offers — applies doubly here: event sourcing is
 not a complexity you reach for because a chapter title promises you will
 learn it eventually; it is a complexity you reach for because you have a
 specific, articulable need (a true audit trail that must reconstruct any
 historical state exactly, or a domain where "what happened and in what
-order" genuinely is the business question, like a ledger or a trading
+order" is the business question, like a ledger or a trading
 system) that a mutable table with change events cannot satisfy as cleanly.
 This project's house migration never develops that need. Every read-model
 consumer this book builds needs "what is the current state, derived from
@@ -262,7 +262,7 @@ in CQRS-lite safe rather than merely convenient.
 
 ## Eventual consistency, rebuild-from-events, and what a reader should actually verify
 
-Every CQRS read model inherits the same honest cost, and Chapter 17 already
+Every CQRS read model inherits the same cost, and Chapter 17 already
 taught you the proof technique for it, which generalizes to every read model
 this book builds from here on, not just notification's: a read model is, by
 construction, never instantaneously current with the write side that feeds
@@ -283,7 +283,7 @@ eventually show up in the read model" is a fundamentally different claim
 from "did the write show up," and a suite that doesn't know the difference
 will either flake under load or, worse, pass for the wrong reason.
 
-The other property worth naming plainly is **rebuild-from-events**, because
+The other property to name is **rebuild-from-events**, because
 it is both a real strength of this architecture and a real limitation that
 is easy to overstate. Because `notification-service`'s table is *derived*
 data — a fold over `order.placed`, not an independent source of truth — it
@@ -292,11 +292,11 @@ consumer group's offset to the earliest retained record, and
 `OrderPlacedConsumer` will idempotently re-derive the same rows it derived
 the first time, exactly the same guarantee that makes redelivery safe in the
 first place working in your favor instead of against it. That property is
-genuinely valuable — it is the thing that makes a read model's own
+valuable — it is the thing that makes a read model's own
 persistence disposable rather than precious, a very different risk profile
 from a table that is itself the only copy of a fact. But it holds only as
-far as the log actually retains the history needed, and this is the honest
-edge of CQRS-lite as opposed to true event sourcing: Kafka's retention
+far as the log actually retains the history needed, and this is the limit
+of CQRS-lite as opposed to true event sourcing: Kafka's retention
 window is finite and configured, not infinite by design the way a dedicated
 event store's log is. Replaying `order.placed` rebuilds `notification-service`
 cleanly only for orders placed within whatever retention policy this
@@ -313,7 +313,7 @@ it.
 
 ## Forward to the gateway, and to the consistency chapter that names what this one assumed
 
-Chapter 26 is where this chapter's load-bearing half gets built for real.
+Chapter 26 is where this chapter's read/write split gets built in full.
 The order extraction — the last and hardest in this book, the one Chapter 12's
 event-storming wall already marked as unable to move until every command it
 issues has somewhere else to land — separates a command side (an `Order`
@@ -327,22 +327,22 @@ reach synchronously into four other services on every request. That gateway
 is this chapter's CQRS argument scaled from one read model to several, and
 everything this chapter named — the pipeline that feeds a read model, the
 schema-ownership discipline that keeps it from racing its source, the
-bounded-wait-plus-negative-check proof that it is genuinely current rather
+bounded-wait-plus-negative-check proof that it is current rather
 than coincidentally current — carries forward unchanged.
 
 Chapter 22 names, directly and without euphemism, the consistency guarantee
 every read model in this chapter has been quietly spending since the moment
 the monolith's single `@Transactional` stopped being able to cover more than
 one table at a time: dirty reads, lost updates, non-repeatable reads, the
-isolation ACID used to give you for free and that an eventually-consistent
+isolation ACID used to give you automatically and that an eventually-consistent
 read model, by its nature, cannot. This chapter showed you what it looks
-like to live with that trade on purpose, in one small, already-running
+like to live with that trade, in one small, already-running
 service; Chapter 22 is where the bill gets itemized.
 
 ## What you learned
 
 - **CQRS separates a write model from one or more read models** because
-  commands and queries often have genuinely different shapes, scaling needs,
+  commands and queries often have different shapes, scaling needs,
   and consistency requirements — not because splitting a model is
   inherently better than keeping one.
 - **`notification-service` is already a CQRS read model**: its own schema,
@@ -364,11 +364,11 @@ service; Chapter 22 is where the bill gets itemized.
 - **A CQRS read model is eventually consistent and, because it is derived
   data, rebuildable from its source events** — but only as far as the
   event log's own retention reaches; past that window, the write side's own
-  durable storage, not the log, is what keeps the system honest.
+  durable storage, not the log, is what the system relies on.
 
 Chapter 22 names exactly what consistency this architecture has given up to
 get here. Chapter 26 is where CQRS stops being demonstrated on one small
-service and becomes the load-bearing shape of this book's last and hardest
+service and becomes the central shape of this book's last and hardest
 extraction.
 
 ---
