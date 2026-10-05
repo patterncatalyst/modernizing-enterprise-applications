@@ -43,6 +43,19 @@ spring:
     # reversibility flag that once gated whether this listener's reactions
     # were ever actually exercised has been removed (S9) — choreographed is
     # now the only checkout path, so this consumer is always genuinely live.
+    #
+    # ch.24 (r07/S6, H3/H4; r07/S9 DECOMMISSION): OrderSagaListener also
+    # reacts to shipment.dispatched/shipment.failed (Topics.java), to
+    # confirm or fail+compensate. The shipping.mode=inprocess|orchestrated
+    # reversibility flag that once gated these reactions has been removed
+    # (S9) — orchestrated is now the only shipping path, so these reactions
+    # are always genuinely live too. Same consumer group
+    # (monolith-order-saga) and same String-deserializer shape as the
+    # payment reactions above — the shipping service consumes
+    # payment.captured independently, under ITS OWN consumer group (see
+    # examples/06-shipping-service), so the monolith's order-saga reaction
+    # and the shipping service's saga trigger are two unrelated consumers of
+    # one topic, not a hand-off.
     consumer:
       group-id: monolith-order-saga
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
@@ -94,6 +107,19 @@ inventory:
 # more in-line charge to fall back to. The payment service
 # (examples/05-payment-service, :8085) is the sole owner of payment capture,
 # reached exclusively over the choreographed saga.
+
+# r07/ch.24 S9 (DECOMMISSION): the shipping.mode=inprocess|orchestrated
+# reversibility flag introduced for the S6 cutover has been removed along
+# with the monolith's in-process shipping module (shipping.ShippingController/
+# ShippingService/Shipment/ShipmentStatus/ShipmentDto/ShipmentRepository, now
+# deleted; SMELL[ch.22] -- now CURED for shipping too, see SMELLS.md).
+# OrderSagaListener#onPaymentCaptured ALWAYS transitions the order PENDING ->
+# AWAITING_SHIPMENT and never dispatches in-process; the shipping service
+# (examples/06-shipping-service, :8088) is the sole owner of fulfilment,
+# reached exclusively via its Camel Saga EIP coordinator reacting to
+# payment.captured and emitting shipment.dispatched/shipment.failed, which
+# OrderSagaListener's onShipmentDispatched/onShipmentFailed reactions (above)
+# drive to the order's terminal state.
 
 logging:
   level:

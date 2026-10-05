@@ -114,6 +114,9 @@ class OrderServiceTest {
         assertThat(dto.totalCents()).isEqualTo(1999L * 2);
         assertThat(dto.items()).hasSize(1);
         assertThat(dto.items().get(0).sku()).isEqualTo("SKU-WIDGET-001");
+        // ch.24 (r07/S6): OrderDto now carries shippingAddress (additive) so
+        // the shipping service's saga can enrich via GET /api/orders/{id}.
+        assertThat(dto.shippingAddress()).isEqualTo("1 Test Way");
 
         verify(remoteInventoryClient).reserve("SKU-WIDGET-001", 2);
         // happy path never issues a compensating Release.

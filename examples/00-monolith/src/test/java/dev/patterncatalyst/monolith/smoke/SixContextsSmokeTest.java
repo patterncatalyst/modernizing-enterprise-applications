@@ -66,18 +66,29 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  * choreographed saga (payment service captures/declines -> {@code
  * order.OrderSagaListener} reacts), never synchronously on the POST.
  *
- * <p>This test now covers the ONE context the monolith still fully owns and
- * calls synchronously from checkout (shipping's REST read surface; its
- * DISPATCH is now triggered by the saga, not the request thread) plus order
- * (which orchestrates the gRPC reserve + outbox handoff), plus FOUR
- * decommission checks (Review/Notification/Inventory/Payment). Review's,
- * Notification's, Inventory's, and Payment's equivalent coverage lives in
- * the behavior-equivalence suite (tooling/newman/mea.postman_collection.json,
+ * <p>As of r07/ch.24 S9, Shipping is decommissioned too: its in-process
+ * {@code ShippingController}/{@code ShippingService}/{@code Shipment}/{@code
+ * ShipmentStatus}/{@code ShipmentDto}/{@code ShipmentRepository} module is
+ * gone from the monolith (SMELL[ch.22], now REALIZED for shipping too — see
+ * SMELLS.md), and {@code OrderSagaListener#onPaymentCaptured} no longer
+ * dispatches shipping in-process — it unconditionally transitions the order
+ * to {@code AWAITING_SHIPMENT}, and fulfilment is owned end-to-end by the
+ * shipping service's Camel Saga EIP coordinator.
+ *
+ * <p>This test now covers ZERO contexts the monolith still fully owns and
+ * calls synchronously from checkout — only order itself (which orchestrates
+ * the gRPC reserve + outbox handoff), plus FIVE decommission checks
+ * (Review/Notification/Inventory/Payment/Shipping). Review's, Notification's,
+ * Inventory's, Payment's, and Shipping's equivalent coverage lives in the
+ * behavior-equivalence suite (tooling/newman/mea.postman_collection.json,
  * "Review Context Contract", "Notification Context Contract", "Inventory
- * Context Contract", and "Payment Context Contract" folders) run against the
- * extracted services through the strangler proxy — including the
- * bounded-wait Scenario 1 (CONFIRMED)/Scenario 3 (PAYMENT_DECLINED + stock
- * net-zero) checks this self-contained test cannot perform (see below).
+ * Context Contract", "Payment Context Contract", and "Shipping Context
+ * Contract" folders) run against the extracted services through the
+ * strangler proxy — including the bounded-wait Scenario 1 (CONFIRMED, now
+ * one hop later via the orchestrated saga)/Scenario 3 (PAYMENT_DECLINED +
+ * stock net-zero)/Scenario 4 (SHIPPING_FAILED + stock net-zero via the
+ * coordinator-driven compensation) checks this self-contained test cannot
+ * perform (see below).
  *
  * <p><b>Why a stub gRPC server lives here:</b> this test is deliberately
  * self-contained (Testcontainers Postgres only, no podman stack, no real
@@ -104,7 +115,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  */
 @Testcontainers
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
-class SixContextsSmokeTest { // name kept for history; one context + four decommission checks, post r06/ch.23 S9
+class SixContextsSmokeTest { // name kept for history; zero contexts + five decommission checks, post r07/ch.24 S9
 
     @Container
     static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16-alpine")
@@ -202,10 +213,18 @@ class SixContextsSmokeTest { // name kept for history; one context + four decomm
     }
 
     @Test
-    void shippingContextResponds() {
-        ResponseEntity<Object[]> response = rest.getForEntity("/api/shipments?orderId=1", Object[].class);
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).hasSize(1); // seed order #1's shipment
+    void shippingIsNoLongerServedByTheMonolith() {
+        // r07/ch.24 S9 decommission: Shipping's controller/service/
+        // repository/entity were removed from the monolith once checkout
+        // stopped dispatching shipping in-process (SMELL[ch.22], realized
+        // for shipping — see SMELLS.md) and the orchestrated saga against
+        // examples/06-shipping-service became the only path. The monolith
+        // itself now 404s here — proof the extraction was clean and nothing
+        // else depended on this package. (The underlying `shipments` table
+        // is still present in the shared schema, write-only history now;
+        // see SMELLS.md #1/#3.)
+        ResponseEntity<Object> response = rest.getForEntity("/api/shipments?orderId=1", Object.class);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     }
 
     @Test
