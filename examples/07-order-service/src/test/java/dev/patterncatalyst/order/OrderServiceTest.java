@@ -6,11 +6,13 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,14 +22,22 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
- * Tier 1 (unit), REFACTORED for ch.26 S5 (Phase B, DRQ-073). All collaborators
- * are mocked; this test never touches a database, a real gRPC channel, or
- * Kafka. Net-new cases cover {@link OrderService#placeOrder}'s outbox-write
- * behavior (atomic with the order row, no dual-write) at the unit level with
- * a mocked {@link OrderOutboxRepository} -- the full Reactive Messaging +
- * real-outbox-row round trip is covered by {@code CheckoutOutboxTest}. The
+ * Tier 1 (unit), REFACTORED for ch.26 S5 (Phase B, DRQ-073)/S6 (DRQ-067/074).
+ * All collaborators are mocked; this test never touches a database, a real
+ * gRPC channel, or Kafka. Net-new S5 cases cover {@link
+ * OrderService#placeOrder}'s outbox-write behavior (atomic with the order
+ * row, no dual-write) at the unit level with a mocked {@link
+ * OrderOutboxRepository} -- the full Reactive Messaging + real-outbox-row
+ * round trip is covered by {@code CheckoutOutboxTest}. Net-new S6 cases cover
+ * {@link OrderService#placeOrder} calling {@link OrderViewProjector#project}
+ * exactly once with the initial PENDING row's null payment/shipment status,
+ * and {@link OrderService#getById}/{@link OrderService#listAll} reading
+ * EXCLUSIVELY from {@link OrderViewRepository} (never {@link
+ * OrderRepository}) -- the full read-after-write/rebuild/idempotency proof
+ * against a real database is {@code OrderViewProjectionTest}'s job. The
  * pre-handoff compensation regression checks carried over from Phase A are
- * extended to also assert the outbox is NEVER written on a failed checkout.
+ * extended to also assert the outbox AND the read-model projection are NEVER
+ * written on a failed checkout.
  */
 @ExtendWith(MockitoExtension.class)
 class OrderServiceTest {
@@ -44,6 +54,12 @@ class OrderServiceTest {
     @Mock
     private OrderOutboxRepository outboxRepository;
 
+    @Mock
+    private OrderViewRepository orderViewRepository;
+
+    @Mock
+    private OrderViewProjector orderViewProjector;
+
     private OrderService orderService;
     private Customer customer;
 
@@ -54,6 +70,8 @@ class OrderServiceTest {
                 customerRepository,
                 remoteInventoryClient,
                 outboxRepository,
+                orderViewRepository,
+                orderViewProjector,
                 new ObjectMapper().findAndRegisterModules());
         customer = TestFixtures.customer(1L, "Ada Lovelace", "ada@example.com");
     }
@@ -94,6 +112,11 @@ class OrderServiceTest {
                 .persist(argThat((OrderOutboxEvent e) -> e.getEventType().equals("order.placed")
                         && e.getAggregateType().equals("order")
                         && e.getPayload().contains("\"paymentMethod\":\"CARD-VISA\"")));
+
+        // ch.26 S6 (DRQ-067): the initial PENDING projection is written in
+        // the SAME @Transactional, with no payment/shipment outcome known
+        // yet (both null -- see OrderViewProjector#project's javadoc).
+        verify(orderViewProjector).project(any(Order.class), isNull(), isNull());
     }
 
     @Test
@@ -111,6 +134,7 @@ class OrderServiceTest {
 
         verify(orderRepository, never()).persist(any(Order.class));
         verify(outboxRepository, never()).persist(any(OrderOutboxEvent.class));
+        verify(orderViewProjector, never()).project(any(Order.class), any(), any());
         // insufficient stock means no snapshot is ever fetched.
         verify(remoteInventoryClient, never()).getStock(anyString());
         verify(remoteInventoryClient, never()).release(anyString(), anyInt());
@@ -144,6 +168,7 @@ class OrderServiceTest {
         verify(remoteInventoryClient).release("SKU-WIDGET-001", 2);
         verify(orderRepository, never()).persist(any(Order.class));
         verify(outboxRepository, never()).persist(any(OrderOutboxEvent.class));
+        verify(orderViewProjector, never()).project(any(Order.class), any(), any());
     }
 
     @Test
@@ -159,11 +184,16 @@ class OrderServiceTest {
         verify(remoteInventoryClient, never()).reserve(anyString(), anyInt());
         verify(orderRepository, never()).persist(any(Order.class));
         verify(outboxRepository, never()).persist(any(OrderOutboxEvent.class));
+        verify(orderViewProjector, never()).project(any(Order.class), any(), any());
     }
 
     @Test
     void getById_notFound_throwsResourceNotFoundException() {
-        when(orderRepository.findByIdOptional(99L)).thenReturn(Optional.empty());
+        // ch.26 S6 (DRQ-067): getById reads EXCLUSIVELY from
+        // OrderViewRepository -- never OrderRepository (the write-model
+        // aggregate). Stubbing orderRepository here would be pointless (and
+        // Mockito's strict stubbing would flag it as unnecessary).
+        when(orderViewRepository.findByIdOptional(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> orderService.getById(99L))
                 .isInstanceOf(ResourceNotFoundException.class)
@@ -171,15 +201,26 @@ class OrderServiceTest {
     }
 
     @Test
-    void listAll_delegatesToRepositoryAndMapsToDto() {
-        Order order = new Order(1L, "ada@example.com", "1 Test Way");
-        order.addItem(new OrderItem("SKU-WIDGET-001", "Standard Widget", 1, 1999L));
-        when(orderRepository.listAll()).thenReturn(List.of(order));
+    void listAll_delegatesToViewRepositoryAndMapsToDto() throws Exception {
+        // ch.26 S6 (DRQ-067): listAll reads EXCLUSIVELY from
+        // OrderViewRepository -- never OrderRepository. Builds a real
+        // OrderView row (same package -- package-private constructor) the
+        // way OrderViewProjector would have, to prove the JSON items column
+        // round-trips into OrderDto.Item byte-for-byte.
+        ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
+        String itemsJson = objectMapper.writeValueAsString(List.of(new OrderDto.Item("SKU-WIDGET-001", 1, 1999L)));
+        OrderView view = new OrderView(
+                1L, 1L, OrderStatus.PENDING.name(), 1999L, Instant.parse("2026-01-07T12:00:00Z"), "1 Test Way",
+                itemsJson, null, null);
+        when(orderViewRepository.listAll()).thenReturn(List.of(view));
 
         List<OrderDto> result = orderService.listAll();
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).customerId()).isEqualTo(1L);
         assertThat(result.get(0).items()).hasSize(1);
+        assertThat(result.get(0).items().get(0).sku()).isEqualTo("SKU-WIDGET-001");
+        assertThat(result.get(0).items().get(0).quantity()).isEqualTo(1);
+        assertThat(result.get(0).items().get(0).unitPriceCents()).isEqualTo(1999L);
     }
 }

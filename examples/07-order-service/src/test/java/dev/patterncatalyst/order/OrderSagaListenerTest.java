@@ -1,6 +1,7 @@
 package dev.patterncatalyst.order;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
@@ -18,15 +19,20 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
- * Tier 1 (unit), ch.26 S5 (DRQ-074). All four reactions LIFTED from the
- * monolith's {@code order.OrderSagaListener} are retested here at the unit
- * level with mocked collaborators, for the guarantees that class's javadoc
- * documents: status-guard idempotency, at-most-once compensating {@code
- * Release}, mutual exclusion between the decline/shipment-failed paths, and
- * {@code CONFIRMED} reachable only via {@link
- * OrderSagaListener#onShipmentDispatched}. The full Reactive Messaging +
- * real-DB round trip (including redelivery through the actual {@code
- * @Incoming} pipeline) is covered by {@code OrderSagaListenerIntegrationTest}.
+ * Tier 1 (unit), ch.26 S5 (DRQ-074)/S6 (DRQ-067/074). All four reactions
+ * LIFTED from the monolith's {@code order.OrderSagaListener} are retested
+ * here at the unit level with mocked collaborators, for the guarantees that
+ * class's javadoc documents: status-guard idempotency, at-most-once
+ * compensating {@code Release}, mutual exclusion between the
+ * decline/shipment-failed paths, {@code CONFIRMED} reachable only via
+ * {@link OrderSagaListener#onShipmentDispatched} -- and, net-new for S6,
+ * that each reaction's read-model projection fires ONLY on the one
+ * transition it guards (never on a redelivered/stray no-op), proving the
+ * idempotency guard protects BOTH the aggregate and the read model
+ * identically. The full Reactive Messaging + real-DB round trip (including
+ * redelivery through the actual {@code @Incoming} pipeline, and the
+ * resulting {@code order_view} row) is covered by {@code
+ * OrderSagaListenerIntegrationTest}/{@code OrderViewProjectionTest}.
  */
 @ExtendWith(MockitoExtension.class)
 class OrderSagaListenerTest {
@@ -37,11 +43,14 @@ class OrderSagaListenerTest {
     @Mock
     private RemoteInventoryClient remoteInventoryClient;
 
+    @Mock
+    private OrderViewProjector orderViewProjector;
+
     private OrderSagaListener listener;
 
     @BeforeEach
     void setUp() {
-        listener = new OrderSagaListener(orderRepository, remoteInventoryClient);
+        listener = new OrderSagaListener(orderRepository, remoteInventoryClient, orderViewProjector);
     }
 
     private static Order pendingOrderWithItems(String... skuQtyPairs) {
@@ -62,6 +71,9 @@ class OrderSagaListenerTest {
         listener.onPaymentCaptured(new PaymentCaptured(1L, 10L, 1000L, "CARD-VISA", "CAPTURED", Instant.now()));
 
         assertThat(order.getStatus()).isEqualTo(OrderStatus.AWAITING_SHIPMENT);
+        // ch.26 S6 (DRQ-067): the read model is projected on the transition,
+        // with the newly-known payment outcome and no shipment outcome yet.
+        verify(orderViewProjector).project(order, "CAPTURED", null);
     }
 
     @Test
@@ -73,6 +85,9 @@ class OrderSagaListenerTest {
         listener.onPaymentCaptured(new PaymentCaptured(1L, 10L, 1000L, "CARD-VISA", "CAPTURED", Instant.now()));
 
         assertThat(order.getStatus()).isEqualTo(OrderStatus.AWAITING_SHIPMENT);
+        // ch.26 S6 (DRQ-067): the status guard protects the projection too
+        // -- a redelivered event past the guarded state never re-projects.
+        verify(orderViewProjector, never()).project(any(), any(), any());
     }
 
     @Test
@@ -81,6 +96,7 @@ class OrderSagaListenerTest {
 
         listener.onPaymentCaptured(new PaymentCaptured(999L, 10L, 1000L, "CARD-VISA", "CAPTURED", Instant.now()));
         // no exception propagated -- consumer stays alive for the next message.
+        verify(orderViewProjector, never()).project(any(), any(), any());
     }
 
     // -- onShipmentDispatched -------------------------------------------------
@@ -94,6 +110,7 @@ class OrderSagaListenerTest {
         listener.onShipmentDispatched(new ShipmentDispatched(1L, 20L, "1 Test Way", "DISPATCHED", Instant.now()));
 
         assertThat(order.getStatus()).isEqualTo(OrderStatus.CONFIRMED);
+        verify(orderViewProjector).project(order, null, "DISPATCHED");
     }
 
     @Test
@@ -106,6 +123,7 @@ class OrderSagaListenerTest {
         listener.onShipmentDispatched(new ShipmentDispatched(1L, 20L, "1 Test Way", "DISPATCHED", Instant.now()));
 
         assertThat(order.getStatus()).isEqualTo(OrderStatus.CONFIRMED);
+        verify(orderViewProjector, never()).project(any(), any(), any());
     }
 
     @Test
@@ -117,6 +135,7 @@ class OrderSagaListenerTest {
         listener.onShipmentDispatched(new ShipmentDispatched(1L, 20L, "1 Test Way", "DISPATCHED", Instant.now()));
 
         assertThat(order.getStatus()).isEqualTo(OrderStatus.PENDING);
+        verify(orderViewProjector, never()).project(any(), any(), any());
     }
 
     @Test
@@ -124,6 +143,7 @@ class OrderSagaListenerTest {
         when(orderRepository.findByIdOptional(999L)).thenReturn(Optional.empty());
 
         listener.onShipmentDispatched(new ShipmentDispatched(999L, 20L, "addr", "DISPATCHED", Instant.now()));
+        verify(orderViewProjector, never()).project(any(), any(), any());
     }
 
     // -- onShipmentFailed -----------------------------------------------------
@@ -139,6 +159,7 @@ class OrderSagaListenerTest {
         assertThat(order.getStatus()).isEqualTo(OrderStatus.SHIPPING_FAILED);
         verify(remoteInventoryClient).release("SKU-A", 2);
         verify(remoteInventoryClient).release("SKU-B", 3);
+        verify(orderViewProjector).project(order, null, "FAILED");
     }
 
     @Test
@@ -152,6 +173,7 @@ class OrderSagaListenerTest {
 
         assertThat(order.getStatus()).isEqualTo(OrderStatus.SHIPPING_FAILED);
         verify(remoteInventoryClient, never()).release(anyString(), anyInt());
+        verify(orderViewProjector, never()).project(any(), any(), any());
     }
 
     @Test
@@ -168,6 +190,7 @@ class OrderSagaListenerTest {
         assertThat(order.getStatus()).isEqualTo(OrderStatus.SHIPPING_FAILED);
         verify(remoteInventoryClient).release("SKU-A", 2);
         verify(remoteInventoryClient).release("SKU-B", 3);
+        verify(orderViewProjector).project(order, null, "FAILED");
     }
 
     @Test
@@ -175,6 +198,7 @@ class OrderSagaListenerTest {
         when(orderRepository.findByIdOptional(999L)).thenReturn(Optional.empty());
 
         listener.onShipmentFailed(new ShipmentFailed(999L, 30L, "addr", "FAILED", Instant.now(), "reason"));
+        verify(orderViewProjector, never()).project(any(), any(), any());
     }
 
     // -- onPaymentDeclined ------------------------------------------------------
@@ -190,6 +214,7 @@ class OrderSagaListenerTest {
         assertThat(order.getStatus()).isEqualTo(OrderStatus.PAYMENT_DECLINED);
         verify(remoteInventoryClient).release("SKU-A", 2);
         verify(remoteInventoryClient).release("SKU-B", 3);
+        verify(orderViewProjector).project(order, "DECLINED", null);
     }
 
     @Test
@@ -203,6 +228,7 @@ class OrderSagaListenerTest {
 
         assertThat(order.getStatus()).isEqualTo(OrderStatus.PAYMENT_DECLINED);
         verify(remoteInventoryClient, never()).release(anyString(), anyInt());
+        verify(orderViewProjector, never()).project(any(), any(), any());
     }
 
     @Test
@@ -211,6 +237,7 @@ class OrderSagaListenerTest {
 
         listener.onPaymentDeclined(
                 new PaymentDeclined(999L, 10L, 5000L, "CARD-DECLINE", "DECLINED", "reason", Instant.now()));
+        verify(orderViewProjector, never()).project(any(), any(), any());
     }
 
     // -- mutual exclusion (H3) ----------------------------------------------
@@ -239,5 +266,6 @@ class OrderSagaListenerTest {
 
         assertThat(stillPending.getStatus()).isEqualTo(OrderStatus.PENDING);
         verify(remoteInventoryClient, times(0)).release("SKU-B", 1);
+        verify(orderViewProjector, never()).project(any(), any(), any());
     }
 }
