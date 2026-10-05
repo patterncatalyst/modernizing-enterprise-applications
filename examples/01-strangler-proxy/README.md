@@ -230,6 +230,49 @@ Avro/Apicurio migration, ch.28, introduces a schema divergence), that is
 where a real translator would belong, same reasoning as Inventory's gRPC
 write-up above.
 
+## The flag: `strangler.shipping.enabled` (shipping-plan.md S7, ch.24, DRQ-065)
+
+| Value | Backend for `/api/shipments/**` | Backend for everything else |
+|---|---|---|
+| `false` (**default**, shipping-plan S7 — not yet cut over) | monolith `:8080` | unaffected |
+| `true` (shipping-plan S8 — cutover) | shipping-service `:8088` | unaffected |
+
+Identical shape to the Review, Notification, Inventory, and Payment flags —
+content-based routing on the `/api/shipments` path prefix, matching the
+**full** incoming path (the same CUTOVER.md paragraph 2 lesson applied a
+fifth time). Note the shipping service listens on **`:8088`**, not `:8086`
+(Debezium Connect, an unrelated compose.yaml service).
+
+### ACL honesty: why this branch is also a transparent proxy, not a translator
+
+The same honesty check already applied to Inventory and Payment above applies
+here too, and the answer is the same:
+
+- The monolith's `/api/shipments` read surface returns
+  `dev.patterncatalyst.monolith.shipping.ShipmentDto`: `record
+  ShipmentDto(Long id, Long orderId, String address, ShipmentStatus status,
+  Instant createdAt)`.
+- The shipping service's `/api/shipments` read surface returns
+  `dev.patterncatalyst.shipping.ShipmentDto` — lifted **unchanged**: `record
+  ShipmentDto(Long id, Long orderId, String address, ShipmentStatus status,
+  Instant createdAt)`. Same field names, types, and order; same paths
+  (`GET /api/shipments/{id}`, `GET /api/shipments?orderId=`).
+- The shipping service's `ShipmentStatus` enum adds `PENDING`/`CANCELLED`/
+  `FAILED` (needed by the shipping-plan S5 saga's compensation leg) alongside
+  the monolith's single `DISPATCHED` value, but `status` is still a plain
+  JSON string on the wire, and `DISPATCHED` is the only value either side has
+  ever produced so far — so the wire shape is unaffected.
+
+Both backends therefore produce **byte-for-byte identical JSON** for this
+read surface. A Camel message translator here would have nothing to
+translate — building one anyway (as the shipping-plan's step title literally
+suggests) would fabricate a redundant ACL for a contract that does not
+differ, exactly the speculative-infrastructure trap the Inventory and Payment
+precedents above already ruled out. So the `/api/shipments` branch is an
+honest, transparent reverse proxy, structurally identical to the Review,
+Notification, Inventory, and Payment branches — there is no
+`ShippingAclRoute` class in this project.
+
 ## Backend targets
 
 Properties name the fixed backend targets each flag chooses between. The
@@ -243,6 +286,7 @@ strangler.review.base-url=http://localhost:8081
 strangler.notification.base-url=http://localhost:8083
 strangler.inventory.base-url=http://localhost:8084
 strangler.payment.base-url=http://localhost:8085
+strangler.shipping.base-url=http://localhost:8088
 ```
 
 ## Ports
@@ -255,6 +299,7 @@ strangler.payment.base-url=http://localhost:8085
 | Notification service (`examples/03-notification-service/`) | 8083 | only reachable through the proxy once the Notification flag is on (notification-plan S7) |
 | Inventory service (`examples/04-inventory-service/`) | 8084 | only reachable through the proxy once the Inventory flag is on (inventory-plan S10); gRPC server at :9004 is used by the monolith directly, not via this proxy |
 | Payment service (`examples/05-payment-service/`) | 8085 | only reachable through the proxy once the Payment flag is on (payment-plan S8); not yet enabled by default (payment-plan S7) |
+| Shipping service (`examples/06-shipping-service/`) | 8088 | only reachable through the proxy once the Shipping flag is on (shipping-plan S8); not yet enabled by default (shipping-plan S7). Note: `:8086` is Debezium Connect (compose.yaml), not this service. |
 
 ## Running it
 
