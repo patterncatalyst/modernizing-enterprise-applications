@@ -30,11 +30,13 @@
         </dependencies>
     </dependencyManagement>
 
+    <!-- ch.17 Phase B (DRQ-029/DRQ-035): quarkus-spring-data-jpa, quarkus-spring-di,
+         and quarkus-spring-web (the Phase A compat shim) have been REMOVED. The read
+         surface now runs on quarkus-rest-jackson, quarkus-hibernate-orm-panache, and
+         plain CDI; the net-new SmallRye Reactive Messaging Kafka consumer and
+         quarkus-websockets-next push are idiomatic from the start (DRQ-035). See
+         MIGRATION.md. -->
     <dependencies>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-spring-data-jpa</artifactId>
-        </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-rest-jackson</artifactId>
@@ -45,15 +47,23 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-spring-di</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-jdbc-postgresql</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-spring-web</artifactId>
+            <artifactId>quarkus-hibernate-orm-panache</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-messaging-kafka</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-websockets-next</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-health</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -78,6 +88,22 @@
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>
             <version>3.27.7</version>
+            <scope>test</scope>
+        </dependency>
+        <!-- S5 consumer tests: feed OrderPlacedEvent through the real
+             Reactive Messaging @Incoming pipeline via SmallRye's in-memory
+             connector (InMemoryConnector.switchIncomingChannelsToInMemory),
+             instead of either requiring a live Kafka broker or bypassing the
+             channel wiring by calling the consumer method directly. -->
+        <dependency>
+            <groupId>io.smallrye.reactive</groupId>
+            <artifactId>smallrye-reactive-messaging-in-memory</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.awaitility</groupId>
+            <artifactId>awaitility</artifactId>
+            <version>4.3.0</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

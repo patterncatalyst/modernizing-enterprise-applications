@@ -9,28 +9,21 @@ import jakarta.persistence.Table;
 import java.time.Instant;
 
 /**
- * ADAPTED from {@code dev.patterncatalyst.monolith.notification.Notification}
- * (ch.17 Phase A, DRQ-035). Unlike review-service's Phase A entities (which
- * were lifted with their {@code @ManyToOne}/{@code @JoinColumn} relations
- * UNCHANGED, because Review stays in the monolith's SHARED schema — see
- * {@code examples/02-review-service/Review.java}), this entity's relations to
- * {@code Customer} and {@code Order} are deliberately NOT lifted.
+ * UNCHANGED across ch.17 Phase A -&gt; Phase B (DRQ-029/DRQ-035), same as
+ * review-service's entities: Panache's REPOSITORY pattern (as opposed to
+ * active-record {@code PanacheEntity}) works against ordinary {@code @Entity}
+ * classes, so zero entity edits were needed for the idiomatic refactor — see
+ * {@link NotificationRepository} for where the Phase A -&gt; B change actually
+ * lives.
  *
- * <p>ONE deliberate, documented adaptation (forced by the own-schema decision,
- * not a Phase-B idiomatic rewrite): the monolith's {@code @ManyToOne Customer}
- * and {@code @ManyToOne Order} associations become plain {@code customerId}/
- * {@code orderId} {@code Long} columns. A service that owns its own schema
+ * <p>The own-schema decision (plain {@code customerId}/{@code orderId}
+ * {@code Long} columns instead of {@code @ManyToOne} relations into the
+ * monolith's {@code customers}/{@code orders} tables) was made back in
+ * Phase A (S4) and is untouched here: a service that owns its own schema
  * cannot hold a JPA relation into tables that live in a schema it does not
- * own (and must not reach across into) — the monolith's {@code customers}/
- * {@code orders} tables are not present in the {@code notification} schema at
- * all. Keeping only the foreign *values* (not JPA relations) is exactly what
- * an event-driven read model needs: ch.17 S5's SmallRye consumer populates
- * this table from the {@code order.placed} event's {@code customerId}/
- * {@code orderId} fields, with no synchronous lookup into another service's
- * data required. {@link NotificationRepository#findAllByCustomerId(Long)}
- * still works unchanged under {@code quarkus-spring-data-jpa} — Spring Data's
- * derived-query mechanism matches on the property name, whether that property
- * is a scalar column or a relation's id.
+ * own. {@link OrderPlacedConsumer} (S5) populates this table directly from
+ * the {@code order.placed} event's {@code customerId}/{@code orderId}
+ * fields — no synchronous lookup into another service's data required.
  */
 @Entity
 @Table(name = "notifications", schema = "notification")
