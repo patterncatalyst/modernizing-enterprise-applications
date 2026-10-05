@@ -1,13 +1,16 @@
-# order-service — Migration Notes (ch.26 Phase A, S4, DRQ-068/073)
+# order-service — Migration Notes (ch.26 Phase A → Phase B, DRQ-068/073/074)
 
-This file is the record of ch.26 S4 — `_plans/iterations/order-plan.md`'s
-scaffold-and-lift step for the order extraction, the LAST and hardest
-extraction in the roadmap. It mirrors `examples/05-payment-service/MIGRATION.md`'s
-/ `examples/06-shipping-service/MIGRATION.md`'s Phase A section, adapted for
-order's two distinguishing concerns: an FK decomposition that touches BOTH
-sides of a relationship (`Order` ⇄ `Customer`), and a live cross-service gRPC
-collaborator (`RemoteInventoryClient`) that other services' Phase A never
-needed.
+This file is the measured record of ch.26's two-phase Order extraction,
+`_plans/iterations/order-plan.md` steps S4 (Phase A) and S5 (Phase B, THIS
+STEP), the LAST and hardest extraction in the roadmap — HARD PART H1, lifting
+the "god service." It mirrors `examples/05-payment-service/MIGRATION.md`'s /
+`examples/06-shipping-service/MIGRATION.md`'s two-phase template, adapted for
+order's distinguishing concerns: an FK decomposition that touches BOTH sides
+of a relationship (`Order` ⇄ `Customer`), a live cross-service gRPC
+collaborator (`RemoteInventoryClient`), and — net-new for S5 — FOUR lifted
+saga reactions (not one, like payment's/shipping's single trigger) whose
+idempotency/at-most-once-compensation/mutual-exclusion guarantees had to
+survive the lift unchanged.
 
 - **Phase A** ("lift the read+command surface onto Quarkus") — THIS STEP (S4).
   The monolith's Spring MVC / Spring DI / Spring Data JPA order
@@ -21,9 +24,8 @@ needed.
   the monolith does — but rebuilt on `quarkus-grpc` instead of the monolith's
   hand-wired `grpc-netty-shaded` plumbing.
 - **Phase B** (idiomatic refactor + CQRS write model + lifted saga reactions +
-  own outbox) is **S5** — NOT this step. **Phase C-equivalent** (read-model
-  projection into `order_view`) is **S6** — NOT this step. Neither has any
-  Java code in this module yet; see "Deferred to S5/S6" below.
+  own outbox) is **S5, THIS STEP** — see "Phase B" below. **Phase C-equivalent**
+  (read-model projection into `order_view`) is **S6** — NOT this step.
 
 ## Per-component lift (Phase A)
 
@@ -184,3 +186,201 @@ to its documented EMPTY starting state. The JVM process was shut down
 cleanly (`:8087`/`:8091` confirmed free via `ss`); the podman stack itself
 (`mea-kafka`, `mea-postgres`, `mea-connect`, `mea-lgtm`) was left running
 untouched.
+
+---
+
+# Phase B (ch.26 S5, DRQ-073/074) — idiomatic refactor + CQRS write model + lifted saga reactions + own outbox
+
+Removes the Phase A Spring-compat shim entirely and authors the net-new CQRS
+write core **idiomatic from the start** (DRQ-073): `placeOrder` as the
+command handler, this service's OWN `order.placed` transactional outbox
+(`OrderOutboxEvent`/`OrderOutboxRepository`/`OrderOutboxRelay`, mirroring
+payment-service's proven shape, DRQ-053-style), and the FOUR saga reactions
+LIFTED from the monolith's `order.OrderSagaListener` as SmallRye `@Incoming`
+consumers in this service's OWN consumer group (`OrderSagaListener`,
+DRQ-074). **Adapted from datamesh's `order-service` with attribution
+(DRQ-032)** — the own-schema/own-Flyway-history/Panache-repository/outbox
+discipline this step applies is the same shape datamesh's reference
+`order-service` and `examples/05-payment-service`/`examples/06-shipping-service`
+already established in this repo; no datamesh source was copied verbatim
+(order's command/saga-reaction shape is unique to this extraction), but the
+*pattern* — idiomatic Quarkus order service, own Postgres, REST read
+surface, Kafka event producer — is the one DRQ-032 names as this
+extraction's adaptation source.
+
+## Per-component lift (Phase A → Phase B)
+
+| Component | Phase A (Spring-compat) | Phase B (idiomatic) |
+|---|---|---|
+| HTTP layer | `OrderController` — Spring MVC `@RestController`/`@RequestMapping`/`@PostMapping`/`@GetMapping` | **Renamed** `OrderResource` — Quarkus REST (`@Path`/`@GET`/`@POST`), plain `Response`/DTO returns. `/api/orders` contract BYTE-FOR-BYTE unchanged: `202 Accepted` + `Location` on `placeOrder`, same `OrderDto` JSON shape. |
+| Data access | `OrderRepository`/`CustomerRepository` — Spring Data `JpaRepository<T, Long>` | Panache REPOSITORY pattern (`PanacheRepository<T>`), no derived-method-name convention; `findById`/`findAll`/`save` → `findByIdOptional`/`listAll`/`persist`. |
+| Service | `OrderService` — `@Service @Scope("application")` | Plain CDI `@ApplicationScoped` (no Spring annotation needed at all — a normal-scoped CDI bean is always mockable). `placeOrder` gains the `order.placed` outbox write (closing the S4-deferred gap); `getById`/`listAll` keep `@Transactional` (unlike payment's/shipping's reads) because `Order.items` is a lazy `@OneToMany` that needs an open Hibernate session through `toDto`'s collection access. |
+| Exception mapping | `GlobalExceptionHandler` — Spring `@RestControllerAdvice`/`@ExceptionHandler` | **Renamed** `GlobalExceptionMapper` — Quarkus REST's `@ServerExceptionMapper`, same three exception→status mappings (404/409/400), same `ApiError` body shape. |
+| gRPC client | `RemoteInventoryClient` — already idiomatic `quarkus-grpc` since S4 | **Unchanged.** |
+| Entities (`Order`/`OrderItem`/`Customer`) | Plain JPA, no Spring annotations | **Unchanged** — these were never Spring-compat-dependent. |
+| Saga reactions | **None exist** — an order placed in Phase A sits `PENDING` forever | **Net-new**: `OrderSagaListener` — four `@Incoming` consumers (`payment-captured`/`payment-declined`/`shipment-dispatched`/`shipment-failed`), lifted in SHAPE (not merely renamed) from the monolith's `order.OrderSagaListener`, own consumer group. |
+| Outbox | Table reserved (`V2__order_outbox.sql`), unwritten | **Net-new**: `OrderOutboxEvent`/`OrderOutboxRepository`/`OrderOutboxRelay` — reuses the EXISTING S4 table (no new migration needed); `placeOrder` writes atomically with the `Order` row. |
+| Build (`pom.xml`) | `quarkus-spring-web`/`-di`/`-data-jpa` present | **Removed** all three; added `quarkus-hibernate-orm-panache`, `quarkus-messaging-kafka`, `quarkus-scheduler`; test-only `smallrye-reactive-messaging-in-memory` + `awaitility`. |
+| Tests | `OrderControllerTest` (`@QuarkusTest`+RestAssured), `OrderServiceTest` (plain Mockito) | `OrderControllerTest` → renamed `OrderResourceTest` (+ a net-new 409 case); `OrderServiceTest` extended with outbox-write assertions; **net-new** `OrderSagaListenerTest` (unit, all four reactions' guard/compensation/mutual-exclusion matrix), `CheckoutOutboxTest` + `OrderSagaListenerIntegrationTest` (real `@Incoming`/`@Channel` pipeline via SmallRye's in-memory connector). |
+
+## The CQRS write model (DRQ-073) — `placeOrder` as the command handler
+
+ONE `@Transactional` method, same shape as the monolith's r06/ch.23-era
+`OrderService#placeOrder`: validate the customer → reserve every line over
+gRPC (`RemoteInventoryClient`, unchanged) → persist the `Order` `PENDING`
+(`orderRepository.persist`) → write `order.placed` to this service's own
+outbox (`OrderOutboxEvent`, same transaction) → return. **No dual-write**:
+the order row and the outbox row either both commit or neither does, because
+both writes happen inside the same `@Transactional` boundary and the outbox
+table lives in the SAME Postgres schema/connection as the `orders` table —
+there is no second datastore, no two-phase commit, and no window where one
+write is visible without the other. `OrderOutboxRelay`'s `@Scheduled` poll
+is a separate, asynchronous, AT-LEAST-ONCE step (same documented limitation
+every outbox in this repo carries) that reads already-committed rows and
+publishes them to Kafka — a crash between the Kafka ack and the
+`published_at` stamp republishes the identical row, which is why the payment
+service's `OrderPlacedConsumer` is idempotent by `orderId` (DRQ-051).
+
+**The pre-handoff compensation catch (DRQ-042), moved in UNCHANGED:** the
+`try/catch` around the reserve-loop/persist/outbox-write releases every
+sku already reserved this checkout on ANY failure in that block — a later
+line out of stock, the order persist throwing, or the outbox write's JSON
+serialization throwing (the last of which is purely defensive; a record of
+primitives/Strings/Instant never actually fails to serialize) — then
+rethrows the original failure. This is the EXACT shape `OrderService`
+carried since S4 (itself lifted from the monolith's r06/ch.23 version),
+just with one more failure mode now inside the try block (the outbox write).
+
+## The four lifted saga reactions (DRQ-074)
+
+`OrderSagaListener` lifts the monolith's `order.OrderSagaListener` — SHAPE
+preserved exactly, re-expressed on SmallRye Reactive Messaging instead of
+Spring Kafka (automatic Jackson record deserialization replaces the
+monolith's manual `ObjectMapper#readValue`; `@Transactional` replaces
+Spring's `@Transactional`; Panache's `findByIdOptional` replaces Spring
+Data's `findById`).
+
+| Monolith reaction | This service's reaction | Guard (idempotency) | Compensation |
+|---|---|---|---|
+| `onPaymentCaptured` | `onPaymentCaptured` | `PENDING` → no-op otherwise | none — transitions to `AWAITING_SHIPMENT` only |
+| `onShipmentDispatched` | `onShipmentDispatched` | `AWAITING_SHIPMENT` → no-op otherwise | none — transitions to `CONFIRMED` only; **the ONLY path to `CONFIRMED`** |
+| `onShipmentFailed` | `onShipmentFailed` | `AWAITING_SHIPMENT` → no-op otherwise | gRPC `Release` for every reserved sku, best-effort (a failure on one sku is logged and does not block releasing the rest) |
+| `onPaymentDeclined` | `onPaymentDeclined` | `PENDING` → no-op otherwise | gRPC `Release` for every reserved sku, best-effort |
+
+**Every guarantee preserved exactly, verified by `OrderSagaListenerTest` +
+`OrderSagaListenerIntegrationTest`:**
+
+- **Status-guard idempotency:** a redelivered event for an order that has
+  already left the guarded pre-transition state is a no-op (log + return,
+  no mutation, no `Release`).
+- **At-most-once compensating `Release`:** a direct consequence of the guard
+  — `onPaymentDeclined`'s and `onShipmentFailed`'s `Release` loops are
+  reachable ONLY on the one transition each guards, so a redelivery never
+  reissues them. Proven with ≥2 skus per compensation test (not a
+  single-item special case).
+- **Mutual exclusion (disjoint by construction):** `onPaymentDeclined` fires
+  only from `PENDING`; `onShipmentFailed` fires only from
+  `AWAITING_SHIPMENT`. An order reaches `AWAITING_SHIPMENT` ONLY via a
+  successful `onPaymentCaptured`, so a decline short-circuits at `PENDING`
+  before `AWAITING_SHIPMENT` is ever reachable, and a shipping failure can
+  only be reached from an order whose payment was NOT declined. Neither
+  reaction can ever double-`Release` the same reservation, and neither can
+  collide with `OrderService#placeOrder`'s pre-handoff catch (that catch
+  only fires for a checkout that never reached `order.placed` being
+  committed; the reactions only fire for an order that DID).
+- **`CONFIRMED` reachable ONLY via `onShipmentDispatched`:** `onPaymentCaptured`
+  never calls `Order#confirm()` — proven by
+  `onShipmentDispatched_pendingOrder_notYetAwaitingShipment_isNoOp_neverConfirms`.
+- **Unknown order / partial `Release` failure never throw out of the
+  consumer:** both logged and handled inline (`onPaymentCaptured_unknownOrder_doesNotThrow`
+  etc.; `onShipmentFailed_partialReleaseFailure_doesNotThrow_stillAttemptsRemainingSkus`).
+- **Documented limitation carried over unchanged (DRQ-056):**
+  `onShipmentFailed` compensates inventory only — the payment already
+  captured is NOT refunded.
+
+## Divergences (Phase B)
+
+- **`Location` header is now an absolute URL**, not the literal relative
+  string Spring's `ResponseEntity.location(URI)` echoed — Jakarta REST's
+  `Response.accepted(...).location(URI)` resolves the URI against the
+  request's base URI. Same divergence review-service's/payment-service's
+  Phase B documents; the Order Context Contract only asserts the header is
+  *present* (`tooling/newman/mea.postman_collection.json`, "9a"), so this is
+  a test-assertion-strictness adjustment (`OrderResourceTest` now asserts
+  `endsWith(...)`), not a contract change.
+- **This service's outbox relay has a single emitter**, not a
+  switch-on-`eventType` dispatch table like payment's two-outcome relay —
+  this service's outbox only ever records ONE event type (`order.placed`).
+  Adding dispatch machinery for event types this aggregate can never
+  produce would be speculative infrastructure (see `OrderOutboxRelay`'s
+  javadoc).
+- **`getById`/`listAll` keep `@Transactional`** (payment's/shipping's
+  Phase B reads dropped it) because `Order.items` is a lazy `@OneToMany`
+  collection `toDto` walks — an open Hibernate session must span that
+  access.
+
+## Before / after metrics
+
+Method: packaged (`./mvnw -q package`) artifacts run directly —
+`java -jar target/quarkus-app/quarkus-run.jar` — against the real
+podman-stack Postgres (`localhost:5432`) and, for Phase B, the real
+podman-stack Kafka (`localhost:9092`; Phase A never configured messaging).
+Startup time is Quarkus's own "started in `X`s" log line. RSS is
+`ps -o rss` on the running process, sampled ~3s after the ready log line.
+Both phases ran against **isolated scratch Postgres schemas**
+(`order_service_phasea_scratch`/`order_service_phaseb_scratch`, dropped
+afterward) to avoid touching this service's real `order_service` schema/
+Flyway history or skewing RSS with accumulated rows — same discipline
+payment-service's/notification-service's MIGRATION.md used. Phase B's
+measurement run used a throwaway offset-reset override
+(`auto.offset.reset=latest` on all four incoming channels) so RSS reflects
+steady-state consumer connection overhead, not a one-time backlog replay.
+Phase A was reconstructed byte-for-byte from this step's pre-edit source
+(the exact Spring-compat `OrderController`/`GlobalExceptionHandler`/
+`OrderRepository`/`CustomerRepository`/`OrderService`/pom.xml/
+application.properties captured before this step's edits, verified against
+the conversation record) into a scratch directory and packaged the same
+way — no git operations were used (per this step's constraints).
+
+| Build | Startup time | RSS | Installed features |
+|---|---|---|---|
+| **Phase A** — JVM, Spring-compat | 1.721 s | ~308 MB | 17 (`agroal, cdi, flyway, grpc-client, hibernate-orm, hibernate-orm-panache, hibernate-validator, jdbc-postgresql, narayana-jta, rest, rest-jackson, smallrye-context-propagation, smallrye-health, spring-data-jpa, spring-di, spring-web, vertx`) |
+| **Phase B** — JVM, idiomatic + 4 Kafka consumers/1 producer + outbox relay | 2.050 s | ~407 MB | 18 (spring-compat extensions removed; `kafka-client, messaging, messaging-kafka, scheduler` added) |
+
+**Reading the numbers:** like payment's/shipping's Phase A → Phase B, this
+step adds REAL runtime capability, not just an idiomatic rewrite of the same
+surface — and more of it than either: FOUR live Kafka consumers (one per
+saga reaction, vs. payment's/shipping's one trigger consumer each) plus one
+live Kafka producer (the outbox relay's emitter) plus a `@Scheduled`
+poller. Startup is ~19% slower (1.72s → 2.05s, mostly the four consumers'
+connection + metadata-fetch against the live broker) and RSS is ~32% higher
+(308MB → 407MB, proportionally larger than payment's +12%/shipping's
+comparable bump because FOUR consumer clients each carry their own
+buffers/metadata caches, not just one) — the honest cost of running four
+independent saga reactions as genuinely live consumers, not a regression to
+chase. Removing the three Spring-compat extensions on its own (holding the
+feature set constant) would have been a modest win in the same direction as
+review-service's RSS drop; that effect is masked here by the much larger
+net-new four-consumer Kafka footprint added in the same step. Native image
+was **not** attempted for this step (time-boxed per the plan's "native
+optional," same choice payment-service's/shipping-service's Phase B made).
+
+## Verification (Phase B)
+
+- `./mvnw -q package`: **BUILD SUCCESS**, 32 tests, 0 failures, 0 errors
+  (`OrderResourceTest` 6, `OrderServiceTest` 6, `OrderSagaListenerTest` 15,
+  `CheckoutOutboxTest` 2, `OrderSagaListenerIntegrationTest` 3).
+- `grep -n "quarkus-spring\|org.springframework" pom.xml` → zero matches
+  (the one hit is a comment NAMING the now-removed extensions, not a
+  dependency coordinate).
+- `grep -rn "org.springframework" src/main/java src/test/java` → zero
+  matches in both trees.
+- Live-run proof (packaged JVM artifact, scratch schema, real podman-stack
+  Kafka): `/q/health` → `UP`; `Installed features` log line confirmed no
+  `spring-*` feature present and `kafka-client`/`messaging`/
+  `messaging-kafka`/`scheduler` present. Both scratch runs' JVM processes
+  were shut down cleanly (`:8187` confirmed free via `ss`) and both scratch
+  Postgres schemas (`order_service_phasea_scratch`/
+  `order_service_phaseb_scratch`) were dropped afterward; the podman stack
+  itself (`mea-kafka`, `mea-postgres`, `mea-connect`, `mea-lgtm`) was left
+  running untouched throughout.

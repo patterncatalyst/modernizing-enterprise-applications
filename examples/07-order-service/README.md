@@ -1,14 +1,19 @@
 # order-service
 
-**ch.26 Phase A ("lift the read+command surface onto Quarkus") — S4
-(DRQ-068/073).** The monolith's Spring MVC / Spring DI / Spring Data JPA order
-READ+COMMAND surface (`OrderController` → `/api/orders`,
-`OrderService#getById/listAll/placeOrder`, `Order`/`OrderItem` + repo,
-`Customer` + repo) is lifted onto Quarkus largely unchanged via the
-Quarkiverse Spring-compatibility extensions (`quarkus-spring-web`,
-`quarkus-spring-di`, `quarkus-spring-data-jpa`), mirroring
-`examples/05-payment-service`'s and `examples/06-shipping-service`'s Phase A.
-See `MIGRATION.md` for the component-by-component table.
+**ch.26 Phase B ("idiomatic refactor + CQRS write model + lifted saga
+reactions + own outbox") — S5 (DRQ-073/074), HARD PART H1.** The Phase A
+Spring-compat shim is gone — `/api/orders` now runs on Quarkus REST
+(`OrderResource`) + Panache (`OrderRepository`/`CustomerRepository`) + plain
+CDI (`OrderService`) — and the net-new CQRS write core is layered on top:
+`placeOrder` is the command handler (validate → reserve over gRPC → persist
+`PENDING` → write `order.placed` to this service's OWN transactional outbox,
+atomic with the order row, no dual-write), and `OrderSagaListener` lifts the
+monolith's FOUR `OrderSagaListener` reactions as SmallRye `@Incoming`
+consumers in this service's OWN consumer group, preserving the
+status-guard-idempotency / at-most-once-compensating-`Release` /
+mutual-exclusion guarantees exactly. Mirrors `examples/05-payment-service`'s
+and `examples/06-shipping-service`'s Phase B. See `MIGRATION.md` for the
+component-by-component table and measured before/after metrics.
 
 **This service OWNS ITS OWN SCHEMA from day one** (`order_service` — not
 `order`, a reserved Postgres keyword; see `V1__create_order_schema.sql`) —
@@ -24,21 +29,24 @@ this same schema (see `Order.java`'s javadoc).
 - Port `8087` (test port `8091`). Read+command endpoints (identical external
   `OrderDto` contract to the monolith, including `shippingAddress`):
   `POST /api/orders` → `202 Accepted` + `Location` (always `PENDING`);
-  `GET /api/orders/{id}` → `OrderDto` (200/404); `GET /api/orders` → array.
+  `GET /api/orders/{id}` → `OrderDto` (200/404); `GET /api/orders` → array;
+  409 `OUT_OF_STOCK` on insufficient inventory.
 - `src/main/proto` carries a verbatim copy of the inventory service's
-  `.proto`; `RemoteInventoryClient` (`quarkus-grpc`) is WIRED (not a no-op
-  stub) into `placeOrder`'s reserve/release/getStock path, same shape the
-  monolith used — see `MIGRATION.md`/`RemoteInventoryClient`'s javadoc for
-  what live end-to-end proof is deferred to S5.
-- No Kafka consumer/producer, no saga reactions, no outbox relay, and no
-  read-model projection yet — that is ch.26 S5 (idiomatic refactor + CQRS
-  write model + lifted saga reactions + own outbox) and S6 (read-model
-  projection into the `order_view` table reserved below). This service's
-  `outbox` and `order_view` tables are RESERVED via Flyway, empty and
-  unwritten, so S5/S6 can add the Java-side wiring without a schema
-  migration of their own. The store starts empty and is forward-filled only
-  — deliberately NO CDC backfill from the monolith's existing data (see
-  `MIGRATION.md`).
+  `.proto`; `RemoteInventoryClient` (`quarkus-grpc`) is WIRED into
+  `placeOrder`'s reserve/release/getStock path, same shape the monolith used.
+- **Own transactional outbox** (`OrderOutboxEvent`/`OrderOutboxRepository`/
+  `OrderOutboxRelay`): `placeOrder` writes `order.placed` atomically with the
+  `Order` row; a `@Scheduled` relay publishes unpublished rows to Kafka
+  (`order-placed` channel → `order.placed` topic).
+- **Four lifted saga reactions** (`OrderSagaListener`, own consumer group):
+  `payment-captured` → `AWAITING_SHIPMENT`; `shipment-dispatched` →
+  `CONFIRMED` (the ONLY path to `CONFIRMED`); `shipment-failed` →
+  `SHIPPING_FAILED` + compensating `Release` per sku; `payment-declined` →
+  `PAYMENT_DECLINED` + compensating `Release` per sku. Status-guard
+  idempotent, at-most-once compensation, mutually exclusive by construction
+  — see `MIGRATION.md`'s Phase B section.
+- No read-model projection yet — that is ch.26 S6 (`order_view`, reserved
+  via Flyway, empty and unwritten).
 
 This project uses Quarkus, the Supersonic Subatomic Java Framework.
 
@@ -95,11 +103,12 @@ If you want to learn more about building native executables, please consult <htt
 
 ## Related Guides
 
-- Quarkus Extension for Spring Data JPA API ([guide](https://quarkus.io/guides/spring-data-jpa)): Use Spring Data JPA annotations to create your data access layer
-- SmallRye Health ([guide](https://quarkus.io/guides/smallrye-health)): Monitor service health
+- REST ([guide](https://quarkus.io/guides/rest)): Jakarta REST (`OrderResource`), `@ServerExceptionMapper` (`GlobalExceptionMapper`)
+- Hibernate ORM with Panache ([guide](https://quarkus.io/guides/hibernate-orm-panache)): the REPOSITORY pattern (`OrderRepository`/`CustomerRepository`/`OrderOutboxRepository`)
 - Hibernate Validator ([guide](https://quarkus.io/guides/validation)): Bean validation using Hibernate Validator and Jakarta Validation annotations
 - Flyway ([guide](https://quarkus.io/guides/flyway)): Handle your database schema migrations
-- Quarkus Extension for Spring DI API ([guide](https://quarkus.io/guides/spring-di)): Define your dependency injection with Spring DI
 - JDBC Driver - PostgreSQL ([guide](https://quarkus.io/guides/datasource)): Connect to the PostgreSQL database via JDBC
-- Quarkus Extension for Spring Web API ([guide](https://quarkus.io/guides/spring-web)): Use Spring Web annotations to create your REST services
-- gRPC ([guide](https://quarkus.io/guides/grpc-service-consumption)): Consume a gRPC service (RemoteInventoryClient's `@GrpcClient` blocking stub)
+- gRPC ([guide](https://quarkus.io/guides/grpc-service-consumption)): Consume a gRPC service (`RemoteInventoryClient`'s `@GrpcClient` blocking stub)
+- SmallRye Reactive Messaging - Kafka Connector ([guide](https://quarkus.io/guides/kafka)): the four `@Incoming` saga reactions (`OrderSagaListener`) + the outbox relay's `@Channel` emitter (`OrderOutboxRelay`)
+- Scheduler ([guide](https://quarkus.io/guides/scheduler)): `OrderOutboxRelay`'s `@Scheduled` poll
+- SmallRye Health ([guide](https://quarkus.io/guides/smallrye-health)): Monitor service health

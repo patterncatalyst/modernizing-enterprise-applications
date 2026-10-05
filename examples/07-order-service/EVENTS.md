@@ -17,6 +17,15 @@ service` and `examples/06-shipping-service` only added their
 `mp.messaging.*` channel config at their own wiring step, not at their
 records-only S3.
 
+**Updated at S5 (DRQ-073/074):** the wiring described below now exists.
+`order.placed` is produced by `OrderOutboxRelay` (own `@Channel("order-placed")`
+emitter, `outbox` table reused unchanged from S4). The four consumed events
+are reacted to by `OrderSagaListener`'s `@Incoming` consumers
+(`payment-captured`/`payment-declined`/`shipment-dispatched`/
+`shipment-failed` channels), in this service's OWN consumer group
+(defaulted from `quarkus.application.name` = `order-service`). The
+read-model projection (S6) is still not wired.
+
 ## Produces
 
 | Topic | Record | Written by |
@@ -28,9 +37,9 @@ which reacts with exactly one of `payment.captured` / `payment.declined`.
 
 ## Consumes
 
-| Topic | Record | Produced by | Reaction (lands in S5) |
+| Topic | Record | Produced by | Reaction (wired at S5, `OrderSagaListener`) |
 |---|---|---|---|
-| `payment.captured` | `dev.patterncatalyst.order.PaymentCaptured` | `examples/05-payment-service` (its own transactional outbox, DRQ-053) | Transition order to `OrderStatus.CONFIRMED`, trigger shipping (DRQ-049/050) |
+| `payment.captured` | `dev.patterncatalyst.order.PaymentCaptured` | `examples/05-payment-service` (its own transactional outbox, DRQ-053) | Transition order `PENDING` → `OrderStatus.AWAITING_SHIPMENT` (DRQ-049/050); shipping is driven by the shipping service's saga off `payment.captured`, not in-process |
 | `payment.declined` | `dev.patterncatalyst.order.PaymentDeclined` | `examples/05-payment-service` (its own transactional outbox, DRQ-053) | Transition order to `OrderStatus.PAYMENT_DECLINED`, compensating gRPC inventory `Release` for every reserved sku (DRQ-042/049) |
 | `shipment.dispatched` | `dev.patterncatalyst.order.ShipmentDispatched` | `examples/06-shipping-service` (its own transactional outbox, DRQ-063/053) | Transition order from `OrderStatus.AWAITING_SHIPMENT` to `OrderStatus.CONFIRMED` (DRQ-061) |
 | `shipment.failed` | `dev.patterncatalyst.order.ShipmentFailed` | `examples/06-shipping-service` (its own transactional outbox, DRQ-063/053) | Transition order to terminal `OrderStatus.SHIPPING_FAILED`, compensating gRPC inventory `Release` for every reserved sku (DRQ-042/049/060) |
