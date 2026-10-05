@@ -517,17 +517,19 @@ strangler proxy, and an equivalence-gate check before the monolith module is dec
 | 2 | **notification** | Event consumer; content-based routing; decorating collaborator | **Outbox** in monolith → Kafka; idempotent consumer | Quarkus + Camel (Kafka consumer, WebSockets.Next) | ch.16–17 | **DONE** (r04 — extraction 2 of 6) |
 | 3 | **inventory** | Synchronous gRPC; decomposed DB; decorating collaborator | **CDC (Debezium)** backfill from shared schema → owned DB, then cut writes | Quarkus gRPC server | ch.19 | **DONE** (r05 — extraction 3 of 6) |
 | 4 | **payment** | Event choreography (`order.placed`→`payment.captured`) | Choreographed **saga**; compensations; ACID→ACD realized | Quarkus + Camel (Kafka) | ch.23 | **DONE** (r06/ch.23, S14 reconcile — extraction 4 of 6; was "in progress" through S1–S13) |
-| 5 | **shipping** | Completes the chain; alternative orchestration | **Orchestrated saga** via Camel Saga EIP | Quarkus + Camel (Saga EIP) | ch.24 | not started (resumes from ch.23, see `payment-plan.md` resume boundary) |
+| 5 | **shipping** | Completes the chain; alternative orchestration | **Orchestrated saga** via Camel Saga EIP | Quarkus + Camel (Saga EIP) | ch.24 | **IN PROGRESS** (r07/ch.24, orchestrated saga; S1 framed, S2–S14 open — resumes from ch.23, see `payment-plan.md` resume boundary) |
 | 6 | **order** (+ gateway) | Core aggregate, extracted last; GraphQL read side | **CQRS** read model; event-sourcing optional; monolith decommissioned | Quarkus REST/Kafka + GraphQL gateway | ch.26 | not started |
 
-**Extractions done: 4 of 6** (review, notification, inventory, payment) as of r06/ch.23 S14. Status column introduced/backfilled at this reconcile pass (r06/ch.23 S14); ch.15/ch.17/ch.19 marked DONE retroactively from their own `_plans/iterations/{notification,inventory}-plan.md` step annotations and committed `examples/*/CUTOVER.md` evidence — no new work implied by the backfill.
+**Extractions done: 4 of 6** (review, notification, inventory, payment) as of r06/ch.23 S14; **shipping in progress** (r07/ch.24, S1 — not yet done). Status column introduced/backfilled at this reconcile pass (r06/ch.23 S14); ch.15/ch.17/ch.19 marked DONE retroactively from their own `_plans/iterations/{notification,inventory}-plan.md` step annotations and committed `examples/*/CUTOVER.md` evidence — no new work implied by the backfill.
 
 **Migration depth (CONFIRMED, revised DRQ-026):** every extraction above
 (1–6 — review, notification, inventory, payment, shipping, order+gateway) runs
 the full `migrate-spring-to-quarkus` process in complete depth — not "full
 once for Review, then summarize the rest." **Scope impact:** this enlarges
-iterations r04–r07 (each carries a full per-service migration writeup plus
-tests, not an abbreviated pass for five of the six services). **Mitigation:**
+iterations r04–r08 (each now carries exactly one full per-service migration
+writeup plus tests, per the one-extraction-per-iteration cadence confirmed at
+ch.24/r07 S1 — see §J: r04 notification, r05 inventory, r06 payment, r07
+shipping, r08 order+gateway). **Mitigation:**
 per-service migration chapters share a repeatable template, with the full
 mechanical migration detail living in a shared appendix that each chapter
 references, so chapters stay readable and prose doesn't balloon.
@@ -749,16 +751,30 @@ increment; later relays resume from the `build-plan.md` status table.
 | **r03** | Front matter + ADLC | Part 0 (00–02), Part 1 (03–04), Part 2 (05–07), finish Part 3 prose (08–10) | ADLC-Part credibility; monolith completeness |
 | **r04** | Seams + first event-driven | Part 4 (11–13), ch.14, ch.16, **Notification extraction (ch.17, full-depth migrate-spring-to-quarkus)** + outbox intro | decomposition-pattern coverage; event-driven mechanics |
 | **r05** | Data patterns | Part 6 (18–22) incl. **Inventory extraction (ch.19, full-depth migrate-spring-to-quarkus)** + CDC, outbox-done-right, CQRS, ACID→ACD | the hardest data patterns; decomposed-DB mechanics |
-| **r06** | Sagas + resilience | Part 7 (23–25) incl. **Payment + Shipping extractions (both full-depth migrate-spring-to-quarkus)**, saga failure paths | saga choreo+orchestrated; failure modes |
-| **r07** | Comms + contracts | Part 8 (26–28) incl. **Order extraction + gateway (full-depth migrate-spring-to-quarkus; strangler completes)**, chassis, registry | core-aggregate extraction; contract governance |
+| **r06** | Sagas — choreographed | Part 7 ch.23 incl. **Payment extraction (ch.23, full-depth migrate-spring-to-quarkus)**, choreographed saga | saga choreography; decline/compensation failure modes |
+| **r07** | Sagas — orchestrated + resilience | Part 7 ch.24–25 incl. **Shipping extraction (ch.24, full-depth migrate-spring-to-quarkus, orchestrated saga via Camel Saga EIP)**, resilience (circuit breaker/discovery/health, ch.25) — **IN PROGRESS, S1 framed** | saga orchestration; coordinator-driven compensation across contexts |
+| **r08** | Comms + contracts | Part 8 (26–28) incl. **Order extraction + gateway (full-depth migrate-spring-to-quarkus; strangler completes)**, chassis, registry | core-aggregate extraction; contract governance |
+| **r09** | Operate + deliver + appendices | Part 9 (29–30), ch.31; minikube substrate; port/adapt all reuse appendices; reconciliation pass | mesh/deploy/observability on k8s; CI/CD; reuse drift |
+| **r10** | Deck + close | ch.32 conclusion; rebuild deck (lgtm-presentation); cross-linking; final validation; release via lgtm-github | deck/content drift; final acceptance |
 
-**Scope impact (DRQ-026, revised):** r04–r07 are enlarged relative to the
-original plan — each now carries a *full*, not summarized, per-service
-migration writeup and test suite. Mitigation: a shared per-service migration
-template + appendix (see §E) keeps the added detail from inflating chapter
-prose past the 2k target.
-| **r08** | Operate + deliver + appendices | Part 9 (29–30), ch.31; minikube substrate; port/adapt all reuse appendices; reconciliation pass | mesh/deploy/observability on k8s; CI/CD; reuse drift |
-| **r09** | Deck + close | ch.32 conclusion; rebuild deck (lgtm-presentation); cross-linking; final validation; release via lgtm-github | deck/content drift; final acceptance |
+**Cadence reconciled (CONFIRMED at ch.24/r07 S1):** r06 and r07 are now
+**one extraction per iteration** (r06 = payment only, r07 = shipping only),
+not the original "Payment + Shipping both in r06" grouping — order+gateway
+correspondingly shifts from r07 to **r08**. **Scope impact (DRQ-026,
+revised):** r04–r08 are enlarged relative to the original plan — each now
+carries a *full*, not summarized, per-service migration writeup and test
+suite. Mitigation: a shared per-service migration template + appendix (see
+§E) keeps the added detail from inflating chapter prose past the 2k target.
+
+**Known drift (flagged, not fully cascaded):** shifting order+gateway to r08
+pushes the former r08 ("Operate + deliver + appendices") and r09 ("Deck +
+close") themes down to **r09** and **r10** respectively, as reflected in the
+table above — extending the iteration count past DRQ-010's original "9
+iterations (r01–r09)" estimate by one. This table's Iter column is
+renumbered accordingly at this S1 pass (ch.24 scope); other mentions of
+r08/r09/"9 iterations" elsewhere in this document (§A.1 overview, §A.2 T7,
+§B.3 appendix-porting reference, §K execution mapping, §M risk R4) are **not**
+touched here and are left for a dedicated reconciliation pass.
 
 **Round-1 boundary:** r01 ends at approved planning artifacts. No repo is
 created, nothing is pushed, until the user approves. Repo creation + first branch
