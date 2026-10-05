@@ -1,0 +1,222 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2000 1700" font-family="'Red Hat Text', system-ui, sans-serif" role="img">
+<defs><marker id="a" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#555"/></marker><marker id="am" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2f5f3d"/></marker></defs>
+<rect x="20" y="50" width="1960" height="250" rx="12" fill="#fafafa" stroke="#ddd"/>
+<text x="32" y="70" font-size="12" font-weight="700" fill="#1d1d1d">Checkout — synchronous, unchanged from ch.19/ch.23</text>
+<rect x="20" y="320" width="1960" height="220" rx="12" fill="#fafafa" stroke="#ddd"/>
+<text x="32" y="340" font-size="12" font-weight="700" fill="#1d1d1d">Payment capture — async choreography, unchanged from ch.23</text>
+<rect x="20" y="560" width="1960" height="340" rx="12" fill="#eaf4ec" stroke="#ddd"/>
+<text x="32" y="580" font-size="12" font-weight="700" fill="#1d1d1d">Shipping orchestrated saga — the Camel Saga EIP coordinator sequences fulfilment (ch.24)</text>
+<rect x="20" y="920" width="1960" height="200" rx="12" fill="#fafafa" stroke="#ddd"/>
+<text x="32" y="940" font-size="12" font-weight="700" fill="#1d1d1d">Success — saga completes (completionMode=AUTO; no exception thrown)</text>
+<rect x="20" y="1140" width="1960" height="440" rx="12" fill="#fafafa" stroke="#ddd"/>
+<text x="32" y="1160" font-size="12" font-weight="700" fill="#1d1d1d">Failure — book-carrier throws SHIP-FAIL; coordinator compensates (delegated to the order context)</text>
+<rect x="40" y="100" width="160" height="80" rx="9" fill="#ffffff" stroke="#999999" stroke-width="1.5"/>
+<text x="120.0" y="138.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Client</text>
+<text x="120.0" y="155.0" font-size="11.5" fill="#555555" text-anchor="middle">POST /api/orders</text>
+<rect x="230" y="100" width="260" height="80" rx="9" fill="#eef4fb" stroke="#2f6db5" stroke-width="2"/>
+<text x="360.0" y="138.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">OrderService.placeOrder()</text>
+<text x="360.0" y="155.0" font-size="11.5" fill="#555555" text-anchor="middle">reserve, persist PENDING, outbox — one @Transactional</text>
+<rect x="520" y="100" width="220" height="80" rx="9" fill="#eaf4ec" stroke="#3d7a4e" stroke-width="2"/>
+<text x="630.0" y="138.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Inventory service</text>
+<text x="630.0" y="155.0" font-size="11.5" fill="#555555" text-anchor="middle">:9004 — gRPC Reserve (SYNC)</text>
+<rect x="770" y="100" width="210" height="80" rx="9" fill="#111111" stroke="#111111" stroke-width="2"/>
+<text x="875.0" y="138.0" font-size="13.5" font-weight="700" fill="#ffffff" text-anchor="middle">202 Accepted</text>
+<text x="875.0" y="155.0" font-size="11.5" fill="#dddddd" text-anchor="middle">order PENDING</text>
+<rect x="230" y="210" width="260" height="70" rx="9" fill="#ffffff" stroke="#999999" stroke-width="1.5"/>
+<text x="360.0" y="243.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">order.placed outbox row</text>
+<text x="360.0" y="260.0" font-size="11.5" fill="#555555" text-anchor="middle">same txn as persist</text>
+<rect x="520" y="210" width="220" height="70" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
+<text x="630.0" y="243.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">OutboxRelay</text>
+<text x="630.0" y="260.0" font-size="11.5" fill="#555555" text-anchor="middle">@Scheduled poller</text>
+<rect x="770" y="210" width="220" height="70" rx="9" fill="#111111" stroke="#111111" stroke-width="2"/>
+<text x="880.0" y="243.0" font-size="13.5" font-weight="700" fill="#ffffff" text-anchor="middle">Kafka topic</text>
+<text x="880.0" y="260.0" font-size="11.5" fill="#dddddd" text-anchor="middle">order.placed</text>
+<rect x="230" y="370" width="260" height="70" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
+<text x="360.0" y="403.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">OrderPlacedConsumer</text>
+<text x="360.0" y="420.0" font-size="11.5" fill="#555555" text-anchor="middle">@Incoming(order.placed)</text>
+<rect x="520" y="370" width="220" height="70" rx="9" fill="#eaf4ec" stroke="#3d7a4e" stroke-width="2"/>
+<text x="630.0" y="403.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">PaymentService</text>
+<text x="630.0" y="420.0" font-size="11.5" fill="#555555" text-anchor="middle">charge — idempotent by orderId</text>
+<rect x="230" y="460" width="260" height="70" rx="9" fill="#ffffff" stroke="#999999" stroke-width="1.5"/>
+<text x="360.0" y="493.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">payment outbox row</text>
+<text x="360.0" y="510.0" font-size="11.5" fill="#555555" text-anchor="middle">CAPTURED — same txn</text>
+<rect x="520" y="460" width="220" height="70" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
+<text x="630.0" y="493.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">PaymentOutboxRelay</text>
+<text x="630.0" y="510.0" font-size="11.5" fill="#555555" text-anchor="middle">@Scheduled poller</text>
+<rect x="790" y="400" width="230" height="70" rx="9" fill="#111111" stroke="#111111" stroke-width="2"/>
+<text x="905.0" y="433.0" font-size="13.5" font-weight="700" fill="#ffffff" text-anchor="middle">Kafka topic</text>
+<text x="905.0" y="450.0" font-size="11.5" fill="#dddddd" text-anchor="middle">payment.captured</text>
+<rect x="40" y="610" width="270" height="80" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
+<text x="175.0" y="648.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">OrderSagaListener</text>
+<text x="175.0" y="665.0" font-size="11.5" fill="#555555" text-anchor="middle">onPaymentCaptured() — separate consumer group</text>
+<rect x="40" y="710" width="270" height="70" rx="9" fill="#111111" stroke="#111111" stroke-width="2"/>
+<text x="175.0" y="750.5" font-size="13.5" font-weight="700" fill="#ffffff" text-anchor="middle">Order: AWAITING_SHIPMENT</text>
+<rect x="360" y="610" width="240" height="80" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
+<text x="480.0" y="648.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">PaymentCapturedConsumer</text>
+<text x="480.0" y="665.0" font-size="11.5" fill="#555555" text-anchor="middle">shipping service — @Incoming</text>
+<rect x="360" y="710" width="240" height="70" rx="9" fill="#ffffff" stroke="#999999" stroke-width="1.5"/>
+<text x="480.0" y="743.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">ShippingService</text>
+<text x="480.0" y="760.0" font-size="11.5" fill="#555555" text-anchor="middle">processPaymentCaptured() — idempotent by orderId</text>
+<rect x="660" y="640" width="290" height="120" rx="9" fill="#111111" stroke="#111111" stroke-width="2"/>
+<text x="805.0" y="690.5" font-size="13.5" font-weight="700" fill="#ffffff" text-anchor="middle">Camel Saga EIP coordinator</text>
+<text x="805.0" y="707.5" font-size="11.5" fill="#dddddd" text-anchor="middle">InMemorySagaService — direct:ship-start</text>
+<text x="805.0" y="722.5" font-size="11.5" fill="#dddddd" text-anchor="middle">.saga() sequences steps + owns the compensation decision</text>
+<rect x="1010" y="580" width="160" height="55" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
+<text x="1090.0" y="605.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">① enrich</text>
+<text x="1090.0" y="622.5" font-size="11.5" fill="#555555" text-anchor="middle">shipping address</text>
+<rect x="1010" y="645" width="160" height="55" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
+<text x="1090.0" y="670.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">② dispatch</text>
+<text x="1090.0" y="687.5" font-size="11.5" fill="#555555" text-anchor="middle">persist PENDING shipment</text>
+<rect x="1010" y="710" width="160" height="55" rx="9" fill="#eaf4ec" stroke="#3d7a4e" stroke-width="2"/>
+<text x="1090.0" y="735.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">③ book-carrier</text>
+<text x="1090.0" y="752.5" font-size="11.5" fill="#555555" text-anchor="middle">SHIP-FAIL sentinel throws here</text>
+<rect x="1010" y="775" width="160" height="55" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
+<text x="1090.0" y="800.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">④ emit</text>
+<text x="1090.0" y="817.5" font-size="11.5" fill="#555555" text-anchor="middle">shipment.dispatched (same txn as DISPATCHED)</text>
+<rect x="360" y="970" width="220" height="70" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
+<text x="470.0" y="1003.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">ShipmentOutboxRelay</text>
+<text x="470.0" y="1020.0" font-size="11.5" fill="#555555" text-anchor="middle">@Scheduled poller</text>
+<rect x="610" y="970" width="230" height="70" rx="9" fill="#111111" stroke="#111111" stroke-width="2"/>
+<text x="725.0" y="1003.0" font-size="13.5" font-weight="700" fill="#ffffff" text-anchor="middle">Kafka topic</text>
+<text x="725.0" y="1020.0" font-size="11.5" fill="#dddddd" text-anchor="middle">shipment.dispatched</text>
+<rect x="870" y="970" width="280" height="70" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
+<text x="1010.0" y="1003.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">monolith: onShipmentDispatched()</text>
+<text x="1010.0" y="1020.0" font-size="11.5" fill="#555555" text-anchor="middle">@KafkaListener — idempotent</text>
+<rect x="1180" y="970" width="220" height="70" rx="9" fill="#111111" stroke="#111111" stroke-width="2"/>
+<text x="1290.0" y="1010.5" font-size="13.5" font-weight="700" fill="#ffffff" text-anchor="middle">Order: CONFIRMED</text>
+<rect x="1010" y="1190" width="210" height="90" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
+<text x="1115.0" y="1233.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">ShipFailException</text>
+<text x="1115.0" y="1250.0" font-size="11.5" fill="#555555" text-anchor="middle">SHIP-FAIL sentinel in address</text>
+<rect x="1260" y="1190" width="250" height="100" rx="9" fill="#111111" stroke="#111111" stroke-width="2"/>
+<text x="1385.0" y="1230.5" font-size="13.5" font-weight="700" fill="#ffffff" text-anchor="middle">coordinator invokes</text>
+<text x="1385.0" y="1247.5" font-size="11.5" fill="#dddddd" text-anchor="middle">direct:ship-compensate</text>
+<text x="1385.0" y="1262.5" font-size="11.5" fill="#dddddd" text-anchor="middle">EXACTLY ONCE on abort/timeout</text>
+<rect x="1550" y="1190" width="210" height="90" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
+<text x="1655.0" y="1233.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">cancel shipment</text>
+<text x="1655.0" y="1250.0" font-size="11.5" fill="#555555" text-anchor="middle">PENDING -&gt; CANCELLED (same txn)</text>
+<rect x="1550" y="1320" width="210" height="90" rx="9" fill="#ffffff" stroke="#999999" stroke-width="1.5"/>
+<text x="1655.0" y="1363.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">shipment.failed outbox</text>
+<text x="1655.0" y="1380.0" font-size="11.5" fill="#555555" text-anchor="middle">same txn as CANCELLED</text>
+<rect x="1260" y="1320" width="220" height="90" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
+<text x="1370.0" y="1363.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">ShipmentOutboxRelay</text>
+<text x="1370.0" y="1380.0" font-size="11.5" fill="#555555" text-anchor="middle">@Scheduled poller</text>
+<rect x="1010" y="1320" width="220" height="90" rx="9" fill="#111111" stroke="#111111" stroke-width="2"/>
+<text x="1120.0" y="1363.0" font-size="13.5" font-weight="700" fill="#ffffff" text-anchor="middle">Kafka topic</text>
+<text x="1120.0" y="1380.0" font-size="11.5" fill="#dddddd" text-anchor="middle">shipment.failed</text>
+<rect x="720" y="1320" width="260" height="90" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
+<text x="850.0" y="1363.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">monolith: onShipmentFailed()</text>
+<text x="850.0" y="1380.0" font-size="11.5" fill="#555555" text-anchor="middle">@KafkaListener — idempotent</text>
+<rect x="420" y="1450" width="220" height="90" rx="9" fill="#111111" stroke="#111111" stroke-width="2"/>
+<text x="530.0" y="1500.5" font-size="13.5" font-weight="700" fill="#ffffff" text-anchor="middle">Order: SHIPPING_FAILED</text>
+<rect x="700" y="1450" width="260" height="90" rx="9" fill="#eaf4ec" stroke="#3d7a4e" stroke-width="2"/>
+<text x="830.0" y="1485.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Inventory service</text>
+<text x="830.0" y="1502.5" font-size="11.5" fill="#555555" text-anchor="middle">:9004 — gRPC Release</text>
+<text x="830.0" y="1517.5" font-size="11.5" fill="#555555" text-anchor="middle">DELEGATED — order owns the reserved-line snapshot</text>
+<rect x="1000" y="1450" width="200" height="90" rx="9" fill="#111111" stroke="#111111" stroke-width="2"/>
+<text x="1100.0" y="1493.0" font-size="13.5" font-weight="700" fill="#ffffff" text-anchor="middle">NET-ZERO</text>
+<text x="1100.0" y="1510.0" font-size="11.5" fill="#dddddd" text-anchor="middle">stock restored</text>
+<path d="M200.0,140.0 L230.0,140.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<text x="221.0" y="134.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">POST</text>
+<text x="221.0" y="134.0" font-size="11" fill="#555" text-anchor="middle">POST</text>
+<path d="M490.0,140.0 L520.0,140.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<text x="511.0" y="134.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">Reserve (sync gRPC)</text>
+<text x="511.0" y="134.0" font-size="11" fill="#555" text-anchor="middle">Reserve (sync gRPC)</text>
+<path d="M520.0,140.0 L490.0,140.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<text x="511.0" y="122.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">reservation_ok=true</text>
+<text x="511.0" y="122.0" font-size="11" fill="#555" text-anchor="middle">reservation_ok=true</text>
+<path d="M490.0,140.0 L770.0,140.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<text x="636.0" y="134.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">return (txn committed)</text>
+<text x="636.0" y="134.0" font-size="11" fill="#555" text-anchor="middle">return (txn committed)</text>
+<path d="M360.0,180.0 L360.0,210.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<text x="366.0" y="189.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">persist + outbox (same txn)</text>
+<text x="366.0" y="189.0" font-size="11" fill="#555" text-anchor="middle">persist + outbox (same txn)</text>
+<path d="M490.0,245.0 L520.0,245.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<text x="511.0" y="239.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">poll unpublished</text>
+<text x="511.0" y="239.0" font-size="11" fill="#555" text-anchor="middle">poll unpublished</text>
+<path d="M740.0,245.0 L770.0,245.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<text x="761.0" y="239.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">publish</text>
+<text x="761.0" y="239.0" font-size="11" fill="#555" text-anchor="middle">publish</text>
+<path d="M770.0,278.84615384615387 L473.75,370.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<text x="627.875" y="318.4230769230769" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">@Incoming(order.placed)</text>
+<text x="627.875" y="318.4230769230769" font-size="11" fill="#555" text-anchor="middle">@Incoming(order.placed)</text>
+<path d="M490.0,405.0 L520.0,405.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<text x="511.0" y="399.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">charge</text>
+<text x="511.0" y="399.0" font-size="11" fill="#555" text-anchor="middle">charge</text>
+<path d="M525.0,440.0 L465.0,460.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<text x="501.0" y="444.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">persist Payment + outbox</text>
+<text x="501.0" y="444.0" font-size="11" fill="#555" text-anchor="middle">persist Payment + outbox</text>
+<path d="M490.0,495.0 L520.0,495.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<text x="511.0" y="489.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">poll unpublished</text>
+<text x="511.0" y="489.0" font-size="11" fill="#555" text-anchor="middle">poll unpublished</text>
+<path d="M740.0,471.0 L790.0,460.09090909090907" fill="none" stroke="#2f5f3d" stroke-width="2" marker-end="url(#am)"/>
+<text x="771.0" y="459.5454545454545" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">CAPTURED</text>
+<text x="771.0" y="459.5454545454545" font-size="11" fill="#2f5f3d" text-anchor="middle">CAPTURED</text>
+<path d="M790.0,468.86986301369865 L310.0,610.2397260273973" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<text x="556.0" y="533.554794520548" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">@KafkaListener(payment.captured)</text>
+<text x="556.0" y="533.554794520548" font-size="11" fill="#555" text-anchor="middle">@KafkaListener(payment.captured)</text>
+<path d="M175.0,690.0 L175.0,710.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<text x="181.0" y="694.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">PENDING -&gt; AWAITING_SHIPMENT</text>
+<text x="181.0" y="694.0" font-size="11" fill="#555" text-anchor="middle">PENDING -&gt; AWAITING_SHIPMENT</text>
+<path d="M835.8139534883721,470.0 L559.0697674418604,610.0" fill="none" stroke="#2f5f3d" stroke-width="2" marker-end="url(#am)"/>
+<text x="703.4418604651163" y="534.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">@Incoming — separate consumer group</text>
+<text x="703.4418604651163" y="534.0" font-size="11" fill="#2f5f3d" text-anchor="middle">@Incoming — separate consumer group</text>
+<path d="M480.0,690.0 L480.0,710.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<text x="486.0" y="694.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">processPaymentCaptured()</text>
+<text x="486.0" y="694.0" font-size="11" fill="#555" text-anchor="middle">processPaymentCaptured()</text>
+<path d="M600.0,728.3846153846154 L660.0,720.0769230769231" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<text x="636.0" y="718.2307692307693" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">sendBodyAndHeader(direct:ship-start)</text>
+<text x="636.0" y="718.2307692307693" font-size="11" fill="#555" text-anchor="middle">sendBodyAndHeader(direct:ship-start)</text>
+<path d="M950.0,652.938596491228 L1010.0,633.4649122807018" fill="none" stroke="#2f5f3d" stroke-width="2" marker-end="url(#am)"/>
+<text x="986.0" y="637.2017543859649" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">invokes ①→④ in sequence</text>
+<text x="986.0" y="637.2017543859649" font-size="11" fill="#2f5f3d" text-anchor="middle">invokes ①→④ in sequence</text>
+<path d="M1090.0,635.0 L1090.0,645.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<path d="M1090.0,700.0 L1090.0,710.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<path d="M1090.0,765.0 L1090.0,775.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<text x="1096.0" y="764.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">no exception -&gt; continue</text>
+<text x="1096.0" y="764.0" font-size="11" fill="#555" text-anchor="middle">no exception -&gt; continue</text>
+<path d="M1010.0,828.6290322580645 L577.1604938271605,970.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<text x="799.5802469135803" y="893.3145161290322" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">shipment.dispatched outbox</text>
+<text x="799.5802469135803" y="893.3145161290322" font-size="11" fill="#555" text-anchor="middle">shipment.dispatched outbox</text>
+<path d="M580.0,1005.0 L610.0,1005.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<text x="601.0" y="999.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">publish</text>
+<text x="601.0" y="999.0" font-size="11" fill="#555" text-anchor="middle">publish</text>
+<path d="M840.0,1005.0 L870.0,1005.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<text x="861.0" y="999.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">@KafkaListener(shipment.dispatched)</text>
+<text x="861.0" y="999.0" font-size="11" fill="#555" text-anchor="middle">@KafkaListener(shipment.dispatched)</text>
+<path d="M1150.0,1005.0 L1180.0,1005.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<text x="1171.0" y="999.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">AWAITING_SHIPMENT -&gt; CONFIRMED</text>
+<text x="1171.0" y="999.0" font-size="11" fill="#555" text-anchor="middle">AWAITING_SHIPMENT -&gt; CONFIRMED</text>
+<path d="M1091.3819095477386,765.0 L1112.7386934673366,1190.0" fill="none" stroke="#555" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#a)"/>
+<text x="1108.0603015075376" y="971.5" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">throws ShipFailException</text>
+<text x="1108.0603015075376" y="971.5" font-size="11" fill="#555" text-anchor="middle">throws ShipFailException</text>
+<path d="M1220.0,1236.9444444444443 L1260.0,1237.6851851851852" fill="none" stroke="#2f5f3d" stroke-width="2" marker-end="url(#am)"/>
+<text x="1246.0" y="1231.3148148148148" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">saga aborts</text>
+<text x="1246.0" y="1231.3148148148148" font-size="11" fill="#2f5f3d" text-anchor="middle">saga aborts</text>
+<path d="M1510.0,1237.6851851851852 L1550.0,1236.9444444444443" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<text x="1536.0" y="1231.3148148148148" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">cancel shipment (same txn)</text>
+<text x="1536.0" y="1231.3148148148148" font-size="11" fill="#555" text-anchor="middle">cancel shipment (same txn)</text>
+<path d="M1655.0,1280.0 L1655.0,1320.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<text x="1661.0" y="1294.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">shipment.failed outbox (same txn)</text>
+<text x="1661.0" y="1294.0" font-size="11" fill="#555" text-anchor="middle">shipment.failed outbox (same txn)</text>
+<path d="M1550.0,1365.0 L1480.0,1365.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<text x="1521.0" y="1359.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">poll unpublished</text>
+<text x="1521.0" y="1359.0" font-size="11" fill="#555" text-anchor="middle">poll unpublished</text>
+<path d="M1260.0,1365.0 L1230.0,1365.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<text x="1251.0" y="1359.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">publish</text>
+<text x="1251.0" y="1359.0" font-size="11" fill="#555" text-anchor="middle">publish</text>
+<path d="M1010.0,1365.0 L980.0,1365.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<text x="1001.0" y="1359.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">@KafkaListener(shipment.failed)</text>
+<text x="1001.0" y="1359.0" font-size="11" fill="#555" text-anchor="middle">@KafkaListener(shipment.failed)</text>
+<path d="M739.2307692307693,1410.0 L640.0,1450.3125" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<text x="695.6153846153846" y="1424.15625" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">AWAITING_SHIPMENT -&gt; SHIPPING_FAILED</text>
+<text x="695.6153846153846" y="1424.15625" font-size="11" fill="#555" text-anchor="middle">AWAITING_SHIPMENT -&gt; SHIPPING_FAILED</text>
+<path d="M843.0769230769231,1410.0 L836.9230769230769,1450.0" fill="none" stroke="#2f5f3d" stroke-width="2" marker-end="url(#am)"/>
+<text x="846.0" y="1424.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">delegated Release — shipping service NEVER calls Release directly</text>
+<text x="846.0" y="1424.0" font-size="11" fill="#2f5f3d" text-anchor="middle">delegated Release — shipping service NEVER calls Release directly</text>
+<path d="M960.0,1495.0 L1000.0,1495.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<text x="986.0" y="1489.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">stock restored</text>
+<text x="986.0" y="1489.0" font-size="11" fill="#555" text-anchor="middle">stock restored</text>
+<text x="1000.0" y="30" font-size="17" fill="#1d1d1d" text-anchor="middle" font-weight="700">ch.24 — the orchestrated saga: one Camel Saga EIP coordinator sequences fulfilment and owns the compensation decision</text>
+<text x="810" y="790" font-size="11" fill="#2f5f3d" text-anchor="middle" font-weight="700">ONE visible place owns the sequence AND the compensation decision</text>
+<text x="40" y="1672" font-size="10.5" fill="#555555" text-anchor="start">Sourced from examples/06-shipping-service/.../{ShipmentSagaRoute,ShipmentSagaSteps,ShippingService}.java, examples/00-monolith/.../order/OrderSagaListener.java, and _plans/iterations/shipping-plan.md (S5/S6).</text>
+</svg>
