@@ -185,6 +185,19 @@ jobs:
   # written to pass against either a synchronous or an async backend
   # unchanged, so running it here with NO collection edits is itself part of
   # the equivalence proof (R8, no suite drift).
+  #
+  # POST-S11 ADDENDUM (inventory-plan.md S11): checkout's stock reservation is
+  # no longer in-JVM — OrderService reserves stock via a synchronous gRPC call
+  # (RemoteInventoryClient -> CheckStock/Reserve, :9004) to
+  # examples/04-inventory-service. There is no INVENTORY_MODE flag left to fall
+  # back to local inventory; the monolith is unconditionally a gRPC client post-
+  # S11. This job therefore also builds and starts the Inventory service (same
+  # :8084 REST / :9004 gRPC, self-seeding Flyway, as inventory-equivalence-gate
+  # below) before the monolith, and points the monolith at it via
+  # INVENTORY_GRPC_HOST/PORT — otherwise "place order" fails checkout's gRPC
+  # Reserve with io.grpc.StatusRuntimeException: UNAVAILABLE and the monolith
+  # returns HTTP 500, which was masking the async notification path this job
+  # exists to gate.
   notification-equivalence-gate:
     name: notification-equivalence-gate
     runs-on: ubuntu-latest
@@ -278,15 +291,36 @@ jobs:
         working-directory: examples/03-notification-service
         run: ./mvnw -q -DskipTests package
 
+      - name: Build the Inventory service
+        working-directory: examples/04-inventory-service
+        run: ./mvnw -q -DskipTests package
+
       - name: Build the strangler proxy
         working-directory: examples/01-strangler-proxy
         run: ./mvnw -q -DskipTests package
 
-      - name: Start the monolith (outbox write path + Kafka producer) on :8080
+      - name: Start the Inventory service (REST :8084 + gRPC :9004) — seeds itself via Flyway
+        # No env overrides needed: this service's application.properties
+        # %prod datasource (localhost:5432/monolith, user/password
+        # monolith/monolith_dev_only) already matches the Postgres service
+        # container above, and its gRPC/HTTP ports are fixed in that same
+        # file. V2__seed_inventory.sql runs on boot
+        # (quarkus.flyway.migrate-at-start=true), populating the canonical
+        # 3-SKU catalog. Started before the monolith (mirroring
+        # inventory-equivalence-gate below) since the monolith's checkout path
+        # now reserves stock over gRPC and has no in-JVM fallback (S11).
+        working-directory: examples/04-inventory-service
+        run: |
+          nohup java -jar target/quarkus-app/quarkus-run.jar > quarkus.log 2>&1 &
+          echo $! > quarkus.pid
+
+      - name: Start the monolith (outbox write path + Kafka producer + gRPC inventory client) on :8080
         working-directory: examples/00-monolith
         env:
           SPRING_DATASOURCE_PASSWORD: monolith_dev_only
           SPRING_KAFKA_BOOTSTRAP_SERVERS: localhost:9092
+          INVENTORY_GRPC_HOST: localhost
+          INVENTORY_GRPC_PORT: "9004"
         run: |
           nohup java -jar target/monolith.jar > monolith.log 2>&1 &
           echo $! > monolith.pid
@@ -309,10 +343,25 @@ jobs:
           nohup java -jar target/quarkus-app/quarkus-run.jar > quarkus.log 2>&1 &
           echo $! > quarkus.pid
 
+      - name: Wait for the Inventory service to be ready on :8084
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 60); do
+            if curl -sf "http://localhost:8084/api/inventory" > /dev/null; then
+              echo "Inventory service is up."
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Inventory service did not become ready in time." >&2
+          cat examples/04-inventory-service/quarkus.log || true
+          exit 1
+
       - name: Wait for the monolith to be ready on :8080
         # NOTE: the monolith's /api/inventory was removed at inventory-plan S11
-        # (inventory now extracted; checkout reserves over gRPC). Probe
-        # /api/orders (permitAll, seeded) which the monolith still serves.
+        # (inventory now extracted; checkout reserves over gRPC against the
+        # Inventory service started above). Probe /api/orders (permitAll,
+        # seeded) which the monolith still serves.
         run: |
           set -euo pipefail
           for i in $(seq 1 60); do
@@ -341,8 +390,9 @@ jobs:
           exit 1
 
       - name: Wait for the strangler proxy to be ready on :8888
-        # Probe /api/orders (routes through the proxy to the monolith). This job
-        # does not start the inventory service, so /api/inventory would 502 here.
+        # Probe /api/orders (routes through the proxy to the monolith). This
+        # job's assertions are the Notification folder only; /api/orders is
+        # sufficient to confirm the proxy itself is serving.
         run: |
           set -euo pipefail
           for i in $(seq 1 60); do
@@ -370,6 +420,9 @@ jobs:
       - name: Dump service logs on failure
         if: failure()
         run: |
+          echo "::group::inventory-service quarkus.log"
+          cat examples/04-inventory-service/quarkus.log || true
+          echo "::endgroup::"
           echo "::group::monolith.log"
           cat examples/00-monolith/monolith.log || true
           echo "::endgroup::"
@@ -383,6 +436,9 @@ jobs:
       - name: Stop the services
         if: always()
         run: |
+          if [ -f examples/04-inventory-service/quarkus.pid ]; then
+            kill "$(cat examples/04-inventory-service/quarkus.pid)" || true
+          fi
           if [ -f examples/00-monolith/monolith.pid ]; then
             kill "$(cat examples/00-monolith/monolith.pid)" || true
           fi
