@@ -23,7 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * SMELL[ch.26]: this is the "god service" — it is the single orchestration point
- * for checkout and it reaches directly into payment and shipping's
+ * for checkout and used to reach directly into payment and shipping's
  * services/repositories/entities instead of those contexts being independently
  * deployable collaborators reached over a stable contract. Order is deliberately
  * the HARDEST and LAST extraction in the roadmap (ch.26) precisely because every
@@ -37,9 +37,15 @@ import org.springframework.transaction.annotation.Transactional;
  * longer has a direct dependency on payment's service/repository/entity at
  * all (they are deleted) — checkout only ever reaches payment indirectly, via
  * the {@code order.placed} outbox event, and only reacts to ITS outcome
- * events through {@link OrderSagaListener}, never a direct call. Shipping
- * (still directly reached, now from {@code OrderSagaListener} rather than
- * this class) and order itself remain (ch.24, ch.26).
+ * events through {@link OrderSagaListener}, never a direct call. As of
+ * r07/ch.24 S9, shipping is the fourth: {@code OrderSagaListener}'s own
+ * direct reach into the monolith's in-process {@code ShippingService} is
+ * gone too (that module is deleted entirely) — fulfilment is reached only
+ * indirectly, via the shipping service's Camel Saga EIP coordinator
+ * reacting to {@code payment.captured} and emitting {@code
+ * shipment.dispatched}/{@code shipment.failed}. Order itself remains
+ * (ch.26) — the one dependency left to remove is this class's own direct
+ * ownership of the order aggregate.
  *
  * <p>ch.23 (r06/S9, DECOMMISSION): the {@code payment.mode=synchronous|
  * choreographed} reversibility flag introduced for the S6 cutover has been
@@ -95,10 +101,17 @@ public class OrderService {
      * used to give for free is rebuilt EXPLICITLY as the choreographed saga
      * (order.placed -> payment captures/declines -> {@link
      * OrderSagaListener} reacts) with an idempotent compensating {@code
-     * Release} on decline (DRQ-049) — see SMELLS.md SMELL[ch.22]. Notification
-     * (ch.17/r04/S8) was the first context removed from this transaction's
-     * blast radius; payment (ch.23/r06/S9) is the second. Shipping and order
-     * itself remain (ch.24, ch.26).
+     * Release} on decline (DRQ-049) — see SMELLS.md SMELL[ch.22]. r07/ch.24
+     * S9 (DECOMMISSION) realizes the same story for shipping: the monolith's
+     * in-process shipping dispatch (which, after S9/ch.23, had already moved
+     * out of this method's own transaction into {@code
+     * OrderSagaListener#onPaymentCaptured}'s own reaction) is gone entirely
+     * — fulfilment is now the orchestrated shipping saga, with its own
+     * coordinator-driven compensation on failure ({@link
+     * OrderSagaListener#onShipmentFailed}). Notification (ch.17/r04/S8) was
+     * the first context removed from this transaction's blast radius;
+     * payment (ch.23/r06/S9) is the second; shipping (ch.24/r07/S9) is the
+     * third. Order itself remains (ch.26).
      *
      * <p>Flow: validate customer -> check+reserve stock (inventory, over
      * gRPC -- see below) -> persist the order {@code PENDING} -> write the
@@ -310,6 +323,7 @@ public class OrderService {
                 order.getStatus(),
                 order.getTotalCents(),
                 order.getCreatedAt(),
+                order.getShippingAddress(),
                 items);
     }
 }

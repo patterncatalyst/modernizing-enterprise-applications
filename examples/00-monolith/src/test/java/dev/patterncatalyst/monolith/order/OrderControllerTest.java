@@ -60,7 +60,7 @@ class OrderControllerTest {
         var command = new OrderCreate(
                 1L, List.of(new OrderCreate.Line("SKU-WIDGET-001", 2)), "CARD-VISA", "1 Test Way");
         var dto = new OrderDto(
-                8L, 1L, OrderStatus.PENDING, 3998L, Instant.parse("2026-01-07T12:00:00Z"),
+                8L, 1L, OrderStatus.PENDING, 3998L, Instant.parse("2026-01-07T12:00:00Z"), "1 Test Way",
                 List.of(new OrderDto.Item("SKU-WIDGET-001", 2, 1999L)));
         when(orderService.placeOrder(any(OrderCreate.class))).thenReturn(dto);
 
@@ -70,7 +70,8 @@ class OrderControllerTest {
                 .andExpect(status().isAccepted())
                 .andExpect(header().string("Location", "/api/orders/8"))
                 .andExpect(jsonPath("$.status", is("PENDING")))
-                .andExpect(jsonPath("$.totalCents", is(3998)));
+                .andExpect(jsonPath("$.totalCents", is(3998)))
+                .andExpect(jsonPath("$.shippingAddress", is("1 Test Way")));
     }
 
     @Test
