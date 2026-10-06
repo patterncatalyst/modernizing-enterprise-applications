@@ -275,6 +275,8 @@ authority. A ledger that only records successes is not a ledger a human can
 actually trust to stay in control with; this one writes down the loose ends
 too, by name, so they are a known, tracked gap rather than a silent one.
 
+{% include excalidraw.html file="ledger-files-to-adlc-phases" alt="The project's own _plans/ files mapped onto the ADLC's seven phases: build-plan.md and r02-plan.md are produced during Plan, r02-status.md is updated through Generate and Verify, and decisions.md plus the still-unwritten reconciliation.md are written during Reconcile, which also loops back to update build-plan.md's own status line. Below that mapping, the actual resume mechanism: r02-status.md's own line, 'Remaining in r02 (resume here),' read by the next session alongside r02-plan.md's step definitions." caption="Figure 2.1 — The ledger's files, mapped onto the ADLC's phases, and how an interrupted session resumes from them" %}
+
 ## Governing the agents: `AGENTS.md` and `CLAUDE.md`
 
 The three files above govern the *project* — what was decided, what is being

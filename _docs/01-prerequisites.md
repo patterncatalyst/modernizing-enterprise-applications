@@ -18,6 +18,8 @@ already exist — `examples/00-monolith/`, `examples/01-strangler-proxy/`, and
 and 15 are where each one gets explained properly; this chapter's bar is
 lower and more mechanical: clone, install, start, and confirm.
 
+{% include excalidraw.html file="toolchain-and-repo-layout" alt="The local toolchain split into required (JDK 25, Maven) and optional (Quarkus CLI, Camel CLI) pieces, the podman compose stack (Postgres, Kafka in KRaft mode, the Grafana LGTM bundle), and the examples/, tooling/, demos/, infra/, scripts/, and _docs/ directories those two feed." caption="Figure 1.1 — The local toolchain and the repository layout it builds, runs, and stands up." %}
+
 ## What you need, and where it comes from
 
 Seven tools make an appearance across this book, and only two of them are
