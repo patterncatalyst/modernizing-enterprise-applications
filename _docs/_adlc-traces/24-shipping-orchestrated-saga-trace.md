@@ -112,7 +112,7 @@ reaction. The plan names four concrete reasons shipping is a harder and
 *differently shaped* rung, each of which this trace's later phases return to:
 
 1. **There is now a coordinator, and it lives in the shipping service.**
-   Writing a genuine, runnable Camel Saga EIP coordinator — picking the
+   Writing a runnable Camel Saga EIP coordinator — picking the
    `CamelSagaService`, carrying correlation data into the compensation
    callback, getting `completionMode(AUTO)` abort semantics right — is
    net-new machinery payment never needed (H1).
@@ -227,7 +227,7 @@ clean. Phase A->B: 1.519s/289MB/15feat -> 2.002s/364MB/21feat. Opus-gated GO.
 ```
 
 That "S6 MUST add" line is S5 naming, in its own commit message, a gap it is
-deliberately leaving open rather than quietly papering over — the
+leaving open rather than quietly papering over — the
 `OrderDto` the order context exposes did not (yet) carry a shipping address,
 so every live-enriched dispatch at this point in the extraction used a
 documented sentinel, `ADDRESS-UNAVAILABLE-PENDING-S6`, verified live against
@@ -303,7 +303,7 @@ check a translator's necessity against the real DTO shapes on both sides
 rather than build one on the strength of analogy — the same discipline, not
 a new one.
 
-## Verify: three Opus gates, a genuine CLI-limitation finding, and the crux proven with real numbers
+## Verify: three Opus gates, a CLI-limitation finding, and the crux proven with real numbers
 
 Verify is where this extraction's hardest claim — that a coordinator-decided,
 cross-context compensation provably fires and converges to net-zero stock —
@@ -315,7 +315,7 @@ Scenario 1's `CONFIRMED` bounded-wait was widened from the payment-era
 budget to `20×750ms` for the extra Kafka hop (the terminal `eql('CONFIRMED')`
 assertion itself untouched); a new Scenario 4 (Shipping-Failure) was added,
 asserting *terminal* `SHIPPING_FAILED` **and** inventory net-zero, but
-deliberately gated **pending at baseline** via a `shippingSagaEnabled` flag
+gated **pending at baseline** via a `shippingSagaEnabled` flag
 — explicitly marked, not falsely green on a path the in-process monolith
 cannot yet exercise. Baseline: **121 assertions, 0 failed, Scenario 4
 correctly skipped** — green against the still-in-process monolith before any
@@ -372,7 +372,7 @@ net-zero per-sku; inprocess reversibility; backlog-replay idempotency).
 ```
 
 **S8's equivalence gate** is where H3 — the crux — gets proven with numbers,
-not an assertion count. Before any genuine assertion ran, S8 surfaced a
+not an assertion count. Before any assertion ran, S8 surfaced a
 finding the plan's own text had not anticipated: the plan proposed enabling
 the pending Scenario 4 folders via `newman --env-var "shippingSagaEnabled=true"`,
 and this was tried first and empirically shown **not** to work —
@@ -393,8 +393,8 @@ easy false green to miss.
 The fix — load the collection JSON via newman's Node API, patch the
 in-memory `shippingSagaEnabled` variable, and hand the in-memory object to
 `newman.run(...)` — was packaged into `demos/lib/run-shipping-newman.js` and
-used for every genuine cutover run thereafter; the committed collection file
-on disk was never rewritten. With both flags genuinely flipped
+used for every cutover run thereafter; the committed collection file
+on disk was never rewritten. With both flags flipped
 (`shipping.mode=orchestrated`, `strangler.shipping.enabled=true`,
 `shippingSagaEnabled=true` via the helper), the full suite ran green through
 the proxy repeatedly, and the forced-`SHIP-FAIL` stock trace — the H3 crux —
@@ -415,7 +415,7 @@ different order, after additional suite runs had consumed stock: 478 -> 477
 ```
 
 The bounded-wait polls behind those numbers were not instant: Scenario 1
-genuinely looped 5 retries (~3.75s) before observing `CONFIRMED`, and
+looped 5 retries (~3.75s) before observing `CONFIRMED`, and
 Scenario 4's SF-c folder looped 5 retries before observing `SHIPPING_FAILED`
 — real `order.placed` → `payment.captured` → shipping-saga → `shipment.dispatched`
 (or `.failed`) → order-reaction latency, not an attempt-0 pass. The same
@@ -423,10 +423,10 @@ CUTOVER.md run closed the routing-proof loop ch.23's trace established the
 pattern for: `GET /api/shipments?orderId=276` through the proxy returned
 byte-identical JSON to the same query direct to `:8088`, while the same query
 against the monolith directly (`:8080`) returned an empty array — proof
-`/api/shipments` traffic was genuinely reaching `examples/06-shipping-service`.
+`/api/shipments` traffic was reaching `examples/06-shipping-service`.
 
 **The two negative checks (DRQ-065, H2/H3)** are the sharper proof, because a
-green suite alone cannot distinguish a genuinely-firing compensation from one
+green suite alone cannot distinguish a firing compensation from one
 that would pass regardless. First, the Camel Saga `.compensation(...)`
 registration was commented out, the service rebuilt and restarted, and a
 forced `SHIP-FAIL` order re-run:
@@ -550,7 +550,7 @@ Re-run inside the scripted demo: **114/114, 0 failed, 7s** — proof that
 flipping both flags back is a config change and a restart, nothing more,
 right up until decommission.
 
-S9 is where that reversibility window closed on purpose. The monolith's
+S9 is where that reversibility window closed. The monolith's
 in-process `ShippingController`/`ShippingService`/`Shipment`/`ShipmentStatus`/
 `ShipmentDto`/`ShipmentRepository` and the `shipping.mode` flag were removed
 entirely (`GET :8080/api/shipments` now returns `404`); `strangler.shipping.enabled=true`
@@ -582,7 +582,7 @@ Unlike ch.23's own trace — captured before DRQ-047 through DRQ-055 had been
 copied into `_plans/decisions.md`'s accepted table — this extraction's ledger
 was already current at the time of this capture: `decisions.md` carries
 DRQ-056 through DRQ-065 as **accepted**, each row naming the step that
-realized it (S1 frame through S8 cutover). What remains genuinely open at the
+realized it (S1 frame through S8 cutover). What remains open at the
 point this trace was captured, recorded here rather than assumed closed:
 
 - **S10 (the shipping equivalence gate in GitHub Actions, red-then-green,
@@ -615,7 +615,7 @@ decommission of the monolith, inheriting the order-context reaction machinery
 
 > **ADLC in Action** — This extraction ran the identical Frame → Map → Plan →
 > Generate → Verify → Operate → Reconcile loop Chapter 23 demonstrated for
-> Payment, at a deliberately different shape. Frame fixed the orchestration
+> Payment, at a different shape. Frame fixed the orchestration
 > decision (DRQ-056) before anything was built — a bounded saga on
 > `payment.captured`, coordinated by a Camel Saga EIP route, with a whole-flow
 > re-expression and a direct shipping-calls-inventory shortcut both considered
@@ -624,7 +624,7 @@ decommission of the monolith, inheriting the order-context reaction machinery
 > event topology, the saga's step shape and compensation, delegated
 > cross-context compensation, two new order states, deterministic failure
 > injection, the two-phase service, idempotency, and two-flag reversibility.
-> Map named four reasons this rung is harder than choreography: a genuine
+> Map named four reasons this rung is harder than choreography: a
 > coordinator now has to exist, its compensation is coordinator-initiated and
 > crosses service boundaries, the order's `CONFIRMED` moves one hop later, and
 > a new failure-bearing terminal outcome had to be proven net-zero. Plan laid
@@ -638,7 +638,7 @@ decommission of the monolith, inheriting the order-context reaction machinery
 > lgtm-quarkus, lgtm-camel, and camel-mcp tooling, following
 > `migrate-spring-to-quarkus` for the lifted read surface. Verify is this
 > chapter's sharpest negative checks and its real stock numbers —
-> 496→495→496, 478→477→478 — plus a genuine CLI-limitation finding (newman's
+> 496→495→496, 478→477→478 — plus a CLI-limitation finding (newman's
 > `--env-var` cannot set a collection-scoped variable) found, diagnosed, and
 > worked around before the cutover evidence could even begin, and a
 > downstream timing flake found and closed immediately after. Operate is the

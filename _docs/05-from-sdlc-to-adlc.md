@@ -48,7 +48,7 @@ Every one of those stages is a queue with a context switch at both ends. The
 requirements doc sits in a backlog until a designer picks it up; the design
 sits in review until an architect signs off; the pull request sits until a
 reviewer has a free hour. None of those delays reflect laziness — they
-reflect the fact that each role is a scarce, specialized resource being
+reflect that each role is a scarce, specialized resource being
 time-sliced across many pieces of work at once. That is why a modernization
 effort under the traditional SDLC is measured in quarters per extracted
 service: not because the code is hard to write, but because the code has to
@@ -85,7 +85,7 @@ guides, agent executes** — the engineer's job shifts from typing every line to
 stating intent, setting constraints, and judging output, which is a different
 skill than the one most of us were trained in. **Docs as afterthought becomes
 docs generated inline** — because an agent that just wrote the code can
-narrate it for free, documentation debt stops accumulating by default rather
+narrate it as it goes, documentation debt stops accumulating by default rather
 than needing a separate backlog item. And **manual incident response becomes
 agent-assisted remediation** — when something breaks in production, the same
 tool that wrote the code can read the logs, propose the fix, and draft the
@@ -127,8 +127,8 @@ loop and decide.
 5. **Verify** — the agent (often a second, more skeptical pass) runs the test
    suite, checks the change against the **behavior-equivalence suite**, and
    runs a security scan. **Human gate: a human signs off on equivalence**
-   before the change is trusted. This is the second and last point where a
-   human's judgment is load-bearing.
+   before the change is trusted. This is the second and last point where the
+   change depends on a human's judgment.
 6. **Operate** — the change rolls out behind a feature flag, observed through
    the platform's telemetry, with the human controlling what percentage of
    traffic sees it and how fast that percentage grows.
@@ -185,7 +185,7 @@ surface anomalies; and an **issue tracker** that captures what was learned so
 the next pass through the loop starts from more context than the last one
 did.
 
-One design choice that genuinely changes the shape of a team's workflow is
+One design choice that changes the shape of a team's workflow is
 *where* that local coding agent actually runs — on the engineer's own
 machine, or inside a managed, shared execution environment.
 
@@ -287,7 +287,7 @@ public class DatabaseReady implements HealthCheck {
 }
 ```
 
-The two fragments do the same thing on purpose. The point is not that the
+The two fragments do the same thing by design. The point is not that the
 agent-generated version is cleverer — it is nearly a direct translation — but
 that it exists in minutes rather than a sprint, and that trusting it does not
 rest on a second engineer re-reading it line by line. It rests on the
@@ -337,7 +337,7 @@ measured numbers, and it gets to take that slower, more careful pass
 None of this is a claim that the loop runs itself. The two gates in Figure
 5.4 are not bureaucratic leftovers from the old SDLC — they are the two
 places in this entire lifecycle where a human's judgment cannot be
-delegated, and the book is deliberately honest about why. An agent can
+delegated, for two reasons. An agent can
 produce a plan, but it cannot be trusted to decide that *its own* plan is the
 right one to execute against a production system someone else depends on —
 that decision needs a human who understands the business consequences of
@@ -346,7 +346,7 @@ the one who decides that "green" is sufficient evidence to retire the
 monolith module it just replaced — that is a sign-off, not a computation, and
 it stays with a person.
 
-Two further limits are worth stating plainly. First, every "ADLC in Action"
+Two further limits apply. First, every "ADLC in Action"
 callout in this book's migration chapters shows **pre-captured, reproducible
 tool output** — narrated transcripts checked into the repository — rather
 than tool calls re-run live at build or read time. That trade favors

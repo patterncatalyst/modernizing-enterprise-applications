@@ -11,7 +11,7 @@ for discovering where those seams sit in a system that never shipped with a
 map. Both chapters answer the question "where could this system be cut?" by
 pointing at behavior — the verbs on the sticky notes, the domain language
 that changes meaning as you cross a boundary. Neither chapter answers a
-second, equally load-bearing question: given several legitimate candidate
+second, equally important question: given several legitimate candidate
 seams, which one do you cut *first*, and — the question this book's own
 `build-plan.md` had to answer before a single extraction shipped — is
 cutting any of them, right now, actually the right call? This chapter
@@ -302,7 +302,7 @@ looking like a sorted list:
   forward — which is precisely the "biggest cut first" failure mode a
   blast-radius ranking exists to prevent.
 
-That is the whole method, stated plainly: rank contexts by `Ca` and `Ce`,
+That is the whole method: rank contexts by `Ca` and `Ce`,
 cut the lowest-scoring context first, and let each completed extraction
 reduce the score of whatever remains until the hardest context is also the
 smallest remaining problem. It is the same discipline Part 1 argued for in
@@ -315,8 +315,8 @@ can compute from the import graph sitting in front of you.
 Everything so far has described coupling as a problem to reduce by
 splitting a deployable into more deployables. That is not, on its own,
 license to split everything — and Khononov's balancing-coupling model
-(Appendix E) already supplied the reason why not, stated as a single
-formula worth repeating in this chapter's context: **distance is a cost
+(Appendix E) already supplied the reason why not, as a single
+formula: **distance is a cost
 multiplier, and splitting strong, volatile coupling across a network adds
 distance without removing strength**, which produces a *distributed*
 monolith — the same tangle as before, now paying for network calls,
@@ -332,8 +332,8 @@ This is what makes the **modular monolith** a legitimate destination in its
 own right, not merely a waypoint on the way to microservices. A modular
 monolith is one deployable — one build, one JVM, one release train, exactly
 like the monolith this book built in Chapter 8 — with the three
-disciplines a distributed system gets for free, enforced deliberately
-instead:
+disciplines a distributed system gets automatically, enforced by tooling
+and convention instead:
 
 - **Package or build-module isolation**, where the compiler (or the build
   tool's module graph — Java's module system, or simply a convention
@@ -386,8 +386,8 @@ you get that confident answer, and most of coupling's actual damage fixed,
 without placing a single bet on distribution you might later have to
 reverse at much higher cost than renaming a package.
 
-None of this contradicts the strangler-fig sequence the rest of this book
-executes. This book's own reference monolith is not taken to the modular-
+None of this contradicts this book's own strangler-fig sequence.
+This book's own reference monolith is not taken to the modular-
 monolith stage as an intermediate step before Chapter 15 — its extraction
 sequence goes straight from "one undifferentiated shared schema" to "owned
 service with its own database," because the book's pedagogical goal is
@@ -436,10 +436,10 @@ an ACL, an outbox, a CDC pipeline, a saga — and the equivalence gate exists
 precisely to prove that answer actually held, rather than discovering in
 production that it didn't.
 
-## Part 4, consolidated: the extraction plan the rest of the book executes
+## Part 4, consolidated: the extraction plan
 
-Part 4 has now supplied three lenses, deliberately in this order, and it is
-worth stating plainly how they combine into the one plan the rest of the
+Part 4 has now supplied three lenses, in this order, and here is how they
+combine into the one plan the rest of the
 book runs. Chapter 11's domain-driven design gave you *where the
 conceptual boundaries are* — the bounded contexts, the aggregates, the
 rule that protocols stay out of the domain core so a later extraction is
@@ -451,7 +451,7 @@ reconnaissance artifact rather than an architect's guess. This chapter has
 given you *the order to cut them in* — coupling, scored precisely enough by
 the Constantine taxonomy and the Ca/Ce metric to rank six already-identified
 candidate boundaries from cheapest to most expensive to extract, and
-precise enough to also say plainly when the right answer for a given
+precise enough to also say when the right answer for a given
 boundary is a modular monolith rather than a network call.
 
 Put the three together and Part 4's output is a single artifact, not three

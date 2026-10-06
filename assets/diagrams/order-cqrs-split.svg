@@ -1,0 +1,112 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1450 1080" font-family="'Red Hat Text', system-ui, sans-serif" role="img">
+<defs><marker id="a" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#555"/></marker><marker id="am" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2f5f3d"/></marker></defs>
+<rect x="20" y="60" width="1410" height="300" rx="12" fill="#fafafa" stroke="#ddd"/>
+<text x="32" y="80" font-size="12" font-weight="700" fill="#1d1d1d">Command path — one @Transactional (write model)</text>
+<rect x="20" y="390" width="1410" height="260" rx="12" fill="#eaf4ec" stroke="#ddd"/>
+<text x="32" y="410" font-size="12" font-weight="700" fill="#1d1d1d">Projection — the write/read bridge (same @Transactional as each write)</text>
+<rect x="20" y="690" width="1410" height="320" rx="12" fill="#fafafa" stroke="#ddd"/>
+<text x="32" y="710" font-size="12" font-weight="700" fill="#1d1d1d">Query path — reads EXCLUSIVELY from the read model (no aggregate fallback)</text>
+<rect x="40" y="110" width="180" height="80" rx="9" fill="#ffffff" stroke="#999999" stroke-width="1.5"/>
+<text x="130.0" y="148.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Client</text>
+<text x="130.0" y="165.0" font-size="11.5" fill="#555555" text-anchor="middle">POST /api/orders</text>
+<rect x="260" y="110" width="300" height="80" rx="9" fill="#eef4fb" stroke="#2f6db5" stroke-width="2"/>
+<text x="410.0" y="148.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">OrderService.placeOrder()</text>
+<text x="410.0" y="165.0" font-size="11.5" fill="#555555" text-anchor="middle">validate customer; reserve; persist; outbox</text>
+<rect x="600" y="110" width="250" height="80" rx="9" fill="#eaf4ec" stroke="#3d7a4e" stroke-width="2"/>
+<text x="725.0" y="148.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Inventory service</text>
+<text x="725.0" y="165.0" font-size="11.5" fill="#555555" text-anchor="middle">:9004 — gRPC Reserve (sync)</text>
+<rect x="890" y="110" width="280" height="80" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
+<text x="1030.0" y="140.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Write model</text>
+<text x="1030.0" y="157.5" font-size="11.5" fill="#555555" text-anchor="middle">Order + OrderItem (PostgreSQL)</text>
+<text x="1030.0" y="172.5" font-size="11.5" fill="#555555" text-anchor="middle">persisted PENDING</text>
+<rect x="260" y="210" width="300" height="80" rx="9" fill="#111111" stroke="#111111" stroke-width="2"/>
+<text x="410.0" y="248.0" font-size="13.5" font-weight="700" fill="#ffffff" text-anchor="middle">202 response</text>
+<text x="410.0" y="265.0" font-size="11.5" fill="#dddddd" text-anchor="middle">order status = PENDING</text>
+<rect x="600" y="210" width="250" height="80" rx="9" fill="#ffffff" stroke="#999999" stroke-width="1.5"/>
+<text x="725.0" y="248.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">order.placed outbox row</text>
+<text x="725.0" y="265.0" font-size="11.5" fill="#555555" text-anchor="middle">SAME @Transactional as persist</text>
+<rect x="890" y="210" width="280" height="80" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
+<text x="1030.0" y="248.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">OrderOutboxRelay</text>
+<text x="1030.0" y="265.0" font-size="11.5" fill="#555555" text-anchor="middle">@Scheduled poller</text>
+<rect x="1180" y="210" width="240" height="80" rx="9" fill="#111111" stroke="#111111" stroke-width="2"/>
+<text x="1300.0" y="248.0" font-size="13.5" font-weight="700" fill="#ffffff" text-anchor="middle">Kafka topic</text>
+<text x="1300.0" y="265.0" font-size="11.5" fill="#dddddd" text-anchor="middle">order.placed</text>
+<rect x="260" y="440" width="260" height="90" rx="9" fill="#111111" stroke="#111111" stroke-width="2"/>
+<text x="390.0" y="475.5" font-size="13.5" font-weight="700" fill="#ffffff" text-anchor="middle">Kafka topics</text>
+<text x="390.0" y="492.5" font-size="11.5" fill="#dddddd" text-anchor="middle">payment.captured / payment.declined</text>
+<text x="390.0" y="507.5" font-size="11.5" fill="#dddddd" text-anchor="middle">shipment.dispatched / shipment.failed</text>
+<rect x="560" y="440" width="260" height="90" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
+<text x="690.0" y="483.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">OrderSagaListener</text>
+<text x="690.0" y="500.0" font-size="11.5" fill="#555555" text-anchor="middle">4 reactions — status-guarded, idempotent</text>
+<rect x="890" y="440" width="260" height="110" rx="9" fill="#eaf4ec" stroke="#3d7a4e" stroke-width="2"/>
+<text x="1020.0" y="485.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">OrderViewProjector.project()</text>
+<text x="1020.0" y="502.5" font-size="11.5" fill="#555555" text-anchor="middle">upsert by orderId</text>
+<text x="1020.0" y="517.5" font-size="11.5" fill="#555555" text-anchor="middle">same @Transactional as the write</text>
+<rect x="1180" y="440" width="240" height="110" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
+<text x="1300.0" y="485.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Read model</text>
+<text x="1300.0" y="502.5" font-size="11.5" fill="#555555" text-anchor="middle">order_view (PostgreSQL)</text>
+<text x="1300.0" y="517.5" font-size="11.5" fill="#555555" text-anchor="middle">denormalized, upserted</text>
+<rect x="40" y="740" width="220" height="90" rx="9" fill="#ffffff" stroke="#999999" stroke-width="1.5"/>
+<text x="150.0" y="783.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Client</text>
+<text x="150.0" y="800.0" font-size="11.5" fill="#555555" text-anchor="middle">GET /api/orders(/{id})</text>
+<rect x="1180" y="740" width="240" height="90" rx="9" fill="#eef4fb" stroke="#2f6db5" stroke-width="2"/>
+<text x="1300.0" y="783.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">OrderService.getById()/listAll()</text>
+<text x="1300.0" y="800.0" font-size="11.5" fill="#555555" text-anchor="middle">orderViewRepository ONLY</text>
+<rect x="40" y="860" width="220" height="90" rx="9" fill="#ffffff" stroke="#999999" stroke-width="1.5"/>
+<text x="150.0" y="903.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Client</text>
+<text x="150.0" y="920.0" font-size="11.5" fill="#555555" text-anchor="middle">GraphQL order(id) query</text>
+<rect x="1180" y="860" width="240" height="90" rx="9" fill="#eaf4ec" stroke="#3d7a4e" stroke-width="2"/>
+<text x="1300.0" y="903.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">GraphQL gateway :8090</text>
+<text x="1300.0" y="920.0" font-size="11.5" fill="#555555" text-anchor="middle">order(id) — see fig. 2</text>
+<path d="M220.0,150.0 L260.0,150.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<text x="246.0" y="144.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">POST</text>
+<text x="246.0" y="144.0" font-size="11" fill="#555" text-anchor="middle">POST</text>
+<path d="M560.0,150.0 L600.0,150.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<text x="586.0" y="144.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">Reserve (sync gRPC)</text>
+<text x="586.0" y="144.0" font-size="11" fill="#555" text-anchor="middle">Reserve (sync gRPC)</text>
+<path d="M600.0,150.0 L560.0,150.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<text x="586.0" y="130.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">reservation_ok=true</text>
+<text x="586.0" y="130.0" font-size="11" fill="#555" text-anchor="middle">reservation_ok=true</text>
+<path d="M560.0,150.0 L890.0,150.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<text x="731.0" y="144.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">persist (same txn)</text>
+<text x="731.0" y="144.0" font-size="11" fill="#555" text-anchor="middle">persist (same txn)</text>
+<path d="M410.0,190.0 L410.0,210.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<text x="416.0" y="194.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">return (txn committed)</text>
+<text x="416.0" y="194.0" font-size="11" fill="#555" text-anchor="middle">return (txn committed)</text>
+<path d="M536.0,190.0 L600.0,210.3174603174603" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<text x="574.0" y="194.15873015873015" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">write outbox (same txn)</text>
+<text x="574.0" y="194.15873015873015" font-size="11" fill="#555" text-anchor="middle">write outbox (same txn)</text>
+<path d="M850.0,250.0 L890.0,250.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<text x="876.0" y="244.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">poll unpublished</text>
+<text x="876.0" y="244.0" font-size="11" fill="#555" text-anchor="middle">poll unpublished</text>
+<path d="M1170.0,250.0 L1180.0,250.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<text x="1181.0" y="244.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">publish</text>
+<text x="1181.0" y="244.0" font-size="11" fill="#555" text-anchor="middle">publish</text>
+<path d="M520.0,485.0 L560.0,485.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<text x="546.0" y="479.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">@Incoming (4 topics)</text>
+<text x="546.0" y="479.0" font-size="11" fill="#555" text-anchor="middle">@Incoming (4 topics)</text>
+<path d="M820.0,488.93939393939394 L890.0,491.06060606060606" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<text x="861.0" y="484.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">project(order, paymentStatus, shipmentStatus)</text>
+<text x="861.0" y="484.0" font-size="11" fill="#555" text-anchor="middle">project(order, paymentStatus, shipmentStatus)</text>
+<path d="M1028.840579710145,190.0 L1021.5942028985507,440.0" fill="none" stroke="#2f5f3d" stroke-width="2" marker-end="url(#am)"/>
+<text x="1031.217391304348" y="309.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">project(order, null, null) — initial PENDING, same txn</text>
+<text x="1031.217391304348" y="309.0" font-size="11" fill="#2f5f3d" text-anchor="middle">project(order, null, null) — initial PENDING, same txn</text>
+<path d="M1150.0,495.0 L1180.0,495.0" fill="none" stroke="#2f5f3d" stroke-width="2" marker-end="url(#am)"/>
+<text x="1171.0" y="489.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">upsert order_view (same txn)</text>
+<text x="1171.0" y="489.0" font-size="11" fill="#2f5f3d" text-anchor="middle">upsert order_view (same txn)</text>
+<path d="M260.0,785.0 L1180.0,785.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<text x="726.0" y="779.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">GET /api/orders(/{id})</text>
+<text x="726.0" y="779.0" font-size="11" fill="#555" text-anchor="middle">GET /api/orders(/{id})</text>
+<path d="M260.0,905.0 L1180.0,905.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<text x="726.0" y="899.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">query order(id)</text>
+<text x="726.0" y="899.0" font-size="11" fill="#555" text-anchor="middle">query order(id)</text>
+<path d="M1300.0,860.0 L1300.0,830.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<text x="1306.0" y="839.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">REST GET :8087, same endpoint any client uses</text>
+<text x="1306.0" y="839.0" font-size="11" fill="#555" text-anchor="middle">REST GET :8087, same endpoint any client uses</text>
+<path d="M1300.0,740.0 L1300.0,550.0" fill="none" stroke="#2f5f3d" stroke-width="2" marker-end="url(#am)"/>
+<text x="1306.0" y="639.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">reads EXCLUSIVELY — no aggregate fallback</text>
+<text x="1306.0" y="639.0" font-size="11" fill="#2f5f3d" text-anchor="middle">reads EXCLUSIVELY — no aggregate fallback</text>
+<text x="725.0" y="32" font-size="17" fill="#1d1d1d" text-anchor="middle" font-weight="700">ch.26 — the CQRS write/read split: command path, projection bridge, read-only query path</text>
+<text x="725.0" y="378" font-size="11" fill="#2f5f3d" text-anchor="middle" font-weight="700">write model and read model are two DISTINCT tables in the SAME order-service PostgreSQL schema — never joined at read time</text>
+<text x="40" y="1060" font-size="10.5" fill="#555555" text-anchor="start">Sourced from examples/07-order-service/.../{OrderService,OrderViewProjector,OrderSagaListener,OrderResource}.java and _plans/iterations/order-plan.md (S5/S6, DRQ-067/073/074).</text>
+</svg>

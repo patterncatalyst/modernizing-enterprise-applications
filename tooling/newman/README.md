@@ -1,21 +1,56 @@
-# The Behavior-Equivalence Suite
+# The Contract/Acceptance Suite (formerly the Behavior-Equivalence Suite)
 
-This directory holds the project's **behavior-equivalence suite** — a Newman
-(Postman) contract collection captured against the running Spring Boot
-monolith (`examples/00-monolith/`) that asserts the monolith's
-externally-observable HTTP contract: status codes, response-body fields, and
-content types. It does **not** inspect internal database state directly (it
-only observes effects through the same REST surface a real client would use).
+This directory holds the project's **contract/acceptance suite** — a Newman
+(Postman) collection that asserts the system's externally-observable HTTP
+contract: status codes, response-body fields, and content types. It does
+**not** inspect internal database state directly (it only observes effects
+through the same REST surface a real client would use).
 
-This is the project's **equivalence gate** (build-plan.md §G, decisions.md
-DRQ-014, DRQ-031): the load-bearing rule is that **an extracted service is
-"done" only when it passes this exact collection, unchanged**, against its
-own `baseUrl`. The collection is authored once here in r02 (step S6) and is
-re-run — never re-written — against each later extraction (Review in r02/ch.15,
-then Notification, Inventory, Payment, Shipping, Order+gateway in r04–r07).
+## order-plan.md S10 update — re-designated from equivalence to contract (DRQ-070/DRQ-071)
 
-> Terminology note: this suite is called the "behavior-equivalence suite" and
-> its CI check the "equivalence gate" — not the deprecated pre-DRQ-031 term.
+This collection was originally captured against the running Spring Boot
+monolith (`examples/00-monolith/`) and run UNCHANGED against each extracted
+service to prove **behavior equivalence** — "the extracted service behaves
+exactly like the monolith did." As of order-plan.md S10, the **monolith has
+been fully decommissioned** (its order context deleted, the last of six; see
+its `SMELLS.md`) and removed from the running topology — it is kept frozen
+in-repo only as the permanent "before" + golden-baseline referent, re-bootable
+as a break-glass audit path (never as a live fallback). With no live monolith
+left to be equivalent TO, the suite is **re-designated a contract/acceptance
+suite**: every assertion below now means **"the system meets its captured
+contract"**, not "matches the monolith." The contract itself is the frozen
+golden baseline captured for the last time against the live monolith at
+order-plan.md S2 (`tooling/newman/GOLDEN-BASELINE.md`) and proven across the
+order/gateway seam one final time at S9 (`examples/01-strangler-proxy/
+CUTOVER.md`, `examples/07-order-service/CUTOVER.md`).
+
+**This is a re-designation, not a weakening.** Not one assertion, negative
+check, or test script changed — only this file, `GOLDEN-BASELINE.md`, and the
+collection's own `info.description` field were updated to reflect what the
+suite now means. Every `pm.test`/`pm.expect` in every item is byte-for-byte
+what it was when the monolith was still the referent; the bounded-wait polls,
+the net-zero stock assertions, and the three negative checks documented in
+`examples/01-strangler-proxy/CUTOVER.md` and the service CUTOVER.md files all
+still go RED when their mechanism is disabled. The **Order Context Contract**
+and **GraphQL Gateway Contract** folders — staged PENDING at S2, proven at S9
+— are now **permanent** members of this suite and run via the Node helper
+(`demos/lib/run-order-newman.js`) in CI (order-plan.md S11's gate), the same
+mechanism that already patches Scenario 4's `shippingSagaEnabled` gate.
+
+This is the project's **contract gate** (build-plan.md §G, decisions.md
+DRQ-014/DRQ-031/DRQ-071): the load-bearing rule is unchanged — **an extracted
+service is "done" only when it passes this exact collection, unchanged**,
+against its own `baseUrl`. The collection was authored once in r02 (step S6)
+and is re-run — never re-written (except for this re-designation's prose) —
+against each extraction (Review in r02/ch.15, then Notification, Inventory,
+Payment, Shipping, Order+gateway in r04–r08).
+
+> Terminology note: this suite was called the "behavior-equivalence suite"
+> and its CI check the "equivalence gate" through order-plan.md S9; as of S10
+> it is the "contract/acceptance suite" and the "contract gate" — the
+> monolith is no longer live, so "equivalence" (to what?) no longer applies,
+> but the gate's load-bearing property (an extracted service only counts as
+> done once it passes, unchanged) is identical.
 
 ## Files
 
@@ -196,32 +231,51 @@ newman run tooling/newman/mea.postman_collection.json \
     --environment tooling/newman/local.postman_environment.json
 ```
 
-### Bringing up the monolith for a local run
+### Re-deriving the golden baseline from the monolith (break-glass only, post-S10)
+
+As of order-plan.md S10 the monolith is **removed from the running topology**
+(`compose.yaml` no longer stands it up) and is never brought up as part of a
+normal local run or CI gate. The steps below exist only as a break-glass audit
+path — re-deriving `GOLDEN-BASELINE.md` from scratch in a throwaway topology —
+not as something a day-to-day contributor needs to do:
 
 ```bash
-# 1. podman stack up (Postgres on localhost:5432, db `monolith`) — see compose.yaml
+# 1. check out the preserved "before" (the complete, runnable six-context
+#    monolith) rather than running it from main, which only has the frozen
+#    shell left:
+git worktree add /tmp/mea-before reference/monolith-before   # or: git checkout v0-monolith
+
+# 2. podman stack up (Postgres on localhost:5432, db `monolith`) — see compose.yaml
 podman compose --env-file .env up -d postgres
 
-# 2. build + run the monolith (Flyway migrates + seeds automatically on boot)
-cd examples/00-monolith
+# 3. build + run the preserved monolith (Flyway migrates + seeds automatically)
+cd /tmp/mea-before/examples/00-monolith
 mvn -q -DskipTests package
 SPRING_DATASOURCE_PASSWORD="$(grep ^POSTGRES_PASSWORD ../../.env | cut -d= -f2)" \
     java -jar target/monolith.jar
 
-# 3. in another shell, from the project root
+# 4. in another shell, from the project root
 demos/demo-equivalence.sh
 ```
 
-## How the equivalence gate uses this suite
+The frozen shell on `main` (`examples/00-monolith/`) itself no longer serves
+anything under `/api/**` (see its `SixContextsSmokeTest`) — it is not a valid
+target for this suite anymore; use the `reference/monolith-before` branch (or
+the `v0-monolith`/`stage/NN-*-extracted` tags) for any "what did the monolith
+actually do" comparison.
+
+## How the contract gate uses this suite
 
 - **Per-chapter acceptance (build-plan.md §G):** every extraction chapter
-  (15, 17, 19, 23, 24, 26) runs this exact collection against the newly
-  extracted service before its monolith module is decommissioned.
-- **In CI (S-CI, DRQ-030):** `.github/workflows/code-ci.yml` runs
+  (15, 17, 19, 23, 24, 26) ran this exact collection against the newly
+  extracted service before its monolith module was decommissioned.
+- **In CI (S-CI, DRQ-030; order-plan.md S11 for the final order/gateway
+  gate):** `.github/workflows/code-ci.yml` runs
   `newman run tooling/newman/mea.postman_collection.json` against the
-  extracted, cut-over service and fails the build on any non-zero Newman exit
-  code — the "equivalence-gate-in-CI" mechanism.
-- **Versioned with the monolith (R8, build-plan.md §M):** when the monolith's
-  contract changes deliberately, this collection changes with it in the same
-  commit; an extracted service that still diverges is a real regression, not
-  suite drift.
+  extracted, cut-over services — **with no live monolith in the topology** as
+  of S10/S11 — and fails the build on any non-zero Newman exit code — the
+  "contract-gate-in-CI" mechanism (formerly "equivalence-gate-in-CI").
+- **Versioned with the frozen golden baseline (R8, build-plan.md §M; DRQ-071):**
+  the contract is now fixed — `GOLDEN-BASELINE.md` — rather than tracking a
+  live, changeable monolith; an extracted service that diverges from it is a
+  real regression, not suite drift.

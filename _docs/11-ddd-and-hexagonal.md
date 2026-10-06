@@ -137,7 +137,7 @@ for (OrderCreate.Line line : command.items()) {
 ```
 
 Conformist is a legitimate choice *sometimes* — it's the right call when the
-upstream is clean, stable, and genuinely outside your influence, the way a
+upstream is clean, stable, and outside your influence, the way a
 small team integrating with a large vendor's API has no real leverage to
 negotiate a bespoke contract and is better off just accepting the vendor's
 shape. That is not this situation. `order` and `inventory` are siblings in
@@ -190,7 +190,7 @@ its items. That's exactly the discipline an aggregate root exists to enforce.
 
 But the same `OrderItem` that gets this right also gets a sibling rule wrong.
 DDD's standard guidance is that an aggregate should reference *other*
-aggregates by identity or by a small, deliberately copied value — never by
+aggregates by identity or by a small, copied value — never by
 holding a live reference to another aggregate's root object, because doing so
 silently extends your consistency boundary into a context you don't own and
 can't control. `OrderItem` holds exactly that live reference:
@@ -233,7 +233,7 @@ problem and Smell 4's synchronous-notification problem, both restated: a
 domain event is precisely what should exist in place of each of those direct
 calls, published once `Order` has confirmed, consumed independently by
 whichever context reacts to it. Chapters 17, 23, and 24 build that
-replacement for real.
+replacement.
 
 And **repositories** carry one rule tactical DDD is explicit about that the
 monolith also breaks in the same place: a repository belongs to exactly one
@@ -263,7 +263,7 @@ declared. Every dependency arrow points inward, toward the core; the core
 never imports a protocol, and a protocol can be swapped without the core
 noticing.
 
-Chapter 8 already told you, plainly, that the monolith does not have this
+Chapter 8 already told you that the monolith does not have this
 structure: "there are no ports, no interfaces separating a domain core from
 its Spring Data implementation, and a controller's request type flows
 straight through to a JPA entity's association graph." That absence is not
@@ -361,7 +361,7 @@ things depending on a context's internals are that context's own adapters,
 changing an adapter is cheap, and changing the protocol or the persistence
 technology never touches the business logic at all.
 
-Second, the caveat worth stating plainly: `ReviewRepository` is a concrete class, not a
+Second, the caveat: `ReviewRepository` is a concrete class, not a
 declared interface `ReviewService` programs against — this is not textbook
 hexagonal with an explicit `Port` interface the domain owns and an adapter
 implementing it elsewhere. What made Review cheap to extract wasn't a

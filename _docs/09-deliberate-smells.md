@@ -2,14 +2,14 @@
 title: "The Deliberate Smells"
 order: 9
 part: "The Reference Monolith"
-description: "The coupling, god-service, shared-table, and transaction-scope smells planted on purpose, each tagged to the pattern that will later cure it."
+description: "The coupling, god-service, shared-table, and transaction-scope smells planted in the reference monolith, each tagged to the pattern that will later cure it."
 ---
 
 The previous chapter assembled `examples/00-monolith/` into one deployable,
 one database, one JVM, six bounded contexts living as six packages under a
 single Spring Boot application. That assembly was not an accident of
 convenience. Every coupling decision in that codebase was chosen, not
-overlooked, and six of those decisions are bad on purpose — planted the way a
+overlooked, and six of those decisions are deliberately bad — planted the way a
 structural engineer plants a known weak point in a demonstration beam, so
 that when the beam is later cut at exactly that point, the cut makes sense to
 everyone watching. One of the six — Review's entanglement in a shared
@@ -17,7 +17,7 @@ security filter chain despite having no runtime dependency on anything else —
 has already been cured; r02 extracted it, and Chapter 7 walked that
 extraction end to end as the proof that the ADLC's loop actually holds up
 under real work. This chapter catalogues the five that remain, names exactly
-where each one lives in the real source tree, explains why each is a genuine
+where each one lives in the real source tree, explains why each is a
 modernization liability rather than a cosmetic one, and tells you which later
 chapter cuts along it. It is also a bridge: Part 4, "Finding the Seams,"
 opens immediately after this chapter and spends three chapters teaching the
@@ -60,7 +60,7 @@ the implementation — a foreign key where there should be a replicated field,
 a direct method call where there should be a published event, a shared
 transaction where there should be five independently committable ones.
 
-That reframing matters for how you read the rest of this chapter. Each smell
+Each smell
 below is not "a bug to fix." Fixing a bug makes code that was wrong become
 right, in place. Cutting a seam makes code that was *one thing* become *two
 things*, each independently deployable, independently scalable, and
@@ -134,7 +134,7 @@ team or capability that owns the referencing table differ from the team or
 capability that owns the referenced table." If the answer is yes and the
 join is enforced at the database level rather than through an API call, you
 have this smell. A second tell: can you truthfully say which service "owns"
-a given table, or does the honest answer involve the word "well, several
+a given table, or does the answer involve the word "well, several
 things write to it"? Ownership that several contexts can plausibly claim is
 ownership nobody actually has.
 
@@ -201,7 +201,7 @@ coordinated releases across what should be independently-owned services.
 Second — and this is the sharper pain for the modernization roadmap
 specifically — `OrderService` cannot be *extracted* until every one of those
 four dependencies has already been turned into something that isn't a
-direct in-process call. That is why order is deliberately the hardest and
+direct in-process call. That is why order is the hardest and
 last extraction in the roadmap (Chapter 26): it is not extracted because it
 is interesting last, it is extracted last because nothing else can be
 extracted *around* it first — each of the five earlier extractions (review,
@@ -217,7 +217,7 @@ sitting meaningfully above the median, especially one whose dependencies
 span module or package boundaries that correspond to different business
 capabilities, is a god-service candidate. A second, behavioral tell: can you
 describe the service's single responsibility in one sentence without using
-the word "and"? `OrderService`'s honest one-sentence description is "places
+the word "and"? `OrderService`'s one-sentence description is "places
 an order by checking stock, persisting the order, charging payment,
 dispatching shipment, *and* sending a notification" — five verbs, five
 contexts, one class.
@@ -239,7 +239,7 @@ which is exactly what Smell 3 is.
 of its writes commit together, or none of them do. That is an enormously
 convenient property, and it is tempting to lean on it for correctness
 properties that have nothing to do with the database — "if payment fails,
-roll the inventory reservation back too" is true today for free, as a side
+roll the inventory reservation back too" is true today only as a side
 effect of everything being one transaction against one database. The smell
 is depending on that side effect as if it were a deliberate distributed
 transaction mechanism, when it is actually just how far one `@Transactional`
@@ -315,7 +315,7 @@ Chapters 23 and 24 build the two concrete mechanisms — a choreographed saga
 compensating failure event; no orchestrator, each service reacts to the last
 one's event) and an orchestrated saga (shipping's extraction uses a Camel
 Saga EIP to drive the sequence from one coordinating definition instead of
-peer-to-peer events) — giving the book both styles on real, working code
+peer-to-peer events) — giving the book both styles as working code
 rather than describing sagas only in the abstract.
 
 ## Smell 4 — synchronous notification inside the checkout transaction
@@ -384,7 +384,7 @@ rather than edge cases.
 **How to recognize it in your own system.** Ask, for any call inside a
 transactional method, "if this specific call failed or hung for ten
 seconds, would a reasonable person want the whole transaction to fail or
-hang with it?" If the honest answer is no — the work is a side effect the
+hang with it?" If the answer is no — the work is a side effect the
 rest of the flow doesn't depend on for correctness — but the code currently
 makes it a blocking, in-transaction call anyway, that is this smell. The
 usual candidates are exactly what you'd guess: notifications, audit
@@ -481,8 +481,8 @@ Camel message translator / content enricher at this exact seam — inventory
 starts publishing (and `OrderService` starts consuming) `StockDto`, the
 contract type that already existed unused a few lines above the leak, with
 a translation step in between that can absorb future changes to either
-side's internal shape. It is deliberately the chapter immediately before
-notification's extraction (Chapter 17), because the outbox pattern Chapter
+side's internal shape. This chapter comes immediately before
+notification's extraction (Chapter 17) because the outbox pattern Chapter
 17 needs depends on having a stable event contract to put in the outbox —
 which is exactly what an ACL is for.
 

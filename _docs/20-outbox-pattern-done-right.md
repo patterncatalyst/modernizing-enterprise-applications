@@ -12,8 +12,8 @@ the outbox was the mechanism that let the write survive without smuggling a
 second system into that transaction's blast radius. That was the right
 amount of outbox for a chapter whose real subject was event-driven
 extraction. This chapter's subject is the outbox itself — not what it is, but
-what it costs to run correctly once it's load-bearing infrastructure rather
-than a one-paragraph aside. Every concern below is a concern a team actually
+what it costs to run correctly once checkout depends on it in production
+rather than a one-paragraph aside. Every concern below is a concern a team actually
 hits running this exact mechanism in production: what happens when delivery
 duplicates (it will), what happens when two events for the same order arrive
 out of order (they can, if you key wrong), how fast "eventually" really is,
@@ -248,13 +248,13 @@ most consequential line in the method: it turns an asynchronous Kafka send
 into a blocking call the relay waits on, and it is what makes
 `event.markPublished()` on the next line trustworthy — by the time that line
 runs, the broker has already acknowledged the write. The `catch` block
-deliberately does nothing but log: it does not rethrow, it does not mark the
+does nothing but log: it does not rethrow, it does not mark the
 row in any special failed state, it just lets the loop continue to the next
 event, and leaves this one for the next tick to retry.
 
 **The consumer — `NotificationService#recordOrderPlaced`.** On the far side
-of Kafka, this is the method that has to assume the relay's promise will
-occasionally be broken on purpose:
+of Kafka, this is the method that has to assume the relay's at-least-once
+guarantee will occasionally mean the same event arrives twice:
 
 ```java
 // examples/03-notification-service/.../NotificationService.java
@@ -277,7 +277,7 @@ poll) this is the entire idempotency story, and it is cheap: a redelivered
 event costs one indexed `SELECT` and a no-op return, not a thrown exception
 caught somewhere upstream.
 
-**The fragile bit this walkthrough has to name plainly:** the check and the
+**The fragile bit this walkthrough has to name:** the check and the
 insert above are two separate statements, not one atomic operation, so two
 deliveries of the same event landing concurrently — two consumer replicas,
 or a redelivery racing a still-in-flight first attempt — can both pass the
@@ -320,7 +320,7 @@ A partial unique index, scoped to rows where `order_id IS NOT NULL` so a
 future notification type that doesn't originate from an order is never
 forced into the same constraint, is the backstop Postgres itself enforces
 regardless of what the application code believed when it ran its own check.
-The two layers answer genuinely different questions rather than duplicating
+The two layers answer different questions rather than duplicating
 one answer: the application check is the fast path that keeps the common
 case from ever touching a constraint violation; the unique index is the
 guarantee that holds in the one case application logic structurally cannot
@@ -438,7 +438,7 @@ keeps sorting to the front of "oldest unpublished first." It never blocks
 other events in that batch — the `for` loop continues past a caught
 exception to the next row — but it does consume one of the batch's fifty
 slots on every tick indefinitely, and a handful of such rows would
-eventually crowd out genuinely fresh events from ever being selected. A
+eventually crowd out fresh events from ever being selected. A
 hardened version of this relay would track an attempt count per row (one
 more column), cap retries, and move a row that exceeds the cap into a
 separate dead-letter table or topic for a human or an automated remediation
@@ -492,7 +492,7 @@ The decision this project made (DRQ-034, recorded in `decisions.md`) was
 deliberate about not paying that weight on the very first extraction to need
 an outbox: Notification's event volume and latency tolerance don't demand
 sub-second delivery, so a polling relay teaches the outbox's real
-guarantee — atomic write, at-least-once publish — plainly, without pulling a
+guarantee — atomic write, at-least-once publish — without pulling a
 connector and a replication slot into the stack a chapter early, purely to
 look more sophisticated than the problem requires. That calculus changes for
 the Inventory extraction. Stock levels are read on nearly every product page
@@ -520,9 +520,9 @@ forever, not a line of configuration you tune once.
   the realistic target, not the marketing fiction of "exactly-once."
 - The **transactional outbox** closes that gap for the *first* hop only — the
   business write and the event row commit or roll back together, because
-  they're the same transaction on the same database — and deliberately
-  leaves the second hop (table to broker) at-least-once, a trade this
-  project's relay states plainly rather than hides.
+  they're the same transaction on the same database — and leaves the second
+  hop (table to broker) at-least-once, a trade this project's relay
+  documents rather than hides.
 - At-least-once delivery is only safe paired with a consumer that is
   idempotent on **two independent layers**: a cheap application-level
   check-then-insert for the common case, and a database constraint as the
@@ -563,6 +563,6 @@ end-to-end (including the negative check proving the consumer's idempotency
 under redelivery). What a reader's own run should confirm independently: the
 observed checkout-to-notification latency against the two-second poll
 interval on their own hardware and load; and that the cleanup/retention and
-poison-message gaps named above remain genuinely unaddressed in the current
+poison-message gaps named above remain unaddressed in the current
 codebase rather than quietly fixed since this chapter was written — both are
 explicitly scoped as future hardening, not implemented here.*

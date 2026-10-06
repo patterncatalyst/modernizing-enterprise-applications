@@ -1,11 +1,43 @@
-# The Strangler-Fig Proxy
+# The Strangler-Fig Proxy → the Permanent REST Edge Router
 
-This is the **Camel strangler-fig proxy** (ch.14 "The Strangler Fig Pattern",
+This was the **Camel strangler-fig proxy** (ch.14 "The Strangler Fig Pattern",
 r02-plan step S7, build-plan.md §E step 0) — a standalone Camel-on-Quarkus
-application that sits in front of the Spring Boot monolith
-(`examples/00-monolith/`) so that bounded contexts can be peeled off onto
+application that sat in front of the Spring Boot monolith
+(`examples/00-monolith/`) so that bounded contexts could be peeled off onto
 Quarkus **one seam at a time**, with clients none the wiser about which
 backend actually served a given request.
+
+## order-plan.md S10 update — the strangler fig completes (DRQ-070, HARD PARTS H4/H5)
+
+Order was the sixth and last bounded context extracted; the monolith has now
+been **fully decommissioned** (frozen in-repo as the "before" referent, out of
+the running topology — see its `SMELLS.md`). There is no host tree left to
+strangle and no fallback backend to route to, so this project **sheds its
+strangler role and becomes the system's permanent REST edge router**:
+
+- The six `strangler.*.enabled` cutover flags and the
+  `strangler.monolith.base-url` default backend are **retired** — removed
+  entirely from `application.properties` and from
+  `StranglerProxyRoute`'s field declarations.
+- `StranglerProxyRoute#configure()` now does straight, **unconditional**
+  content-based routing on URI path prefix to one of the six extracted
+  services, every time — collapsed from the prior two-stage
+  flag-check-then-dispatch `choice()` pair into a single `choice()` that both
+  decides and dispatches.
+- An unmatched path is answered `404` directly by the route itself — there is
+  nothing left to fall through to.
+- The GraphQL gateway (`examples/08-graphql-gateway`, :8090) keeps its own
+  front door, unchanged — it was never routed through this proxy.
+
+**Every per-context section below (the six "The flag: ..." write-ups and their
+ACL-honesty notes) is preserved verbatim as the historical record** of each
+cutover's reversibility window and the field-by-field proof that no Camel
+message translator was ever needed at this layer — read them as history, not
+as a description of config that exists today. See `StranglerProxyRoute`'s
+class javadoc and `CUTOVER.md` for the same history in code/evidence form, and
+`examples/00-monolith/README.md` for how to check out the complete, runnable
+"before" (the `reference/monolith-before` branch / `v0-monolith` tag) for a
+genuine side-by-side comparison.
 
 ## The pattern
 
@@ -273,6 +305,58 @@ honest, transparent reverse proxy, structurally identical to the Review,
 Notification, Inventory, and Payment branches — there is no
 `ShippingAclRoute` class in this project.
 
+## The flag: `strangler.order.enabled` (order-plan.md S8, ch.26, DRQ-065 precedent) — the sixth and LAST flag
+
+| Value | Backend for `/api/orders/**` (POST + GET) | Backend for everything else |
+|---|---|---|
+| `false` (**default**, order-plan S8 — not yet cut over) | monolith `:8080` | unaffected |
+| `true` (order-plan S9 — cutover) | order-service `:8087` | unaffected |
+
+Identical shape to the Review, Notification, Inventory, Payment, and Shipping
+flags — content-based routing on the `/api/orders` path prefix, matching the
+**full** incoming path (the same CUTOVER.md paragraph 2 lesson applied a
+sixth time). Unlike the five prior flags, this one routes **both** the POST
+checkout command and the GET reads through a single branch — the whole order
+bounded context (the god `OrderService`/`OrderSagaListener` hub, SMELL #2)
+moves at once; there is no narrower read/write split worth staging at the
+proxy layer (the CQRS write/read split, DRQ-067, happens inside the order
+service itself). This is the last strangler flag in the book: order-plan S9
+flips it (with reversibility demonstrated one final time), and order-plan S10
+is the single, deliberately irreversible decommission for the whole system —
+there is no seventh context to extract, and no monolith left to fall back to
+afterward. Note the order service listens on **`:8087`**, not `:8086`
+(Debezium Connect) and not `:8090` (the GraphQL gateway, order-plan.md
+DRQ-069).
+
+### ACL honesty: why this branch is also a transparent proxy, not a translator
+
+The same honesty check already applied to Inventory, Payment, and Shipping
+above applies here too, and the answer is the same:
+
+- The monolith's `/api/orders` surface returns
+  `dev.patterncatalyst.monolith.common.OrderDto`: `record OrderDto(Long id,
+  Long customerId, OrderStatus status, long totalCents, Instant createdAt,
+  String shippingAddress, List<Item> items)` with nested `record Item(String
+  sku, int quantity, long unitPriceCents)`.
+- The order service's `/api/orders` surface returns
+  `dev.patterncatalyst.order.OrderDto` — lifted **unchanged** (order-plan
+  S4/S5, DRQ-068/073 Phase A): the identical record, same field names, types,
+  and order, same nested `Item` shape, same paths (`GET /api/orders/{id}`,
+  `POST /api/orders`).
+- `customerId` stays a plain `Long` on the wire on both sides. The FK
+  decomposition (DRQ-068) changes only the order service's **internal** JPA
+  mapping (no more `@ManyToOne Customer`) — it never reaches this external
+  read contract.
+
+Both backends therefore produce **byte-for-byte identical JSON**. A Camel
+message translator here would have nothing to translate — building one
+anyway would fabricate a redundant ACL for a contract that does not differ,
+exactly the speculative-infrastructure trap the Inventory/Payment/Shipping
+precedents above already ruled out. So the `/api/orders` branch is an
+honest, transparent reverse proxy, structurally identical to the Review,
+Notification, Inventory, Payment, and Shipping branches — there is no
+`OrderAclRoute` class in this project.
+
 ## Backend targets
 
 Properties name the fixed backend targets each flag chooses between. The
@@ -287,6 +371,7 @@ strangler.notification.base-url=http://localhost:8083
 strangler.inventory.base-url=http://localhost:8084
 strangler.payment.base-url=http://localhost:8085
 strangler.shipping.base-url=http://localhost:8088
+strangler.order.base-url=http://localhost:8087
 ```
 
 ## Ports
@@ -300,6 +385,7 @@ strangler.shipping.base-url=http://localhost:8088
 | Inventory service (`examples/04-inventory-service/`) | 8084 | only reachable through the proxy once the Inventory flag is on (inventory-plan S10); gRPC server at :9004 is used by the monolith directly, not via this proxy |
 | Payment service (`examples/05-payment-service/`) | 8085 | only reachable through the proxy once the Payment flag is on (payment-plan S8); not yet enabled by default (payment-plan S7) |
 | Shipping service (`examples/06-shipping-service/`) | 8088 | only reachable through the proxy once the Shipping flag is on (shipping-plan S8); not yet enabled by default (shipping-plan S7). Note: `:8086` is Debezium Connect (compose.yaml), not this service. |
+| Order service (`examples/07-order-service/`) | 8087 | only reachable through the proxy once the Order flag is on (order-plan S9); not yet enabled by default (order-plan S8). Note: `:8086` is Debezium Connect and `:8090` is the GraphQL gateway (order-plan.md DRQ-069) — neither is this service. |
 
 ## Running it
 

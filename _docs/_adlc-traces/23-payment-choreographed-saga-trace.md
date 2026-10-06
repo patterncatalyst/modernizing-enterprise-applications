@@ -70,7 +70,7 @@ DRQ-055 — Equivalence under a choreographed saga: the suite asserts the
 
 Map's job is reconnaissance before Generate, and here the reconnaissance is
 already written into the plan's framing section. Inventory (ch.19) was
-deliberately engineered to leave checkout's synchronous contract untouched —
+engineered to leave checkout's synchronous contract untouched —
 Reserve stayed a blocking gRPC call inside `placeOrder`, so `201`/`402`
 never changed and Scenario 1-3 were left byte-for-byte unedited (DRQ-046).
 Payment is the opposite case, and the plan names three concrete reasons it is
@@ -80,7 +80,7 @@ harder, each of which this trace's later phases return to:
    from an event after the HTTP response returns, checkout cannot report
    `CONFIRMED`/`402` synchronously — this is the first extraction that moves a
    user-visible, failure-bearing outcome off the request thread.
-2. **The two load-bearing payment assertions in the equivalence suite must be
+2. **The two critical payment assertions in the equivalence suite must be
    re-expressed without being weakened** — Scenario 1 (`CONFIRMED`) and
    Scenario 3 (decline + inventory net-zero) are the reason the chapter
    exists, and a suite that relaxes "expect `402`" into "accept anything"
@@ -177,7 +177,7 @@ payment method yet (S6's job); consumer falls back to CARD-UNSPECIFIED.
 ```
 
 That "forward-compat gap" line is not a footnote — it is S5 naming, in its own
-commit message, a limitation it is deliberately leaving for S6 to close rather
+commit message, a limitation it is leaving for S6 to close rather
 than quietly working around. `MIGRATION.md` records the measured cost of that
 real capability (a live Kafka consumer, two producers, a scheduled poller),
 not an idiomatic rewrite of the same surface:
@@ -227,7 +227,7 @@ the real shapes on both sides and recorded, in the commit itself, that a
 translator would have been dead code — a content-based route is the full ACL
 this particular seam needs, same discipline as Review's `/reviews`-prefix
 lesson from ch.07 (match the full path, don't assume a translation step that
-isn't load-bearing).
+isn't required).
 
 ## Verify: two judgment gates, a found-and-fixed suite gap, and the crux proven with real numbers
 
@@ -284,13 +284,13 @@ a third time in the scripted full run: 72 -> 71 -> 72.
 
 The bounded-wait polls that produced those numbers were not instant: Scenario
 1 retried 6 attempts (~3s) before observing `CONFIRMED`, and Scenario 3
-retried 8 attempts (~4s) before observing `PAYMENT_DECLINED` — genuine
+retried 8 attempts (~4s) before observing `PAYMENT_DECLINED` — real
 `order.placed` -> capture -> `payment.captured`/`declined` -> saga-reaction
 latency, not an in-process hit. The same CUTOVER.md run also closed the loop
 on routing, the exact check Review's CUTOVER.md established the need for:
 `GET /api/payments?orderId=167` through the proxy returned the payment
 service's row byte-for-byte, while the same query against the monolith
-directly (`:8080`) returned an empty array — proof traffic was genuinely
+directly (`:8080`) returned an empty array — proof traffic was
 reaching `examples/05-payment-service`, not falling through.
 
 **The negative check (DRQ-055, H2)** is the sharper of the two checks S8 ran,
@@ -392,7 +392,7 @@ first attempt (0 retries)** — exactly the synchronous-backend shape DRQ-037/
 DRQ-055 predict, and the proof that flipping both flags back is a config
 change and a restart, nothing more, right up until decommission.
 
-S9 is where that reversibility window closed on purpose. The monolith's
+S9 is where that reversibility window closed. The monolith's
 in-process `PaymentController`/`PaymentService`/`Payment`/`PaymentRepository`
 and the `payment.mode` flag were removed entirely (`GET :8080/api/payments`
 now returns `404`); `strangler.payment.enabled=true` became the **committed**
@@ -420,7 +420,7 @@ not yet for shipping/order, which is exactly the resume boundary ch.24/ch.26
 pick up.
 ```
 
-Two things remain genuinely open at the point this trace was captured, and
+Two things remain open at the point this trace was captured, and
 are recorded here rather than assumed closed:
 
 - **DRQ-047 through DRQ-055 are written and accepted in `_plans/iterations/payment-plan.md`

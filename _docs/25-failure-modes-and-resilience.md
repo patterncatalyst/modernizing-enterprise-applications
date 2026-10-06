@@ -23,8 +23,7 @@ consumer idempotency, `examples/01-strangler-proxy/`'s
 `throwExceptionOnFailure=false` routing, and the `quarkus-smallrye-health`
 dependency sitting in `examples/03-notification-service/pom.xml` and
 `examples/04-inventory-service/pom.xml` — or it is a pattern this project has
-deliberately not built yet, named here with the reason it was deferred, not
-quietly skipped. Part 7's two remaining chapters — Chapter 23's choreographed
+not built yet, named here with the reason it was deferred. Part 7's two remaining chapters — Chapter 23's choreographed
 saga for Payment and Chapter 24's orchestrated saga for Shipping, using the
 Camel Saga EIP — are where the compensation idea this chapter organizes gets
 built out to its full shape, coordinating multiple steps across multiple
@@ -111,7 +110,7 @@ distinction is the entire value of a deadline, and it is worth being precise
 about why *that* value and not a larger or smaller one: five seconds is long
 enough to absorb an ordinary GC pause or a brief connection-pool contention
 spike on the inventory service's side without a false-positive timeout on
-perfectly healthy traffic, and short enough that a genuinely hung or
+perfectly healthy traffic, and short enough that a hung or
 unreachable inventory service fails a checkout attempt in a bounded,
 customer-tolerable window rather than leaving a browser tab spinning. Nothing
 about five thousand milliseconds is a law of nature — it is a tuned constant,
@@ -125,12 +124,11 @@ What happens when the deadline fires is the second half of the design, and
 it is just as deliberate as the timeout value itself. The blocking stub
 throws an unchecked `StatusRuntimeException` — `DEADLINE_EXCEEDED` if the
 clock ran out, `UNAVAILABLE` if the channel could never connect at all — and
-`reserve` does not catch it. The class's own javadoc states the reasoning
-plainly: a deadline exceeded is not a logical "insufficient stock" result, so
+`reserve` does not catch it. The class's own javadoc states the reasoning: a deadline exceeded is not a logical "insufficient stock" result, so
 it must never be mapped to `InsufficientStockException`'s `409`, and Spring's
 default handling of an unmapped `RuntimeException` turns it into a `500`.
 That `500` is not a bug the project failed to polish away — it is the
-*honest* answer. A checkout that cannot determine whether a reservation
+accurate answer. A checkout that cannot determine whether a reservation
 succeeded must not report success, and it must not silently retry into a
 state nobody can audit; failing loudly, with a status code that tells an
 operator "something is actually broken here," is strictly better than a
@@ -138,12 +136,11 @@ checkout that confirms an order against a reservation whose outcome nobody
 actually knows. This is the same instinct Chapter 16's anti-corruption layer
 and Chapter 19's typed proto already modeled in a different shape: don't let
 an ambiguous outcome masquerade as a known one. A timeout is not graceful
-degradation and should not be dressed up as one; it is a deliberate, fast
+degradation and should not be dressed up as one; it is a fast
 failure that trades "maybe eventually correct" for "definitely and promptly
-honest about not knowing."
+explicit about not knowing."
 
-It is worth naming, too, what a deadline alone does *not* buy, because the
-next two sections exist precisely to cover that gap. A deadline bounds how
+A deadline alone does not buy everything: it bounds how
 long one call can block; it says nothing about what the caller should do
 next — retry, give up, or ask a different question entirely — and it does
 nothing to protect the caller's own resources from a dependency that is
@@ -183,7 +180,7 @@ private void publishOne(OutboxEvent event) {
 That is a retry with no backoff, no jitter, and no cap — the same five-second
 timeout and the same two-second poll interval apply to the hundredth attempt
 at a permanently failing row as to the first. Chapter 20 already named the
-honest cost of that gap directly: a message the broker will never accept (an
+cost of that gap directly: a message the broker will never accept (an
 oversized payload, say) gets retried forever, consuming one of the relay's
 fifty per-tick slots on every single poll, indefinitely. This chapter is not
 re-litigating that gap; it is pointing at it as the concrete instance of a
@@ -195,10 +192,9 @@ What makes the relay's retry *safe to attempt at all*, despite that gap, is
 that the broker side of the retry can duplicate a delivery without
 corrupting anything, because the consumer was built from the start to expect
 duplicates. `NotificationService#recordOrderPlaced` is idempotent on two
-independent layers, not one, and it is worth restating both here because
-this is the chapter where "why two layers, not one" earns its place as a
-general resilience lesson rather than a notification-specific implementation
-note:
+independent layers, not one, and this is the chapter where "why two layers,
+not one" becomes a general resilience lesson rather than a
+notification-specific implementation note:
 
 ```java
 // examples/03-notification-service/.../NotificationService.java
@@ -278,22 +274,20 @@ than exhausting a thread pool shared with every other request the monolith
 serves. None of those three annotations exist anywhere in this codebase
 today — not in `examples/00-monolith/pom.xml`, not in
 `examples/04-inventory-service/pom.xml`, not anywhere this project's build
-reaches. That is a correct and deliberate state of affairs for this book's
-scope, and it is worth saying plainly why rather than letting it read as an
-oversight.
+reaches. That is a correct state of affairs for this book's scope, not an
+oversight, for two reasons.
 
-First, the irony is structural, and it is worth naming rather than quietly
-stepping around: the call that would most benefit from a circuit breaker is
-issued from `RemoteInventoryClient`, which lives inside the *Spring Boot
-monolith*, not inside a Quarkus service — SmallRye Fault Tolerance is a
-Quarkus-side chassis capability, and the monolith's equivalent would be a
-library like Resilience4j, which this project has also not added. The
-resilience gap, for as long as inventory's call site remains inside the
-monolith, sits on the Spring side of this book's before/after contrast, not
-the Quarkus side — a detail worth remembering when Chapter 27's chassis
-chapter argues for what Quarkus provides, because a chassis capability a
-framework offers is only a chassis capability a *service* has if someone
-actually wires it in.
+First, the irony is structural: the call that would most benefit from a
+circuit breaker is issued from `RemoteInventoryClient`, which lives inside
+the *Spring Boot monolith*, not inside a Quarkus service — SmallRye Fault
+Tolerance is a Quarkus-side chassis capability, and the monolith's
+equivalent would be a library like Resilience4j, which this project has
+also not added. The resilience gap, for as long as inventory's call site
+remains inside the monolith, sits on the Spring side of this book's
+before/after contrast, not the Quarkus side — relevant when Chapter 27's
+chassis chapter argues for what Quarkus provides, because a chassis
+capability a framework offers is only a chassis capability a *service* has
+if someone wires it in.
 
 Second, and more fundamentally: this project's own Chapter 3 named the
 standing discipline a circuit breaker would otherwise violate if added
@@ -301,31 +295,31 @@ speculatively — **"microservices are not the goal of building
 microservices"** — and this book's scope-discipline posture has consistently
 demoted a chassis capability to a named, deferred gap rather than building it
 because a pattern catalog says a resilience chassis should have one. A
-circuit breaker earns its complexity when a dependency's *failure rate*, not
+circuit breaker is worth the added complexity when a dependency's *failure rate*, not
 merely its occasional slowness, is high enough that short-circuiting beats
 retrying — a threshold this project's own traffic, a demo-scale walking
 skeleton with one inventory service and no production load pattern behind
-it, has never actually been measured against. Adding one now would be
+it, has never been measured against. Adding one now would be
 exactly the speculative infrastructure Chapter 3's own standard argues
 against: a resilience pattern this book can show the reader on a diagram, not
-one this book can prove earns its keep the way every other pattern in this
-chapter has been proven — by breaking something on purpose and watching the
-fix catch it. The honest position is to name the gap, name where the fix
+one this book can prove is worth its cost the way every other pattern in this
+chapter has been proven — by breaking something and watching the
+fix catch it. The right move is to name the gap, name where the fix
 goes, name the chassis that would supply it, and leave it for the reader's
-own production traffic to justify rather than manufacture a load profile
-this book doesn't actually have, purely to complete the pattern-catalog
+own production traffic to justify, rather than manufacture a load profile
+this book doesn't have, purely to complete the pattern-catalog
 checklist. Bulkheads follow the identical logic: this project's one gRPC
 channel to inventory is not yet isolated from the monolith's other I/O by a
 dedicated thread pool or connection-pool partition, because nothing in this
 book's traffic has yet demonstrated that one slow dependency's resource
-consumption actually starves an unrelated request path — the day it does,
+consumption starves an unrelated request path — the day it does,
 the fix is a `@Bulkhead` annotation away, not a redesign.
 
 ## Compensation over rollback: the saga-lite already built
 
 Chapter 22 drew the line precisely: the monolith's checkout used to get
-atomic rollback across four bounded contexts for free, paid for by one
-`@Transactional` boundary and one database's write-ahead log, and that free
+atomic rollback across four bounded contexts as a side effect, paid for by one
+`@Transactional` boundary and one database's write-ahead log, and that automatic
 rollback cannot survive a decrement that commits in another service's own
 database. What replaces it is not automatic. `OrderService#placeOrder`
 tracks every sku this checkout has successfully reserved remotely, and its
@@ -353,11 +347,11 @@ name, and reason about separately from the operation it undoes — `release`
 is not `reserve` running backward inside the same mechanism; it is its own
 RPC, with its own failure modes, that the original caller is responsible for
 invoking at exactly the right moment. `compensateRemoteReservations`'s own
-javadoc is explicit about how small this particular saga-lite deliberately
-stays: best-effort, logged loudly on failure rather than swallowed silently,
+javadoc is explicit about how small this particular saga-lite stays:
+best-effort, logged loudly on failure rather than swallowed silently,
 with no idempotency key and no saga ledger, because a single reservation with
 a single compensating call does not yet need the machinery a saga spanning
-several services and several steps genuinely does. That is this chapter's
+several services and several steps does. That is this chapter's
 hinge into Part 7's remaining two chapters. Chapter 23 builds the same
 underlying idea — an event triggers a step, a later step's failure triggers a
 compensation for everything that already succeeded — across *multiple*
@@ -367,7 +361,7 @@ control style. Chapter 24 builds the identical outcome for Shipping through
 the opposite control style: a central orchestrator, using the Camel Saga EIP,
 explicitly sequencing each step and explicitly invoking the matching
 compensation the moment any step reports failure. Both inherit, and have to
-outgrow, the exact honest limitation this chapter's `Release` javadoc already
+outgrow, the exact limitation this chapter's `Release` javadoc already
 names — no idempotency key yet on the compensating call itself, which means
 a retried `Release` whose effect already landed would over-restore stock, a
 gap this chapter is naming rather than quietly carrying forward unexamined.
@@ -382,7 +376,7 @@ can never successfully process no matter how many times it is retried — an
 oversized payload, a schema a deployed version can no longer parse, a
 business invariant the message itself violates. `OutboxRelay`'s `catch`
 block treats every failure identically, transient or permanent, which means
-a genuinely poisoned row competes for one of the relay's fifty per-tick slots
+a poisoned row competes for one of the relay's fifty per-tick slots
 on every single poll, forever, never making progress and never getting out
 of the way of healthy events behind it. The textbook fix — a **dead-letter
 queue**, a separate topic or table a poisoned message gets moved to after a
@@ -423,13 +417,13 @@ gracefully, because serving a customer a confirmed order against stock that
 was never actually secured is not a reduced experience, it is a wrong one — a
 correctness failure no compensating action can fully repair after the fact
 (you can refund a card; you cannot always produce a second physical widget
-that doesn't exist). A feature that genuinely tolerates staleness — a
+that doesn't exist). A feature that tolerates staleness — a
 product page's displayed stock count, read from the inventory service's
 CDC-replicated copy a few hundred milliseconds behind the source of truth —
 is exactly the kind of place graceful degradation belongs, and Chapter 19's
 own bounded-wait reads already treat it that way. The discipline this
 chapter asks you to take forward is the same one ACD asked for: decide,
-invariant by invariant, whether a degraded answer is honest or merely
+invariant by invariant, whether a degraded answer is accurate or merely
 convenient, and never apply "fail soft" to a case where failing hard is the
 only answer a customer can actually trust.
 
@@ -449,28 +443,26 @@ ships its own health-check integration that wires straight into this same
 surface, so the Kafka consumer's connection state becomes part of
 `/q/health/ready` automatically, the moment the extension is on the
 classpath — a dependency a reader never has to configure to get a readiness
-probe that genuinely reflects whether the service can actually consume
+probe that reflects whether the service can consume
 `order.placed`, not merely whether its HTTP port is open.
 
 What this project does *not* yet have is the other half of why health checks
 matter: nothing in `examples/01-strangler-proxy/` or the compose/CI
 definitions in this repository currently wires a platform's liveness/readiness
 probes to these endpoints to gate traffic or restarts — that wiring is Part
-9's subject (Chapters 29–30, on minikube), not this chapter's. And the
-asymmetry is worth stating honestly rather than leaving implicit:
+9's subject (Chapters 29–30, on minikube), not this chapter's. The asymmetry:
 `examples/00-monolith/pom.xml` carries no actuator or health dependency at
 all, and `examples/01-strangler-proxy/` has no health check of its own
 either. The resilience chassis this chapter catalogs is, today, a Quarkus-side
 capability that exists on the two newest services and nowhere else in this
-system — another small, honest data point for the "what you migrated to"
-argument Chapter 27 makes in full, not a gap this chapter is trying to paper
-over.
+system — one more data point, named directly, for the "what you migrated to"
+argument Chapter 27 makes in full.
 
 ## Proving it: the behavior-equivalence suite's negative checks
 
 Every claim this chapter has made about failure handling would be exactly as
-credible as a code comment if nothing in this project had ever actually
-broken a dependency on purpose and watched the system's response. Chapter 7
+credible as a code comment if nothing in this project had ever
+broken a dependency and watched the system's response. Chapter 7
 already stated the general principle this chapter's resilience claims lean
 on entirely: a green suite run is evidence, not proof, because a
 behavior-equivalence suite verifies the *response* a request produced, not
@@ -487,7 +479,7 @@ Chapter 17's version of this check killed the notification-service process
 outright and re-ran the Notification Context Contract folder through the
 proxy, producing a `500` and a JSON parse error — a *stronger* failure than a
 soft budget exhaustion would have been, because it proved the suite's
-bounded-wait poll was genuinely waiting on a real pipeline rather than a
+bounded-wait poll was waiting on a real pipeline rather than a
 lenient timeout that could be excused as slow infrastructure. Chapter 19's
 version killed the inventory service entirely with both cutover flags set,
 and the result was not a soft degradation but an immediate, precisely scoped
@@ -516,10 +508,10 @@ equivalence-gate jobs for both Notification and Inventory were each proven
 red-then-green on a deliberate break before either was trusted as a
 permanent CI gate.
 
-## The honest scorecard
+## The resilience scorecard
 
 Pulled together, here is exactly what this project has built against the
-canonical resilience chassis, and exactly what it has deliberately left for
+canonical resilience chassis, and exactly what it has left for
 a reader's own production traffic to justify:
 
 **Implemented, real, and proven by a negative check:** a per-call gRPC
@@ -534,7 +526,7 @@ un-degraded failure propagation at the proxy layer
 (`throwExceptionOnFailure=false`); and MicroProfile Health endpoints,
 including automatic broker-connectivity health, on both Quarkus services.
 
-**Deliberately deferred, named rather than hidden, and tied to a stated
+**Deferred by design, with a stated
 reason:** a circuit breaker around the inventory gRPC call (no measured
 failure rate yet justifies short-circuiting over retrying, and the call site
 lives in the Spring monolith, not yet on a Quarkus chassis that would make it
@@ -545,8 +537,8 @@ to fix); retry backoff, jitter, and a retry cap on the outbox relay (Chapter
 successfully process (the same chapter's poison-message gap, generalized
 here); platform-level consumption of the health endpoints that already exist
 (Part 9's subject, not this chapter's); and an idempotency key on the
-compensating `Release` call itself (named in its own javadoc, inherited
-honestly by both of Part 7's saga chapters rather than quietly patched over
+compensating `Release` call itself (named in its own javadoc and inherited
+as a stated gap by both of Part 7's saga chapters, not patched over
 here).
 
 Chapter 3 named the discipline this scorecard is an instance of:
@@ -580,7 +572,7 @@ should carry.
   this project's `Release` call is the smallest possible instance of the
   pattern Chapter 23 and Chapter 24 build out to full saga scale.
 - **Circuit breakers, bulkheads, retry budgets, and dead-letter routing are
-  real, named, and deliberately deferred** — not because they're unknown
+  real, named, and deferred by design** — not because they're unknown
   patterns, but because this project's own measured failure modes haven't
   yet demanded them, and building them speculatively would be exactly the
   infrastructure-before-need Chapter 3 already argued against.
@@ -600,7 +592,7 @@ the opposite control style, an explicit orchestrator using the Camel Saga
 EIP. Both inherit the deadline discipline, the idempotency discipline, and
 the negative-check discipline this chapter named — and both have to decide,
 for themselves, exactly where their own circuit breakers and dead-letter
-paths would go, and exactly how long they can honestly defer building them.
+paths would go, and exactly how long they can defer building them.
 
 ---
 
