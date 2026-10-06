@@ -18,29 +18,21 @@
 
   <name>Reference Monolith</name>
   <description>
-    The "before" picture for Modernizing Enterprise Applications: a single Spring Boot
-    deployable, one shared Postgres schema, one JVM, six bounded contexts (order, inventory,
-    payment, shipping, notification, review). Six deliberate smells are planted and tagged
-    with SMELL[ch.NN] comments; see SMELLS.md. This module is kept permanently in-repo as the
-    behavior-equivalence suite's referent (DRQ-024).
+    The "before" picture for Modernizing Enterprise Applications: originally a single Spring
+    Boot deployable, one shared Postgres schema, one JVM, six bounded contexts (order,
+    inventory, payment, shipping, notification, review). Six deliberate smells were planted
+    and tagged with SMELL[ch.NN] comments; see SMELLS.md. As of order-plan.md S10 (DRQ-070)
+    all six contexts have been extracted and decommissioned — this module is now a frozen,
+    still-building shell with zero live bounded contexts, kept permanently in-repo as the
+    behavior-equivalence suite's golden-baseline referent (DRQ-024). The complete, runnable
+    "before" state (all six contexts still live) is preserved on the `reference/monolith-before`
+    branch (tag `v0-monolith`); `stage/NN-*-extracted` tags step through each extraction.
   </description>
 
   <properties>
     <java.version>25</java.version>
     <maven.compiler.release>25</maven.compiler.release>
     <springdoc.version>2.8.17</springdoc.version>
-    <!-- r05/ch.19 S7 (DRQ-039): the gRPC CLIENT to the extracted inventory
-         service's Reserve/Release/CheckStock/GetStock hot path. Versions
-         need not match examples/04-inventory-service's quarkus-grpc-managed
-         versions exactly: the proto wire format is stable across
-         compatible grpc-java/protobuf releases; only the .proto SOURCE
-         (copied verbatim, see src/main/proto) must agree. protobuf.version
-         is pinned to the SAME protobuf-java release io.grpc:grpc-protobuf
-         1.73.0 itself depends on (verified via `mvn dependency:tree`):
-         protoc's generated-code API surface is tied to the protobuf-java
-         runtime version it targets, so protoc and protobuf-java must match. -->
-    <grpc.version>1.73.0</grpc.version>
-    <protobuf.version>3.25.5</protobuf.version>
   </properties>
 
   <dependencies>
@@ -92,20 +84,7 @@
       <version>${springdoc.version}</version>
     </dependency>
 
-    <!-- ch.17 (r04/S3): the transactional-outbox relay publishes order.placed to
-         Kafka via a plain KafkaTemplate. notification.mode=synchronous (default)
-         never touches this producer; notification.mode=outbox does. -->
-    <dependency>
-      <groupId>org.springframework.kafka</groupId>
-      <artifactId>spring-kafka</artifactId>
-    </dependency>
-
     <!-- Test scope -->
-    <dependency>
-      <groupId>org.springframework.kafka</groupId>
-      <artifactId>spring-kafka-test</artifactId>
-      <scope>test</scope>
-    </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-test</artifactId>
@@ -126,80 +105,32 @@
       <artifactId>postgresql</artifactId>
       <scope>test</scope>
     </dependency>
-
-    <!-- r05/ch.19 S7 (DRQ-039, decorating collaborator): gRPC CLIENT deps for
-         RemoteInventoryClient's blocking stub against the extracted inventory
-         service's :9004 gRPC server. grpc-netty-shaded supplies the client
-         transport (shaded, no netty-version collision with anything Spring
-         Boot brings in); grpc-protobuf/grpc-stub are the generated-code
-         runtime for the Mutiny-free, plain blocking stub the protobuf-maven-
-         plugin below generates from src/main/proto. -->
-    <dependency>
-      <groupId>io.grpc</groupId>
-      <artifactId>grpc-netty-shaded</artifactId>
-      <version>${grpc.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>io.grpc</groupId>
-      <artifactId>grpc-protobuf</artifactId>
-      <version>${grpc.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>io.grpc</groupId>
-      <artifactId>grpc-stub</artifactId>
-      <version>${grpc.version}</version>
-    </dependency>
-    <!-- Generated gRPC stub classes carry @javax.annotation.Generated, which
-         the JDK no longer ships (removed from java.se in JDK 11+); this is
-         the standard grpc-java workaround (provided scope: compile-time only). -->
-    <dependency>
-      <groupId>org.apache.tomcat</groupId>
-      <artifactId>annotations-api</artifactId>
-      <version>6.0.53</version>
-      <scope>provided</scope>
-    </dependency>
   </dependencies>
+
+  <!-- order-plan.md S10 (DRQ-070, the final decommission): the Kafka producer/
+       consumer dependencies (spring-kafka/spring-kafka-test, ch.17 r04/S3) and
+       the gRPC client dependencies (grpc-netty-shaded/grpc-protobuf/grpc-stub/
+       org.apache.tomcat:annotations-api, r05/ch.19 S7, DRQ-039) have been
+       removed along with their one and only consumer in this module: the
+       transactional-outbox relay (common/outbox/OutboxRelay, a KafkaTemplate
+       producer) and OrderSagaListener's @KafkaListener reactions, and
+       RemoteInventoryClient's gRPC blocking stub, respectively. Nothing in
+       this frozen shell talks to Kafka or gRPC anymore — see SMELLS.md and
+       MonolithApplication's javadoc. -->
 
   <build>
     <finalName>monolith</finalName>
-    <!-- r05/ch.19 S7: os-maven-plugin resolves ${os.detected.classifier} so
-         the protobuf-maven-plugin below can pull the right protoc/
-         protoc-gen-grpc-java native executable for this build machine. -->
-    <extensions>
-      <extension>
-        <groupId>kr.motd.maven</groupId>
-        <artifactId>os-maven-plugin</artifactId>
-        <version>1.7.1</version>
-      </extension>
-    </extensions>
+    <!-- order-plan.md S10: the os-maven-plugin extension and the
+         protobuf-maven-plugin execution that used to compile
+         src/main/proto/.../inventory.proto into InventoryGrpcServiceGrpc's
+         blocking-stub client classes (r05/ch.19 S7, DRQ-039) have been
+         removed along with the .proto file itself and its one consumer,
+         RemoteInventoryClient (deleted — see SMELLS.md). There is no more
+         gRPC code generation anywhere in this frozen shell. -->
     <plugins>
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
-      </plugin>
-
-      <!-- r05/ch.19 S7 (DRQ-039): compiles src/main/proto/.../inventory.proto
-           into the plain Java message classes + the InventoryGrpcServiceGrpc
-           blocking-stub client RemoteInventoryClient wraps. compile-custom
-           (pluginId=grpc-java) is what generates the gRPC stub on top of the
-           plain `compile` goal's protobuf messages. -->
-      <plugin>
-        <groupId>org.xolstice.maven.plugins</groupId>
-        <artifactId>protobuf-maven-plugin</artifactId>
-        <version>0.6.1</version>
-        <configuration>
-          <protocArtifact>com.google.protobuf:protoc:${protobuf.version}:exe:${os.detected.classifier}</protocArtifact>
-          <pluginId>grpc-java</pluginId>
-          <pluginArtifact>io.grpc:protoc-gen-grpc-java:${grpc.version}:exe:${os.detected.classifier}</pluginArtifact>
-        </configuration>
-        <executions>
-          <execution>
-            <goals>
-              <goal>compile</goal>
-              <goal>compile-custom</goal>
-            </goals>
-          </execution>
-        </executions>
       </plugin>
 
       <!-- Surefire (Tier 1 unit + Tier 2 slice tests, *Test) keeps its default

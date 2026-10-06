@@ -1,11 +1,43 @@
-# The Strangler-Fig Proxy
+# The Strangler-Fig Proxy → the Permanent REST Edge Router
 
-This is the **Camel strangler-fig proxy** (ch.14 "The Strangler Fig Pattern",
+This was the **Camel strangler-fig proxy** (ch.14 "The Strangler Fig Pattern",
 r02-plan step S7, build-plan.md §E step 0) — a standalone Camel-on-Quarkus
-application that sits in front of the Spring Boot monolith
-(`examples/00-monolith/`) so that bounded contexts can be peeled off onto
+application that sat in front of the Spring Boot monolith
+(`examples/00-monolith/`) so that bounded contexts could be peeled off onto
 Quarkus **one seam at a time**, with clients none the wiser about which
 backend actually served a given request.
+
+## order-plan.md S10 update — the strangler fig completes (DRQ-070, HARD PARTS H4/H5)
+
+Order was the sixth and last bounded context extracted; the monolith has now
+been **fully decommissioned** (frozen in-repo as the "before" referent, out of
+the running topology — see its `SMELLS.md`). There is no host tree left to
+strangle and no fallback backend to route to, so this project **sheds its
+strangler role and becomes the system's permanent REST edge router**:
+
+- The six `strangler.*.enabled` cutover flags and the
+  `strangler.monolith.base-url` default backend are **retired** — removed
+  entirely from `application.properties` and from
+  `StranglerProxyRoute`'s field declarations.
+- `StranglerProxyRoute#configure()` now does straight, **unconditional**
+  content-based routing on URI path prefix to one of the six extracted
+  services, every time — collapsed from the prior two-stage
+  flag-check-then-dispatch `choice()` pair into a single `choice()` that both
+  decides and dispatches.
+- An unmatched path is answered `404` directly by the route itself — there is
+  nothing left to fall through to.
+- The GraphQL gateway (`examples/08-graphql-gateway`, :8090) keeps its own
+  front door, unchanged — it was never routed through this proxy.
+
+**Every per-context section below (the six "The flag: ..." write-ups and their
+ACL-honesty notes) is preserved verbatim as the historical record** of each
+cutover's reversibility window and the field-by-field proof that no Camel
+message translator was ever needed at this layer — read them as history, not
+as a description of config that exists today. See `StranglerProxyRoute`'s
+class javadoc and `CUTOVER.md` for the same history in code/evidence form, and
+`examples/00-monolith/README.md` for how to check out the complete, runnable
+"before" (the `reference/monolith-before` branch / `v0-monolith` tag) for a
+genuine side-by-side comparison.
 
 ## The pattern
 

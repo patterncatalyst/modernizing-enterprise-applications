@@ -6,8 +6,15 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * springdoc OpenAPI surface. The generated spec seeds the future Newman
- * behavior-equivalence suite (S6) — every REST context below is documented here.
+ * springdoc OpenAPI surface. Originally seeded the Newman behavior-equivalence
+ * suite (S6) with the live REST contexts this monolith served.
+ *
+ * <p><b>order-plan.md S10 update (DRQ-070):</b> this bean is now harmless and
+ * vacuous — there are no REST controllers left anywhere in this module, so
+ * the generated spec documents zero paths. Left in place rather than deleted
+ * (same scope-discipline treatment already given to {@code SecurityConfig}
+ * after Review's own decommission) since removing it is not required for the
+ * module to build or behave correctly as a frozen shell.
  */
 @Configuration
 public class OpenApiConfig {
@@ -19,15 +26,17 @@ public class OpenApiConfig {
                         .title("Reference Monolith API")
                         .version("0.1.0-r02")
                         .description(
-                                "The four bounded contexts the reference monolith still fully owns (order, "
-                                        + "inventory, payment, shipping) exposed as one Spring MVC REST surface. "
-                                        + "Review was extracted and decommissioned in r02/S10 — it is served by "
-                                        + "examples/02-review-service behind the strangler proxy's "
-                                        + "strangler.review.enabled flag. Notification was likewise extracted and "
-                                        + "decommissioned in r04/S8 — it is served by "
-                                        + "examples/03-notification-service behind the strangler proxy's "
-                                        + "strangler.notification.enabled flag; checkout now only writes a "
-                                        + "transactional outbox row. See SMELLS.md for the six deliberate smells "
-                                        + "planted in this codebase (smells #4 and #6 are now cured)."));
+                                "This monolith originally served six bounded contexts (order, inventory, "
+                                        + "payment, shipping, notification, review) as one Spring MVC REST "
+                                        + "surface. All six have since been extracted to standalone Quarkus "
+                                        + "services and decommissioned from this module (order last, "
+                                        + "order-plan.md S10, DRQ-070) — this module now serves NOTHING under "
+                                        + "/api/**; every path 404s. It is kept frozen in-repo as the "
+                                        + "behavior-equivalence suite's permanent golden-baseline referent "
+                                        + "(DRQ-024). The complete, runnable \"before\" (all six contexts live) "
+                                        + "is preserved on the reference/monolith-before branch (tag "
+                                        + "v0-monolith); stage/NN-*-extracted tags step through each extraction. "
+                                        + "See SMELLS.md for the six deliberate smells planted in this codebase "
+                                        + "— all six are now cured."));
     }
 }
