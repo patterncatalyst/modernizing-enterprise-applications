@@ -238,6 +238,23 @@ alongside the monolith it was captured from, and it is the same collection
 you will see re-run, unchanged, in every later chapter's equivalence-gate
 result.
 
+Because the book is a sequence of extractions, some of the code it quotes
+exists only at a particular point along the way. `main` is the finished
+system — the six extracted services, the GraphQL gateway, and the Camel edge
+router — and the `examples/00-monolith/` you find there is the frozen shell the
+monolith was reduced to once its last context left. The complete, runnable
+monolith as it stood *before* any extraction lives on the
+`reference/monolith-before` branch (tagged `v0-monolith`), and the repository
+as it stood right after each individual extraction is tagged
+`stage/01-review-extracted` through `stage/06-order-extracted`. So when a
+chapter quotes code that a later extraction moved or removed — the
+transactional outbox and its relay in Chapter 20, or the monolith's gRPC
+inventory client in Chapters 19 and 25 — you will find it on
+`reference/monolith-before`, or on the matching `stage/NN` tag, even where
+`main`'s frozen monolith no longer carries it. Each citation's `examples/…`
+path is the directory the code lived in at the point the chapter describes;
+these branches and tags are how you check it out and run it as it was then.
+
 **This book's own production is an
 instance of the thing it teaches.** The `_plans/` directory in this
 repository — `build-plan.md`, `decisions.md`, and the per-iteration plan and
