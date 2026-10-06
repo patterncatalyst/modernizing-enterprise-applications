@@ -1,0 +1,23 @@
+# Supply-chain policy-as-code for the modernized system (ch.31).
+#
+# This is the single source of truth the demo and the CI workflow both read:
+# the gate fails the build when a scanned artifact carries a vulnerability at
+# or above `fail-on`. Keeping the threshold in a committed file -- rather than
+# buried in a shell flag or a CI YAML step -- is the "policy-as-code" point:
+# the rule is reviewed, versioned, and diffable like any other code, and the
+# same rule runs on a developer laptop and in GitHub Actions.
+#
+# Severities, most-to-least severe: Critical, High, Medium, Low, Negligible.
+fail-on: High          # fail the gate on any High or Critical finding
+
+# Artifacts the gate scans. Each is a real, deployable artifact this repo
+# produces -- the "before" (the Spring Boot monolith fat jar) and the "after"
+# (the extracted Quarkus order-service runtime closure). The gate's verdict on
+# the pair is the chapter's headline evidence.
+targets:
+  - name: monolith
+    kind: before
+    path: examples/00-monolith/target/monolith.jar
+  - name: order-service
+    kind: after
+    path: examples/07-order-service/target/quarkus-app
