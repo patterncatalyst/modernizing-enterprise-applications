@@ -881,10 +881,26 @@ authoring, not decomposition, and resumes at:
 - **Part 9:** ch.29 (deployment) and ch.30 (service mesh / observability on
   minikube) — not yet started; this is where the project's podman substrate
   gets a k8s counterpart (lgtm-minikube-stack, per build-plan §K).
-- **Part 10:** ch.31 (CI/CD & supply-chain security) and ch.32 (pattern
-  language revisited / conclusion) — not yet started.
+- **Part 10:** ch.31 (CI/CD, GitOps, progressive delivery & supply chain) and
+  ch.32 (pattern language revisited / conclusion) — **DONE**. ch.31 ships
+  `examples/10-supply-chain` (syft SBOM + grype scan + `policy.yaml`
+  policy-as-code), **verified live 2026-10-06**: the monolith fat jar fails the
+  gate (4 Critical / 6 High), the extracted order-service passes (0/0) — the
+  modernization made measurable; plus additive `.github/workflows/supply-chain.yml`
+  (CI incarnation, unverified — not pushed). ch.32 is a synthesis chapter (no
+  new example), re-walking the pattern map with the scorecard + over-decomposition
+  figures. Both chapters ≥ 3k words; four new figures; static checks green.
+  Also delivered this pass: top-level `README.md` (sibling-repo house style),
+  `LICENSE` (Apache 2.0), and `.gitattributes` (Linguist: diagram-generator
+  Python marked documentation so Java reads as the repo's primary language).
 - **Then the presentation rebuild** (lgtm-presentation, mirroring the book's
   final parts) — deferred past all of the above, per build-plan §I/§J.
+- **Then (deferred past the presentations):** an **appendix on converting the
+  project to OpenShift** — user-requested backlog item (sequenced after the
+  presentation rebuild). Scope TBD; likely covers OpenShift-specific deploy
+  (Routes/DeploymentConfigs or Deployments + Routes, `oc`/`odo`, Source-to-Image
+  or the existing Containerfiles, OpenShift GitOps/Pipelines as the managed
+  Argo/Tekton counterpart to ch.31's deferred GitOps loop).
 
 Nothing in Part 8–10 or the presentation rebuild touches the extraction
 ledgers (`decisions.md`/`build-plan.md`/`reconciliation.md`) as a *decomposition*
