@@ -7,14 +7,15 @@ slices", "Tier 3 — @DataJpaTest and a real Postgres").
 
 Counts are quoted verbatim from the chapter, not invented for this figure:
 
-- "Eleven test classes carry the pyramid: three Tier 1 unit-test classes
-  against the three services with real branching logic —
-  InventoryServiceTest, OrderServiceTest, PaymentServiceTest... five Tier 2
-  @WebMvcTest slices against the five REST controllers, and a mixed Tier 3
-  of two @DataJpaTest repository tests plus one full-stack smoke test."
-- "Counting methods rather than classes: thirty-four plain @Test methods,
+- "Thirteen test classes carry the pyramid: four Tier 1 unit-test classes
+  against the four services with real branching logic —
+  InventoryServiceTest, OrderServiceTest, PaymentServiceTest,
+  ReviewServiceTest... six Tier 2 @WebMvcTest slices against the six REST
+  controllers, and a mixed Tier 3 of two @DataJpaTest repository tests
+  plus one full-stack smoke test."
+- "Counting methods rather than classes: forty-one plain @Test methods,
   plus one @ParameterizedTest in PaymentServiceTest that expands into four
-  more executions at run time — thirty-eight test executions in total,
+  more executions at run time — forty-five test executions in total,
   every one of them green on a clean `mvn verify`."
 
 What each tier proves is quoted from the chapter's own three bullets:
@@ -54,14 +55,14 @@ tier3 = node(CX - 280, 120, 560, 150, [
 
 tier2 = node(CX - 380, 310, 760, 150, [
     "Tier 2 — Slice (@WebMvcTest)",
-    "5 classes — one @WebMvcTest slice per REST controller",
+    "6 classes — one @WebMvcTest slice per REST controller",
     "service layer mocked, only the web MVC stack boots",
     "proves: does this controller bind, validate, and serialize correctly",
 ], style="box")
 
 tier1 = node(CX - 490, 500, 980, 150, [
     "Tier 1 — Unit (Mockito)",
-    "3 classes — InventoryServiceTest, OrderServiceTest, PaymentServiceTest",
+    "4 classes — InventoryServiceTest, OrderServiceTest, PaymentServiceTest, ReviewServiceTest",
     "no Spring context, no database, no network — every collaborator mocked",
     "proves: does this one class's logic do the right thing",
 ], style="box")
@@ -77,7 +78,7 @@ notes = [
      "text": "ch.10 — the monolith's test pyramid: three tiers, one `mvn verify`",
      "anchor": "middle", "bold": True, "size": 17},
     {"x": W / 2, "y": 56,
-     "text": "11 test classes, 34 @Test methods + 1 parameterized test (4 executions) = 38 executions, every one green",
+     "text": "13 test classes, 41 @Test methods + 1 parameterized test (4 executions) = 45 executions, every one green",
      "anchor": "middle", "size": 12, "color": "#555555"},
 
     {"x": CX - 490, "y": H - 32,
