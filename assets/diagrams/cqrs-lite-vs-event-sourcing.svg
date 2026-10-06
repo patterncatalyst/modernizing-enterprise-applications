@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1560 700" font-family="'Red Hat Text', system-ui, sans-serif" role="img">
+<defs><marker id="a" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#555"/></marker><marker id="am" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2f5f3d"/></marker></defs>
+<rect x="20" y="60" width="740" height="560" rx="12" fill="#eaf4ec" stroke="#ddd"/>
+<text x="32" y="80" font-size="12" font-weight="700" fill="#1d1d1d">CQRS-lite — this book&#x27;s approach, implemented</text>
+<rect x="800" y="60" width="740" height="560" rx="12" fill="#fafafa" stroke="#ddd"/>
+<text x="812" y="80" font-size="12" font-weight="700" fill="#1d1d1d">Full event sourcing — illustrative only, not implemented here</text>
+<rect x="140" y="120" width="500" height="110" rx="9" fill="#eaf4ec" stroke="#3d7a4e" stroke-width="2"/>
+<text x="390.0" y="165.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Order aggregate (the write model)</text>
+<text x="390.0" y="182.5" font-size="11.5" fill="#555555" text-anchor="middle">OrderService.placeOrder() — mutable rows</text>
+<text x="390.0" y="197.5" font-size="11.5" fill="#555555" text-anchor="middle">current state stored directly, Postgres</text>
+<rect x="140" y="280" width="500" height="100" rx="9" fill="#111111" stroke="#111111" stroke-width="2"/>
+<text x="390.0" y="320.5" font-size="13.5" font-weight="700" fill="#ffffff" text-anchor="middle">order.placed event</text>
+<text x="390.0" y="337.5" font-size="11.5" fill="#dddddd" text-anchor="middle">published via outbox (ch.17/20)</text>
+<text x="390.0" y="352.5" font-size="11.5" fill="#dddddd" text-anchor="middle">one fact, not the whole history</text>
+<rect x="140" y="430" width="500" height="120" rx="9" fill="#eaf4ec" stroke="#3d7a4e" stroke-width="2"/>
+<text x="390.0" y="480.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">notification-service read model</text>
+<text x="390.0" y="497.5" font-size="11.5" fill="#555555" text-anchor="middle">Notification row = fold of one fact</text>
+<text x="390.0" y="512.5" font-size="11.5" fill="#555555" text-anchor="middle">idempotent check-then-insert, own schema</text>
+<rect x="880" y="120" width="500" height="110" rx="9" fill="#ffffff" stroke="#999999" stroke-width="1.5" stroke-dasharray="6 4"/>
+<text x="1130.0" y="165.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Event log (the write model, illustrative)</text>
+<text x="1130.0" y="182.5" font-size="11.5" fill="#555555" text-anchor="middle">OrderPlaced, PaymentCaptured,</text>
+<text x="1130.0" y="197.5" font-size="11.5" fill="#555555" text-anchor="middle">ShipmentDispatched, OrderConfirmed</text>
+<rect x="880" y="280" width="500" height="100" rx="9" fill="#ffffff" stroke="#999999" stroke-width="1.5" stroke-dasharray="6 4"/>
+<text x="1130.0" y="320.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Replay / fold on load</text>
+<text x="1130.0" y="337.5" font-size="11.5" fill="#555555" text-anchor="middle">OrderState = reduce(events, OrderState::apply)</text>
+<text x="1130.0" y="352.5" font-size="11.5" fill="#555555" text-anchor="middle">ch.21&#x27;s own sketch — no such class exists</text>
+<rect x="880" y="430" width="500" height="120" rx="9" fill="#ffffff" stroke="#999999" stroke-width="1.5" stroke-dasharray="6 4"/>
+<text x="1130.0" y="480.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Current state = computed, not stored</text>
+<text x="1130.0" y="497.5" font-size="11.5" fill="#555555" text-anchor="middle">no mutable row — rebuilt from genesis</text>
+<text x="1130.0" y="512.5" font-size="11.5" fill="#555555" text-anchor="middle">or last snapshot, on every read</text>
+<path d="M390.0,230.0 L390.0,280.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<text x="396.0" y="249.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">outbox row, same transaction</text>
+<text x="396.0" y="249.0" font-size="11" fill="#555" text-anchor="middle">outbox row, same transaction</text>
+<path d="M390.0,380.0 L390.0,430.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<text x="396.0" y="399.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">idempotent consume</text>
+<text x="396.0" y="399.0" font-size="11" fill="#555" text-anchor="middle">idempotent consume</text>
+<path d="M1130.0,230.0 L1130.0,280.0" fill="none" stroke="#555" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#a)"/>
+<text x="1136.0" y="249.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">replay (illustrative)</text>
+<text x="1136.0" y="249.0" font-size="11" fill="#555" text-anchor="middle">replay (illustrative)</text>
+<path d="M1130.0,380.0 L1130.0,430.0" fill="none" stroke="#555" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#a)"/>
+<text x="1136.0" y="399.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">compute on read</text>
+<text x="1136.0" y="399.0" font-size="11" fill="#555" text-anchor="middle">compute on read</text>
+<text x="780.0" y="32" font-size="16" fill="#1d1d1d" text-anchor="middle" font-weight="700">ch.21 — CQRS-lite (what this book builds) vs. full event sourcing (illustrative contrast)</text>
+<text x="140" y="570" font-size="11" fill="#555555" text-anchor="start">System of record: the orders table. Rebuildable from order.placed only as far as the topic&#x27;s retention reaches.</text>
+<text x="140" y="586" font-size="11" fill="#555555" text-anchor="start">Past that window, the write side&#x27;s own durable storage — not the log — is what the system relies on.</text>
+<text x="880" y="570" font-size="11" fill="#555555" text-anchor="start">System of record: the log itself — current state is derived, never stored directly. The log is the only copy of the fact.</text>
+<text x="880" y="586" font-size="11" fill="#555555" text-anchor="start">Real costs this book declines to pay here: schema evolution forever (upcasting), a snapshot strategy, team/tooling unfamiliarity.</text>
+<text x="20" y="650" font-size="10" fill="#777777" text-anchor="start">Sourced from _docs/21-event-sourcing-and-cqrs.md (&quot;Event sourcing: when the log stops being a side effect&quot;, &quot;Why this book builds CQRS-lite and not event sourcing&quot;).</text>
+<text x="20" y="666" font-size="10" fill="#777777" text-anchor="start">Left: examples/03-notification-service/.../{Notification,NotificationService}.java (verified, ch.17). Right: illustrative only — no event store exists in this codebase, by design.</text>
+</svg>

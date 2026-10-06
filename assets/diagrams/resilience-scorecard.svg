@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 1020" font-family="'Red Hat Text', system-ui, sans-serif" role="img">
+<defs><marker id="a" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#555"/></marker><marker id="am" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2f5f3d"/></marker></defs>
+<rect x="20" y="90" width="710" height="870" rx="12" fill="#eaf4ec" stroke="#ddd"/>
+<text x="32" y="110" font-size="12" font-weight="700" fill="#1d1d1d">Implemented, real, and proven by a negative check</text>
+<rect x="760" y="90" width="720" height="870" rx="12" fill="#fafafa" stroke="#ddd"/>
+<text x="772" y="110" font-size="12" font-weight="700" fill="#1d1d1d">Deferred by design, with a stated reason</text>
+<rect x="50" y="140" width="650" height="120" rx="9" fill="#eaf4ec" stroke="#3d7a4e" stroke-width="2"/>
+<text x="375.0" y="190.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Per-call gRPC deadline</text>
+<text x="375.0" y="207.5" font-size="11.5" fill="#555555" text-anchor="middle">RemoteInventoryClient, inventory.grpc.timeout-ms</text>
+<text x="375.0" y="222.5" font-size="11.5" fill="#555555" text-anchor="middle">the one synchronous, mutating hot-path collaborator</text>
+<rect x="50" y="278" width="650" height="120" rx="9" fill="#eaf4ec" stroke="#3d7a4e" stroke-width="2"/>
+<text x="375.0" y="328.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">At-least-once + two-layer idempotency</text>
+<text x="375.0" y="345.5" font-size="11.5" fill="#555555" text-anchor="middle">outbox relay + NotificationService check-then-insert</text>
+<text x="375.0" y="360.5" font-size="11.5" fill="#555555" text-anchor="middle">+ unique index; CDC consumer&#x27;s ON CONFLICT upsert</text>
+<rect x="50" y="416" width="650" height="120" rx="9" fill="#eaf4ec" stroke="#3d7a4e" stroke-width="2"/>
+<text x="375.0" y="466.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Compensating action, not rollback</text>
+<text x="375.0" y="483.5" font-size="11.5" fill="#555555" text-anchor="middle">compensateRemoteReservations</text>
+<text x="375.0" y="498.5" font-size="11.5" fill="#555555" text-anchor="middle">runs the moment a write crosses a service boundary</text>
+<rect x="50" y="554" width="650" height="120" rx="9" fill="#eaf4ec" stroke="#3d7a4e" stroke-width="2"/>
+<text x="375.0" y="604.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Transparent failure propagation</text>
+<text x="375.0" y="621.5" font-size="11.5" fill="#555555" text-anchor="middle">StranglerProxyRoute: throwExceptionOnFailure=false</text>
+<text x="375.0" y="636.5" font-size="11.5" fill="#555555" text-anchor="middle">un-degraded, at the proxy layer</text>
+<rect x="50" y="692" width="650" height="120" rx="9" fill="#eaf4ec" stroke="#3d7a4e" stroke-width="2"/>
+<text x="375.0" y="742.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">MicroProfile Health endpoints</text>
+<text x="375.0" y="759.5" font-size="11.5" fill="#555555" text-anchor="middle">both Quarkus services (notification, inventory)</text>
+<text x="375.0" y="774.5" font-size="11.5" fill="#555555" text-anchor="middle">includes automatic broker-connectivity health</text>
+<rect x="790" y="140" width="660" height="120" rx="9" fill="#ffffff" stroke="#999999" stroke-width="1.5" stroke-dasharray="6 4"/>
+<text x="1120.0" y="190.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Circuit breaker</text>
+<text x="1120.0" y="207.5" font-size="11.5" fill="#555555" text-anchor="middle">around the inventory gRPC call</text>
+<text x="1120.0" y="222.5" font-size="11.5" fill="#555555" text-anchor="middle">no measured failure rate yet; call site is in the monolith</text>
+<rect x="790" y="278" width="660" height="120" rx="9" fill="#ffffff" stroke="#999999" stroke-width="1.5" stroke-dasharray="6 4"/>
+<text x="1120.0" y="328.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Bulkhead</text>
+<text x="1120.0" y="345.5" font-size="11.5" fill="#555555" text-anchor="middle">isolating that call&#x27;s resource consumption</text>
+<text x="1120.0" y="360.5" font-size="11.5" fill="#555555" text-anchor="middle">no observed starvation of the rest of the monolith&#x27;s I/O</text>
+<rect x="790" y="416" width="660" height="120" rx="9" fill="#ffffff" stroke="#999999" stroke-width="1.5" stroke-dasharray="6 4"/>
+<text x="1120.0" y="466.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Retry backoff, jitter, cap</text>
+<text x="1120.0" y="483.5" font-size="11.5" fill="#555555" text-anchor="middle">on the outbox relay&#x27;s retry</text>
+<text x="1120.0" y="498.5" font-size="11.5" fill="#555555" text-anchor="middle">ch.20&#x27;s own named gap</text>
+<rect x="790" y="554" width="660" height="120" rx="9" fill="#ffffff" stroke="#999999" stroke-width="1.5" stroke-dasharray="6 4"/>
+<text x="1120.0" y="604.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Dead-letter path</text>
+<text x="1120.0" y="621.5" font-size="11.5" fill="#555555" text-anchor="middle">for a message that can never successfully process</text>
+<text x="1120.0" y="636.5" font-size="11.5" fill="#555555" text-anchor="middle">ch.20&#x27;s poison-message gap, generalized</text>
+<rect x="790" y="692" width="660" height="120" rx="9" fill="#ffffff" stroke="#999999" stroke-width="1.5" stroke-dasharray="6 4"/>
+<text x="1120.0" y="742.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Platform-level health consumption</text>
+<text x="1120.0" y="759.5" font-size="11.5" fill="#555555" text-anchor="middle">liveness/readiness gating traffic or restarts</text>
+<text x="1120.0" y="774.5" font-size="11.5" fill="#555555" text-anchor="middle">Part 9&#x27;s subject, not this chapter&#x27;s</text>
+<rect x="790" y="830" width="660" height="120" rx="9" fill="#ffffff" stroke="#999999" stroke-width="1.5" stroke-dasharray="6 4"/>
+<text x="1120.0" y="880.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Idempotency key on Release</text>
+<text x="1120.0" y="897.5" font-size="11.5" fill="#555555" text-anchor="middle">the compensating call itself</text>
+<text x="1120.0" y="912.5" font-size="11.5" fill="#555555" text-anchor="middle">named in its own javadoc; inherited by ch.23/24</text>
+<text x="750.0" y="32" font-size="16" fill="#1d1d1d" text-anchor="middle" font-weight="700">ch.25 — the resilience scorecard: what this project built, and what it left for measured traffic to justify</text>
+<text x="750.0" y="56" font-size="11.5" fill="#555555" text-anchor="middle">every implemented row was proven by a negative check (kill it, watch RED, restart it, watch GREEN) — every deferred row has a stated reason, not a silent gap</text>
+<text x="50" y="980" font-size="10.5" fill="#555555" text-anchor="start">Chapter 3&#x27;s discipline, restated: microservices are not the goal, and neither is a resilience pattern catalog completed for its own sake.</text>
+<text x="50" y="1004" font-size="10" fill="#777777" text-anchor="start">Sourced verbatim from _docs/25-failure-modes-and-resilience.md (&quot;## The resilience scorecard&quot;).</text>
+</svg>

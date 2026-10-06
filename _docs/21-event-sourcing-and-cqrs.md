@@ -134,6 +134,8 @@ event-sourced aggregate. The gap between those two things is worth making
 precise, because it is exactly the gap this chapter spends its second half
 explaining why this book declines to close.
 
+{% include excalidraw.html file="cqrs-write-read-split" alt="OrderService.placeOrder's Order aggregate as the write model, publishing order.placed through the outbox; notification-service's Notification entity as the CQRS read model it feeds; a dashed, not-yet-built box marks Chapter 26's GraphQL gateway read model." caption="Figure 21.1 — CQRS: one write model, one or more read models, grounded in notification-service." %}
+
 ## Event sourcing: when the log stops being a side effect and becomes the record
 
 Event sourcing takes a stronger position than CQRS does, and the two are
@@ -259,6 +261,8 @@ event-driven read model that shared the upstream aggregate's table would
 have two independent writers racing on the same rows with no protocol to
 reconcile them, so owning the projection's storage is what makes the "lite"
 in CQRS-lite safe rather than merely convenient.
+
+{% include excalidraw.html file="cqrs-lite-vs-event-sourcing" alt="Side by side: this book's CQRS-lite, where the Order aggregate stays mutable rows and notification-service folds one published fact into a row, versus full event sourcing, drawn as illustrative only, where an append-only log is the system of record and current state is computed by replay." caption="Figure 21.2 — CQRS-lite, as this book builds it, against full event sourcing, shown for contrast only." %}
 
 ## Eventual consistency, rebuild-from-events, and what a reader should actually verify
 
