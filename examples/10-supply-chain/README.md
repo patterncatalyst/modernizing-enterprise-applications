@@ -75,10 +75,11 @@ on every push, not once.
 (vulnerability DB built 2026-10-06). `./demo.sh` produced the gate summary above
 and exited `1`: the monolith artifact tripped `fail-on: High` (4 Critical / 6
 High), the order-service runtime closure passed (0 / 0). The committed
-`evidence/*.grype.json` files are that run's findings snapshots. **Unverified:**
-the CI incarnation in `.github/workflows/supply-chain.yml` has not been run on a
-live GitHub Actions runner (this iteration did not push); the workflow mirrors
-`demo.sh`'s three steps and is authored to run them unchanged. CVE counts will
-drift as the grype DB updates — re-run `demo.sh` to refresh the snapshot.
+`evidence/*.grype.json` files are that run's findings snapshots. The CI
+incarnation in `.github/workflows/supply-chain.yml` was also **run green on a live
+GitHub Actions runner** (PR #14, 2026-10-06) — it builds order-service on JDK 25,
+generates the SBOM, and scans it with `severity-cutoff: high`; the `sbom-scan`
+check passed. CVE counts will drift as the grype DB updates — re-run `demo.sh` to
+refresh the snapshot.
 </content>
 </invoke>

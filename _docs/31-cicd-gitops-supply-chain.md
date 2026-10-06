@@ -308,8 +308,7 @@ the shelf, and where the sensible horizons are.
 ---
 
 *Verification status: <span class="status status--verified">verified
-live</span> for the supply-chain gate; <span class="status
-status--unverified">unverified</span> for its CI incarnation; the CI/GitOps
+live</span> for the supply-chain gate, locally and in CI; the CI/GitOps
 narrative is <span class="status status--verified">sourced from the committed
 workflows</span>. On 2026-10-06, with `syft 1.44.0` and `grype 0.112.0`
 (vulnerability DB built 2026-10-06), `examples/10-supply-chain/demo.sh` was run
@@ -322,10 +321,13 @@ Critical / 6 High / 8 Medium across `spring-webmvc@6.2.19`,
 cataloged components (`evidence/order-service.grype.json`). Both targets were
 already built (`mvn -o package`); the full regenerated SBOMs are git-ignored,
 the grype findings snapshots and `evidence/summary.txt` are committed as the
-point-in-time evidence. **Not** verified live: `.github/workflows/supply-chain.yml`
-has not run on a GitHub Actions runner (this iteration did not push); it mirrors
-`demo.sh`'s three steps via Anchore's `sbom-action`/`scan-action` with
-`fail-build: true` + `severity-cutoff: high`. The description of `code-ci.yml`'s
+point-in-time evidence. The CI incarnation, `.github/workflows/supply-chain.yml`,
+was then **run on a live GitHub Actions runner** (PR #14, 2026-10-06): it built
+order-service on JDK 25, generated the SBOM via Anchore's `sbom-action`, and
+scanned it via `scan-action` with `fail-build: true` + `severity-cutoff: high`;
+the `sbom-scan (order-service)` check passed green — after one fix, since syft
+does not shell-expand a glob in the action's `path`, so the job matrix carries the
+explicit service directory. The description of `code-ci.yml`'s
 seven jobs and `pages.yml` is sourced directly from the committed workflow files,
 not re-run here. The CVE counts are a moving target against grype's daily DB and
 will drift — re-run `demo.sh` to refresh. Cited: `.github/workflows/code-ci.yml`
