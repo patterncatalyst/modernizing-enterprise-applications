@@ -80,6 +80,8 @@ record would survive the deletion. Nothing here is invented; it is simply
 describing a system at the moment just before this book's own first cut,
 using a repository that — truthfully — has already made that cut once.
 
+{% include excalidraw.html file="monolith-six-contexts" alt="The monolith as designed: six in-process bounded-context modules — order, inventory, payment, shipping, notification, review — inside one Spring Boot deployable, with no process boundary, no network hop, and no per-context database between any of them." caption="Figure 8.2 — Six bounded contexts, one deployable: modules, not services" %}
+
 ## The layering: controller, service, repository, three times five
 
 Every one of the five contexts still in the module follows the same classic
@@ -271,6 +273,8 @@ never has to be serialized directly to JSON, which would risk either a
 `LazyInitializationException` outside the transaction or an accidental
 infinite loop through the `Order`↔`OrderItem` back-reference.
 
+{% include excalidraw.html file="place-order-transaction-sequence" alt="OrderService#placeOrder as one Spring @Transactional spanning five bounded contexts in a single call stack: validate the customer, reserve stock, persist the order, charge payment, confirm, dispatch the shipment, and notify the customer — any failure partway through rolls back everything already written." caption="Figure 8.3 — placeOrder, call by call: one transaction, five contexts" %}
+
 ### `InventoryService`, `PaymentService`, `ShippingService`, `NotificationService`
 
 Each of the four services `OrderService` calls into is small enough to read
@@ -385,6 +389,8 @@ what both the local podman-stack Postgres and the Testcontainers-backed
 integration tests give it — and it would be a dangerous assumption anywhere
 IDs might already be in use. The pattern is common enough in demo fixtures
 that it is easy to copy uncritically into a context where it no longer holds.
+
+{% include excalidraw.html file="monolith-shared-schema-er" alt="The shared-schema entity-relationship diagram: eight tables in one PostgreSQL schema, with customers and inventory_items referenced from multiple context-owned tables and nine foreign keys crossing bounded-context ownership lines freely." caption="Figure 8.4 — One shared schema, nine foreign keys crossing context boundaries" %}
 
 ## The REST API surface
 

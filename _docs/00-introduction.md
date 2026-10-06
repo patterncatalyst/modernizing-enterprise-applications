@@ -18,6 +18,8 @@ and Apache Camel services stand in its place, and every step in between is
 checked into this repository as runnable code, a passing test suite, and a
 written record of why it was done the way it was done.
 
+{% include excalidraw.html file="monolith-to-microservices-outcome" alt="Side-by-side before/after: a single Spring Boot deployable with six in-process bounded contexts sharing one PostgreSQL schema and one ACID checkout transaction spanning five of them, versus six independent Quarkus services plus a GraphQL gateway, each owning its own schema, reached through one Camel REST edge router with a Kafka event backbone carrying the async and saga traffic." caption="Figure 0.1 — The monolith this book starts with, and the six-service system it ends as" %}
+
 ## Who this book is for
 
 This is a book for people who already know how to write software and have
@@ -139,6 +141,8 @@ first. Every one of those six extractions is executed through the full
 migration process this book teaches, not a single worked example followed by
 five summaries — each gets its own chapter, its own equivalence-gate run, and
 its own "ADLC in Action" callout showing the real trace that produced it.
+
+{% include excalidraw.html file="extraction-sequence-ladder" alt="The six extractions in the order this book executes them, rising in difficulty left to right: review (ch.15, REST leaf), notification (ch.17, async outbox), inventory (ch.19, CDC plus a gRPC seam), payment (ch.23, choreographed saga), shipping (ch.24, orchestrated saga), and order with its GraphQL gateway (ch.26, CQRS plus GraphQL)." caption="Figure 0.2 — The extraction order: rising difficulty, not rising domain importance" %}
 
 By the final chapter of the extraction sequence, the monolith's modules have
 all been decommissioned, and what remains is the six services, communicating
