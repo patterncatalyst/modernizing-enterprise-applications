@@ -64,6 +64,11 @@ same model tier that proposed the plan is the one skeptical enough to doubt
 whether its own plan was executed faithfully — a different posture than
 "wrote it, therefore vouches for it."
 
+{% include excalidraw.html
+   file="plan-execute-validate-relay"
+   alt="Six boxes in a row: Frame (human, states intent, writes the decisions.md entry), Plan tier (the planning model, reads Frame plus Map recon, drafts the step plan), Human gate 1 (plan approval, before any diff exists), Execute tier (the execution model, Generate: scaffolds, writes code and tests, runs them), Validate tier (the planning model again, adversarial: re-reads plan and diff against the equivalence suite), Human gate 2 (equivalence sign-off, Verify phase). A dashed line below the row connects the Plan and Validate boxes, labeled: same model tier, now adversarial, not self-vouching."
+   caption="Figure 6.1 — The relay: the planning model drafts, the execution model builds, the same planning tier validates adversarially, with a human gate on either side of Generate" %}
+
 ```
 Captured -- the actual Review-extraction plan draft, DRQ-014/T1-adjacent
 step plan (the planning tier's output, before the first human gate;
@@ -289,6 +294,11 @@ adversarial follow-up catch the class of defect that surfaces as a
 misleadingly correct-looking response. Neither one substitutes for the other,
 and understanding which layer is responsible for which kind of mistake is
 most of what it takes to trust a loop this fast.
+
+{% include excalidraw.html
+   file="structural-vs-behavioral-gates"
+   alt="Two stacked panels. Top: the structural gate, camel_validate_route and camel_configuration_validate, run during Generate before deploy; it confirms the route compiles into a legal Camel graph, catching a malformed choice/when/otherwise block, an unresolved component reference, or a typo'd endpoint parameter — the class of defect that surfaces as a confusing runtime stack trace. It cannot catch whether a routing predicate matches the right requests once real traffic flows. Bottom: the behavioral gate, the Newman equivalence suite plus its Opus adversarial follow-up, run during Verify against a running service; it catches a routing predicate matching the wrong requests — the class of defect that surfaces as a misleadingly correct-looking response. A dashed line connects what the structural gate cannot catch to the behavioral gate that closes the gap."
+   caption="Figure 6.2 — The structural gate (camel-mcp route validation) and the behavioral gate (the equivalence suite) catch different classes of mistake; neither substitutes for the other" %}
 
 The underlying reason MCP matters is the same for both servers: an agent's training
 data is a snapshot, and a framework, an API, or a catalog of components is

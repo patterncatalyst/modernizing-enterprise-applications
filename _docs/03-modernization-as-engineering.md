@@ -136,6 +136,8 @@ is a bet that one more bounded context can acquire independent
 deployability, owned data, and a real API boundary without first losing the
 behavior the monolith already gets right.
 
+{% include excalidraw.html file="microservice-traits" alt="A ten-box grid of the microservice traits this chapter enumerates: independently deployable, modeled around a business domain, communicate over the network, a form of opinionated service-oriented architecture, technology agnostic, a distributed system as a set, API-focused, decentralized governance, decentralized data management, and designed for failure." caption="Figure 3.1 — The ten microservice traits this book's extractions are built toward" %}
+
 ## The counter-case: when modernization is the wrong call
 
 A book arguing for modernization owes you its strongest counter-argument,
@@ -253,6 +255,8 @@ instead of concentrating all of it into one irreversible moment at the end.
 That is what "modernization as disciplined engineering" means concretely:
 not caution for its own sake, but risk management applied to the shape of
 the migration itself.
+
+{% include excalidraw.html file="rewrite-vs-strangler-risk" alt="A side-by-side risk-shape contrast. Left, the big-bang rewrite: three bets made at once (full behavioral understanding, outrunning decay, business patience for zero shipped value) feeding one irreversible cutover, with a late, all-or-nothing payoff. Right, the strangler fig: small steps starting with the review service, each proven equivalent before the next starts, running side by side with the monolith so any one step can pause, slow, or reverse without threatening the rest, with value shipping continuously." caption="Figure 3.2 — One irreversible bet versus many reversible steps: the same migration, two risk shapes" %}
 
 ## Modernization as a measurable activity
 
