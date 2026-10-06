@@ -1,0 +1,57 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../base
+
+# ch.30 SEAM (left deliberately commented, not wired up): this overlay is
+# where a future Istio/observability layer would be added, the same way
+# ~/Dev/datamesh-reference-arch-quarkus/k8s/istio is a sibling overlay (not
+# nested inside base) composed on top of it. Uncomment once those resources
+# exist:
+# resources:
+#   - ../../base
+#   - ../../istio
+#   - ../../observability
+
+# Images are built directly into minikube's own podman daemon
+# (`eval $(minikube podman-env)` then `podman build -f
+# examples/<svc>/src/main/docker/Dockerfile.jvm -t mea/<svc>:latest
+# examples/<svc>`) -- no external registry. `newTag` pins the tag; the image
+# name itself stays registry-free ("mea/<svc>", not "some.registry/mea/<svc>")
+# so imagePullPolicy: IfNotPresent (set in deploy/k8s/base/*.yaml) resolves
+# against the image already sitting in minikube's local podman, never
+# attempting a network pull. Bump these tags (and rebuild with the matching
+# -t tag) to roll a new image without relying on :latest cache semantics.
+images:
+  - name: mea/strangler-proxy
+    newTag: latest
+  - name: mea/review-service
+    newTag: latest
+  - name: mea/notification-service
+    newTag: latest
+  - name: mea/inventory-service
+    newTag: latest
+  - name: mea/payment-service
+    newTag: latest
+  - name: mea/shipping-service
+    newTag: latest
+  - name: mea/order-service
+    newTag: latest
+  - name: mea/graphql-gateway
+    newTag: latest
+
+# strangler-proxy is the system's single REST edge router (every client
+# request enters here, see strangler-proxy.yaml) -- the one Service this
+# overlay exposes off-cluster, via NodePort instead of base's ClusterIP.
+# Every other Service stays ClusterIP-only (ClusterIP's default), reachable
+# only from inside the cluster, matching the real topology: nothing but the
+# edge router is meant to be dialed directly from outside.
+patches:
+  - target:
+      kind: Service
+      name: strangler-proxy
+    patch: |-
+      - op: replace
+        path: /spec/type
+        value: NodePort

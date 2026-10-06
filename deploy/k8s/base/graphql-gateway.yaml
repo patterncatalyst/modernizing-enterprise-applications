@@ -1,0 +1,115 @@
+# graphql-gateway -- ch.26 S7 (DRQ-069), adapted from
+# ~/Dev/datamesh-reference-arch-quarkus's graphql-gateway (DRQ-032), widened
+# from order+stock to the full cross-context view. OWNS NO DATA: every field
+# resolves by calling the service that owns it -- REST for order/payment/
+# shipping/review (quarkus.rest-client.*.url=${*_SERVICE_URL:...}, native
+# placeholders, see mea-app-config's ORDER_SERVICE_URL/PAYMENT_SERVICE_URL/
+# SHIPPING_SERVICE_URL/REVIEW_SERVICE_URL), gRPC for inventory (GetStock,
+# quarkus.grpc.clients.inventory.host/port=${INVENTORY_GRPC_HOST/PORT:...}).
+# All four REST targets plus the gRPC target are FIXED operator config, never
+# request-derived (DRQ-069's secure-by-design SSRF/amplification mitigation).
+#
+# The gateway is a gRPC CLIENT ONLY (no @GrpcService of its own), but the
+# quarkus-grpc extension still stands up a vestigial gRPC server whenever
+# it's on the classpath -- pinned to 9093 in application.properties to avoid
+# colliding with the extension's own default port 9000. Exposed here for
+# completeness; nothing in this topology dials it.
+#
+# Not a Kafka consumer -- no graceful-shutdown preStop/terminationGrace
+# needed. Health: quarkus-smallrye-health is on the classpath
+# (examples/08-graphql-gateway/pom.xml), so /q/health/{started,ready,live}
+# are real httpGet targets.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: graphql-gateway
+  namespace: mea
+  labels:
+    app.kubernetes.io/name: graphql-gateway
+    app.kubernetes.io/part-of: mea
+    app.kubernetes.io/component: gateway
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: graphql-gateway
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: graphql-gateway
+        app.kubernetes.io/part-of: mea
+        app.kubernetes.io/component: gateway
+    spec:
+      containers:
+        - name: graphql-gateway
+          image: mea/graphql-gateway:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8090
+            - name: grpc
+              containerPort: 9093
+          envFrom:
+            - configMapRef:
+                name: mea-app-config
+          startupProbe:
+            httpGet:
+              path: /q/health/started
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 30
+          readinessProbe:
+            httpGet:
+              path: /q/health/ready
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /q/health/live
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 185
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: graphql-gateway
+  namespace: mea
+  labels:
+    app.kubernetes.io/name: graphql-gateway
+    app.kubernetes.io/part-of: mea
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: graphql-gateway
+  ports:
+    - name: http
+      port: 8090
+      targetPort: http
+    - name: grpc
+      port: 9093
+      targetPort: grpc
