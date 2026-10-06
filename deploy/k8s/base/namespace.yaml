@@ -1,0 +1,15 @@
+# namespace.yaml — the "mea" namespace all ch.29 manifests target.
+#
+# Adapted from ~/Dev/datamesh-reference-arch-quarkus/k8s/ (that house layout's
+# "datamesh" namespace, base/ per-service Deployment+Service+ConfigMap+
+# kustomization.yaml, overlays/minikube), stripped of its datamesh codenames
+# and its 4-service scope: this tree covers the full 8-service running
+# topology of _docs/29 (strangler-proxy + the six extracted bounded contexts
+# + the GraphQL gateway), not datamesh's order/inventory/notification/
+# graphql-gateway subset.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: mea
+  labels:
+    app.kubernetes.io/part-of: mea

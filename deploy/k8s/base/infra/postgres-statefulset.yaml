@@ -1,0 +1,160 @@
+# postgres-statefulset.yaml -- the ONE shared Postgres server every service
+# in this topology points at (db `monolith`, one schema per extracted
+# service -- see app-config.yaml's *_SERVICE_JDBC_URL keys). Mirrors
+# compose.yaml's `postgres` service: same image family/tag
+# (postgres:16-alpine, .env.example POSTGRES_IMAGE_TAG), same
+# POSTGRES_DB/POSTGRES_USER/POSTGRES_PASSWORD values (sourced here from the
+# mea-postgres-app Secret instead of compose's plain env, so there is one
+# credential source for both the server and its client Deployments), and the
+# SAME wal_level=logical command-line flags (r05/ch.19 S3, DRQ-040) --
+# logical replication is left enabled even though this manifest-only step
+# does not also stand up Debezium Kafka Connect / the CDC connector itself;
+# inventory-service's `inventory-service-cdc` consumer group still expects a
+# `mea.public.inventory_items` topic to exist for it to poll (harmlessly
+# idle if nothing is producing to it yet). Connect/CDC infra, Apicurio, and
+# the LGTM observability stack are DEFERRED to ch.30/demo-only scope --
+# compose.yaml's connect/apicurio/lgtm services have no k8s equivalent here.
+#
+# Schema bootstrap: compose.yaml's own infra/db/init/00-init.sql only adds
+# Postgres extensions (uuid-ossp/pgcrypto) for the (now-decommissioned)
+# monolith's own Flyway baseline -- none of the 8 running services' Flyway
+# migrations reference either extension (checked: no migration SQL under
+# examples/*/src/main/resources/db/migration matches uuid-ossp/pgcrypto/
+# gen_random_uuid/uuid_generate). What every one of the six own-schema
+# services (notification/inventory/payment/shipping/order; review-service
+# uses the shared `public` schema and needs no schema of its own) DOES need
+# is its schema to exist. Each service's own Flyway history already creates
+# its schema automatically on first migrate (quarkus.flyway.schemas=...,
+# migrate-at-start=true) -- the ConfigMap below is a defensive, idempotent
+# belt-and-suspenders bootstrap (CREATE SCHEMA IF NOT EXISTS), not a
+# substitute for Flyway, so a fresh cluster's very first Postgres start
+# already has every schema present and owned by the `monolith` role before
+# any service's Flyway run even attempts it.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-initdb
+  namespace: mea
+  labels:
+    app.kubernetes.io/name: postgres
+    app.kubernetes.io/part-of: mea
+data:
+  01-create-schemas.sql: |
+    -- Defensive, idempotent: each service's own Flyway history
+    -- (quarkus.flyway.schemas=...) would create its schema on first
+    -- migrate anyway -- this just makes it explicit at cluster bring-up.
+    CREATE SCHEMA IF NOT EXISTS notification AUTHORIZATION monolith;
+    CREATE SCHEMA IF NOT EXISTS inventory AUTHORIZATION monolith;
+    CREATE SCHEMA IF NOT EXISTS payment AUTHORIZATION monolith;
+    CREATE SCHEMA IF NOT EXISTS shipping AUTHORIZATION monolith;
+    CREATE SCHEMA IF NOT EXISTS order_service AUTHORIZATION monolith;
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: mea
+  labels:
+    app.kubernetes.io/name: postgres
+    app.kubernetes.io/part-of: mea
+spec:
+  clusterIP: None
+  selector:
+    app.kubernetes.io/name: postgres
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: postgres
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+  namespace: mea
+  labels:
+    app.kubernetes.io/name: postgres
+    app.kubernetes.io/part-of: mea
+spec:
+  serviceName: postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: postgres
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: postgres
+        app.kubernetes.io/part-of: mea
+    spec:
+      # NOTE: the app Deployments' securityContext (runAsUser: 185, the
+      # Quarkus/UBI convention) does NOT apply here -- the official
+      # postgres:16-alpine image owns /var/lib/postgresql/data as uid 999
+      # ("postgres"). fsGroup lets the kubelet chown the PVC's mount to that
+      # group on attach so a non-root postgres process can still write to it.
+      securityContext:
+        fsGroup: 999
+      containers:
+        - name: postgres
+          image: docker.io/library/postgres:16-alpine
+          imagePullPolicy: IfNotPresent
+          command: ["postgres", "-c", "wal_level=logical", "-c", "max_replication_slots=4", "-c", "max_wal_senders=4"]
+          ports:
+            - name: postgres
+              containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: "monolith"
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: mea-postgres-app
+                  key: username
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mea-postgres-app
+                  key: password
+          volumeMounts:
+            - name: postgres-data
+              mountPath: /var/lib/postgresql/data
+            - name: postgres-initdb
+              mountPath: /docker-entrypoint-initdb.d
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "monolith", "-d", "monolith"]
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            failureThreshold: 6
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", "monolith", "-d", "monolith"]
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            failureThreshold: 6
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: 1000m
+              memory: 1Gi
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 999
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
+      volumes:
+        - name: postgres-initdb
+          configMap:
+            name: postgres-initdb
+  volumeClaimTemplates:
+    - metadata:
+        name: postgres-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 2Gi
