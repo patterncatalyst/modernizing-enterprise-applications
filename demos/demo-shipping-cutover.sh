@@ -8,6 +8,12 @@
 # see demos/demo-final-topology.sh for the end-state (flagless edge router, no
 # monolith).
 #
+# It also assumes the PRE-DECOMMISSION proxy that still honours the
+# strangler.*.enabled flags. On `main` the proxy is a flagless edge router
+# (DRQ-070), so the flag flips below are no-ops there and the reversibility
+# section cannot route back to the monolith — run this from the matching
+# snapshot: `git checkout stage/05-shipping-extracted`.
+#
 # Mirrors demos/demo-payment-cutover.sh's shape (payment, r06/S8): this
 # script brings up the whole topology itself, flips both cutover flags, and
 # runs the proofs shipping-plan.md S8 requires:

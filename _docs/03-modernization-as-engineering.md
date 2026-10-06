@@ -314,6 +314,8 @@ the team can defend in a budget meeting with numbers instead of adjectives.
 Every extraction from Chapter 17 onward repeats this exact shape: hold
 behavior constant, measure what actually changed, show the work.
 
+{% include excalidraw.html file="migration-metrics-review" alt="A two-band comparison figure for the review-service extraction's measured metrics. Top band, startup time: Phase A JVM Spring-compat at 1.492 seconds, Phase B JVM idiomatic Quarkus at 1.431 to 1.437 seconds, and Phase B native image at 0.048 to 0.049 seconds, with the native bar roughly 31 times shorter than Phase A's. Bottom band, resident memory: Phase A at about 316 MB, Phase B JVM at about 304 MB, and Phase B native at about 73 MB, with the native bar roughly 4 times shorter than Phase A's. Every row carries the same 16 of 16 green equivalence-suite result." caption="Figure 3.3 — Startup time and memory across Phase A, Phase B JVM, and Phase B native, same 16/16 equivalence suite throughout" %}
+
 ## The cost of inaction: coupling compounds
 
 It is worth being equally concrete about the cost of doing nothing, because

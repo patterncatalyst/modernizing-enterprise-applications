@@ -66,6 +66,8 @@ have the whole pattern, in an order that matters:
    too early is how "incremental" migrations quietly turn into
    big-bang rewrites with extra ceremony.
 
+{% include excalidraw.html file="strangler-four-moves" alt="The strangler fig pattern's four moves in order -- intercept, route, incrementally replace, retire -- shown as a reversible zone spanning the first three moves (both backends still exist, the flag can flip either direction) and a separate irreversible zone at retire. A dashed warning path shows what happens if retire is reached before a stop-the-old-system check passes: the fallback is gone and the migration quietly becomes a big-bang rewrite." caption="Figure 14.2 — The four moves, in order: intercept, route, incrementally replace, retire. The window stays reversible through move three; retire is the one move that closes it, and it only belongs last." %}
+
 Notice what the metaphor rules out by construction. A strangler fig
 never kills the host and then grows into the gap — it grows *around*
 the host while the host is still alive, and the host only dies once
