@@ -387,14 +387,37 @@ jobs:
       - name: Install newman
         run: npm install -g newman
 
-      # No psql pre-apply here: every service below RUNS ITS OWN Flyway
-      # migration on boot against the fresh Postgres service container —
-      # order-service migrates its own `order_service` schema (incl. its own
-      # outbox and CQRS read model), the notification-service its own
-      # `notification` schema. Pre-applying DDL with psql would leave a
-      # non-empty schema with no flyway_schema_history and make a service's
-      # own Flyway refuse to start ("Found non-empty schema(s) ... but no
-      # schema history table"). Let each service be its own migrator.
+      # S11b FIX: review-service shares the `public` schema and is NOT its
+      # own Flyway migrator (quarkus.hibernate-orm.schema-management.
+      # strategy=none, see equivalence-gate's identical step above) --
+      # `public.reviews` was historically created by the monolith's own
+      # Flyway migrations when the monolith booted. order-plan.md S11
+      # decommissioned the monolith from this workflow entirely (DRQ-071),
+      # so nothing creates `public.reviews` anymore and this gate's checkout
+      # (routed through the proxy, which also fronts /api/reviews by
+      # committed default) 500s the moment anything touches review with
+      # "relation \"reviews\" does not exist". Apply the SAME committed,
+      # frozen monolith SQL equivalence-gate already applies, directly with
+      # psql, before the Review-adjacent services below start.
+      - name: Apply the monolith's schema + seed data to Postgres (public schema, for the Review service)
+        run: |
+          set -euo pipefail
+          PGPASSWORD=monolith_dev_only psql -h localhost -U monolith -d monolith \
+            -f examples/00-monolith/src/main/resources/db/migration/V1__init_schema.sql
+          PGPASSWORD=monolith_dev_only psql -h localhost -U monolith -d monolith \
+            -f examples/00-monolith/src/main/resources/db/migration/V2__seed_data.sql
+
+      # No psql pre-apply for any OTHER schema: every service below RUNS ITS
+      # OWN Flyway migration on boot against the fresh Postgres service
+      # container — order-service migrates its own `order_service` schema
+      # (incl. its own outbox and CQRS read model), the notification-service
+      # its own `notification` schema. Those schemas are untouched by the
+      # psql step above (which only targets `public`, a schema none of them
+      # own), so each service's own flyway_schema_history is unaffected —
+      # pre-applying DDL to a service's OWN schema would leave it non-empty
+      # with no flyway_schema_history and make that service's own Flyway
+      # refuse to start ("Found non-empty schema(s) ... but no schema
+      # history table"); `public` is not that schema for any service here.
       - name: Build the Order service
         working-directory: examples/07-order-service
         run: ./mvnw -q -DskipTests package
@@ -892,13 +915,36 @@ jobs:
       - name: Install newman
         run: npm install -g newman
 
-      # No psql pre-apply: each service runs its OWN Flyway migrations on
-      # boot against the fresh Postgres service container — order-service
-      # migrates its own `order_service` schema, examples/04-inventory-service
-      # migrates its own `inventory` schema (V1 create + V2 seed). Pre-applying
-      # DDL with psql would leave a non-empty schema with no
-      # flyway_schema_history and make either service's own Flyway refuse to
-      # start.
+      # S11b FIX: review-service shares the `public` schema and is NOT its
+      # own Flyway migrator (quarkus.hibernate-orm.schema-management.
+      # strategy=none, see equivalence-gate's identical step above) --
+      # `public.reviews` was historically created by the monolith's own
+      # Flyway migrations when the monolith booted. order-plan.md S11
+      # decommissioned the monolith from this workflow entirely (DRQ-071),
+      # so nothing creates `public.reviews` anymore and this gate's checkout
+      # (routed through the proxy, which also fronts /api/reviews by
+      # committed default) 500s the moment anything touches review with
+      # "relation \"reviews\" does not exist". Apply the SAME committed,
+      # frozen monolith SQL equivalence-gate already applies, directly with
+      # psql, before the Review-adjacent services below start.
+      - name: Apply the monolith's schema + seed data to Postgres (public schema, for the Review service)
+        run: |
+          set -euo pipefail
+          PGPASSWORD=monolith_dev_only psql -h localhost -U monolith -d monolith \
+            -f examples/00-monolith/src/main/resources/db/migration/V1__init_schema.sql
+          PGPASSWORD=monolith_dev_only psql -h localhost -U monolith -d monolith \
+            -f examples/00-monolith/src/main/resources/db/migration/V2__seed_data.sql
+
+      # No psql pre-apply for any OTHER schema: each service runs its OWN
+      # Flyway migrations on boot against the fresh Postgres service
+      # container — order-service migrates its own `order_service` schema,
+      # examples/04-inventory-service migrates its own `inventory` schema
+      # (V1 create + V2 seed). Those schemas are untouched by the psql step
+      # above (which only targets `public`, a schema neither of them own),
+      # so each service's own flyway_schema_history is unaffected —
+      # pre-applying DDL to a service's OWN schema would leave it non-empty
+      # with no flyway_schema_history and make that service's own Flyway
+      # refuse to start.
       - name: Build the Order service
         working-directory: examples/07-order-service
         run: ./mvnw -q -DskipTests package
@@ -1362,14 +1408,37 @@ jobs:
       - name: Install newman
         run: npm install -g newman
 
-      # No psql pre-apply: every service below runs its OWN Flyway migrations
-      # on boot against the fresh Postgres service container (order-service:
-      # own `order_service` schema, incl. its own outbox and CQRS read
-      # model; inventory: own `inventory` schema; payment: own `payment`
-      # schema; review/notification likewise own or share as already
-      # established). Pre-applying DDL with psql would leave a non-empty
-      # schema with no flyway_schema_history and make a service's own Flyway
-      # refuse to start.
+      # S11b FIX: review-service shares the `public` schema and is NOT its
+      # own Flyway migrator (quarkus.hibernate-orm.schema-management.
+      # strategy=none, see equivalence-gate's identical step above) --
+      # `public.reviews` was historically created by the monolith's own
+      # Flyway migrations when the monolith booted. order-plan.md S11
+      # decommissioned the monolith from this workflow entirely (DRQ-071),
+      # so nothing creates `public.reviews` anymore and this job's Review
+      # Context Contract folder (and the FULL suite's /api/reviews calls)
+      # 500 the moment review is hit with "relation \"reviews\" does not
+      # exist". Apply the SAME committed, frozen monolith SQL
+      # equivalence-gate already applies, directly with psql, before the
+      # Review service starts below.
+      - name: Apply the monolith's schema + seed data to Postgres (public schema, for the Review service)
+        run: |
+          set -euo pipefail
+          PGPASSWORD=monolith_dev_only psql -h localhost -U monolith -d monolith \
+            -f examples/00-monolith/src/main/resources/db/migration/V1__init_schema.sql
+          PGPASSWORD=monolith_dev_only psql -h localhost -U monolith -d monolith \
+            -f examples/00-monolith/src/main/resources/db/migration/V2__seed_data.sql
+
+      # No psql pre-apply for any OTHER schema: every service below runs its
+      # OWN Flyway migrations on boot against the fresh Postgres service
+      # container (order-service: own `order_service` schema, incl. its own
+      # outbox and CQRS read model; inventory: own `inventory` schema;
+      # payment: own `payment` schema; notification: own `notification`
+      # schema). Those schemas are untouched by the psql step above (which
+      # only targets `public`, a schema none of them own), so each service's
+      # own flyway_schema_history is unaffected — pre-applying DDL to a
+      # service's OWN schema would leave it non-empty with no
+      # flyway_schema_history and make that service's own Flyway refuse to
+      # start.
       - name: Build the Order service
         working-directory: examples/07-order-service
         run: ./mvnw -q -DskipTests package
@@ -1948,14 +2017,37 @@ jobs:
         # `newman` binary on PATH.
         run: npm install newman
 
-      # No psql pre-apply: every service below runs its OWN Flyway migrations
-      # on boot against the fresh Postgres service container (order-service:
-      # own `order_service` schema, incl. V4's AWAITING_SHIPMENT/
-      # SHIPPING_FAILED states, own outbox and CQRS read model;
-      # inventory/payment/review/notification/shipping each own their own
-      # schema). Pre-applying DDL with psql would leave a non-empty schema
-      # with no flyway_schema_history and make a service's own Flyway refuse
-      # to start.
+      # S11b FIX: review-service shares the `public` schema and is NOT its
+      # own Flyway migrator (quarkus.hibernate-orm.schema-management.
+      # strategy=none, see equivalence-gate's identical step above) --
+      # `public.reviews` was historically created by the monolith's own
+      # Flyway migrations when the monolith booted. order-plan.md S11
+      # decommissioned the monolith from this workflow entirely (DRQ-071),
+      # so nothing creates `public.reviews` anymore and this job's Review
+      # Context Contract folder (and the FULL suite's /api/reviews calls)
+      # 500 the moment review is hit with "relation \"reviews\" does not
+      # exist". Apply the SAME committed, frozen monolith SQL
+      # equivalence-gate already applies, directly with psql, before the
+      # Review service starts below.
+      - name: Apply the monolith's schema + seed data to Postgres (public schema, for the Review service)
+        run: |
+          set -euo pipefail
+          PGPASSWORD=monolith_dev_only psql -h localhost -U monolith -d monolith \
+            -f examples/00-monolith/src/main/resources/db/migration/V1__init_schema.sql
+          PGPASSWORD=monolith_dev_only psql -h localhost -U monolith -d monolith \
+            -f examples/00-monolith/src/main/resources/db/migration/V2__seed_data.sql
+
+      # No psql pre-apply for any OTHER schema: every service below runs its
+      # OWN Flyway migrations on boot against the fresh Postgres service
+      # container (order-service: own `order_service` schema, incl. V4's
+      # AWAITING_SHIPMENT/SHIPPING_FAILED states, own outbox and CQRS read
+      # model; inventory/payment/notification/shipping each own their own
+      # schema). Those schemas are untouched by the psql step above (which
+      # only targets `public`, a schema none of them own), so each service's
+      # own flyway_schema_history is unaffected — pre-applying DDL to a
+      # service's OWN schema would leave it non-empty with no
+      # flyway_schema_history and make that service's own Flyway refuse to
+      # start.
       - name: Build the Order service
         working-directory: examples/07-order-service
         run: ./mvnw -q -DskipTests package
@@ -2523,14 +2615,38 @@ jobs:
         # discipline as shipping-equivalence-gate's identical step.
         run: npm install newman
 
-      # No psql pre-apply: every service below runs its OWN Flyway migrations
-      # on boot against the fresh Postgres service container — order-service
-      # migrates its own `order_service` schema (incl. its own outbox and CQRS
-      # read model); inventory/payment/review/notification/shipping each own
-      # their own schema. The graphql-gateway owns no schema at all (it is a
-      # pure aggregator, DRQ-069) and runs no migration. Pre-applying DDL with
-      # psql would leave a non-empty schema with no flyway_schema_history and
-      # make a service's own Flyway refuse to start.
+      # S11b FIX: review-service shares the `public` schema and is NOT its
+      # own Flyway migrator (quarkus.hibernate-orm.schema-management.
+      # strategy=none, see equivalence-gate's identical step above) --
+      # `public.reviews` was historically created by the monolith's own
+      # Flyway migrations when the monolith booted. order-plan.md S11
+      # decommissioned the monolith from this workflow entirely (DRQ-071),
+      # so nothing creates `public.reviews` anymore and this job's Review
+      # Context Contract folder (and the GraphQL gateway's own `reviews`
+      # aggregation field, DRQ-069) 500 the moment review is hit with
+      # "relation \"reviews\" does not exist". Apply the SAME committed,
+      # frozen monolith SQL equivalence-gate already applies, directly with
+      # psql, before the Review service starts below.
+      - name: Apply the monolith's schema + seed data to Postgres (public schema, for the Review service)
+        run: |
+          set -euo pipefail
+          PGPASSWORD=monolith_dev_only psql -h localhost -U monolith -d monolith \
+            -f examples/00-monolith/src/main/resources/db/migration/V1__init_schema.sql
+          PGPASSWORD=monolith_dev_only psql -h localhost -U monolith -d monolith \
+            -f examples/00-monolith/src/main/resources/db/migration/V2__seed_data.sql
+
+      # No psql pre-apply for any OTHER schema: every service below runs its
+      # OWN Flyway migrations on boot against the fresh Postgres service
+      # container — order-service migrates its own `order_service` schema
+      # (incl. its own outbox and CQRS read model); inventory/payment/
+      # notification/shipping each own their own schema. The graphql-gateway
+      # owns no schema at all (it is a pure aggregator, DRQ-069) and runs no
+      # migration. Those schemas are untouched by the psql step above (which
+      # only targets `public`, a schema none of them own), so each service's
+      # own flyway_schema_history is unaffected — pre-applying DDL to a
+      # service's OWN schema would leave it non-empty with no
+      # flyway_schema_history and make that service's own Flyway refuse to
+      # start.
       - name: Build the Order service
         working-directory: examples/07-order-service
         run: ./mvnw -q -DskipTests package
