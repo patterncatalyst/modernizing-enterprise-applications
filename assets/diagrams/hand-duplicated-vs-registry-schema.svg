@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 700" font-family="'Red Hat Text', system-ui, sans-serif" role="img">
+<defs><marker id="a" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#555"/></marker><marker id="am" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2f5f3d"/></marker></defs>
+<rect x="20" y="60" width="650" height="560" rx="12" fill="#fafafa" stroke="#ddd"/>
+<text x="32" y="80" font-size="12" font-weight="700" fill="#1d1d1d">Today — one contract, authored by hand three times</text>
+<rect x="730" y="60" width="650" height="560" rx="12" fill="#eaf4ec" stroke="#ddd"/>
+<text x="742" y="80" font-size="12" font-weight="700" fill="#1d1d1d">ch.28 — one schema, registered once, shared by all three</text>
+<rect x="50" y="120" width="590" height="90" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
+<text x="345.0" y="163.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">order-service — OrderPlacedEvent (record)</text>
+<text x="345.0" y="180.0" font-size="11.5" fill="#555555" text-anchor="middle">7 fields, incl. paymentMethod</text>
+<rect x="50" y="240" width="590" height="90" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
+<text x="345.0" y="283.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">payment-service — OrderPlacedEvent (record)</text>
+<text x="345.0" y="300.0" font-size="11.5" fill="#555555" text-anchor="middle">own copy — 7 fields, incl. paymentMethod</text>
+<rect x="50" y="360" width="590" height="90" rx="9" fill="#111111" stroke="#111111" stroke-width="2"/>
+<text x="345.0" y="403.0" font-size="13.5" font-weight="700" fill="#ffffff" text-anchor="middle">notification-service — OrderPlacedEvent (record)</text>
+<text x="345.0" y="420.0" font-size="11.5" fill="#dddddd" text-anchor="middle">own copy — 6 fields, paymentMethod missing</text>
+<rect x="50" y="480" width="590" height="90" rx="9" fill="#ffffff" stroke="#999999" stroke-width="1.5" stroke-dasharray="6 4"/>
+<text x="345.0" y="523.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Drift: JSON binds by name only</text>
+<text x="345.0" y="540.0" font-size="11.5" fill="#555555" text-anchor="middle">nothing on the wire or at compile time catches the mismatch</text>
+<rect x="760" y="120" width="590" height="90" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
+<text x="1055.0" y="163.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">order-placed-v1.avsc</text>
+<text x="1055.0" y="180.0" font-size="11.5" fill="#555555" text-anchor="middle">one schema definition</text>
+<rect x="760" y="250" width="590" height="90" rx="9" fill="#eaf4ec" stroke="#3d7a4e" stroke-width="2"/>
+<text x="1055.0" y="293.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Apicurio Registry</text>
+<text x="1055.0" y="310.0" font-size="11.5" fill="#555555" text-anchor="middle">registers it once — the contract of record</text>
+<rect x="760" y="380" width="590" height="90" rx="9" fill="#eaf4ec" stroke="#3d7a4e" stroke-width="2"/>
+<text x="1055.0" y="423.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">OrderPlaced (SpecificRecord)</text>
+<text x="1055.0" y="440.0" font-size="11.5" fill="#555555" text-anchor="middle">generated at build time from the registered schema</text>
+<rect x="760" y="500" width="183" height="90" rx="9" fill="#ffffff" stroke="#999999" stroke-width="1.5"/>
+<text x="851.5" y="543.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">order-service</text>
+<text x="851.5" y="560.0" font-size="11.5" fill="#555555" text-anchor="middle">shares the generated record</text>
+<rect x="963" y="500" width="183" height="90" rx="9" fill="#ffffff" stroke="#999999" stroke-width="1.5"/>
+<text x="1054.5" y="543.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">payment-service</text>
+<text x="1054.5" y="560.0" font-size="11.5" fill="#555555" text-anchor="middle">shares the generated record</text>
+<rect x="1166" y="500" width="183" height="90" rx="9" fill="#ffffff" stroke="#999999" stroke-width="1.5"/>
+<text x="1257.5" y="543.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">notification-service</text>
+<text x="1257.5" y="560.0" font-size="11.5" fill="#555555" text-anchor="middle">shares the generated record</text>
+<path d="M345.0,210.0 L345.0,240.0" fill="none" stroke="#555" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#a)"/>
+<text x="351.0" y="219.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">same contract, no shared code</text>
+<text x="351.0" y="219.0" font-size="11" fill="#555" text-anchor="middle">same contract, no shared code</text>
+<path d="M345.0,330.0 L345.0,360.0" fill="none" stroke="#555" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#a)"/>
+<text x="351.0" y="339.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">same contract, no shared code</text>
+<text x="351.0" y="339.0" font-size="11" fill="#555" text-anchor="middle">same contract, no shared code</text>
+<path d="M345.0,450.0 L345.0,480.0" fill="none" stroke="#2f5f3d" stroke-width="2" marker-end="url(#am)"/>
+<text x="351.0" y="459.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">paymentMethod silently absent</text>
+<text x="351.0" y="459.0" font-size="11" fill="#2f5f3d" text-anchor="middle">paymentMethod silently absent</text>
+<path d="M1055.0,210.0 L1055.0,250.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<text x="1061.0" y="224.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">register (auto-register on first send)</text>
+<text x="1061.0" y="224.0" font-size="11" fill="#555" text-anchor="middle">register (auto-register on first send)</text>
+<path d="M1055.0,340.0 L1055.0,380.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<text x="1061.0" y="354.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">generates</text>
+<text x="1061.0" y="354.0" font-size="11" fill="#555" text-anchor="middle">generates</text>
+<path d="M978.6875,470.0 L927.8125,500.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<path d="M1054.8125,470.0 L1054.6875,500.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<path d="M1130.9375,470.0 L1181.5625,500.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<text x="700.0" y="32" font-size="16" fill="#1d1d1d" text-anchor="middle" font-weight="700">ch.28 — the same order.placed contract: hand-duplicated today, registry-governed after</text>
+<text x="50" y="590" font-size="11" fill="#555555" text-anchor="start">Three independently maintained files, meant to describe one event — nothing enforces that they still agree.</text>
+<text x="760" y="610" font-size="11" fill="#555555" text-anchor="start">One registered schema generates the type every side imports — one file to change.</text>
+<text x="760" y="626" font-size="11" fill="#555555" text-anchor="start">The registry checks compatibility before it will accept a change.</text>
+<text x="40" y="686" font-size="10" fill="#777777" text-anchor="start">Sourced from examples/07-order-service, examples/05-payment-service, examples/03-notification-service (.../OrderPlacedEvent.java) and examples/09-schema-registry-demo/src/main/avro/order-placed-v1.avsc.</text>
+</svg>
