@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 1020" font-family="'Red Hat Text', system-ui, sans-serif" role="img">
+<defs><marker id="a" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#555"/></marker><marker id="am" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2f5f3d"/></marker></defs>
+<rect x="40" y="150" width="330" height="92" rx="9" fill="#eaf4ec" stroke="#3d7a4e" stroke-width="2"/>
+<text x="205.0" y="186.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Strangler Fig</text>
+<text x="205.0" y="203.5" font-size="11.5" fill="#555555" text-anchor="middle">ch.14-26 · strangler-proxy</text>
+<text x="205.0" y="218.5" font-size="11.5" fill="#555555" text-anchor="middle">used — six seams, front door</text>
+<rect x="40" y="258" width="330" height="92" rx="9" fill="#eaf4ec" stroke="#3d7a4e" stroke-width="2"/>
+<text x="205.0" y="294.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Bounded Context / DDD</text>
+<text x="205.0" y="311.5" font-size="11.5" fill="#555555" text-anchor="middle">ch.11-13 · the six contexts</text>
+<text x="205.0" y="326.5" font-size="11.5" fill="#555555" text-anchor="middle">used — event storming -&gt; seams</text>
+<rect x="40" y="366" width="330" height="92" rx="9" fill="#eaf4ec" stroke="#3d7a4e" stroke-width="2"/>
+<text x="205.0" y="402.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Anti-Corruption Layer</text>
+<text x="205.0" y="419.5" font-size="11.5" fill="#555555" text-anchor="middle">ch.16 · content-based routing</text>
+<text x="205.0" y="434.5" font-size="11.5" fill="#555555" text-anchor="middle">used — honest ACL at the seam</text>
+<rect x="40" y="474" width="330" height="92" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
+<text x="205.0" y="510.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Branch by Abstraction</text>
+<text x="205.0" y="527.5" font-size="11.5" fill="#555555" text-anchor="middle">ch.14 · flag-gated proxy</text>
+<text x="205.0" y="542.5" font-size="11.5" fill="#555555" text-anchor="middle">adapted — routing flag form</text>
+<rect x="390" y="150" width="330" height="92" rx="9" fill="#eaf4ec" stroke="#3d7a4e" stroke-width="2"/>
+<text x="555.0" y="186.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Database per Service</text>
+<text x="555.0" y="203.5" font-size="11.5" fill="#555555" text-anchor="middle">ch.18 · owned schemas</text>
+<text x="555.0" y="218.5" font-size="11.5" fill="#555555" text-anchor="middle">used — all six own their data</text>
+<rect x="390" y="258" width="330" height="92" rx="9" fill="#eaf4ec" stroke="#3d7a4e" stroke-width="2"/>
+<text x="555.0" y="294.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Transactional Outbox</text>
+<text x="555.0" y="311.5" font-size="11.5" fill="#555555" text-anchor="middle">ch.17,20 · outbox relay</text>
+<text x="555.0" y="326.5" font-size="11.5" fill="#555555" text-anchor="middle">used — no dual write</text>
+<rect x="390" y="366" width="330" height="92" rx="9" fill="#eaf4ec" stroke="#3d7a4e" stroke-width="2"/>
+<text x="555.0" y="402.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Change Data Capture</text>
+<text x="555.0" y="419.5" font-size="11.5" fill="#555555" text-anchor="middle">ch.19 · Debezium backfill</text>
+<text x="555.0" y="434.5" font-size="11.5" fill="#555555" text-anchor="middle">used — transition-only, retired</text>
+<rect x="390" y="474" width="330" height="92" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
+<text x="555.0" y="510.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Event Sourcing / CQRS</text>
+<text x="555.0" y="527.5" font-size="11.5" fill="#555555" text-anchor="middle">ch.21,26 · order read model</text>
+<text x="555.0" y="542.5" font-size="11.5" fill="#555555" text-anchor="middle">CQRS used · full ES deferred</text>
+<rect x="740" y="150" width="330" height="92" rx="9" fill="#eaf4ec" stroke="#3d7a4e" stroke-width="2"/>
+<text x="905.0" y="186.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Saga (choreographed)</text>
+<text x="905.0" y="203.5" font-size="11.5" fill="#555555" text-anchor="middle">ch.23 · payment</text>
+<text x="905.0" y="218.5" font-size="11.5" fill="#555555" text-anchor="middle">used — events + compensation</text>
+<rect x="740" y="258" width="330" height="92" rx="9" fill="#eaf4ec" stroke="#3d7a4e" stroke-width="2"/>
+<text x="905.0" y="294.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Saga (orchestrated)</text>
+<text x="905.0" y="311.5" font-size="11.5" fill="#555555" text-anchor="middle">ch.24 · shipping · Camel EIP</text>
+<text x="905.0" y="326.5" font-size="11.5" fill="#555555" text-anchor="middle">used — InMemorySagaService</text>
+<rect x="740" y="366" width="330" height="92" rx="9" fill="#eaf4ec" stroke="#3d7a4e" stroke-width="2"/>
+<text x="905.0" y="402.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">API Composition / GraphQL</text>
+<text x="905.0" y="419.5" font-size="11.5" fill="#555555" text-anchor="middle">ch.26 · graphql-gateway</text>
+<text x="905.0" y="434.5" font-size="11.5" fill="#555555" text-anchor="middle">used — aggregation gateway</text>
+<rect x="740" y="474" width="330" height="92" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
+<text x="905.0" y="510.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Schema Registry / contracts</text>
+<text x="905.0" y="527.5" font-size="11.5" fill="#555555" text-anchor="middle">ch.28 · Avro + Apicurio</text>
+<text x="905.0" y="542.5" font-size="11.5" fill="#555555" text-anchor="middle">used — demonstrator (isolated)</text>
+<rect x="1090" y="150" width="330" height="92" rx="9" fill="#eaf4ec" stroke="#3d7a4e" stroke-width="2"/>
+<text x="1255.0" y="186.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Microservice Chassis</text>
+<text x="1255.0" y="203.5" font-size="11.5" fill="#555555" text-anchor="middle">ch.27 · Quarkus/MicroProfile</text>
+<text x="1255.0" y="218.5" font-size="11.5" fill="#555555" text-anchor="middle">used — config/health/metrics</text>
+<rect x="1090" y="258" width="330" height="92" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
+<text x="1255.0" y="294.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Reliability patterns</text>
+<text x="1255.0" y="311.5" font-size="11.5" fill="#555555" text-anchor="middle">ch.25 · timeout/retry/idemp.</text>
+<text x="1255.0" y="326.5" font-size="11.5" fill="#555555" text-anchor="middle">used where earned · CB deferred</text>
+<rect x="1090" y="366" width="330" height="92" rx="9" fill="#eaf4ec" stroke="#3d7a4e" stroke-width="2"/>
+<text x="1255.0" y="402.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Service Mesh + Tracing</text>
+<text x="1255.0" y="419.5" font-size="11.5" fill="#555555" text-anchor="middle">ch.30 · Istio + LGTM</text>
+<text x="1255.0" y="434.5" font-size="11.5" fill="#555555" text-anchor="middle">used — mTLS, OTel (minikube)</text>
+<rect x="1090" y="474" width="330" height="92" rx="9" fill="#eaf4ec" stroke="#3d7a4e" stroke-width="2"/>
+<text x="1255.0" y="510.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Supply-chain + CI gates</text>
+<text x="1255.0" y="527.5" font-size="11.5" fill="#555555" text-anchor="middle">ch.31 · SBOM/scan/equiv.</text>
+<text x="1255.0" y="542.5" font-size="11.5" fill="#555555" text-anchor="middle">used — verified live</text>
+<rect x="40" y="582" width="330" height="92" rx="9" fill="#ffffff" stroke="#999999" stroke-width="1.5" stroke-dasharray="6 4"/>
+<text x="205.0" y="618.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Rewrite / big-bang</text>
+<text x="205.0" y="635.5" font-size="11.5" fill="#555555" text-anchor="middle">— not taken —</text>
+<text x="205.0" y="650.5" font-size="11.5" fill="#555555" text-anchor="middle">deferred — strangler instead</text>
+<rect x="390" y="582" width="330" height="92" rx="9" fill="#ffffff" stroke="#999999" stroke-width="1.5" stroke-dasharray="6 4"/>
+<text x="555.0" y="618.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Full Event Sourcing</text>
+<text x="555.0" y="635.5" font-size="11.5" fill="#555555" text-anchor="middle">ch.21 · concept only</text>
+<text x="555.0" y="650.5" font-size="11.5" fill="#555555" text-anchor="middle">deferred — CQRS-lite sufficed</text>
+<rect x="740" y="582" width="330" height="92" rx="9" fill="#ffffff" stroke="#999999" stroke-width="1.5" stroke-dasharray="6 4"/>
+<text x="905.0" y="618.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">LRA / Narayana saga</text>
+<text x="905.0" y="635.5" font-size="11.5" fill="#555555" text-anchor="middle">ch.24 · named</text>
+<text x="905.0" y="650.5" font-size="11.5" fill="#555555" text-anchor="middle">deferred — in-memory saga</text>
+<rect x="1090" y="582" width="330" height="92" rx="9" fill="#ffffff" stroke="#999999" stroke-width="1.5" stroke-dasharray="6 4"/>
+<text x="1255.0" y="618.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">GitOps operator + canary</text>
+<text x="1255.0" y="635.5" font-size="11.5" fill="#555555" text-anchor="middle">ch.31 · named</text>
+<text x="1255.0" y="650.5" font-size="11.5" fill="#555555" text-anchor="middle">deferred — no speculative infra</text>
+<text x="750.0" y="40" font-size="16" fill="#1d1d1d" text-anchor="middle" font-weight="700">ch.32 — the pattern language, re-walked: where each pattern actually landed, and the verdict</text>
+<text x="750.0" y="62" font-size="11" fill="#555555" text-anchor="middle">accent = used in anger · outline = used/adapted or partial · dashed = deliberately deferred and named</text>
+<text x="205.0" y="128" font-size="13" fill="#2f5f3d" text-anchor="middle" font-weight="700">Decomposition</text>
+<text x="555.0" y="128" font-size="13" fill="#2f5f3d" text-anchor="middle" font-weight="700">Data</text>
+<text x="905.0" y="128" font-size="13" fill="#2f5f3d" text-anchor="middle" font-weight="700">Communication &amp; Contracts</text>
+<text x="1255.0" y="128" font-size="13" fill="#2f5f3d" text-anchor="middle" font-weight="700">Reliability · Ops · Chassis</text>
+<text x="40" y="574" font-size="11" fill="#777777" text-anchor="start">deliberately left on the shelf:</text>
+<text x="40" y="1000" font-size="10" fill="#777777" text-anchor="start">Every box is a claim verified in its own chapter; this figure maps them, it does not re-prove them.</text>
+</svg>
