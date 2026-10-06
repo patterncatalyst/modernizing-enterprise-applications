@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 720" font-family="'Red Hat Text', system-ui, sans-serif" role="img">
+<defs><marker id="a" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#555"/></marker><marker id="am" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2f5f3d"/></marker></defs>
+<rect x="20" y="60" width="720" height="250" rx="12" fill="#fafafa" stroke="#ddd"/>
+<text x="32" y="80" font-size="12" font-weight="700" fill="#1d1d1d">Local toolchain — installed via SDKMAN</text>
+<rect x="760" y="60" width="720" height="250" rx="12" fill="#eaf4ec" stroke="#ddd"/>
+<text x="772" y="80" font-size="12" font-weight="700" fill="#1d1d1d">Podman stack — compose.yaml (podman compose, not docker)</text>
+<rect x="20" y="350" width="1460" height="250" rx="12" fill="#ffffff" stroke="#ddd"/>
+<text x="32" y="370" font-size="12" font-weight="700" fill="#1d1d1d">Repository layout — repo root</text>
+<rect x="40" y="110" width="330" height="85" rx="9" fill="#eaf4ec" stroke="#3d7a4e" stroke-width="2"/>
+<text x="205.0" y="143.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">JDK 25 (Temurin)</text>
+<text x="205.0" y="160.0" font-size="11.5" fill="#555555" text-anchor="middle">sdk install java 25-tem</text>
+<text x="205.0" y="175.0" font-size="11.5" fill="#555555" text-anchor="middle">required</text>
+<rect x="390" y="110" width="330" height="85" rx="9" fill="#eaf4ec" stroke="#3d7a4e" stroke-width="2"/>
+<text x="555.0" y="143.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Maven 3.9.x</text>
+<text x="555.0" y="160.0" font-size="11.5" fill="#555555" text-anchor="middle">sdk install maven 3.9.9</text>
+<text x="555.0" y="175.0" font-size="11.5" fill="#555555" text-anchor="middle">required, or ./mvnw per-project</text>
+<rect x="40" y="205" width="330" height="85" rx="9" fill="#ffffff" stroke="#999999" stroke-width="1.5" stroke-dasharray="6 4"/>
+<text x="205.0" y="238.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Quarkus CLI</text>
+<text x="205.0" y="255.0" font-size="11.5" fill="#555555" text-anchor="middle">sdk install quarkus</text>
+<text x="205.0" y="270.0" font-size="11.5" fill="#555555" text-anchor="middle">optional</text>
+<rect x="390" y="205" width="330" height="85" rx="9" fill="#ffffff" stroke="#999999" stroke-width="1.5" stroke-dasharray="6 4"/>
+<text x="555.0" y="238.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Camel CLI</text>
+<text x="555.0" y="255.0" font-size="11.5" fill="#555555" text-anchor="middle">sdk install camel</text>
+<text x="555.0" y="270.0" font-size="11.5" fill="#555555" text-anchor="middle">optional, scoped to Part 5+</text>
+<rect x="780" y="120" width="213" height="160" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
+<text x="886.5" y="198.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Postgres</text>
+<text x="886.5" y="215.0" font-size="11.5" fill="#555555" text-anchor="middle">monolith + review DB (shared)</text>
+<rect x="1013" y="120" width="213" height="160" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
+<text x="1119.5" y="198.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Kafka — KRaft mode</text>
+<text x="1119.5" y="215.0" font-size="11.5" fill="#555555" text-anchor="middle">single broker, no ZooKeeper</text>
+<rect x="1246" y="120" width="213" height="160" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
+<text x="1352.5" y="190.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Grafana LGTM bundle</text>
+<text x="1352.5" y="207.5" font-size="11.5" fill="#555555" text-anchor="middle">Loki + Tempo + Mimir</text>
+<text x="1352.5" y="222.5" font-size="11.5" fill="#555555" text-anchor="middle">+ OTel Collector</text>
+<rect x="40" y="410" width="220" height="130" rx="9" fill="#eaf4ec" stroke="#3d7a4e" stroke-width="2"/>
+<text x="150.0" y="465.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">examples/</text>
+<text x="150.0" y="482.5" font-size="11.5" fill="#555555" text-anchor="middle">00-monolith, 01-strangler-proxy,</text>
+<text x="150.0" y="497.5" font-size="11.5" fill="#555555" text-anchor="middle">02-review-service</text>
+<rect x="280" y="410" width="220" height="130" rx="9" fill="#eaf4ec" stroke="#3d7a4e" stroke-width="2"/>
+<text x="390.0" y="465.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">tooling/</text>
+<text x="390.0" y="482.5" font-size="11.5" fill="#555555" text-anchor="middle">tooling/newman/ — behavior-</text>
+<text x="390.0" y="497.5" font-size="11.5" fill="#555555" text-anchor="middle">equivalence collection</text>
+<rect x="520" y="410" width="220" height="130" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
+<text x="630.0" y="465.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">demos/</text>
+<text x="630.0" y="482.5" font-size="11.5" fill="#555555" text-anchor="middle">demo-equivalence.sh,</text>
+<text x="630.0" y="497.5" font-size="11.5" fill="#555555" text-anchor="middle">demo-cutover.sh</text>
+<rect x="760" y="410" width="220" height="130" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
+<text x="870.0" y="465.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">infra/</text>
+<text x="870.0" y="482.5" font-size="11.5" fill="#555555" text-anchor="middle">OTel Collector config,</text>
+<text x="870.0" y="497.5" font-size="11.5" fill="#555555" text-anchor="middle">Grafana datasources, DB init</text>
+<rect x="1000" y="410" width="220" height="130" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
+<text x="1110.0" y="473.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">scripts/</text>
+<text x="1110.0" y="490.0" font-size="11.5" fill="#555555" text-anchor="middle">stack-up.sh / stack-down.sh</text>
+<rect x="1240" y="410" width="220" height="130" rx="9" fill="#eaf4ec" stroke="#3d7a4e" stroke-width="2"/>
+<text x="1350.0" y="465.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">_docs/</text>
+<text x="1350.0" y="482.5" font-size="11.5" fill="#555555" text-anchor="middle">the chapters —</text>
+<text x="1350.0" y="497.5" font-size="11.5" fill="#555555" text-anchor="middle">01-prerequisites.md is here</text>
+<path d="M720,152.5 L726,152.5" fill="none" stroke="#2f5f3d" stroke-width="2" marker-end="url(#am)"/>
+<path d="M726,152.5 L726,385" fill="none" stroke="#2f5f3d" stroke-width="2" marker-end="url(#am)"/>
+<path d="M726,385 L150.0,385" fill="none" stroke="#2f5f3d" stroke-width="2" marker-end="url(#am)"/>
+<text x="444.0" y="379.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">builds &amp; runs — mvn / ./mvnw package</text>
+<text x="444.0" y="379.0" font-size="11" fill="#2f5f3d" text-anchor="middle">builds &amp; runs — mvn / ./mvnw package</text>
+<path d="M150.0,385 L150.0,410" fill="none" stroke="#2f5f3d" stroke-width="2" marker-end="url(#am)"/>
+<path d="M1112.2454545454545,410.0 L1116.7363636363636,280.0" fill="none" stroke="#2f5f3d" stroke-width="2" marker-end="url(#am)"/>
+<text x="1120.490909090909" y="339.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">stack-up.sh / stack-down.sh</text>
+<text x="1120.490909090909" y="339.0" font-size="11" fill="#2f5f3d" text-anchor="middle">stack-up.sh / stack-down.sh</text>
+<text x="750.0" y="32" font-size="16" fill="#1d1d1d" text-anchor="middle" font-weight="700">ch.01 — Toolchain and repo layout: what you install, and where it lands</text>
+<text x="750.0" y="52" font-size="11.5" fill="#555555" text-anchor="middle">SDKMAN-managed JDK/Maven/CLI tooling and the podman compose stack both build and back the examples/ tree checked into this repository</text>
+<text x="20" y="632" font-size="10.5" fill="#555555" text-anchor="start">Required for every chapter: JDK 25 (Temurin) and Maven 3.9.x, or each project&#x27;s own ./mvnw. The Quarkus CLI and Camel CLI are optional conveniences scoped to Part 5 onward.</text>
+<text x="20" y="648" font-size="10.5" fill="#555555" text-anchor="start">podman compose, not docker compose, is a fixed decision: compose.yaml pins the exact Postgres, Kafka, and Grafana LGTM image tags Quarkus Dev Services and Testcontainers expect later.</text>
+<text x="20" y="684" font-size="10" fill="#777777" text-anchor="start">Sourced from _docs/01-prerequisites.md (&quot;What you need, and where it comes from&quot;, &quot;Bring up the infrastructure stack&quot;, &quot;Finding your way around the repository&quot;), compose.yaml, .env.example, scripts/stack-up.sh.</text>
+</svg>

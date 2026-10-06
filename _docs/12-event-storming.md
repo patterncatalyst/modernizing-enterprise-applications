@@ -151,6 +151,8 @@ collaborator is as reliable and as fast as an in-process method call — which
 is exactly the assumption `OrderService#placeOrder` makes today, for all
 four of its collaborators, with no exception.
 
+{% include excalidraw.html file="event-storming-legend" alt="A seven-row legend card listing the event-storming note types in the order a session introduces them: domain event (orange sticky, a past-tense fact, e.g. OrderPlaced), command (blue sticky, the imperative that triggered it, e.g. Place Order), actor (small yellow figure left of its command, e.g. Customer), aggregate (large yellow sticky, the data cluster enforcing an invariant, e.g. Order), policy/reaction (lilac sticky, 'whenever X then issue command Y', no human actor), read model (green sticky, a view projected forward from events, e.g. Order Status), and external system (pink sticky, outside the team's control, e.g. the card network). Each row also names this book's house-style box type that stands in for the real sticky color." caption="Figure 12.2 — The event-storming note-type legend: the wall's color grammar, named as the chapter calls it" %}
+
 A session runs at three altitudes, and conflating them is the most common way
 a storm produces a useless wall. **Big-picture** storming surveys an entire
 business — weeks of activity across every process a company runs — to find
@@ -308,6 +310,8 @@ time it draws an arrow between two different-colored stickies — is what has
 to exist at each of these boundaries before the event can safely carry
 contract-shaped data instead of a raw JPA entity, which is Smell 5 from
 Chapter 9 stated as a precondition rather than a complaint.
+
+{% include excalidraw.html file="storm-wall-to-backlog" alt="A four-row table mapping each event boundary this chapter's storm found to its extraction chapter and mechanism: OrderPlaced to StockReserved (inventory's seam) to Chapter 19, CDC backfill plus a decomposed database; StockReserved to PaymentCaptured/PaymentDeclined (payment's seam) to Chapter 23, a choreographed saga; PaymentCaptured to ShipmentDispatched (shipping's seam) to Chapter 24, an orchestrated saga using the Camel Saga EIP; and ShipmentDispatched to OrderConfirmed/NotificationSent (notification's seam, cut first) to Chapter 17, a transactional outbox. A footnote box notes OrderService itself is cut last in Chapter 26, after all four boundaries already fire events, and that Chapter 16's anti-corruption layer is the precondition at every row." caption="Figure 12.3 — From the storm wall to the extraction backlog: each boundary, its chapter, and its mechanism" %}
 
 Notice what the wall does *not* tell you: it tells you *where* a boundary
 exists, not *which order is safest to cut them in*. That ordering question —

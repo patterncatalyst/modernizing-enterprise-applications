@@ -240,6 +240,8 @@ not 4, confirming the ON CONFLICT upsert is idempotent under at-least-once
 delivery.
 ```
 
+{% include excalidraw.html file="cdc-debezium-backfill-pipeline" alt="The CDC backfill pipeline's mechanism, left to right: the monolith's Postgres WAL (wal_level=logical, pgoutput, REPLICA IDENTITY FULL), the mea_inventory_slot replication slot and mea_inventory_publication publication registered on it, the mea-inventory-connector Debezium connector reading that feed (snapshot.mode=initial, emitting op=r backfill events once then streaming op=c/u/d), the mea.public.inventory_items Kafka topic, and InventoryCdcConsumer's idempotent ON CONFLICT upsert into the inventory service's own schema. A second band shows the slot and publication's retirement: scripts/retire-debezium.sh, run once at the S11 cutover, deletes the connector and drops both the slot and the publication." caption="Figure 19.3 — The CDC backfill pipeline's mechanism (WAL through the replication slot, the Debezium connector, and the Kafka topic, to InventoryCdcConsumer's idempotent upsert), and the slot/publication's one-time retirement at cutover" %}
+
 This is also where the deferred decision Chapter 17 named actually gets
 spent. Chapter 17 reached for a polling relay, not CDC, for
 notification's outbox — the right default, because notification's latency

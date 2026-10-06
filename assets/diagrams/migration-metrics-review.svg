@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 740" font-family="'Red Hat Text', system-ui, sans-serif" role="img">
+<defs><marker id="a" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#555"/></marker><marker id="am" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2f5f3d"/></marker></defs>
+<rect x="20" y="90" width="1460" height="250" rx="12" fill="#fafafa" stroke="#ddd"/>
+<text x="32" y="110" font-size="12" font-weight="700" fill="#1d1d1d">Startup time — lower is better (own scale; Phase A&#x27;s bar is the longest in this band)</text>
+<rect x="20" y="380" width="1460" height="250" rx="12" fill="#eaf4ec" stroke="#ddd"/>
+<text x="32" y="400" font-size="12" font-weight="700" fill="#1d1d1d">Resident memory — lower is better (own scale; Phase A&#x27;s bar is the longest in this band)</text>
+<rect x="300" y="124" width="860.0" height="46" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
+<text x="730.0" y="152.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle"></text>
+<rect x="300" y="186" width="826.56836461126" height="46" rx="9" fill="#eaf4ec" stroke="#3d7a4e" stroke-width="2"/>
+<text x="713.28418230563" y="214.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle"></text>
+<rect x="300" y="248" width="27.955764075067027" height="46" rx="9" fill="#111111" stroke="#111111" stroke-width="2"/>
+<text x="313.9778820375335" y="276.5" font-size="13.5" font-weight="700" fill="#ffffff" text-anchor="middle"></text>
+<rect x="300" y="414" width="860.0" height="46" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
+<text x="730.0" y="442.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle"></text>
+<rect x="300" y="476" width="827.3417721518987" height="46" rx="9" fill="#eaf4ec" stroke="#3d7a4e" stroke-width="2"/>
+<text x="713.6708860759493" y="504.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle"></text>
+<rect x="300" y="538" width="198.67088607594937" height="46" rx="9" fill="#111111" stroke="#111111" stroke-width="2"/>
+<text x="399.3354430379747" y="566.5" font-size="13.5" font-weight="700" fill="#ffffff" text-anchor="middle"></text>
+<text x="750.0" y="32" font-size="16" fill="#1d1d1d" text-anchor="middle" font-weight="700">ch.03 — the Review-extraction measurement: Phase A -&gt; Phase B JVM -&gt; Phase B native</text>
+<text x="750.0" y="56" font-size="12" fill="#2f5f3d" text-anchor="middle">the same 16/16-assertion equivalence suite passed, unchanged, on all three builds</text>
+<text x="40" y="152.0" font-size="12.5" fill="#1d1d1d" text-anchor="start" font-weight="700">Phase A — JVM, Spring-compat</text>
+<text x="1174.0" y="152.0" font-size="12.5" fill="#1d1d1d" text-anchor="start">1.492 s</text>
+<text x="1280" y="152.0" font-size="11.5" fill="#2f5f3d" text-anchor="start">16/16 green</text>
+<text x="40" y="214.0" font-size="12.5" fill="#1d1d1d" text-anchor="start" font-weight="700">Phase B — JVM, idiomatic Quarkus</text>
+<text x="1140.56836461126" y="214.0" font-size="12.5" fill="#1d1d1d" text-anchor="start">1.431–1.437 s</text>
+<text x="1280" y="214.0" font-size="11.5" fill="#2f5f3d" text-anchor="start">16/16 green</text>
+<text x="40" y="276.0" font-size="12.5" fill="#1d1d1d" text-anchor="start" font-weight="700">Phase B — native image</text>
+<text x="341.955764075067" y="276.0" font-size="12.5" fill="#1d1d1d" text-anchor="start">0.048–0.049 s</text>
+<text x="1280" y="276.0" font-size="11.5" fill="#2f5f3d" text-anchor="start">16/16 green</text>
+<text x="40" y="324" font-size="12.5" fill="#2f5f3d" text-anchor="start" font-weight="700">~31x faster: 1.492 s -&gt; 0.048–0.049 s (Phase A to native)</text>
+<text x="40" y="442.0" font-size="12.5" fill="#1d1d1d" text-anchor="start" font-weight="700">Phase A — JVM, Spring-compat</text>
+<text x="1174.0" y="442.0" font-size="12.5" fill="#1d1d1d" text-anchor="start">~316 MB</text>
+<text x="1280" y="442.0" font-size="11.5" fill="#2f5f3d" text-anchor="start">16/16 green</text>
+<text x="40" y="504.0" font-size="12.5" fill="#1d1d1d" text-anchor="start" font-weight="700">Phase B — JVM, idiomatic Quarkus</text>
+<text x="1141.3417721518986" y="504.0" font-size="12.5" fill="#1d1d1d" text-anchor="start">~304 MB</text>
+<text x="1280" y="504.0" font-size="11.5" fill="#2f5f3d" text-anchor="start">16/16 green</text>
+<text x="40" y="566.0" font-size="12.5" fill="#1d1d1d" text-anchor="start" font-weight="700">Phase B — native image</text>
+<text x="512.6708860759494" y="566.0" font-size="12.5" fill="#1d1d1d" text-anchor="start">~73 MB</text>
+<text x="1280" y="566.0" font-size="11.5" fill="#2f5f3d" text-anchor="start">16/16 green</text>
+<text x="40" y="614" font-size="12.5" fill="#2f5f3d" text-anchor="start" font-weight="700">~4x smaller: ~316 MB -&gt; ~73 MB (Phase A to native)</text>
+<text x="40" y="712" font-size="10" fill="#777777" text-anchor="start">Sourced from _docs/03-modernization-as-engineering.md&#x27;s measured metrics table and examples/02-review-service/MIGRATION.md. Bar length is proportional to the value within its own band only — seconds and megabytes are not on a shared scale across the two bands.</text>
+</svg>
