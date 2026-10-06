@@ -73,6 +73,8 @@ schema, and not one line of Java anywhere that says "I depend on inventory's
 table shape" or "I depend on customer's column list." The database says it,
 silently, on every row.
 
+{% include excalidraw.html file="monolith-shared-schema-er" alt="The shared-schema entity-relationship diagram: eight tables in one PostgreSQL schema, with customers and inventory_items referenced from multiple context-owned tables and nine foreign keys crossing bounded-context ownership lines freely." caption="Figure 18.1 — The FK web database-per-service has to break apart: nine foreign keys, one shared schema" %}
+
 That silence is the entire reason this coupling outranks the others. A
 foreign key is not a negotiated contract between two teams who both read and
 approved it — it is a constraint one migration author wrote once, which every
@@ -229,6 +231,8 @@ ALTER TABLE order_items DROP CONSTRAINT order_items_inventory_item_id_fkey;
 ALTER TABLE order_items ADD COLUMN inventory_item_sku VARCHAR(64) NOT NULL;
 ALTER TABLE order_items ADD COLUMN product_name_snapshot VARCHAR(255) NOT NULL;
 ```
+
+{% include excalidraw.html file="shared-db-to-database-per-service" alt="Before and after: on the left, one shared schema where order_items holds a live FK join into inventory_items, which is why a SKU rename silently relabels every historical order's display; on the right, inventory owns its own database, the FK is dropped, order_items gains sku and product-name snapshot columns written once at order-placement time, and a CDC connector backfills inventory's new database by tailing the old schema's write-ahead log." caption="Figure 18.2 — order_items -> inventory_items: a live FK join today, a snapshot plus a CDC event feed after ch.19" %}
 
 Three fields replace one live join: `sku` and the product name become
 point-in-time snapshots, written once at order-placement time exactly the way

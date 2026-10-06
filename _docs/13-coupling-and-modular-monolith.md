@@ -159,6 +159,8 @@ through 26 are done, which is exactly the point of walking the ladder now.
 You cannot evaluate how far the extracted services have moved without
 knowing the full span of the ladder you started on.
 
+{% include excalidraw.html file="coupling-ladder" alt="The Constantine coupling ladder drawn as seven stacked rungs, worst to best, each paired with its monolith example. Content coupling: OrderService#placeOrder reading a live, JPA-managed InventoryItem's priceCents and sku straight from findBySkuOrThrow (Smell 5). Common coupling: one shared Postgres schema across order, inventory, payment, shipping, notification, and customers (Smell 1). Control coupling: OrderCreate.paymentMethod() threaded into PaymentService#charge, selecting an approve-or-decline code path. Stamp coupling: OrderItem's constructor taking the full InventoryItem entity for the three fields it needs. Data coupling: OrderService.listAll() returning List<OrderDto> via toDto, already done right. Message coupling and API/data-structure coupling have no monolith example — they're the target architecture chapters 14 through 26 build." caption="Figure 13.1 — The Constantine coupling ladder, worst to best, each rung pinned to its monolith example" %}
+
 ## The two worst offenders, scored
 
 Two of the five Chapter 9 smells dominate every other consideration in this
@@ -301,6 +303,8 @@ looking like a sorted list:
   problem *at the same time*, with no smaller extraction's lessons to carry
   forward — which is precisely the "biggest cut first" failure mode a
   blast-radius ranking exists to prevent.
+
+{% include excalidraw.html file="context-dependency-graph-cace" alt="A directed dependency graph of the six contexts. Order sits at the center with four outbound edges — OrderService's calls into inventory, payment, shipping, and notification, its efferent coupling of four — and three inbound foreign-key edges from payment, shipment, and notification back to order, its afferent coupling. Inventory also carries a data-level edge from order via OrderItem's foreign key into InventoryItem. Review has no edges in or out. A dashed edge from shipping to payment marks the dependency shipping only gains once payment is extracted. Below, the same six contexts sorted into the resolved extraction order: review, notification, inventory, payment, shipping, then order, lowest Ca/Ce first." caption="Figure 13.2 — The six contexts' dependency graph, scored by Ca/Ce, resolving into the extraction order" %}
 
 That is the whole method: rank contexts by `Ca` and `Ce`,
 cut the lowest-scoring context first, and let each completed extraction
