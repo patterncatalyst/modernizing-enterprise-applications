@@ -1,0 +1,32 @@
+=== istio_requests_total edges (source_workload -> destination_workload, response_code, connection_security_policy) ===
+graphql-gateway      -> lgtm                  code=200   mtls_policy=unknown     count=2.0
+graphql-gateway      -> order-service         code=200   mtls_policy=mutual_tls  count=16.0
+graphql-gateway      -> payment-service       code=200   mtls_policy=mutual_tls  count=1.0
+graphql-gateway      -> review-service        code=500   mtls_policy=mutual_tls  count=16.0
+graphql-gateway      -> shipping-service      code=200   mtls_policy=mutual_tls  count=16.0
+inventory-service    -> lgtm                  code=200   mtls_policy=unknown     count=2.0
+order-service        -> inventory-service     code=200   mtls_policy=mutual_tls  count=62.0
+order-service        -> inventory-service     code=200   mtls_policy=unknown     count=62.0
+order-service        -> lgtm                  code=200   mtls_policy=unknown     count=6.0
+shipping-service     -> order-service         code=200   mtls_policy=mutual_tls  count=31.0
+shipping-service     -> order-service         code=200   mtls_policy=unknown     count=31.0
+strangler-proxy      -> order-service         code=200   mtls_policy=mutual_tls  count=1.0
+strangler-proxy      -> order-service         code=200   mtls_policy=unknown     count=1.0
+strangler-proxy      -> order-service         code=202   mtls_policy=mutual_tls  count=31.0
+strangler-proxy      -> order-service         code=202   mtls_policy=unknown     count=31.0
+strangler-proxy      -> order-service         code=400   mtls_policy=mutual_tls  count=1.0
+strangler-proxy      -> order-service         code=400   mtls_policy=unknown     count=1.0
+strangler-proxy      -> review-service        code=500   mtls_policy=mutual_tls  count=106.0
+strangler-proxy      -> review-service        code=500   mtls_policy=unknown     count=106.0
+
+=== istio_requests_total{connection_security_policy="mutual_tls"} (mTLS-only edges) ===
+strangler-proxy      -> review-service        code=500   count=106
+order-service        -> inventory-service     code=200   count=62
+graphql-gateway      -> payment-service       code=200   count=1
+graphql-gateway      -> review-service        code=500   count=16
+strangler-proxy      -> order-service         code=202   count=31
+graphql-gateway      -> order-service         code=200   count=16
+shipping-service     -> order-service         code=200   count=31
+strangler-proxy      -> order-service         code=200   count=1
+strangler-proxy      -> order-service         code=400   count=1
+graphql-gateway      -> shipping-service      code=200   count=16
