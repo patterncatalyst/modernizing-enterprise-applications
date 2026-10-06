@@ -4,6 +4,14 @@
 # flag flip and the last reversible state before S10's irreversible monolith
 # decommission.
 #
+# NOTE: this reconstructs an INTERMEDIATE migration state against the
+# PRE-DECOMMISSION proxy that still honours the strangler.*.enabled flags. On
+# `main` the proxy is a flagless edge router (DRQ-070), so the flag flips below
+# are no-ops there and the reversibility section cannot route back to the
+# monolith — run this from the matching snapshot:
+# `git checkout stage/06-order-extracted`. For the FINISHED end-state (flagless
+# edge router, no monolith), see demos/demo-final-topology.sh.
+#
 # Mirrors demos/demo-shipping-cutover.sh's shape, extended for the two
 # load-bearing differences this, the LAST extraction, introduces:
 #
