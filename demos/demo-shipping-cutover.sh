@@ -2,6 +2,12 @@
 # demo-shipping-cutover.sh — demonstrate the Shipping orchestrated-saga
 # CUTOVER (shipping-plan.md S8, ch.24, DRQ-059/060/062/065).
 #
+# NOTE: this reconstructs an INTERMEDIATE migration state and brings up the
+# frozen examples/00-monolith (:8080) to show the cutover and its reversibility
+# window against it. In the FINISHED system the monolith is decommissioned —
+# see demos/demo-final-topology.sh for the end-state (flagless edge router, no
+# monolith).
+#
 # Mirrors demos/demo-payment-cutover.sh's shape (payment, r06/S8): this
 # script brings up the whole topology itself, flips both cutover flags, and
 # runs the proofs shipping-plan.md S8 requires:
