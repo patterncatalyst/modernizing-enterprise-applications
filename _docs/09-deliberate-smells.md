@@ -60,6 +60,8 @@ the implementation — a foreign key where there should be a replicated field,
 a direct method call where there should be a published event, a shared
 transaction where there should be five independently committable ones.
 
+{% include excalidraw.html file="smell-map" alt="All six planted smells overlaid on the monolith's six-context structure: the shared schema, the god OrderService, the one-transaction checkout, the synchronous notification call, the missing anti-corruption layer between order and inventory, and review's already-cured tangled security — each annotated with the chapter that cures it." caption="Figure 9.1 — The six planted smells, mapped onto the monolith's structure" %}
+
 Each smell
 below is not "a bug to fix." Fixing a bug makes code that was wrong become
 right, in place. Cutting a seam makes code that was *one thing* become *two

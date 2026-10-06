@@ -128,11 +128,15 @@ accepting a second, smaller, well-understood gap (publish latency) is the
 trade this pattern makes, and the remainder of this chapter is about running
 that second gap correctly.
 
+{% include excalidraw.html file="dual-write-vs-outbox" alt="The dual-write hazard versus the transactional outbox, stacked for contrast: on top, saving to the database and publishing to Kafka as two independent writes with a gap nothing closes; on the bottom, the business write and the outbox row committing together in the same transaction, with the second hop to Kafka made explicit and owned by the relay." caption="Figure 20.1 — Dual-write versus the transactional outbox" %}
+
 ## How the code works
 
 Four pieces carry this pattern end to end: the row, the relay that publishes
 it, the write that creates it, and the consumer that absorbs its
 at-least-once delivery. Each is real, already-running code.
+
+{% include excalidraw.html file="outbox-four-piece-pipeline" alt="The outbox pattern's four pieces as one labeled flow: the write that persists the outbox row inside placeOrder's transaction, the relay that polls for unpublished rows and publishes them to Kafka, the broker topic the relay blocks on for acknowledgment, and the idempotent consumer that checks before inserting." caption="Figure 20.2 — The outbox pattern's four pieces: write, relay, broker, consumer" %}
 
 **The row — `OutboxEvent`.** Its columns are the minimum needed to answer
 the relay's one question ("what is unpublished, and in what order should I
@@ -285,6 +289,8 @@ or a redelivery racing a still-in-flight first attempt — can both pass the
 code alone cannot close that window; only the database can, which is exactly
 why the next section exists as a second, independent layer rather than a
 nice-to-have.
+
+{% include excalidraw.html file="transactional-outbox-sequence" alt="The transactional-outbox guarantee contrasted with the smell it replaces: the old flow where checkout called notification synchronously inside the same transaction, any failure rolling back every other write; and the new flow where the last write before commit is an outbox row, published later by the relay to a consumer that is idempotent by construction." caption="Figure 20.3 — The old synchronous call versus the new outbox-and-relay flow" %}
 
 ## Done right, concern by concern
 

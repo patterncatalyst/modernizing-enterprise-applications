@@ -271,6 +271,8 @@ it, and test its failure-path behavior exactly as carefully as the happy
 path, because the one mechanism that used to do this automatically — one database,
 one transaction manager — is no longer in the room.
 
+{% include excalidraw.html file="acid-to-acd" alt="The ACID-to-ACD spine: on top, OrderService#placeOrder's single transaction rolling back every extracted context automatically, with no compensating code written for it; on the bottom, each service keeping full local transactions inside its own database while cross-service atomicity and isolation are gone, replaced by an explicit compensating action a saga runs instead of a database rollback." caption="Figure 22.1 — What ACID gives up at the seam, and what a saga rebuilds" %}
+
 ## CAP, PACELC, and what "correctness" means now
 
 The reason this tradeoff is not a design mistake to be engineered around, but
