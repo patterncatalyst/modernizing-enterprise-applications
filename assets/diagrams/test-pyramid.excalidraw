@@ -4,7 +4,7 @@
  "source": "https://excalidraw.com",
  "elements": [
   {
-   "id": "r653292311",
+   "id": "r789109706",
    "type": "rectangle",
    "x": 320,
    "y": 120,
@@ -23,8 +23,8 @@
    "roundness": {
     "type": 3
    },
-   "seed": 39876153,
-   "versionNonce": 514812222,
+   "seed": 299204439,
+   "versionNonce": 730554230,
    "isDeleted": false,
    "boundElements": [],
    "updated": 1,
@@ -32,7 +32,7 @@
    "locked": false
   },
   {
-   "id": "t1558490588",
+   "id": "t531230083",
    "type": "text",
    "x": 330,
    "y": 128,
@@ -49,8 +49,8 @@
    "groupIds": [],
    "frameId": null,
    "roundness": null,
-   "seed": 502101610,
-   "versionNonce": 1256747759,
+   "seed": 1513957035,
+   "versionNonce": 1708066747,
    "isDeleted": false,
    "boundElements": [],
    "updated": 1,
@@ -67,7 +67,7 @@
    "baseline": 14
   },
   {
-   "id": "t1454545812",
+   "id": "t149807441",
    "type": "text",
    "x": 330,
    "y": 148,
@@ -84,8 +84,8 @@
    "groupIds": [],
    "frameId": null,
    "roundness": null,
-   "seed": 545600454,
-   "versionNonce": 733869947,
+   "seed": 762977205,
+   "versionNonce": 332217415,
    "isDeleted": false,
    "boundElements": [],
    "updated": 1,
@@ -102,7 +102,7 @@
    "baseline": 11
   },
   {
-   "id": "t363592524",
+   "id": "t1858940400",
    "type": "text",
    "x": 330,
    "y": 163,
@@ -119,8 +119,8 @@
    "groupIds": [],
    "frameId": null,
    "roundness": null,
-   "seed": 1320638396,
-   "versionNonce": 1009110541,
+   "seed": 83310937,
+   "versionNonce": 371457661,
    "isDeleted": false,
    "boundElements": [],
    "updated": 1,
@@ -137,7 +137,7 @@
    "baseline": 11
   },
   {
-   "id": "t1261363654",
+   "id": "t249821382",
    "type": "text",
    "x": 330,
    "y": 178,
@@ -154,8 +154,8 @@
    "groupIds": [],
    "frameId": null,
    "roundness": null,
-   "seed": 25414627,
-   "versionNonce": 1987602855,
+   "seed": 1787394896,
+   "versionNonce": 280762390,
    "isDeleted": false,
    "boundElements": [],
    "updated": 1,
@@ -172,7 +172,7 @@
    "baseline": 11
   },
   {
-   "id": "r1678052882",
+   "id": "r1928644672",
    "type": "rectangle",
    "x": 220,
    "y": 310,
@@ -191,8 +191,8 @@
    "roundness": {
     "type": 3
    },
-   "seed": 1591844501,
-   "versionNonce": 1485074325,
+   "seed": 867982370,
+   "versionNonce": 832976514,
    "isDeleted": false,
    "boundElements": [],
    "updated": 1,
@@ -200,7 +200,7 @@
    "locked": false
   },
   {
-   "id": "t878566423",
+   "id": "t1720266418",
    "type": "text",
    "x": 230,
    "y": 318,
@@ -217,8 +217,8 @@
    "groupIds": [],
    "frameId": null,
    "roundness": null,
-   "seed": 247863276,
-   "versionNonce": 1379317657,
+   "seed": 503569517,
+   "versionNonce": 1799113548,
    "isDeleted": false,
    "boundElements": [],
    "updated": 1,
@@ -235,7 +235,7 @@
    "baseline": 14
   },
   {
-   "id": "t586392456",
+   "id": "t618651198",
    "type": "text",
    "x": 230,
    "y": 338,
@@ -252,25 +252,25 @@
    "groupIds": [],
    "frameId": null,
    "roundness": null,
-   "seed": 276142703,
-   "versionNonce": 509700944,
+   "seed": 818968168,
+   "versionNonce": 1274222273,
    "isDeleted": false,
    "boundElements": [],
    "updated": 1,
    "link": null,
    "locked": false,
-   "text": "5 classes \u2014 one @WebMvcTest slice per REST controller",
+   "text": "6 classes \u2014 one @WebMvcTest slice per REST controller",
    "fontSize": 11,
    "fontFamily": 1,
    "textAlign": "left",
    "verticalAlign": "top",
    "containerId": null,
-   "originalText": "5 classes \u2014 one @WebMvcTest slice per REST controller",
+   "originalText": "6 classes \u2014 one @WebMvcTest slice per REST controller",
    "lineHeight": 1.25,
    "baseline": 11
   },
   {
-   "id": "t13230178",
+   "id": "t1248290648",
    "type": "text",
    "x": 230,
    "y": 353,
@@ -287,8 +287,8 @@
    "groupIds": [],
    "frameId": null,
    "roundness": null,
-   "seed": 855996095,
-   "versionNonce": 1330703354,
+   "seed": 1814093502,
+   "versionNonce": 237376601,
    "isDeleted": false,
    "boundElements": [],
    "updated": 1,
@@ -305,7 +305,7 @@
    "baseline": 11
   },
   {
-   "id": "t1338141009",
+   "id": "t1398004166",
    "type": "text",
    "x": 230,
    "y": 368,
@@ -322,8 +322,8 @@
    "groupIds": [],
    "frameId": null,
    "roundness": null,
-   "seed": 427578355,
-   "versionNonce": 1398833196,
+   "seed": 1649117127,
+   "versionNonce": 1217647719,
    "isDeleted": false,
    "boundElements": [],
    "updated": 1,
@@ -340,7 +340,7 @@
    "baseline": 11
   },
   {
-   "id": "r1421060341",
+   "id": "r1589705729",
    "type": "rectangle",
    "x": 110,
    "y": 500,
@@ -359,8 +359,8 @@
    "roundness": {
     "type": 3
    },
-   "seed": 661555952,
-   "versionNonce": 1090302711,
+   "seed": 899546179,
+   "versionNonce": 1194432650,
    "isDeleted": false,
    "boundElements": [],
    "updated": 1,
@@ -368,7 +368,7 @@
    "locked": false
   },
   {
-   "id": "t903758589",
+   "id": "t264990228",
    "type": "text",
    "x": 120,
    "y": 508,
@@ -385,8 +385,8 @@
    "groupIds": [],
    "frameId": null,
    "roundness": null,
-   "seed": 973782380,
-   "versionNonce": 1824212882,
+   "seed": 1518938536,
+   "versionNonce": 1794939228,
    "isDeleted": false,
    "boundElements": [],
    "updated": 1,
@@ -403,11 +403,11 @@
    "baseline": 14
   },
   {
-   "id": "t1973200455",
+   "id": "t1319304008",
    "type": "text",
    "x": 120,
    "y": 528,
-   "width": 423.50000000000006,
+   "width": 538.45,
    "height": 13.75,
    "angle": 0,
    "strokeColor": "#555555",
@@ -420,25 +420,25 @@
    "groupIds": [],
    "frameId": null,
    "roundness": null,
-   "seed": 1426490181,
-   "versionNonce": 1100739181,
+   "seed": 162497352,
+   "versionNonce": 1052428033,
    "isDeleted": false,
    "boundElements": [],
    "updated": 1,
    "link": null,
    "locked": false,
-   "text": "3 classes \u2014 InventoryServiceTest, OrderServiceTest, PaymentServiceTest",
+   "text": "4 classes \u2014 InventoryServiceTest, OrderServiceTest, PaymentServiceTest, ReviewServiceTest",
    "fontSize": 11,
    "fontFamily": 1,
    "textAlign": "left",
    "verticalAlign": "top",
    "containerId": null,
-   "originalText": "3 classes \u2014 InventoryServiceTest, OrderServiceTest, PaymentServiceTest",
+   "originalText": "4 classes \u2014 InventoryServiceTest, OrderServiceTest, PaymentServiceTest, ReviewServiceTest",
    "lineHeight": 1.25,
    "baseline": 11
   },
   {
-   "id": "t263819463",
+   "id": "t1298737748",
    "type": "text",
    "x": 120,
    "y": 543,
@@ -455,8 +455,8 @@
    "groupIds": [],
    "frameId": null,
    "roundness": null,
-   "seed": 1972360577,
-   "versionNonce": 731265421,
+   "seed": 1788107301,
+   "versionNonce": 969114616,
    "isDeleted": false,
    "boundElements": [],
    "updated": 1,
@@ -473,7 +473,7 @@
    "baseline": 11
   },
   {
-   "id": "t1191496688",
+   "id": "t219816309",
    "type": "text",
    "x": 120,
    "y": 558,
@@ -490,8 +490,8 @@
    "groupIds": [],
    "frameId": null,
    "roundness": null,
-   "seed": 1557867980,
-   "versionNonce": 279809684,
+   "seed": 1797254481,
+   "versionNonce": 466697856,
    "isDeleted": false,
    "boundElements": [],
    "updated": 1,
@@ -508,7 +508,7 @@
    "baseline": 11
   },
   {
-   "id": "a1583162954",
+   "id": "a455485925",
    "type": "arrow",
    "x": 600.0,
    "y": 270.0,
@@ -527,8 +527,8 @@
    "roundness": {
     "type": 2
    },
-   "seed": 1270156694,
-   "versionNonce": 554044114,
+   "seed": 10897982,
+   "versionNonce": 1390144336,
    "isDeleted": false,
    "boundElements": [],
    "updated": 1,
@@ -551,7 +551,7 @@
    "endArrowhead": "arrow"
   },
   {
-   "id": "a1210634689",
+   "id": "a179614303",
    "type": "arrow",
    "x": 600.0,
    "y": 460.0,
@@ -570,8 +570,8 @@
    "roundness": {
     "type": 2
    },
-   "seed": 1348341239,
-   "versionNonce": 1161328501,
+   "seed": 775041291,
+   "versionNonce": 581493643,
    "isDeleted": false,
    "boundElements": [],
    "updated": 1,
@@ -594,7 +594,7 @@
    "endArrowhead": "arrow"
   },
   {
-   "id": "t616467851",
+   "id": "t845380717",
    "type": "text",
    "x": 600.0,
    "y": 466.0,
@@ -611,8 +611,8 @@
    "groupIds": [],
    "frameId": null,
    "roundness": null,
-   "seed": 637505140,
-   "versionNonce": 580598203,
+   "seed": 1197324261,
+   "versionNonce": 886406255,
    "isDeleted": false,
    "boundElements": [],
    "updated": 1,
@@ -629,7 +629,7 @@
    "baseline": 11
   },
   {
-   "id": "t1504921644",
+   "id": "t1927517698",
    "type": "text",
    "x": 600.0,
    "y": 22,
@@ -646,8 +646,8 @@
    "groupIds": [],
    "frameId": null,
    "roundness": null,
-   "seed": 685737352,
-   "versionNonce": 379810867,
+   "seed": 1725738547,
+   "versionNonce": 830159490,
    "isDeleted": false,
    "boundElements": [],
    "updated": 1,
@@ -664,7 +664,7 @@
    "baseline": 17
   },
   {
-   "id": "t1927772557",
+   "id": "t568914415",
    "type": "text",
    "x": 600.0,
    "y": 46,
@@ -681,25 +681,25 @@
    "groupIds": [],
    "frameId": null,
    "roundness": null,
-   "seed": 1189581978,
-   "versionNonce": 72094335,
+   "seed": 1712329438,
+   "versionNonce": 1072056826,
    "isDeleted": false,
    "boundElements": [],
    "updated": 1,
    "link": null,
    "locked": false,
-   "text": "11 test classes, 34 @Test methods + 1 parameterized test (4 executions) = 38 executions, every one green",
+   "text": "13 test classes, 41 @Test methods + 1 parameterized test (4 executions) = 45 executions, every one green",
    "fontSize": 12,
    "fontFamily": 1,
    "textAlign": "left",
    "verticalAlign": "top",
    "containerId": null,
-   "originalText": "11 test classes, 34 @Test methods + 1 parameterized test (4 executions) = 38 executions, every one green",
+   "originalText": "13 test classes, 41 @Test methods + 1 parameterized test (4 executions) = 45 executions, every one green",
    "lineHeight": 1.25,
    "baseline": 12
   },
   {
-   "id": "t873181921",
+   "id": "t834330421",
    "type": "text",
    "x": 110,
    "y": 738,
@@ -716,8 +716,8 @@
    "groupIds": [],
    "frameId": null,
    "roundness": null,
-   "seed": 892579859,
-   "versionNonce": 781113413,
+   "seed": 1634279908,
+   "versionNonce": 78989722,
    "isDeleted": false,
    "boundElements": [],
    "updated": 1,
@@ -734,7 +734,7 @@
    "baseline": 10
   },
   {
-   "id": "t1515792062",
+   "id": "t1826940213",
    "type": "text",
    "x": 110,
    "y": 754,
@@ -751,8 +751,8 @@
    "groupIds": [],
    "frameId": null,
    "roundness": null,
-   "seed": 1279878086,
-   "versionNonce": 1880095527,
+   "seed": 18693700,
+   "versionNonce": 1921261895,
    "isDeleted": false,
    "boundElements": [],
    "updated": 1,

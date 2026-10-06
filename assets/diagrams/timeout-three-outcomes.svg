@@ -23,8 +23,8 @@
 <text x="850.0" y="505.5" font-size="13.5" font-weight="700" fill="#ffffff" text-anchor="middle">Outcome 3 — never returns</text>
 <text x="850.0" y="522.5" font-size="11.5" fill="#dddddd" text-anchor="middle">the outcome only a network call adds</text>
 <text x="850.0" y="537.5" font-size="11.5" fill="#dddddd" text-anchor="middle">nothing tells the caller which case this is</text>
-<rect x="1080" y="300" width="360" height="110" rx="9" fill="#ffffff" stroke="#999999" stroke-width="1.5" stroke-dasharray="6 4"/>
-<text x="1260.0" y="345.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Bounded here, today</text>
+<rect x="1080" y="300" width="360" height="110" rx="9" fill="#eaf4ec" stroke="#3d7a4e" stroke-width="2"/>
+<text x="1260.0" y="345.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Bounded here, live in the system</text>
 <text x="1260.0" y="362.5" font-size="11.5" fill="#555555" text-anchor="middle">the deadline fires first: outcome 3</text>
 <text x="1260.0" y="377.5" font-size="11.5" fill="#555555" text-anchor="middle">becomes outcome 2 before it can cascade</text>
 <rect x="700" y="620" width="300" height="100" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
@@ -44,7 +44,7 @@
 <path d="M607.1875,410.0 L722.8125,460.0" fill="none" stroke="#2f5f3d" stroke-width="2" marker-end="url(#am)"/>
 <text x="671.0" y="445.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">structural: can simply not come back</text>
 <text x="671.0" y="445.0" font-size="11" fill="#2f5f3d" text-anchor="middle">structural: can simply not come back</text>
-<path d="M990.9375,460.0 L1119.0625,410.0" fill="none" stroke="#555" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#a)"/>
+<path d="M990.9375,460.0 L1119.0625,410.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
 <text x="1061.0" y="429.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">inventory.grpc.timeout-ms bounds it here</text>
 <text x="1061.0" y="429.0" font-size="11" fill="#555" text-anchor="middle">inventory.grpc.timeout-ms bounds it here</text>
 <path d="M850.0,570.0 L850.0,620.0" fill="none" stroke="#2f5f3d" stroke-width="2" marker-end="url(#am)"/>
@@ -55,6 +55,6 @@
 <text x="1061.0" y="656.0" font-size="11" fill="#2f5f3d" text-anchor="middle">repeats under load</text>
 <text x="750.0" y="32" font-size="16" fill="#1d1d1d" text-anchor="middle" font-weight="700">ch.25 — a call across the gRPC boundary has a third outcome an in-JVM call never had</text>
 <text x="750.0" y="56" font-size="12" fill="#555555" text-anchor="middle">returns, throws, or never comes back — and the third outcome is where cascading failure starts</text>
-<text x="60" y="840" font-size="10.5" fill="#555555" text-anchor="start">This project&#x27;s deadline already closes off the cascade below — the chain is the risk a bare gRPC call carries, not an incident this book observed.</text>
-<text x="60" y="864" font-size="10" fill="#777777" text-anchor="start">Sourced from _docs/25-failure-modes-and-resilience.md (&quot;Timeouts and deadlines&quot;) and RemoteInventoryClient#reserve&#x27;s deadline and javadoc (examples/00-monolith/).</text>
+<text x="60" y="840" font-size="10.5" fill="#555555" text-anchor="start">This project&#x27;s deadline already closes off the cascade below, live on both gRPC callers — the chain is the risk a bare gRPC call carries, not an incident this book observed.</text>
+<text x="60" y="864" font-size="10" fill="#777777" text-anchor="start">Sourced from _docs/25-failure-modes-and-resilience.md (&quot;Timeouts and deadlines&quot;) and both RemoteInventoryClients&#x27; deadline and javadoc (examples/00-monolith/, examples/07-order-service/).</text>
 </svg>

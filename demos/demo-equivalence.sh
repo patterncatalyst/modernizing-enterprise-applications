@@ -12,6 +12,15 @@
 #   demos/demo-equivalence.sh                         # defaults to the monolith baseline (http://localhost:8080)
 #   demos/demo-equivalence.sh http://localhost:8080    # explicit monolith baseline
 #   demos/demo-equivalence.sh http://localhost:8081    # the extracted Review service, once it exists (S8+)
+#   demos/demo-equivalence.sh http://localhost:8888    # the FINISHED system, through the edge router
+#
+# NOTE on the default: the monolith is DECOMMISSIONED in the finished system, so
+# the :8080 default now points at a process a fresh checkout must bring up on
+# purpose (the frozen examples/00-monolith) — it remains valid only as the
+# golden-baseline referent the suite was captured from. For the finished system,
+# point this at the edge router: `demos/demo-equivalence.sh http://localhost:8888`
+# (and see demos/demo-final-topology.sh, which runs the full suite end-to-end
+# through :8888 with the saga + GraphQL gate variables enabled).
 #
 # Prerequisites: the target service must already be running and reachable at
 # --baseUrl, with its database migrated and seed data loaded. This script does

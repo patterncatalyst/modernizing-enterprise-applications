@@ -2,6 +2,12 @@
 # demo-payment-cutover.sh — demonstrate the Payment choreographed-saga
 # CUTOVER (payment-plan.md S8, ch.23, DRQ-047/049/054/055).
 #
+# NOTE: this reconstructs an INTERMEDIATE migration state and brings up the
+# frozen examples/00-monolith (:8080) to show the cutover and its reversibility
+# window against it. In the FINISHED system the monolith is decommissioned —
+# see demos/demo-final-topology.sh for the end-state (flagless edge router, no
+# monolith).
+#
 # Unlike demo-cutover.sh (Review, r02/S10), which assumes its services are
 # already running, THIS script brings up the whole topology itself, flips
 # both cutover flags, and runs the three proofs payment-plan.md S8 requires:

@@ -7,12 +7,12 @@
 <text x="600.0" y="225.0" font-size="11.5" fill="#555555" text-anchor="middle">proves: works against a real Postgres — slow, few by design</text>
 <rect x="220" y="310" width="760" height="150" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
 <text x="600.0" y="368.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Tier 2 — Slice (@WebMvcTest)</text>
-<text x="600.0" y="385.0" font-size="11.5" fill="#555555" text-anchor="middle">5 classes — one @WebMvcTest slice per REST controller</text>
+<text x="600.0" y="385.0" font-size="11.5" fill="#555555" text-anchor="middle">6 classes — one @WebMvcTest slice per REST controller</text>
 <text x="600.0" y="400.0" font-size="11.5" fill="#555555" text-anchor="middle">service layer mocked, only the web MVC stack boots</text>
 <text x="600.0" y="415.0" font-size="11.5" fill="#555555" text-anchor="middle">proves: does this controller bind, validate, and serialize correctly</text>
 <rect x="110" y="500" width="980" height="150" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
 <text x="600.0" y="558.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Tier 1 — Unit (Mockito)</text>
-<text x="600.0" y="575.0" font-size="11.5" fill="#555555" text-anchor="middle">3 classes — InventoryServiceTest, OrderServiceTest, PaymentServiceTest</text>
+<text x="600.0" y="575.0" font-size="11.5" fill="#555555" text-anchor="middle">4 classes — InventoryServiceTest, OrderServiceTest, PaymentServiceTest, ReviewServiceTest</text>
 <text x="600.0" y="590.0" font-size="11.5" fill="#555555" text-anchor="middle">no Spring context, no database, no network — every collaborator mocked</text>
 <text x="600.0" y="605.0" font-size="11.5" fill="#555555" text-anchor="middle">proves: does this one class&#x27;s logic do the right thing</text>
 <path d="M600.0,270.0 L600.0,310.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
@@ -20,7 +20,7 @@
 <text x="606.0" y="474.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">one `mvn verify` run exercises all three tiers</text>
 <text x="606.0" y="474.0" font-size="11" fill="#2f5f3d" text-anchor="middle">one `mvn verify` run exercises all three tiers</text>
 <text x="600.0" y="32" font-size="17" fill="#1d1d1d" text-anchor="middle" font-weight="700">ch.10 — the monolith&#x27;s test pyramid: three tiers, one `mvn verify`</text>
-<text x="600.0" y="56" font-size="12" fill="#555555" text-anchor="middle">11 test classes, 34 @Test methods + 1 parameterized test (4 executions) = 38 executions, every one green</text>
+<text x="600.0" y="56" font-size="12" fill="#555555" text-anchor="middle">13 test classes, 41 @Test methods + 1 parameterized test (4 executions) = 45 executions, every one green</text>
 <text x="110" y="748" font-size="10" fill="#777777" text-anchor="start">Sourced from _docs/10-testing-the-monolith.md (&quot;Three tiers, one mvn verify&quot;; Tier 1/2/3 sections).</text>
 <text x="110" y="764" font-size="10" fill="#777777" text-anchor="start">Class and method counts quoted verbatim from the chapter; tests live in examples/00-monolith/src/test/.</text>
 </svg>
