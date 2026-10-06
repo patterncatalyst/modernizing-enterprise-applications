@@ -23,44 +23,6 @@ spring:
     enabled: true
     locations: classpath:db/migration
     baseline-on-migrate: false
-  # Kafka coordinates for the outbox relay's producer (ch.17, r04/S3,
-  # common/outbox/OutboxRelay). Bootstrap defaults to the podman-stack
-  # broker's host listener (compose.yaml, localhost:9092) and is overridable
-  # via the standard Spring Boot env var SPRING_KAFKA_BOOTSTRAP_SERVERS —
-  # never hard-coded beyond this default.
-  kafka:
-    bootstrap-servers: localhost:9092
-    producer:
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.apache.kafka.common.serialization.StringSerializer
-    # ch.23 (r06/S6, H4; r06/S9 DECOMMISSION): the monolith's FIRST Kafka
-    # CONSUMER config — order.OrderSagaListener reacts to
-    # payment.captured/payment.declined (see Topics.java) to confirm+ship or
-    # decline+compensate. String deserializers are used deliberately (same
-    # as the outbox relay's producer): the listener deserializes the JSON
-    # payload itself via the injected ObjectMapper, matching the plain-JSON
-    # wire contract (DRQ-038). The payment.mode=synchronous|choreographed
-    # reversibility flag that once gated whether this listener's reactions
-    # were ever actually exercised has been removed (S9) — choreographed is
-    # now the only checkout path, so this consumer is always genuinely live.
-    #
-    # ch.24 (r07/S6, H3/H4; r07/S9 DECOMMISSION): OrderSagaListener also
-    # reacts to shipment.dispatched/shipment.failed (Topics.java), to
-    # confirm or fail+compensate. The shipping.mode=inprocess|orchestrated
-    # reversibility flag that once gated these reactions has been removed
-    # (S9) — orchestrated is now the only shipping path, so these reactions
-    # are always genuinely live too. Same consumer group
-    # (monolith-order-saga) and same String-deserializer shape as the
-    # payment reactions above — the shipping service consumes
-    # payment.captured independently, under ITS OWN consumer group (see
-    # examples/06-shipping-service), so the monolith's order-saga reaction
-    # and the shipping service's saga trigger are two unrelated consumers of
-    # one topic, not a hand-off.
-    consumer:
-      group-id: monolith-order-saga
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      auto-offset-reset: earliest
 
 server:
   port: 8080
@@ -71,55 +33,24 @@ springdoc:
   swagger-ui:
     path: /swagger-ui.html
 
-# ch.17 (r04/S8): the outbox relay's own tuning. notification.mode (the
-# synchronous|outbox reversibility flag used during the extraction) has been
-# removed — placeOrder now always writes the outbox row; see
-# OrderService#placeOrder and common/outbox/OutboxRelay.
-outbox:
-  relay:
-    poll-interval-ms: 2000
-
-# r05/ch.19 S11 (DECOMMISSION): the inventory.mode=local|remote reversibility
-# flag (DRQ-045) introduced for the S7 cutover has been removed along with
-# the monolith's local in-JVM inventory module (InventoryController/
-# InventoryService/InventoryItem/InventoryRepository, SMELL #5 — now CURED,
-# see SMELLS.md). OrderService#placeOrder's checkout reserve/release ALWAYS
-# routes through RemoteInventoryClient's gRPC stub to the extracted
-# inventory service (examples/04-inventory-service, :9004), with a
-# compensating Release on any PRE-HANDOFF checkout failure (a later line out
-# of stock, or the order save/outbox write itself throwing, DRQ-042) --
-# post-handoff payment-decline compensation is a separate reaction, see
-# order.OrderSagaListener (DRQ-049). Overridable via the standard Spring Boot env vars
-# INVENTORY_GRPC_HOST/INVENTORY_GRPC_PORT/INVENTORY_GRPC_TIMEOUT_MS, never
-# hard-coded beyond these defaults.
-inventory:
-  grpc:
-    host: ${INVENTORY_GRPC_HOST:localhost}
-    port: ${INVENTORY_GRPC_PORT:9004}
-    timeout-ms: ${INVENTORY_GRPC_TIMEOUT_MS:5000}
-
-# r06/ch.23 S9 (DECOMMISSION): the payment.mode=synchronous|choreographed
-# reversibility flag introduced for the S6 cutover has been removed along
-# with the monolith's in-process payment module (payment.PaymentController/
-# PaymentService/Payment/PaymentRepository, SMELL[ch.22] -- now CURED for
-# payment, see SMELLS.md). OrderService#placeOrder ALWAYS persists the order
-# PENDING and hands it off via the order.placed outbox event; there is no
-# more in-line charge to fall back to. The payment service
-# (examples/05-payment-service, :8085) is the sole owner of payment capture,
-# reached exclusively over the choreographed saga.
-
-# r07/ch.24 S9 (DECOMMISSION): the shipping.mode=inprocess|orchestrated
-# reversibility flag introduced for the S6 cutover has been removed along
-# with the monolith's in-process shipping module (shipping.ShippingController/
-# ShippingService/Shipment/ShipmentStatus/ShipmentDto/ShipmentRepository, now
-# deleted; SMELL[ch.22] -- now CURED for shipping too, see SMELLS.md).
-# OrderSagaListener#onPaymentCaptured ALWAYS transitions the order PENDING ->
-# AWAITING_SHIPMENT and never dispatches in-process; the shipping service
-# (examples/06-shipping-service, :8088) is the sole owner of fulfilment,
-# reached exclusively via its Camel Saga EIP coordinator reacting to
-# payment.captured and emitting shipment.dispatched/shipment.failed, which
-# OrderSagaListener's onShipmentDispatched/onShipmentFailed reactions (above)
-# drive to the order's terminal state.
+# order-plan.md S10 (DRQ-070, the FINAL decommission): all config below this
+# point describes machinery that has now been deleted from this module.
+# Removed entirely (rather than left as inert properties, since Spring Boot
+# would no longer recognize them without the dependencies that back them --
+# see pom.xml):
+#   - spring.kafka.* (bootstrap-servers, producer, consumer) -- the ONLY
+#     producer (common/outbox/OutboxRelay's KafkaTemplate, ch.17 r04/S3) and
+#     the ONLY consumer (order.OrderSagaListener's @KafkaListener reactions
+#     to payment.captured/declined and shipment.dispatched/failed, ch.23/24)
+#     are both deleted along with order/* and common/outbox/*.
+#   - outbox.relay.poll-interval-ms -- OutboxRelay itself is deleted.
+#   - inventory.grpc.host/port/timeout-ms -- RemoteInventoryClient (the gRPC
+#     client these coordinates configured) is deleted.
+# Prior decommissions (r06/ch.23 S9 payment, r07/ch.24 S9 shipping) had
+# already removed their own mode=... reversibility flags from this file the
+# same way; this is that same treatment applied, for the last time, to the
+# order context's own machinery. See SMELLS.md (#2/#3 now fully cured) and
+# MonolithApplication's javadoc for the full decommission history.
 
 logging:
   level:

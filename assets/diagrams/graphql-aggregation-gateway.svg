@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1650 820" font-family="'Red Hat Text', system-ui, sans-serif" role="img">
+<defs><marker id="a" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#555"/></marker><marker id="am" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2f5f3d"/></marker></defs>
+<rect x="40" y="340" width="220" height="110" rx="9" fill="#eef4fb" stroke="#2f6db5" stroke-width="2"/>
+<text x="150.0" y="385.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Client</text>
+<text x="150.0" y="402.5" font-size="11.5" fill="#555555" text-anchor="middle">GraphQL query</text>
+<text x="150.0" y="417.5" font-size="11.5" fill="#555555" text-anchor="middle">order(id)</text>
+<rect x="320" y="300" width="300" height="190" rx="9" fill="#111111" stroke="#111111" stroke-width="2"/>
+<text x="470.0" y="385.5" font-size="13.5" font-weight="700" fill="#ffffff" text-anchor="middle">GraphQL gateway :8090</text>
+<text x="470.0" y="402.5" font-size="11.5" fill="#dddddd" text-anchor="middle">GatewayApi — @Query + @Source resolvers</text>
+<text x="470.0" y="417.5" font-size="11.5" fill="#dddddd" text-anchor="middle">owns NO data — pure stitching layer</text>
+<rect x="320" y="520" width="300" height="110" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
+<text x="470.0" y="565.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">OrderView response</text>
+<text x="470.0" y="582.5" font-size="11.5" fill="#555555" text-anchor="middle">order + payments[] + shipments[]</text>
+<text x="470.0" y="597.5" font-size="11.5" fill="#555555" text-anchor="middle">+ items[].stock + items[].reviews[]</text>
+<rect x="760" y="40" width="320" height="100" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
+<text x="920.0" y="80.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Order service</text>
+<text x="920.0" y="97.5" font-size="11.5" fill="#555555" text-anchor="middle">:8087 — REST</text>
+<text x="920.0" y="112.5" font-size="11.5" fill="#555555" text-anchor="middle">GET /api/orders/{id}</text>
+<rect x="760" y="160" width="320" height="100" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
+<text x="920.0" y="200.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Payment service</text>
+<text x="920.0" y="217.5" font-size="11.5" fill="#555555" text-anchor="middle">:8085 — REST</text>
+<text x="920.0" y="232.5" font-size="11.5" fill="#555555" text-anchor="middle">GET /payments?orderId=</text>
+<rect x="760" y="280" width="320" height="100" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
+<text x="920.0" y="320.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Shipping service</text>
+<text x="920.0" y="337.5" font-size="11.5" fill="#555555" text-anchor="middle">:8088 — REST</text>
+<text x="920.0" y="352.5" font-size="11.5" fill="#555555" text-anchor="middle">GET /shipments?orderId=</text>
+<rect x="760" y="400" width="320" height="100" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
+<text x="920.0" y="440.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Review service</text>
+<text x="920.0" y="457.5" font-size="11.5" fill="#555555" text-anchor="middle">:8081 — REST, per item sku</text>
+<text x="920.0" y="472.5" font-size="11.5" fill="#555555" text-anchor="middle">GET /reviews?sku=</text>
+<rect x="760" y="520" width="320" height="100" rx="9" fill="#eaf4ec" stroke="#3d7a4e" stroke-width="2"/>
+<text x="920.0" y="560.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Inventory service</text>
+<text x="920.0" y="577.5" font-size="11.5" fill="#555555" text-anchor="middle">:9004 — gRPC, per item sku</text>
+<text x="920.0" y="592.5" font-size="11.5" fill="#555555" text-anchor="middle">GetStock(sku)</text>
+<path d="M260.0,395.0 L320.0,395.0" fill="none" stroke="#555" stroke-width="2" marker-start="url(#a)" marker-end="url(#a)"/>
+<text x="296.0" y="389.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">query order(id) / OrderView response</text>
+<text x="296.0" y="389.0" font-size="11" fill="#555" text-anchor="middle">query order(id) / OrderView response</text>
+<path d="M610.1639344262295,300.0 L846.2295081967213,140.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<text x="734.1967213114754" y="214.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">REST — resolves the order itself</text>
+<text x="734.1967213114754" y="214.0" font-size="11" fill="#555" text-anchor="middle">REST — resolves the order itself</text>
+<path d="M620.0,333.3333333333333 L798.3783783783783,260.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<text x="715.1891891891892" y="290.66666666666663" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">REST — payments field</text>
+<text x="715.1891891891892" y="290.66666666666663" font-size="11" fill="#555" text-anchor="middle">REST — payments field</text>
+<path d="M620.0,373.3333333333333 L760.0,353.1111111111111" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<text x="696.0" y="357.2222222222222" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">REST — shipments field</text>
+<text x="696.0" y="357.2222222222222" font-size="11" fill="#555" text-anchor="middle">REST — shipments field</text>
+<path d="M620.0,413.3333333333333 L760.0,430.44444444444446" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<text x="696.0" y="415.8888888888889" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">REST — items[].reviews field</text>
+<text x="696.0" y="415.8888888888889" font-size="11" fill="#555" text-anchor="middle">REST — items[].reviews field</text>
+<path d="M620.0,453.3333333333333 L791.4285714285714,520.0" fill="none" stroke="#2f5f3d" stroke-width="2" marker-end="url(#am)"/>
+<text x="711.7142857142858" y="480.66666666666663" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">gRPC — items[].stock field</text>
+<text x="711.7142857142858" y="480.66666666666663" font-size="11" fill="#2f5f3d" text-anchor="middle">gRPC — items[].stock field</text>
+<path d="M470.0,490.0 L470.0,520.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<text x="476.0" y="499.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">assembles one response</text>
+<text x="476.0" y="499.0" font-size="11" fill="#555" text-anchor="middle">assembles one response</text>
+<text x="825.0" y="32" font-size="17" fill="#1d1d1d" text-anchor="middle" font-weight="700">ch.26 — the GraphQL aggregation gateway: one order(id) query fans out to five owning services</text>
+<text x="1080" y="660" font-size="11" fill="#2f5f3d" text-anchor="middle" font-weight="700">four fields resolve over REST; stock is the ONE field resolved over gRPC — the gateway never mixes</text>
+<text x="1080" y="676" font-size="11" fill="#2f5f3d" text-anchor="middle" font-weight="700">protocols inside a single field, and never caches or denormalizes what it fetches</text>
+<text x="40" y="800" font-size="10.5" fill="#555555" text-anchor="start">Sourced from examples/08-graphql-gateway/.../{GatewayApi,OrderRestClient,PaymentRestClient,ShipmentRestClient,ReviewRestClient}.java and _plans/iterations/order-plan.md (S7, DRQ-069).</text>
+</svg>

@@ -21,9 +21,9 @@ that turns Chapter 13's ranking into a plan: why this particular coupling is
 the hardest one in the book to break, what database-per-service actually buys
 and actually costs, the concrete moves that get a foreign key out of a shared
 schema and into two owned ones, and the two services already sitting in this
-repository that embody the two different stages of that journey — one still
+repository that embody two different stages of that process — one still
 deferring it, one that never had to make the mistake in the first place.
-Chapter 19 runs the technique for real, against Inventory, with CDC doing the
+Chapter 19 runs the technique against Inventory, with CDC doing the
 heavy lifting this chapter only describes.
 
 ## Why shared-database coupling is the hardest coupling to break
@@ -113,8 +113,8 @@ writes needs. Those benefits are real, and the decomposition roadmap in
 `build-plan.md` Section E is built to win them one context at a time.
 
 What that same sales pitch tends to leave out is the full size of what gets
-given up to get there, and naming it plainly is this chapter's job before
-Chapter 19 goes and pays the cost for real.
+given up to get there. This chapter covers that cost before Chapter 19
+pays it.
 
 **Cross-table joins become API calls or replicated read models.**
 `OrderItem`'s `@ManyToOne` into `InventoryItem` today is a single SQL join,
@@ -145,7 +145,7 @@ once and keeps its own copy, or calls back to ask, accepting that the answer
 might be stale by the time it arrives. Chapter 22's ACID→ACD argument is this
 exact trade, generalized from referential integrity to transactions as a
 whole: the database no longer gives you certain states cannot exist, and the
-system has to be designed, deliberately, to tolerate the states it no longer
+system has to be designed to tolerate the states it no longer
 prevents.
 
 **What is bought in exchange is autonomy** — the ability for one team to
@@ -154,7 +154,7 @@ cross-context migration meeting, a shared maintenance window, or a shared
 on-call rotation standing in the way. That autonomy is the entire argument
 for paying the first two costs, and it is only a good trade when the
 business actually needs it: independent scaling because one context's load
-profile is genuinely different from its neighbors', independent deployment
+profile differs from its neighbors', independent deployment
 cadence because one team ships faster than the others, or independent
 ownership because two different teams, not one, are responsible for the code.
 Chapter 13 already made this point about services in general — "microservices
@@ -237,7 +237,7 @@ guarantee that `inventory_items.id` must exist for the row to be valid —
 disappears entirely. Nothing left in `order`'s schema can tell you what
 inventory's *current* stock level, price, or name is; order no longer needs
 to know, because it already captured the facts it actually cares about at the
-one moment they mattered. For the facts order genuinely does need live — can
+one moment they mattered. For the facts order does need live — can
 this SKU still be reserved, right now, at checkout time — the decomposition
 roadmap's answer is a synchronous call across the seam (`quarkus-grpc` for
 inventory, per `build-plan.md` Section E), not a stale local copy, because a
@@ -317,9 +317,9 @@ data-across-the-seam chapters (ch.18/19), not this step." `Customer.java`'s
 own javadoc explains exactly why that deferral is safe rather than
 embarrassing: dropping the `reviews` table from the shared schema today
 "would break the very service r02/S10 just cut over to." The service boundary
-and the data boundary are separable decisions, and Review's extraction
-deliberately separated them — a scoping choice, made on purpose, revisited
-here rather than quietly left unexplained.
+and the data boundary are separable decisions. Review's extraction
+deliberately separated them, scoping the service cut now and leaving the
+schema split for Chapter 19 rather than leaving the deferral unexplained.
 
 `examples/03-notification-service` made the opposite choice from the day its
 first migration ran, and its own `V1__create_notifications_table.sql`
@@ -348,14 +348,14 @@ was the only design that avoided a split-brain by construction rather than
 by hoping nobody raced it in practice. `Customer.java`'s own javadoc records
 the aftermath precisely: the monolith's `notifications` table "is deliberately
 kept in this shared schema, now write-only history that nothing in this
-module reads or writes anymore," orphaned on purpose, with no runtime
+module reads or writes anymore," now orphaned, with no runtime
 dependency left on it at all — a cleaner ending than review's, because
 notification never had a live reader left behind to protect.
 
-Two services, two genuinely different starting constraints, two different
+Two services, two different starting constraints, two different
 answers — and the contrast is the whole argument this chapter has been
 building in prose, made concrete: own your data from day one when a second
-writer is coming, and it is safe to defer only when you can state, plainly,
+writer is coming, and it is safe to defer only when you can state
 why deferring doesn't yet create one.
 
 ## Planning the split: what Chapter 19 actually has to do
@@ -388,7 +388,7 @@ extraction through Chapter 17 kept the suite's job simple, because
 another, with both backends still reading from — or, worse, coincidentally
 agreeing despite — the same underlying rows, which is precisely the false-
 equivalence trap Chapter 7 and Chapter 17 both had to defeat. A decomposed
-database raises the stakes on that same trap: once inventory's data genuinely
+database raises the stakes on that same trap: once inventory's data
 lives in two places, a green run has to prove the *new* database is the one
 actually answering, not that it happens to agree with a shared table it
 never touched. Chapter 19 extends the negative-check discipline Chapter 17
@@ -414,7 +414,7 @@ decomposed data tier rather than merely optimistic about it.
   replace a live FK with either a point-in-time snapshot of the fields this
   context actually needs (order's SKU/name/price, following the same
   discipline `unitPriceCents` already uses) or an explicit call across a
-  published contract when the data genuinely has to be current, never a
+  published contract when the data has to be current live, never a
   silent default to whichever behavior the shared schema happened to make
   easiest.
 - Data duplication across owned schemas is a deliberate choice, not a lapse
@@ -422,14 +422,14 @@ decomposed data tier rather than merely optimistic about it.
   copy is the same idea, and the real design question is what keeps each
   copy's staleness bounded and acceptable, which is what CDC, outboxes, and
   CQRS read models each answer in their own way.
-- `examples/02-review-service` (shared schema, deferred on purpose, safe
+- `examples/02-review-service` (shared schema, deferred by design, safe
   because it has one writer at a time) and `examples/03-notification-service`
   (owned schema from day one, necessary because a second writer was coming)
   are the same decision made correctly under two different constraints — the
   clearest evidence in this repository for when deferring data ownership is
   defensible and when it isn't.
 
-Chapter 19 picks this plan up and runs it for real against Inventory: a CDC
+Chapter 19 picks this plan up and runs it against Inventory: a CDC
 connector tailing the monolith's write-ahead log, a backfill into a database
 inventory actually owns, a synchronous gRPC seam for the facts order needs
 live, and an equivalence gate taught to prove the new database is the one

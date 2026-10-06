@@ -8,17 +8,17 @@ duration: 35 minutes
 
 Chapter 19 took the smallest possible bite out of saga compensation: one
 reservation, one compensating `Release`, fired from an in-line `catch` block
-on the same request thread that discovered the failure. That was deliberately
-minimal, and its own javadoc said so. This chapter removes the request thread
+on the same request thread that discovered the failure. That was a narrow
+scope, documented in its own javadoc. This chapter removes the request thread
 entirely. Once payment is captured by a process the checkout call never waits
 for, there is no `catch` left to put the compensation in — the decline has to
 travel as an event, land on a different service's consumer, and trigger a
 release of stock from across two network hops, with nothing synchronous
 holding the two sides together. Chapter 22 named the realization this chapter
 cashes in: the monolith's one in-process `@Transactional` used to buy
-checkout's cross-context consistency for free, and once payment moves out of
-that transaction, "free" is gone. Everything below is real, running code
-already committed to this repository: `examples/05-payment-service/` (the
+checkout's cross-context consistency as a side effect, and once payment moves
+out of that transaction, that side effect is gone. Everything below is
+running code already committed to this repository: `examples/05-payment-service/` (the
 Quarkus choreographed-saga participant, its own schema, its own transactional
 outbox), `examples/00-monolith/` (`OrderService#placeOrder`'s current
 asynchronous form and `OrderSagaListener`, the monolith's first Kafka
@@ -70,7 +70,7 @@ pick up.
 
 That entry is worth reading slowly, because the qualification in its last
 sentence is the actual lesson, not a hedge. **ACD** — atomic, consistent,
-durable, with isolation dropped from the acronym on purpose — names a saga's
+durable, with isolation dropped from the acronym — names a saga's
 real ceiling: each local step is still atomic and durable in its own
 database, the aggregate still ends up consistent once the saga completes or
 compensates, but there is no isolation spanning the whole sequence the way a
@@ -85,11 +85,10 @@ and it is also exactly as far as this one extraction's smell closure goes.
 Shipping and order still live inside the smell Chapter 22 named; this chapter
 only closes the payment slice of it.
 
-## Choreography, not orchestration — and the contrast ch.24 deliberately makes
+## Choreography, not orchestration — and the contrast with Chapter 24
 
-Before the mechanics, the control-style choice this chapter makes deserves to
-be named plainly, because Chapter 24 is going to make the opposite one on
-purpose. A **saga** is a sequence of local transactions coordinated across
+Before the mechanics: this chapter chooses one control style, and Chapter 24
+chooses the opposite one. A **saga** is a sequence of local transactions coordinated across
 services, each with a compensating action for when a later step fails. There
 are two ways to run one. In an **orchestrated** saga, a central coordinator
 holds the sequence — it calls step one, waits for the result, decides whether
@@ -107,13 +106,13 @@ let alone what that service decides. The payment service reacts to
 `OrderSagaListener` is about to confirm an order or issue a compensating
 `Release` because of what it just published. Nobody holds the whole sequence
 in one place; it only exists as an emergent property of three independent
-reactions wired together by topic names. That is a deliberate choice, not the
-only available one, and its tradeoffs are real: choreography scales cleanly
+reactions wired together by topic names. This design has real tradeoffs:
+choreography scales cleanly
 as participants are added (a fourth reactor to `payment.captured` needs no
 change to the first three), but the overall sequence is nowhere written
 down in code — a reader has to reconstruct it by tracing event names across
 services, exactly the exercise this chapter's diagrams exist to shortcut.
-Chapter 24's shipping extraction is the deliberate foil: it coordinates a
+Chapter 24's shipping extraction is the foil: it coordinates a
 comparable multi-step sequence through Camel's **Saga EIP**, an explicit
 in-process orchestrator that knows the steps and their compensations by
 name. Reading the two chapters back to back is the point — the same
@@ -129,7 +128,7 @@ extraction in this book has made so far. Every prior extraction kept
 written — and moved everything else around it. Payment's extraction cannot
 keep that promise, because the fact the response used to report — did the
 charge succeed — is no longer known at response time. `OrderController`'s own
-javadoc states the new contract plainly:
+javadoc states the new contract:
 
 ```java
 // examples/00-monolith/.../order/OrderController.java
@@ -264,14 +263,13 @@ void publishUnpublishedEvents() {
 
 That relay blocks on the broker's acknowledgment before stamping
 `publishedAt` — the identical at-least-once shape Chapter 17's relay uses,
-quoted here deliberately so the pattern reads as *reused engineering*, not a
-one-off invention for this service. The monolith's side of the topology
-needed something genuinely new, though: until this chapter, the monolith only
+reused rather than reinvented for this service. The monolith's side of the
+topology needed something new, though: until this chapter, the monolith only
 ever *produced* to Kafka (the `order.placed` outbox relay). `OrderSagaListener`
 is its first Kafka **consumer**, and its own class javadoc names that
-milestone directly — a detail worth noticing, because "the monolith only
-talks to Kafka one direction" was a standing architectural fact for five
-chapters, and this is the chapter where it stops being true.
+milestone directly: "the monolith only talks to Kafka one direction" was a
+standing architectural fact for five chapters, and this is the chapter where
+it stops being true.
 
 ## Compensation via choreography: the catch block retires for this path
 
@@ -391,7 +389,7 @@ how many times the event that triggers it arrives.
 
 DRQ-055 is the decision Chapter 17's bounded-wait idiom (DRQ-037) had to be
 extended to cover, and the stakes are higher here than they were for
-notification, because this suite's two load-bearing payment assertions —
+notification, because this suite's two critical payment assertions —
 Scenario 1's happy path, Scenario 3's decline — are exactly the reason this
 chapter exists. A suite that weakened either one to pass would make Scenario
 3 prove nothing. The approach is the same shape Chapter 17 taught, applied to
@@ -435,13 +433,12 @@ failed, isolated precisely to the net-zero inventory check while the decline
 status assertion still passed, proving the failure was the missing
 compensation and nothing else. The edit was reverted and the full suite
 returned to **99/99** green before the job was trusted. A cutover run also
-turned up a real gap rather than a success to report quietly: the first
-pass through this chapter's acceptance criteria found that the Newman
-collection had no "Payment Context Contract" folder yet, and that an
-unrelated Notification folder's own checkout step still asserted the retired
-synchronous `201`/`CONFIRMED` contract directly. Both were closed in a
-follow-up step before decommission, not silently worked around, and both
-now run as part of the same unedited collection every later run exercises.
+found a gap: the first pass through this chapter's acceptance criteria found
+that the Newman collection had no "Payment Context Contract" folder yet, and
+that an unrelated Notification folder's own checkout step still asserted the
+retired synchronous `201`/`CONFIRMED` contract directly. Both were closed in
+a follow-up step before decommission, and both now run as part of the same
+unedited collection every later run exercises.
 
 > **ADLC in Action** — This extraction ran the identical Frame → Map → Plan →
 > Generate → Verify → Operate → Reconcile loop Chapter 19 demonstrated for
@@ -482,9 +479,9 @@ now run as part of the same unedited collection every later run exercises.
   sequence it's part of, only the event it reacts to and the event it emits;
   Chapter 24's orchestrated shipping saga is the deliberate contrast, not an
   alternative implementation of the same design.
-- **`202 Accepted` is the status code this contract change actually needs** —
+- **`202 Accepted` is the status code this contract change needs** —
   a `201` whose state can still silently change afterward claims more at
-  response time than the system actually knows, and the order resource stays
+  response time than the system knows, and the order resource stays
   synchronously created and pollable either way.
 - **Compensation that used to live in a catch block has to become a reaction**
   once there is no request thread left connecting the original failure to its
@@ -497,7 +494,7 @@ now run as part of the same unedited collection every later run exercises.
   the compensating `Release` to firing at most once per order.
 - **A negative check is still the only proof a bounded-wait assertion is
   testing the real pipeline** — this chapter's suite went red on a dead
-  consumer and red on a deliberately disabled compensation, in both cases for
+  consumer and red on a disabled compensation, in both cases for
   the specific reason expected and nothing else, before it was trusted green.
 
 Chapter 24 picks up the coordination problem this chapter introduced and
@@ -533,7 +530,7 @@ capture/decline/idempotent-redelivery round-trip tests (`PaymentServiceTest`,
 with the payment consumer killed (RED, 1/23, order stuck `PENDING`; restarted,
 GREEN, 20/20); Dev Services-backed `PaymentResourceTest`/`PaymentServiceTest`
 runs under `./mvnw -q test`; and the `payment-equivalence-gate` CI job's
-local red-then-green proof — **108/108** green baseline, a deliberately
+local red-then-green proof — **108/108** green baseline, a
 disabled compensation loop driving Scenario 3 to **RED (1/22 failed)**
 isolated to the net-zero inventory assertion, and **99/99** green again after
 the revert, plus a cheap re-confirmation of the consumer-down negative check

@@ -609,6 +609,290 @@ payment (ch.23) and shipping (ch.24), ready to build on without re-deriving:
   (contracts/registry); LRA durability may also be revisited in ch.25
   (resilience, not yet started).
 
+## ch.26 — Order Service + GraphQL Gateway (r08, extraction 6 of 6 — the last/hardest extraction) — CQRS + strangler completes
+
+Code CI is confirmed GREEN on the fully-extracted, monolith-free system: **all
+six gates** (`equivalence-gate`, `notification-equivalence-gate`,
+`inventory-equivalence-gate`, `payment-equivalence-gate`,
+`shipping-equivalence-gate`, `order-gateway-contract-gate`) pass on commit
+`58877da` (run `37411600999`). Every Opus gate in this run (S2, S4, S5, S6,
+S7, S9, S10, S11, S14, plus the GG-a, reviews-schema-CI, and seed-collision
+fixes below) returned GO.
+
+### Datamesh order-service + graphql-gateway adaptation (DRQ-032)
+
+Source: `~/Dev/datamesh-reference-arch-quarkus/examples/order-service`
+(`Order.java`/`OrderResource.java`/`OrderEventProducer.java`/
+`InventoryClient.java`) and `~/Dev/datamesh-reference-arch-quarkus/examples/
+graphql-gateway` (`GatewayApi.java`/`OrderView.java`/`StockView.java`/
+`OrderRestClient.java`), cross-referenced against `decisions.md`'s version
+matrix rows for both services.
+
+**Reused as-is (shape):**
+- The idiomatic Quarkus order service owning its own Postgres schema, a REST
+  read surface, and a Kafka event producer — mirrored by
+  `examples/07-order-service` (own `order_service` schema, `OrderController`/
+  `OrderService`, `OrderOutboxEvent`/`OrderOutboxRelay` as the `order.placed`
+  producer).
+- The order-service-calls-inventory-over-gRPC collaborator shape
+  (`InventoryClient`) — mirrored exactly by the lifted `RemoteInventoryClient`
+  moving with the order context (DRQ-066), unmodified in shape.
+- The data-less aggregation-gateway shape (`GatewayApi` stitching `OrderView`
+  + `StockView` by calling the order service over REST and inventory over
+  gRPC, no gateway-owned data) — mirrored by `examples/08-graphql-gateway`'s
+  `@GraphQLApi`/`@Query`/`@Source` field resolvers, widened from
+  order+stock to order+payments+shipments+reviews+stock (DRQ-069).
+
+**Named divergence — the deliberate reshape (CQRS write/read split + the
+lifted saga/outbox machinery + the widened aggregation), each traced to an
+accepted DRQ, not unexplained drift:**
+- **CQRS, not a single read/write model.** Datamesh's `order-service` has one
+  `Order` entity serving both command and query. This project splits it into
+  a normalized write-model `Order` aggregate and a separate denormalized
+  `order_view` read model projected from the lifecycle events, with reads
+  served exclusively from the projection (DRQ-067) — net-new machinery with
+  no datamesh precedent, because datamesh's capstone slice never needed to
+  teach CQRS.
+- **Four lifted saga reactions, not a stateless event producer.** Datamesh's
+  `OrderEventProducer` only emits; it has no reactions to *consume* siblings'
+  events. This project lifts the monolith's `OrderSagaListener` (four
+  `@Incoming` consumers for `payment.captured`/`payment.declined`/
+  `shipment.dispatched`/`shipment.failed`) into the order service unmodified
+  in shape (DRQ-074) — the hub the other five extractions were careful to
+  leave standing (SMELL #2), with no datamesh equivalent.
+- **Own transactional outbox, not a direct `@Outgoing`.** Same divergence as
+  payment/shipping's (DRQ-038 Avro deferred to ch.28; `OrderOutboxEvent`/
+  `OrderOutboxRelay` mirrors `PaymentOutboxEvent`/`ShipmentOutboxEvent`,
+  DRQ-073) — datamesh emits directly; this project does not, for the same
+  already-accepted reasons.
+- **Gateway widened from order+stock to order+payments+shipments+reviews+
+  stock.** Datamesh's `graphql-gateway` stitches exactly two backends
+  (order-service REST, inventory gRPC). This project's gateway stitches five
+  (order/payment/shipping/review over REST, inventory over gRPC) because the
+  teaching point is "one GraphQL question, many backends" across the now-five
+  extracted services, not a two-backend proof of concept (DRQ-069).
+- **The GraphQL gateway's own front door, not routed through the proxy.**
+  Datamesh has no strangler proxy at all (no monolith to strangle). This
+  project deliberately keeps the gateway OFF the Camel strangler proxy — its
+  own port (`:8090`), no `strangler.*` flag — because GraphQL is a distinct
+  protocol edge and the gateway is additive, not a cutover candidate
+  (DRQ-069).
+- **Two-phase read surface; customer FK decomposed.** As with payment/
+  shipping, datamesh's order-service has no Spring original to lift; this
+  project's `/api/orders` still follows DRQ-029 Phase A (spring-compat, S4) →
+  Phase B (idiomatic, S5), and `Order`'s `@ManyToOne Customer` FK (SMELL #1)
+  is decomposed to a plain `customerId` value + email snapshot (DRQ-068) — a
+  concern that does not arise in the datamesh source.
+- **The monolith is decommissioned; datamesh never had one.** The entire
+  "strangler completes, monolith frozen-not-deleted" narrative (DRQ-070), the
+  equivalence→contract conversion (DRQ-071), and the final irreversibility
+  story (DRQ-072) have no datamesh analogue — datamesh was never strangled out
+  of a monolith, so this entire axis of ch.26 is original to this project, not
+  adapted.
+
+**Verdict:** CLEAN adaptation. The reused *shape* (idiomatic own-schema
+Quarkus service, gRPC inventory collaborator, data-less REST/gRPC-stitching
+gateway) is faithfully carried over; the CQRS reshape, the lifted saga/outbox
+machinery, the five-way gateway widening, and the entire monolith-
+decommission/contract-conversion/irreversibility story are the extraction's
+deliberate point, and every divergence is driven by a named, already-accepted
+project decision (DRQ-038/066/067/068/069/070/071/072/073/074), not
+undocumented drift.
+
+### Other ch.26 artifact → source lines
+
+- **Order-context reaction/compensation machinery (`OrderSagaListener`)** —
+  lifted, not re-derived, from the monolith's own `onPaymentCaptured`/
+  `onPaymentDeclined`/`onShipmentDispatched`/`onShipmentFailed` (DRQ-042/049/
+  060), unmodified in shape per DRQ-074. Source is in-project (ch.19/23/24),
+  not external.
+- **Equivalence-suite bounded-wait / negative-check technique** — reused from
+  ch.17/23/24's DRQ-037/055/065 pattern, extended to the CQRS read-after-write
+  wait and the three DRQ-071 negative checks (saga-consumer-disabled,
+  read-model-projection-disabled, compensation-disabled). Source is
+  in-project, not external.
+- **Kafka broker (`apache/kafka:3.8.0`)** — reused unchanged from
+  `.env.example`'s `KAFKA_IMAGE_TAG`, already pinned for ch.17/19/23/24.
+  **No new infra container was added for ch.26** — the GraphQL gateway is a
+  stateless aggregation process calling existing services over REST/gRPC.
+- **`quarkus-messaging-kafka` / `quarkus-grpc` / `quarkus-smallrye-graphql` /
+  Quarkus platform BOM** — `3.40.1`, the same version already pinned for
+  notification/payment/shipping (DRQ-035/052/063); no version drift
+  introduced by the order service or the gateway.
+
+**Verdict: zero unexplained drift (R4) for r08/ch.26.**
+
+### Process deviations / post-gate fixes (recorded honestly, per S14/S15)
+
+1. **GG-a stale Content-Type assertion fix (`47638d7`, found at S9 cutover).**
+   The GraphQL Gateway Contract folder's `GG-a` test asserted
+   `Content-Type` includes `application/json`; SmallRye GraphQL correctly
+   returns `application/graphql-response+json` (the GraphQL-over-HTTP spec
+   media type), which does not contain that substring, so the assertion was
+   stale, not the implementation wrong. Fixed to a regex accepting
+   `application/(graphql-response+)?json`; status/no-errors/data-shape/
+   envelope assertions are byte-for-byte unchanged — a wrong-assertion
+   correction, not a weakened check. Unblocked the S11 CI GraphQL folder.
+2. **reviews-schema CI fix (`58877da`, found when S11 dropped the monolith
+   from the five checkout gates).** The decommissioned monolith's Flyway run
+   was what had been creating the shared `public.reviews` table that the
+   review service depends on (it shares `public`, `schema-management.
+   strategy=none` — it is not its own migrator). Once the monolith stopped
+   starting in those gates, `relation "reviews" does not exist` broke
+   notification/inventory/payment/shipping/order-gateway CI. Fixed by adding
+   the same psql apply-monolith-V1/V2 step the (unaffected) `equivalence-gate`
+   job already used, before the review service starts, to all five other
+   gates. This is a CI-topology fix, not a behavior change to any service.
+3. **Demo-seed `order_id` collision fix (`2664c5e`, found post-decommission).**
+   With the monolith gone, the order service starts empty and forward-fills
+   order IDs from 1 (DRQ-073) — so the first real checkout got `order_id=1`,
+   colliding with payment's and shipping's pre-existing demo-seed rows (also
+   seeded at `order_id=1`). Their idempotency-by-`orderId` guards (correctly,
+   by design — DRQ-051/064) then treated the real order as a duplicate and
+   silently skipped it, stranding it at `PENDING` (payment) /
+   `AWAITING_SHIPMENT` (shipping). Fixed by retargeting the demo seeds to a
+   reserved `9,000,000+` range via **new** migrations (payment V4 → 9000001,
+   shipping V5 → 9000002) so real forward-filled IDs can never collide again;
+   idempotency guards themselves are unchanged (a true duplicate still
+   correctly skips — the bug was the colliding *data*, not the guard logic).
+   Notification's equivalent seed had already been removed by its
+   pre-existing V3; inventory/review carry no `order_id` seed — this fix is
+   now pattern-complete across every service that seeds against `order_id`.
+   Opus-gated GO.
+4. **The value of the CI gate: two failures the real GitHub Actions run caught
+   that local (warm-stack) runs masked.** Both the GG-a content-type
+   assertion (#1) and the reviews-schema ownership gap (#2) passed on the
+   developer's long-running local podman stack, where a prior monolith boot
+   had already created `public.reviews` and local testing happened to exercise
+   a content-type path that never hit the stale assertion in the same way.
+   The fully-extracted, **fresh-database, monolith-free topology** that the
+   GitHub Actions gate exercises on every run exposed both gaps immediately —
+   exactly the failure mode local warm-stack testing cannot catch, because
+   accumulated local state (an already-migrated schema, an already-exercised
+   code path) quietly papers over a true cold-start dependency. This is the
+   concrete, in-project proof of why Code-CI runs on a fresh topology rather
+   than trusting the dev loop (build-plan.md §H/§M R6).
+5. **`reference/monolith-before` branch + `stage/NN-*-extracted` tags
+   created.** A `reference/monolith-before` branch (pinned at the pre-
+   extraction monolith commit) plus six `stage/01-review-extracted` …
+   `stage/06-order-extracted` tags (one per extraction's completion point) and
+   a `v0-monolith` tag were created so a learner can check out any point in
+   the strangler-fig timeline side-by-side with "before" — a pure
+   documentation/navigation aid, no code changes implied.
+
+### ch.26 EXIT CHECKLIST — verified item by item against committed reality
+
+Source: `_plans/iterations/order-plan.md`, "ch.26 EXIT CHECKLIST" section.
+Code CI is confirmed GREEN on commit `58877da` (run `37411600999`): **all six**
+gates (`equivalence-gate`, `notification-equivalence-gate`,
+`inventory-equivalence-gate`, `payment-equivalence-gate`,
+`shipping-equivalence-gate`, `order-gateway-contract-gate`); every Opus gate
+in this run (S2, S4, S5, S6, S7, S9, S10, S11, S14) returned GO.
+
+1. **Order extraction decided & applied (DRQ-066/073).** SATISFIED. The god
+   `OrderService`, the four `OrderSagaListener` reactions, `Order`/
+   `OrderItem`/`Customer`, the gRPC inventory client, and the outbox are
+   extracted to `examples/07-order-service` (own schema, FKs decomposed,
+   two-phase A→B measured in `MIGRATION.md`); the order service is the
+   external `order.placed` producer.
+2. **CQRS shape genuinely taught (DRQ-067).** SATISFIED. A separate
+   denormalized `order_view` read model is projected from the lifecycle
+   events; reads are served exclusively from it, it is rebuildable from the
+   aggregate, and read-after-write eventual consistency is demonstrated
+   (S9 `CUTOVER.md`); the read-model-projection-disabled negative check goes
+   RED (CUTOVER.md negative check cycle — non-net-zero / stale-read proof).
+3. **GraphQL aggregation gateway delivered (DRQ-069).**
+   SATISFIED. `examples/08-graphql-gateway` owns no data and stitches order +
+   payments + shipments + reviews + stock over REST + gRPC (`82bb319`); the
+   GraphQL Gateway Contract folder passes (post the GG-a content-type fix,
+   `47638d7`).
+4. **Lifted saga reactions preserve their guarantees (DRQ-074).** SATISFIED.
+   At-most-once compensating `Release`, status-guard idempotency, and the
+   payment-decline vs shipment-failure mutual exclusion all hold in the
+   extracted service (S9 CUTOVER.md's explicit before/after net-zero
+   evidence for both compensation paths; redelivery proof carried over from
+   the monolith's reaction shape, lifted unmodified).
+5. **Equivalence green across the seam (S9) then converted to a contract
+   suite (DRQ-071).** SATISFIED. All four scenarios + Order + GraphQL contract
+   folders green across the seam at S9 (`bc136ba`); the frozen S2 golden
+   baseline (`a8c812e`) was re-designated as the contract at S10 (`ce49202`);
+   CI drops the live monolith (S11 `cf6062a`) while preserving all negative
+   checks, which is what proves non-vacuity with the referent gone.
+6. **Reversibility shown one last time (DRQ-072).** SATISFIED. S9's
+   CUTOVER.md §2 ("Reversibility — flip back (the LAST time, DRQ-072)")
+   flips `strangler.order.enabled` back, re-asserts the monolith serves
+   checkout green, before S10's deliberately irreversible decommission.
+7. **Strangler completes + monolith decommissioned (DRQ-070).** SATISFIED.
+   `/api/orders` is served by the order service; S10 (`ce49202`) removed the
+   monolith from the running topology and froze it in-repo (DRQ-024); the
+   proxy is a flagless REST edge router (`strangler.*` flags and the
+   monolith default backend retired).
+8. **SMELL #2 & #3 fully cured; ACID→ACD realized for ALL contexts
+   (DRQ-075).** SATISFIED. `examples/00-monolith/SMELLS.md` #2 and #3 are both
+   struck through with the S10 evidence trail (god `OrderService` cured — an
+   independent CQRS service with nothing left to reach into; the one
+   remaining local `@Transactional` provably spans only the order service's
+   own schema); `SixContextsSmokeTest` asserts `/api/orders` → 404 on the
+   monolith.
+9. **Code-CI green.** SATISFIED. `order-gateway-contract-gate` exercises the
+   fully-extracted system (no live monolith) including CQRS + GraphQL
+   end-to-end, red-then-green (S11 `cf6062a`); sibling gates stayed green
+   with the final topology after the cross-service cascade was handled and,
+   post-gate, after the reviews-schema fix (`58877da`) and the seed-collision
+   fix (`2664c5e`) above.
+10. **ch.26 authored ≥2000 words**, runnable examples, embedded diagrams, real
+    "ADLC in Action" callout, verification-status footer. SATISFIED. S14
+    `ddee649`; `_docs/26-communication-and-extraction-6-order.md`; diagrams embedded (S12
+    `b42e933`); ADLC trace `ecea645` (S13).
+11. **Ledger reconciled.** SATISFIED by this S15 pass: `decisions.md`
+    DRQ-066…075 verified present/sequential/accepted (added at S1 `5637316`)
+    + the order-service/graphql-gateway version-matrix rows verified present
+    (both added at S1, confirmed unduplicated here); `build-plan.md` §E row 6
+    / §J flipped to DONE (this document's sibling edits, **6 of 6**); this
+    plan's EXIT CHECKLIST flipped below.
+
+**No checklist item was found unsatisfiable.** All eleven items (the plan's
+nine plus the two "process/ledger" closing items read as one group above) are
+confirmed against committed evidence.
+
+### The capstone: the strangler-fig is complete
+
+With r08/ch.26, **all six bounded contexts** named in the original monolith
+(DRQ-002) are now independently deployable Quarkus services: review (ch.15),
+notification (ch.17), inventory (ch.19), payment (ch.23), shipping (ch.24),
+order+gateway (ch.26). The monolith is decommissioned from the running
+topology and kept frozen in-repo (DRQ-024/070) as the permanent "before"
+picture and golden-baseline referent (`reference/monolith-before` branch,
+`v0-monolith` + `stage/01..06-*-extracted` tags). The Camel strangler proxy
+has shed every `strangler.*` flag and is now the system's permanent REST edge
+router. ACID→ACD is realized for ALL six contexts (SMELLS.md #2 and #3 both
+struck through). This is the single largest R4 checkpoint in the project: the
+entire decomposition arc — the thing build-plan.md §E exists to track — is
+now DONE, 6 of 6.
+
+### Resume boundary for Part 8+ (the remaining BOOK work — not extractions)
+
+No further extraction work remains. The project's remaining scope is BOOK
+authoring, not decomposition, and resumes at:
+- **Part 8 (remainder):** ch.27 (the Quarkus/MicroProfile chassis — not yet
+  authored) and ch.28 (contracts & the service registry — Avro + Apicurio,
+  retiring the JSON-not-Avro honest limitation carried since DRQ-038/057) —
+  not yet started.
+- **Part 9:** ch.29 (deployment) and ch.30 (service mesh / observability on
+  minikube) — not yet started; this is where the project's podman substrate
+  gets a k8s counterpart (lgtm-minikube-stack, per build-plan §K).
+- **Part 10:** ch.31 (CI/CD & supply-chain security) and ch.32 (pattern
+  language revisited / conclusion) — not yet started.
+- **Then the presentation rebuild** (lgtm-presentation, mirroring the book's
+  final parts) — deferred past all of the above, per build-plan §I/§J.
+
+Nothing in Part 8–10 or the presentation rebuild touches the extraction
+ledgers (`decisions.md`/`build-plan.md`/`reconciliation.md`) as a *decomposition*
+record — those are closed at 6 of 6. Future ledger entries in this file will
+be for whatever reuse/adaptation those remaining chapters bring in (e.g.,
+Apicurio/Avro adaptation at ch.28, minikube substrate adaptation at ch.29/30),
+not further extraction reconciliation.
+
 ## R4 status summary
 
 | Extraction | Chapter | Zero unexplained drift? | Evidence |
@@ -617,4 +901,8 @@ payment (ch.23) and shipping (ch.24), ready to build on without re-deriving:
 | Notification | ch.17 | yes | `examples/03-notification-service/README.md`, `MIGRATION.md` |
 | Inventory | ch.19 | yes (no external source reused) | `examples/04-inventory-service/MIGRATION.md`, `SMELLS.md` |
 | Payment | ch.23 | yes | this document, ch.23 section |
-| Shipping | ch.24 | **yes** — this reconcile pass | this document, this section |
+| Shipping | ch.24 | yes | this document, ch.24 section |
+| Order + GraphQL gateway | ch.26 | **yes** — this reconcile pass | this document, this section |
+
+**All six extractions (6 of 6) are reconciled with zero unexplained drift.
+The strangler-fig decomposition is complete.**

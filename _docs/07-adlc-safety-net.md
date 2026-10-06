@@ -13,9 +13,8 @@ extraction that produced `examples/00-monolith/`, `examples/01-strangler-proxy/`
 and `examples/02-review-service/` in this project's own r02 walking skeleton —
 not a staged illustration, but the literal commits, files, and test runs that
 built the chapter you are about to read two chapters from now. And because the
-loop was run for real rather than narrated in the abstract, it did what a real
-process-under-construction does: it broke, twice, in ways that are genuinely
-instructive, and the safety net caught both breaks before either one reached a
+loop was run against the actual project rather than narrated in the abstract, it did what a
+process-under-construction does: it broke, twice, in instructive ways, and the safety net caught both breaks before either one reached a
 reader or a production system. That is the chapter's actual subject. The ADLC
 is not safe because an agent is careful. It is safe because the loop has a
 behavior-equivalence suite wired into it as an automated gate, two places
@@ -78,9 +77,8 @@ Quarkus scaffold, equivalence gate, flag-gated cutover, monolith-module
 decommission — without a second bounded context's behavior confounding the
 result.
 
-Map also surfaced a fact that turns out to be load-bearing for the rest of
-this chapter, and is worth flagging now rather than treating as a surprise
-later: Review's extracted form was scoped to arrive on Quarkus via the
+Map also surfaced a fact that matters for the rest of
+this chapter: Review's extracted form was scoped to arrive on Quarkus via the
 Spring-compatibility lift first (Phase A), and only move onto its own schema
 in a later chapter's data-ownership pass (shared data to owned data is Part
 6's subject, not Part 5's). For the duration of this walking skeleton, the
@@ -111,7 +109,7 @@ database from the start," the walking skeleton would have taken longer to
 reach its first green equivalence-gate run, and — as the Verify section below
 will show — it would also have hidden the very bug the shared-table decision
 later exposed. The plan that was actually approved deferred schema ownership
-on purpose, as a scoping decision, not an oversight; a human agreeing to that
+as a scoping decision, not an oversight; a human agreeing to that
 trade-off before any code existed is exactly the kind of judgment call Chapter
 5 argued cannot be delegated to the agent that drafted the plan.
 
@@ -470,7 +468,7 @@ itself.
 This chapter ran the loop once, on real work, and showed its net catch two
 real bugs. Part 3 builds the system that loop will spend the rest of this
 book strangling — the reference monolith, its six bounded contexts, and the
-deliberate smells planted into it on purpose, so that every later pattern
+deliberate smells planted into it, so that every later pattern
 arrives because the monolith actually needs it, not because a chapter outline
 said so. Part 4 then goes looking for the seams those smells mark, using
 domain-driven design and event storming to decide where the next cut goes

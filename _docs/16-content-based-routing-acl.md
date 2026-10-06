@@ -34,7 +34,7 @@ The code is in `examples/00-monolith/` (Smell 5's leak, quoted again below
 exactly where Chapters 9 and 11 left it) and `examples/01-strangler-proxy/`
 (the content-based router this chapter reads before extending its shape).
 Nothing new is scaffolded for this chapter. The ACL route built below is a
-sketch of the pattern Chapter 19 wires for real once inventory has its own
+sketch of the pattern Chapter 19 wires once inventory has its own
 Quarkus gRPC service to enrich from; until then, `OrderService#placeOrder`
 still calls `InventoryService` directly, because today they are two Spring
 beans in one process and no seam physically separates them yet. What this
@@ -156,7 +156,7 @@ into the one contract type the calling side is allowed to depend on. Camel
 does not reserve one dedicated DSL keyword exclusively for this role the way
 it does for `enrich` — the translator is realized by whichever code actually
 performs the conversion: an expression-based `transform()` step for simple
-cases (the catalog describes it plainly as a step that "sets the message
+cases (the catalog describes it as a step that "sets the message
 body using an expression," distinguishing it from `setBody` only by also
 setting the `OUT` body on request-reply exchanges), or, for anything with
 real field-by-field remapping to do, a small `Processor` or bean. The idiom
@@ -169,7 +169,7 @@ reorder.
 
 Here is the shape both patterns take together, written the way it would live
 in `examples/01-strangler-proxy/` once Chapter 19 gives it a real second
-backend to enrich from. It is deliberately not wired into that project
+backend to enrich from. It is not wired into that project
 today — no caller invokes `direct:stockFor` yet, because `OrderService`
 still reaches `InventoryService` directly, in-process, as quoted above.
 
@@ -293,7 +293,7 @@ enrich from, built by interpolating `${header.sku}` into whichever base URL
 the flag selected.
 
 The second step is one call, `.enrich(...)`, but it is doing two jobs at
-once, deliberately kept in one place rather than split into a fetch step and
+once, kept in one place rather than split into a fetch step and
 a separate translate step. `enrich`'s first argument — an `Expression`, not a
 hardcoded string — is what makes this a *dynamic* enrichment: Camel resolves
 `${exchangeProperty.stockLookupTarget}` at runtime and performs a real
@@ -310,12 +310,12 @@ keeps this a *merge* rather than a *replacement*: any header or property the
 original exchange was already carrying survives, and only the body changes.
 
 Inside the strategy, `StockDtoTranslator.translate(reply)` is named but not
-shown in full here on purpose — it is exactly the kind of small, overloaded
+shown in full here — it is exactly the kind of small, overloaded
 conversion method a reader should expect to write for themselves once the
 shapes on each side are known, and showing a fabricated gRPC-generated class
 in full here would claim more certainty about Chapter 19's actual `.proto`
 than this chapter has any business claiming. What matters is the shape of
-the decision it makes, documented plainly in the comment above it: against
+the decision it makes, documented in the comment above it: against
 today's monolith REST endpoint, the translation is nearly a no-op, because
 `InventoryController#getBySku` already builds `StockDto` for its own
 consumers — the same `StockDto` Chapter 11 pointed at as "already there, just
@@ -328,7 +328,7 @@ an ACL actually buys you: protection against a *future* change, paid for
 with a small amount of code that looks almost unnecessary on the day you
 write it, because the side it's protecting against hasn't diverged yet.
 
-Two fragile bits are worth naming plainly rather than leaving a reader to
+Two fragile bits are worth naming rather than leaving a reader to
 discover them. First, `strangler.inventory.enabled` and
 `strangler.inventory.base-url` are not read from any `application.properties`
 file in this project today — there is no running instance of this route yet,

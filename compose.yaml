@@ -14,10 +14,16 @@
 # Services:
 #   - lgtm      : Grafana + Tempo + Mimir + Loki + an embedded OTel Collector
 #                 (config replaced by infra/otelcol/config.yaml)
-#   - postgres  : the monolith's database (examples/00-monolith owns the
-#                 schema/migrations; this stack only provisions the server).
-#                 Reconfigured for LOGICAL replication (r05/ch.19, step S3)
-#                 so Debezium can tail the WAL — see `command:` below.
+#   - postgres  : ONE shared Postgres SERVER, originally provisioned as "the
+#                 monolith's database" (examples/00-monolith owned the public
+#                 schema/migrations). Each extracted service now owns its own
+#                 schema within this same database/server (e.g. the order
+#                 service's `order_service` schema via
+#                 `currentSchema=order_service` on its JDBC URL) — this stack
+#                 only ever provisioned the server, never one schema's worth
+#                 of tables. Reconfigured for LOGICAL replication (r05/ch.19,
+#                 step S3) so Debezium can tail the WAL — see `command:`
+#                 below.
 #   - kafka     : single-broker KRaft-mode Kafka (no ZooKeeper) for the
 #                 event-driven extractions from r04 onward
 #   - connect   : Kafka Connect running the Debezium Postgres connector
@@ -26,6 +32,22 @@
 #                 REST API on host port ${CONNECT_HOST_PORT:-8086}, NOT 8083
 #                 (examples/03-notification-service binds :8083 locally —
 #                 see infra/debezium/README.md).
+#
+# order-plan.md S10 (DRQ-070, the final decommission): the monolith
+# (examples/00-monolith) was NEVER one of this file's services — all seven
+# application processes (the six extracted services + the strangler-proxy
+# edge router) and the monolith itself always ran as plain Java/Quarkus
+# processes outside this compose stack (see tooling/newman/README.md and any
+# service's CUTOVER.md for the full local-run instructions), with this file
+# providing only the shared infra (Postgres/Kafka/Connect/observability).
+# There is therefore nothing to "remove" from this file for the monolith's
+# decommission — it was never here. What changed: the monolith is no longer
+# one of the processes you bring up locally AT ALL (it is frozen-in-repo,
+# DRQ-024/DRQ-070); the six extracted services + the edge router
+# (examples/01-strangler-proxy) are the entire running topology now. The
+# complete, runnable monolith ("before", all six contexts live) is preserved
+# as break-glass on the `reference/monolith-before` branch (tag
+# `v0-monolith`) — see the project README.md.
 #
 # Apicurio is deliberately NOT included here (deferred per r02-plan S3 —
 # Review, the r02 extraction, is REST-only and has no schema-registry need).

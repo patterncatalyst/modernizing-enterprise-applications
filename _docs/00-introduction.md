@@ -35,12 +35,11 @@ book will feel unfamiliar in a useful way — green-field instincts are often
 exactly wrong against a decade of accumulated shortcuts, shared tables, and
 implicit contracts between modules that nobody remembers making explicit. If
 your experience is maintaining a monolith you did not write, large stretches
-of this book will feel uncomfortably familiar, and that is intentional: the
-monolith built in Part 3 is deliberately ordinary, with deliberately planted
-smells, so that the techniques that cure them transfer directly to the
-unglamorous system on your own machine. Either way, the assumed reader is an
+of this book will feel uncomfortably familiar, because the monolith built in
+Part 3 is ordinary, with the same planted smells, so that the techniques that
+cure them transfer directly to the unglamorous system on your own machine. Either way, the assumed reader is an
 engineer or architect who is accountable for a production system's behavior
-during a migration, not a student encountering distributed systems for the
+during a migration, not someone encountering distributed systems for the
 first time. Prerequisite material — the JDK, Maven, the Quarkus and Camel
 CLIs, a local observability stack — is handled once, directly, in the next
 chapter, so this one can stay focused on what the book argues and why.
@@ -61,7 +60,7 @@ code to prove each step actually worked. That is the gap this book fills: not
 a new pattern catalog, but the catalog applied, in sequence, to a system you
 can run.
 
-At the execution altitude, the argument is less familiar and more load-bearing
+At the execution altitude, the argument is less familiar and more critical
 for how fast any of this can responsibly happen: the work in this book is not
 done the way a modernization project was done five years ago, with a
 requirements document, a design review, an implementation sprint, a QA pass,
@@ -95,7 +94,7 @@ test run had already missed — and the lesson from both is the same one this
 book repeats whenever the stakes are high enough to deserve it: a passing
 suite is evidence that a change is safe, not proof, and the discipline the
 ADLC asks for is to keep probing what would make the suite pass by accident
-until the honest answer is nothing you can think of.
+until the answer is nothing you can think of.
 
 So the thesis, stated once in full: take a believable Spring Boot monolith
 and modernize it into a Quarkus and Apache Camel microservices architecture,
@@ -114,14 +113,13 @@ built around six bounded contexts — **order**, **inventory**, **payment**,
 single Spring Boot deployable: one JVM, one shared PostgreSQL schema, REST
 endpoints for all six contexts, and an order-placement flow that reaches into
 inventory, payment, shipping, and notification inside one ACID transaction.
-That design is not naive — it is deliberately ordinary, built the way a team
-under a real deadline five years ago would actually have built it, with
-smells planted on purpose rather than accidentally: a shared schema with
-cross-context joins, a god `OrderService` that knows too much about every
-other context, a synchronous notification wedged inside the checkout
-transaction, no anti-corruption layer anywhere, and a review feature tangled
-into shared infrastructure despite being genuinely independent of everything
-else. Each smell is tagged, in Part 3, to the exact later chapter that cures
+That design is ordinary, built the way a team under a real deadline five
+years ago would actually have built it, with smells planted rather than
+accidental: a shared schema with cross-context joins, a god `OrderService`
+that knows too much about every other context, a synchronous notification
+wedged inside the checkout transaction, no anti-corruption layer anywhere,
+and a review feature tangled into shared infrastructure despite being
+independent of everything else. Each smell is tagged, in Part 3, to the exact later chapter that cures
 it, so nothing about the monolith's design is incidental to the argument this
 book is making.
 
@@ -136,7 +134,7 @@ safely; then **payment** and **shipping**, which force a choreographed and
 then an orchestrated saga because a single ACID transaction is no longer
 available once those contexts live in separate services; and finally
 **order** itself, together with a GraphQL gateway, because the core aggregate
-and the hardest coupling are deliberately saved for last rather than tackled
+and the hardest coupling are saved for last rather than tackled
 first. Every one of those six extractions is executed through the full
 migration process this book teaches, not a single worked example followed by
 five summaries — each gets its own chapter, its own equivalence-gate run, and
@@ -150,8 +148,8 @@ through a CI/CD pipeline that runs the equivalence gate on every change. The
 shape of that end state is not invented for this book — it mirrors a
 production-grade Quarkus reference architecture this project draws on and
 cites directly wherever a non-trivial example is adapted from it — which
-means the "after" picture in this book is not a toy built to make a tidy
-diagram; it is close to a system you could actually run in production.
+means the "after" picture in this book is close to a system you could
+actually run in production.
 
 ## How this book is organized
 
@@ -162,7 +160,7 @@ migration, not the logical order a textbook might choose. You are reading
 `_plans/` ledger, and the mechanics of running every example before anything
 else is asked of you. **Part 1, Why Modernize**, steps back from code
 entirely to make the business and engineering case for modernizing at all —
-including an honest accounting of when microservices are the wrong answer —
+including when microservices are the wrong answer —
 before committing a single line to a specific strategy. **Part 2, The ADLC**,
 is where the lifecycle this book runs on gets named in full: its seven
 phases, its two human gates, the agents and MCP tools that carry each phase
@@ -171,7 +169,7 @@ model is demonstrated once at low stakes before it is trusted at high stakes.
 
 **Part 3, The Reference Monolith**, builds the "before" picture described
 above in full, including the test suite that becomes the behavior-equivalence
-suite used for the rest of the book. **Part 4, Finding the Seams**, is where
+suite used in every later chapter. **Part 4, Finding the Seams**, is where
 domain-driven design, event storming, and coupling theory earn their keep —
 not as theory for its own sake, but as the actual method used to decide where
 the six extraction boundaries in this book's monolith actually are. **Part
@@ -184,28 +182,28 @@ extraction mechanical rather than improvised.
 underestimated problem gets the space it needs: moving from one shared
 database to data each service owns, by way of change-data-capture, the
 outbox pattern done correctly, and the CQRS read side a later gateway
-depends on — ending in an honest reckoning with what is actually given up
+depends on — ending with what is actually given up
 when ACID consistency becomes eventual consistency. **Part 7, Coordinating
 Across Services**, is where the payment and shipping extractions force the
 distributed-transaction question that a shared database had been quietly
-answering for free, resolved through choreographed and orchestrated sagas and
+answering by default, resolved through choreographed and orchestrated sagas and
 a resilience chassis for the failure modes a single process never had to
 think about. **Part 8, Communication & Contracts**, completes the strangler
 with the order extraction and its GraphQL gateway, and then turns to what the
 system was migrated *to*: the Quarkus and MicroProfile chassis underneath
 every service, and a schema and contract registry that keeps six
-independently deployed services honest about the shapes they exchange.
+independently deployed services accountable for the shapes they exchange.
 
 **Part 9, Operating the Modernized System**, moves from building the services
-to running them for real — deployment patterns, a service mesh, and
+to running them in production — deployment patterns, a service mesh, and
 distributed tracing, on a Kubernetes substrate reserved for exactly the
 chapters that need it rather than introduced on day one. **Part 10,
 Delivering & Reflection**, names the actual CI/CD pipelines this project
 runs — the specific workflow files, the specific job that runs the
 equivalence gate on every extraction, the specific deployment jobs — and then
 closes by walking the completed migration back against the pattern language
-it started from, naming what this book deliberately left out and why, so the
-map it leaves you with is honest about its edges rather than pretending to be
+it started from, naming what this book left out and why, so the
+map it leaves you with states its edges rather than pretending to be
 exhaustive.
 
 ## How to read this book
@@ -219,7 +217,7 @@ run it — a build-and-run section with the actual commands, and, where an
 independent check exists, a cross-check against it. Chapters that are
 conceptual rather than hands-on, including this one, are marked as such
 rather than padded with a token example to look consistent; a chapter that
-has nothing real to run says so plainly instead of manufacturing a toy. Every
+has nothing real to run says so instead of manufacturing a toy. Every
 chapter, hands-on or not, ends with a verification-status note naming exactly
 what was and was not confirmed by a real run, because a claim this book
 cannot check is a claim it does not make silently.
@@ -236,8 +234,7 @@ alongside the monolith it was captured from, and it is the same collection
 you will see re-run, unchanged, in every later chapter's equivalence-gate
 result.
 
-There is one more thing worth reading plainly before you go further, because
-it is unusual enough to need saying: **this book's own production is an
+**This book's own production is an
 instance of the thing it teaches.** The `_plans/` directory in this
 repository — `build-plan.md`, `decisions.md`, and the per-iteration plan and
 status records under `_plans/iterations/` — is not a teaching prop built
@@ -264,27 +261,26 @@ the strangler seam, migrate the code in two disciplined phases, and prove
 with a re-runnable check — not a feeling — that nothing observable changed
 before you retire the old code. Third, run that entire process through an
 agentic ADLC rather than a traditional SDLC: frame intent precisely enough
-for an agent to act on, know which two moments genuinely require your
+for an agent to act on, know which two moments require your
 judgment and which do not, and keep a ledger disciplined enough that the next
 person — or the next version of yourself, six months later — can trust the
 record of what was done and why, without having to reconstruct it from
 memory.
 
-## Setting honest expectations
+## Setting expectations
 
 This is a reference you run, not a reference you merely read. Every claim in
 it that can be checked against a real artifact is checked against one, and
-every chapter's verification-status footer tells you plainly what that check
+every chapter's verification-status footer tells you what that check
 actually covered and what it did not. That standard cuts both ways: it means
-the code in this book is real enough to break, the way code genuinely does,
+the code in this book is real enough to break, the way code does,
 and when it did — twice, during the very first extraction this project ran —
 this book says so, names the defect, and shows the fix, rather than
 presenting a sanitized version of events where nothing ever went wrong the
 first time. If you came here for a tidy narrative where every step succeeds
 on the first attempt, you will find instead a more useful one: a process
-disciplined enough to catch its own mistakes before they reach you, which is
-a more honest thing for a book about safe modernization to demonstrate than
-a mistake-free story would have been.
+disciplined enough to catch its own mistakes before they reach you, which
+demonstrates safe modernization better than a mistake-free story would have.
 
 ## Where to go next
 
@@ -297,7 +293,7 @@ reconciliation record the ADLC's final phase still owes — not as
 documentation about this project but as a template for the ledger you
 will want to keep on your own migration, starting with the first decision you
 make. From there, Part 1 makes the case for why any of this modernization
-work is worth doing in the first place — and when, honestly, it is not.
+work is worth doing in the first place — and when it is not.
 
 ---
 *Verification status: not applicable — this is a conceptual chapter with no

@@ -68,6 +68,56 @@
 # regression. Only the original `equivalence-gate` (Review Context Contract
 # folder) never touches the checkout-confirm path, so it is unaffected and
 # untouched.
+#
+# order-plan.md S11 (ch.26, DRQ-071) — THE FINAL CASCADE, monolith removed
+# from CI for good: order-plan S10 irreversibly decommissioned the monolith
+# (examples/00-monolith) from the running system (DRQ-070) — it is frozen
+# in-repo, re-bootable only as a break-glass referent on the
+# `reference/monolith-before` branch, never again part of this workflow's
+# topology. A sixth job, `order-gateway-contract-gate`, covers the final
+# extraction (examples/07-order-service, its own CQRS write-core + read-model
+# projection + four lifted OrderSagaListener saga reactions) and the additive
+# GraphQL aggregation gateway (examples/08-graphql-gateway, :8090 — its own
+# front door, never routed through the proxy, DRQ-069). It brings up the
+# FULLY-EXTRACTED system (inventory/payment/shipping/review/notification/
+# order/gateway + the proxy, now a flagless, permanent REST edge router,
+# order-plan S10) with NO live monolith, and runs the FULL contract suite
+# (every scenario, incl. the "Order Context Contract" and "GraphQL Gateway
+# Contract" folders) via the Node-API helper (`demos/lib/run-order-newman.js`,
+# modeled on `run-shipping-newman.js`), which patches BOTH the
+# `shippingSagaEnabled` AND `graphqlGatewayEnabled` COLLECTION variables to
+# `true` in memory (newman's `--env-var` cannot reach collection scope — see
+# that script's header comment) so Scenario 4 and the GraphQL aggregation
+# query both genuinely execute, not silently skip.
+#
+# THE FINAL CROSS-SERVICE CASCADE (same lesson as ch.23 S10b/ch.24 S10,
+# applied one last time): checkout's terminal states (`CONFIRMED`,
+# `PAYMENT_DECLINED`, `SHIPPING_FAILED`) are now served by
+# examples/07-order-service, not the decommissioned monolith —
+# `notification-equivalence-gate`, `inventory-equivalence-gate`,
+# `payment-equivalence-gate`, and `shipping-equivalence-gate` each had their
+# monolith build/start/readiness steps REMOVED (a gate that still started it
+# would either fail outright — `examples/00-monolith`'s own CI dependency
+# surface is unaffected, but there is no reason to spend the build minutes on
+# a component no request can ever reach — or, worse, silently test a dead
+# code path no real client exercises anymore) and the order service ADDED in
+# its place, wired exactly as the proxy's committed
+# `strangler.order.base-url=http://localhost:8087` default already expects.
+# The GraphQL gateway is deliberately NOT added to any of those four sibling
+# gates: each invokes `newman run`'s plain CLI (or, for
+# `shipping-equivalence-gate`, `run-shipping-newman.js`, which patches only
+# `shippingSagaEnabled`) — neither path can reach the `graphqlGatewayEnabled`
+# COLLECTION variable, so the "GraphQL Gateway Contract" folder's GG-gate
+# stays honestly PENDING there regardless, exactly as it already does for
+# Scenario 4 in `payment-equivalence-gate`. Standing up the gateway in those
+# four jobs would be speculative infrastructure with no assertion to justify
+# it (R8/scope discipline) — it is wired up ONLY in
+# `order-gateway-contract-gate`, the one job that actually flips the gate and
+# asserts against it. `examples/07-order-service/**` and
+# `examples/08-graphql-gateway/**` were added to the path filters below;
+# `examples/00-monolith/**` was removed (no job in this workflow builds or
+# starts it any longer — the frozen monolith's own correctness is out of this
+# workflow's scope from here on, per DRQ-071).
 
 name: Code CI
 
@@ -75,24 +125,26 @@ on:
   push:
     branches: ["**"]
     paths:
-      - "examples/00-monolith/**"
       - "examples/01-strangler-proxy/**"
       - "examples/02-review-service/**"
       - "examples/03-notification-service/**"
       - "examples/04-inventory-service/**"
       - "examples/05-payment-service/**"
       - "examples/06-shipping-service/**"
+      - "examples/07-order-service/**"
+      - "examples/08-graphql-gateway/**"
       - "tooling/newman/**"
       - ".github/workflows/code-ci.yml"
   pull_request:
     paths:
-      - "examples/00-monolith/**"
       - "examples/01-strangler-proxy/**"
       - "examples/02-review-service/**"
       - "examples/03-notification-service/**"
       - "examples/04-inventory-service/**"
       - "examples/05-payment-service/**"
       - "examples/06-shipping-service/**"
+      - "examples/07-order-service/**"
+      - "examples/08-graphql-gateway/**"
       - "tooling/newman/**"
       - ".github/workflows/code-ci.yml"
   workflow_dispatch:
@@ -236,6 +288,27 @@ jobs:
   # timed out. This job now also builds/starts/readiness-gates the payment
   # service and waits for the monolith's order-saga consumer group to stabilize
   # before running newman, mirroring payment-equivalence-gate's proven template.
+  #
+  # S11 CASCADE (order-plan.md S11, DRQ-071 — the monolith is GONE): checkout
+  # (POST/GET /api/orders) is now served by examples/07-order-service, not the
+  # decommissioned monolith — the monolith's build/start/readiness/order-saga-
+  # consumer-group steps below are REMOVED (it is no longer part of the
+  # running system; starting it would either waste build minutes on a
+  # component no request can reach, or silently test a dead path) and
+  # replaced by the equivalent order-service steps: build, start on :8087
+  # (its four lifted OrderSagaListener @Incoming reactions, own
+  # `order-service` SmallRye consumer group), seed its own, empty-by-design
+  # `order_service.customers` row id=1 (DRQ-073 — the store starts EMPTY and
+  # is forward-filled only, unlike the monolith's pre-seeded `orders`/
+  # `customers` tables, so this job's checkout fixture, customerId=1, would
+  # 404 "No customer with id 1" without this one-time INSERT), and wait for
+  # its own saga consumer group to stabilize (same discipline as the removed
+  # monolith-order-saga wait, now against order-service's own group). The
+  # GraphQL gateway is deliberately NOT added here — this job's "Notification
+  # Context Contract" folder never queries it, and `newman run`'s plain CLI
+  # cannot flip `graphqlGatewayEnabled` to make that folder's assertions
+  # execute even if the gateway were running (see the top-of-file S11 header
+  # note) — starting it would be unexercised infrastructure.
   notification-equivalence-gate:
     name: notification-equivalence-gate
     runs-on: ubuntu-latest
@@ -314,16 +387,40 @@ jobs:
       - name: Install newman
         run: npm install -g newman
 
-      # No psql pre-apply here: unlike the Review gate (where review-service is
-      # not the migrator), this job RUNS the monolith, whose own Flyway migrates
-      # the `public` schema (V1-V3, incl. V3's outbox) on boot against the fresh
-      # Postgres service container. The notification-service likewise migrates its
-      # own `notification` schema on boot. Pre-applying the DDL with psql would
-      # leave a non-empty schema with no flyway_schema_history, and the monolith's
-      # Flyway would then refuse to start ("Found non-empty schema(s) ... but no
-      # schema history table"). Let each service be its own migrator.
-      - name: Build the monolith
-        run: mvn -q -DskipTests -f examples/00-monolith package
+      # S11b FIX: review-service shares the `public` schema and is NOT its
+      # own Flyway migrator (quarkus.hibernate-orm.schema-management.
+      # strategy=none, see equivalence-gate's identical step above) --
+      # `public.reviews` was historically created by the monolith's own
+      # Flyway migrations when the monolith booted. order-plan.md S11
+      # decommissioned the monolith from this workflow entirely (DRQ-071),
+      # so nothing creates `public.reviews` anymore and this gate's checkout
+      # (routed through the proxy, which also fronts /api/reviews by
+      # committed default) 500s the moment anything touches review with
+      # "relation \"reviews\" does not exist". Apply the SAME committed,
+      # frozen monolith SQL equivalence-gate already applies, directly with
+      # psql, before the Review-adjacent services below start.
+      - name: Apply the monolith's schema + seed data to Postgres (public schema, for the Review service)
+        run: |
+          set -euo pipefail
+          PGPASSWORD=monolith_dev_only psql -h localhost -U monolith -d monolith \
+            -f examples/00-monolith/src/main/resources/db/migration/V1__init_schema.sql
+          PGPASSWORD=monolith_dev_only psql -h localhost -U monolith -d monolith \
+            -f examples/00-monolith/src/main/resources/db/migration/V2__seed_data.sql
+
+      # No psql pre-apply for any OTHER schema: every service below RUNS ITS
+      # OWN Flyway migration on boot against the fresh Postgres service
+      # container — order-service migrates its own `order_service` schema
+      # (incl. its own outbox and CQRS read model), the notification-service
+      # its own `notification` schema. Those schemas are untouched by the
+      # psql step above (which only targets `public`, a schema none of them
+      # own), so each service's own flyway_schema_history is unaffected —
+      # pre-applying DDL to a service's OWN schema would leave it non-empty
+      # with no flyway_schema_history and make that service's own Flyway
+      # refuse to start ("Found non-empty schema(s) ... but no schema
+      # history table"); `public` is not that schema for any service here.
+      - name: Build the Order service
+        working-directory: examples/07-order-service
+        run: ./mvnw -q -DskipTests package
 
       - name: Build the Notification service
         working-directory: examples/03-notification-service
@@ -389,10 +486,13 @@ jobs:
         # shipping path — CONFIRMED is reached via this service's Camel Saga
         # EIP coordinator emitting shipment.dispatched, not an in-process
         # dispatch. No SHIPPING_MODE override (that flag is gone, S9) and no
-        # ORDER_SERVICE_BASE_URL override (its default, http://localhost:8080,
-        # already matches the monolith below). Started before the monolith,
-        # same discipline as the Payment service above, so the saga consumer
-        # is already subscribed before any payment.captured is produced.
+        # ORDER_SERVICE_BASE_URL override: order-plan.md S10 (DRQ-070)
+        # permanently rewired this service's own committed default from the
+        # (now-decommissioned) monolith's :8080 to the order service's :8087
+        # — no runtime override needed here. Started before the order service
+        # below, same discipline as the Payment service above, so the saga
+        # consumer is already subscribed before any payment.captured is
+        # produced.
         working-directory: examples/06-shipping-service
         env:
           KAFKA_BOOTSTRAP_SERVERS: localhost:9092
@@ -400,20 +500,20 @@ jobs:
           nohup java -jar target/quarkus-app/quarkus-run.jar > quarkus.log 2>&1 &
           echo $! > quarkus.pid
 
-      - name: Start the monolith (outbox write path + Kafka producer/consumer + gRPC inventory client) on :8080
-        # No PAYMENT_MODE override: payment-plan S9 removed that flag entirely —
-        # choreographed is the only checkout path left. This is also the
-        # monolith's order-saga Kafka CONSUMER (OrderSagaListener reacting to
-        # payment.captured/payment.declined), not just an outbox producer.
-        working-directory: examples/00-monolith
+      - name: Start the Order service (outbox write path + four order-saga Kafka consumers + gRPC inventory client) on :8087
+        # S11 CASCADE: replaces the decommissioned monolith (order-plan.md
+        # S10, DRQ-070) as the sole /api/orders backend — the proxy's
+        # committed strangler.order.base-url=http://localhost:8087 default
+        # already expects it here, no runtime override needed. This is this
+        # service's own `order-service` SmallRye consumer group, reacting to
+        # payment.captured/payment.declined/shipment.dispatched/shipment.failed
+        # (OrderSagaListener, lifted unchanged from the monolith's, ch.26 S5).
+        working-directory: examples/07-order-service
         env:
-          SPRING_DATASOURCE_PASSWORD: monolith_dev_only
-          SPRING_KAFKA_BOOTSTRAP_SERVERS: localhost:9092
-          INVENTORY_GRPC_HOST: localhost
-          INVENTORY_GRPC_PORT: "9004"
+          KAFKA_BOOTSTRAP_SERVERS: localhost:9092
         run: |
-          nohup java -jar target/monolith.jar > monolith.log 2>&1 &
-          echo $! > monolith.pid
+          nohup java -jar target/quarkus-app/quarkus-run.jar > quarkus.log 2>&1 &
+          echo $! > quarkus.pid
 
       - name: Start the Notification service (Kafka consumer) on :8083
         working-directory: examples/03-notification-service
@@ -429,6 +529,10 @@ jobs:
         # — no override needed here, the routing /api/notifications ->
         # :8083 is already the proxy's shipped default. strangler.shipping.enabled
         # also defaults to true (shipping-plan S9) — no override needed either.
+        # order-plan.md S10 (DRQ-070) retired EVERY strangler.*.enabled flag,
+        # including strangler.order.enabled -- /api/orders is now
+        # unconditionally routed to the order service started above, with no
+        # flag or fallback to the decommissioned monolith.
         working-directory: examples/01-strangler-proxy
         run: |
           nohup java -jar target/quarkus-app/quarkus-run.jar > quarkus.log 2>&1 &
@@ -504,50 +608,73 @@ jobs:
           fi
           sleep 5
 
-      - name: Wait for the monolith to be ready on :8080
-        # NOTE: the monolith's /api/inventory was removed at inventory-plan S11
-        # (inventory now extracted; checkout reserves over gRPC against the
-        # Inventory service started above). Probe /api/orders (permitAll,
-        # seeded) which the monolith still serves.
+      - name: Wait for the Order service to be ready on :8087
         run: |
           set -euo pipefail
           for i in $(seq 1 60); do
-            if curl -sf "http://localhost:8080/api/orders" > /dev/null; then
-              echo "Monolith is up."
+            if curl -sf "http://localhost:8087/api/orders" > /dev/null; then
+              echo "Order service is up."
               exit 0
             fi
             sleep 2
           done
-          echo "Monolith did not become ready in time." >&2
-          cat examples/00-monolith/monolith.log || true
+          echo "Order service did not become ready in time." >&2
+          cat examples/07-order-service/quarkus.log || true
           exit 1
 
-      - name: Wait for the monolith's order-saga Kafka consumer group to stabilize
-        # Load-bearing, not cosmetic (S10b FIX, mirroring payment-equivalence-gate):
-        # a freshly-started consumer group can take up to its session-timeout
-        # window to be assigned partitions, independent of the HTTP health check
-        # above being green. Without this wait, the Notification Context
-        # Contract's 5a/5b bounded-wait-to-CONFIRMED can race the rebalance.
-        # shipping-plan.md S10: OrderSagaListener grew from 2 to 4
-        # @KafkaListener methods at r07/S6 (payment.captured, payment.declined,
-        # shipment.dispatched, shipment.failed), all in the same
-        # monolith-order-saga consumer group — so this wait now requires ALL
-        # FOUR listener containers to log "partitions assigned" (not just two)
-        # before running the suite, or a result in the next step is a
-        # rebalance artifact rather than trustworthy evidence.
+      - name: Seed the Order service's own customers table (DRQ-073 -- store starts EMPTY, forward-filled only)
+        # order-service owns its OWN `order_service` schema from day one, with
+        # NO CDC backfill from the (now-decommissioned) monolith's historical
+        # customers/orders rows (DRQ-073) -- it starts genuinely empty. This
+        # job's checkout fixtures place orders for customerId=1, which would
+        # 404 "No customer with id 1" (OrderService#placeOrder) without this
+        # one-time forward-fill -- a plain idempotent INSERT, not a Flyway
+        # migration, mirroring demos/demo-order-cutover.sh's identical step.
+        run: |
+          set -euo pipefail
+          PGPASSWORD=monolith_dev_only psql -h localhost -U monolith -d monolith -c "
+            INSERT INTO order_service.customers (id, name, email, created_at)
+            VALUES (1, 'Ada Lovelace', 'ada@example.com', now())
+            ON CONFLICT (id) DO NOTHING;
+            SELECT setval(pg_get_serial_sequence('order_service.customers','id'),
+                          (SELECT MAX(id) FROM order_service.customers));
+          "
+
+      - name: Wait for the Order service's order-saga Kafka consumer group to stabilize
+        # Load-bearing, not cosmetic (mirrors the removed monolith-order-saga
+        # wait this replaces, S11 cascade): a freshly-started consumer group
+        # can take up to its session-timeout window to be assigned partitions,
+        # independent of the HTTP health check above being green. Without this
+        # wait, the Notification Context Contract's 5a/5b bounded-wait-to-
+        # CONFIRMED can race the rebalance. order-service's OrderSagaListener
+        # has FOUR @Incoming channels (payment-captured, payment-declined,
+        # shipment-dispatched, shipment-failed), all defaulted to the SAME
+        # `order-service` SmallRye consumer group (quarkus.application.name,
+        # no group.id override) -- unlike the monolith's Spring Kafka
+        # listeners, SmallRye's Kafka client logs one "belongs to the
+        # 'order-service' consumer group" (SRMSG18257) line PER CHANNEL on
+        # connect (confirmed by hand: a clean boot produces exactly four such
+        # lines, one per @Incoming method) -- same signal shape
+        # shipping-equivalence-gate's shipping-service wait already relies on,
+        # extended here to require all four, mirroring the monolith wait's
+        # own four-listener discipline.
         run: |
           set -euo pipefail
           for i in $(seq 1 60); do
-            count=$(grep -c "monolith-order-saga: partitions assigned" examples/00-monolith/monolith.log || true)
+            count=$(grep -c "belongs to the 'order-service' consumer group" examples/07-order-service/quarkus.log || true)
             if [ "${count:-0}" -ge 4 ]; then
-              echo "monolith-order-saga consumer group stabilized (all four listeners assigned)."
-              exit 0
+              echo "order-service consumer group stabilized (all four channels assigned)."
+              break
             fi
             sleep 2
           done
-          echo "monolith-order-saga consumer group did not stabilize in time." >&2
-          cat examples/00-monolith/monolith.log || true
-          exit 1
+          count=$(grep -c "belongs to the 'order-service' consumer group" examples/07-order-service/quarkus.log || true)
+          if [ "${count:-0}" -lt 4 ]; then
+            echo "order-service consumer group did not stabilize in time." >&2
+            cat examples/07-order-service/quarkus.log || true
+            exit 1
+          fi
+          sleep 5
 
       - name: Wait for the Notification service to be ready on :8083
         run: |
@@ -564,8 +691,9 @@ jobs:
           exit 1
 
       - name: Wait for the strangler proxy to be ready on :8888
-        # Probe /api/orders (routes through the proxy to the monolith). This
-        # job's assertions are the Notification folder only; /api/orders is
+        # Probe /api/orders (routes through the proxy to the order service,
+        # order-plan.md S10 -- no monolith left to route to). This job's
+        # assertions are the Notification folder only; /api/orders is
         # sufficient to confirm the proxy itself is serving.
         run: |
           set -euo pipefail
@@ -603,8 +731,8 @@ jobs:
           echo "::group::shipping-service quarkus.log"
           cat examples/06-shipping-service/quarkus.log || true
           echo "::endgroup::"
-          echo "::group::monolith.log"
-          cat examples/00-monolith/monolith.log || true
+          echo "::group::order-service quarkus.log"
+          cat examples/07-order-service/quarkus.log || true
           echo "::endgroup::"
           echo "::group::notification-service quarkus.log"
           cat examples/03-notification-service/quarkus.log || true
@@ -625,8 +753,8 @@ jobs:
           if [ -f examples/06-shipping-service/quarkus.pid ]; then
             kill "$(cat examples/06-shipping-service/quarkus.pid)" || true
           fi
-          if [ -f examples/00-monolith/monolith.pid ]; then
-            kill "$(cat examples/00-monolith/monolith.pid)" || true
+          if [ -f examples/07-order-service/quarkus.pid ]; then
+            kill "$(cat examples/07-order-service/quarkus.pid)" || true
           fi
           if [ -f examples/03-notification-service/quarkus.pid ]; then
             kill "$(cat examples/03-notification-service/quarkus.pid)" || true
@@ -698,6 +826,20 @@ jobs:
   # (out-of-stock) does not need this: the order is rejected with 409 before
   # a checkout is ever placed, so there is no terminal-status bounded-wait to
   # race.
+  #
+  # S11 CASCADE (order-plan.md S11, DRQ-071 — the monolith is GONE): Scenario
+  # 1 and Scenario 3 both bounded-wait a checkout to a terminal order status
+  # (CONFIRMED / PAYMENT_DECLINED), now served exclusively by
+  # examples/07-order-service — the monolith's build/start/readiness/order-
+  # saga-consumer-group steps below are REMOVED (decommissioned, DRQ-070) and
+  # replaced by the equivalent order-service steps, same as
+  # notification-equivalence-gate's identical cascade above: build, start on
+  # :8087, seed its own empty-by-design `order_service.customers` row id=1
+  # (DRQ-073), and wait for its own `order-service` saga consumer group
+  # (4 channels) to stabilize instead of the monolith's. The GraphQL gateway
+  # is NOT added here — this job's folder set (Smoke/Scenario 1/2/3/Inventory
+  # Context Contract) never queries it, and plain `newman run` cannot flip
+  # `graphqlGatewayEnabled` regardless (see the top-of-file S11 header note).
   inventory-equivalence-gate:
     name: inventory-equivalence-gate
     runs-on: ubuntu-latest
@@ -773,14 +915,39 @@ jobs:
       - name: Install newman
         run: npm install -g newman
 
-      # No psql pre-apply: each service runs its OWN Flyway migrations on
-      # boot against the fresh Postgres service container — the monolith
-      # migrates `public` (V1-V4), examples/04-inventory-service migrates its
-      # own `inventory` schema (V1 create + V2 seed). Pre-applying DDL with
-      # psql would leave a non-empty schema with no flyway_schema_history and
-      # make either service's own Flyway refuse to start.
-      - name: Build the monolith
-        run: mvn -q -DskipTests -f examples/00-monolith package
+      # S11b FIX: review-service shares the `public` schema and is NOT its
+      # own Flyway migrator (quarkus.hibernate-orm.schema-management.
+      # strategy=none, see equivalence-gate's identical step above) --
+      # `public.reviews` was historically created by the monolith's own
+      # Flyway migrations when the monolith booted. order-plan.md S11
+      # decommissioned the monolith from this workflow entirely (DRQ-071),
+      # so nothing creates `public.reviews` anymore and this gate's checkout
+      # (routed through the proxy, which also fronts /api/reviews by
+      # committed default) 500s the moment anything touches review with
+      # "relation \"reviews\" does not exist". Apply the SAME committed,
+      # frozen monolith SQL equivalence-gate already applies, directly with
+      # psql, before the Review-adjacent services below start.
+      - name: Apply the monolith's schema + seed data to Postgres (public schema, for the Review service)
+        run: |
+          set -euo pipefail
+          PGPASSWORD=monolith_dev_only psql -h localhost -U monolith -d monolith \
+            -f examples/00-monolith/src/main/resources/db/migration/V1__init_schema.sql
+          PGPASSWORD=monolith_dev_only psql -h localhost -U monolith -d monolith \
+            -f examples/00-monolith/src/main/resources/db/migration/V2__seed_data.sql
+
+      # No psql pre-apply for any OTHER schema: each service runs its OWN
+      # Flyway migrations on boot against the fresh Postgres service
+      # container — order-service migrates its own `order_service` schema,
+      # examples/04-inventory-service migrates its own `inventory` schema
+      # (V1 create + V2 seed). Those schemas are untouched by the psql step
+      # above (which only targets `public`, a schema neither of them own),
+      # so each service's own flyway_schema_history is unaffected —
+      # pre-applying DDL to a service's OWN schema would leave it non-empty
+      # with no flyway_schema_history and make that service's own Flyway
+      # refuse to start.
+      - name: Build the Order service
+        working-directory: examples/07-order-service
+        run: ./mvnw -q -DskipTests package
 
       - name: Build the Inventory service
         working-directory: examples/04-inventory-service
@@ -840,9 +1007,11 @@ jobs:
         # shipping path — Scenario 1's CONFIRMED is reached via this
         # service's Camel Saga EIP coordinator emitting shipment.dispatched,
         # not an in-process dispatch. No SHIPPING_MODE override (that flag is
-        # gone, S9) and no ORDER_SERVICE_BASE_URL override (its default,
-        # http://localhost:8080, already matches the monolith below).
-        # Started before the monolith, same discipline as the Payment service
+        # gone, S9) and no ORDER_SERVICE_BASE_URL override: order-plan.md S10
+        # (DRQ-070) permanently rewired this service's own committed default
+        # from the (now-decommissioned) monolith's :8080 to the order
+        # service's :8087 — no runtime override needed here. Started before
+        # the order service below, same discipline as the Payment service
         # above, so the saga consumer is already subscribed before any
         # payment.captured is produced.
         working-directory: examples/06-shipping-service
@@ -852,27 +1021,26 @@ jobs:
           nohup java -jar target/quarkus-app/quarkus-run.jar > quarkus.log 2>&1 &
           echo $! > quarkus.pid
 
-      - name: Start the monolith (gRPC Reserve/Release client + outbox producer/order-saga consumer) on :8080
-        # No PAYMENT_MODE override: payment-plan S9 removed that flag entirely —
-        # choreographed is the only checkout path left. This is also the
-        # monolith's order-saga Kafka CONSUMER (OrderSagaListener reacting to
-        # payment.captured/payment.declined), not just an outbox producer.
-        working-directory: examples/00-monolith
+      - name: Start the Order service (outbox write path + four order-saga Kafka consumers + gRPC inventory client) on :8087
+        # S11 CASCADE: replaces the decommissioned monolith (order-plan.md
+        # S10, DRQ-070) as the sole /api/orders backend — the proxy's
+        # committed strangler.order.base-url=http://localhost:8087 default
+        # already expects it here, no runtime override needed.
+        working-directory: examples/07-order-service
         env:
-          SPRING_DATASOURCE_PASSWORD: monolith_dev_only
-          SPRING_KAFKA_BOOTSTRAP_SERVERS: localhost:9092
-          INVENTORY_GRPC_HOST: localhost
-          INVENTORY_GRPC_PORT: "9004"
+          KAFKA_BOOTSTRAP_SERVERS: localhost:9092
         run: |
-          nohup java -jar target/monolith.jar > monolith.log 2>&1 &
-          echo $! > monolith.pid
+          nohup java -jar target/quarkus-app/quarkus-run.jar > quarkus.log 2>&1 &
+          echo $! > quarkus.pid
 
       - name: Start the strangler proxy (inventory cutover flag committed-true) on :8888
         # strangler.inventory.enabled defaults to true in the proxy's
         # committed application.properties (inventory-plan.md S10 cutover) —
         # no override needed, /api/inventory already routes to :8084 by
         # default. strangler.shipping.enabled also defaults to true
-        # (shipping-plan S9) — no override needed either.
+        # (shipping-plan S9) — no override needed either. order-plan.md S10
+        # (DRQ-070) retired strangler.order.enabled too: /api/orders is now
+        # unconditionally routed to the order service started above.
         working-directory: examples/01-strangler-proxy
         run: |
           nohup java -jar target/quarkus-app/quarkus-run.jar > quarkus.log 2>&1 &
@@ -925,7 +1093,8 @@ jobs:
         # greps a connector-startup log line plus a short settle buffer
         # rather than a partitions-assigned line (the newer KIP-848 Kafka
         # consumer protocol this client uses does not emit the Spring-Kafka-
-        # style one-line INFO signal the monolith's wait below relies on).
+        # style one-line INFO signal the order service's wait below relies
+        # on).
         run: |
           set -euo pipefail
           for i in $(seq 1 60); do
@@ -942,51 +1111,62 @@ jobs:
           fi
           sleep 5
 
-      - name: Wait for the monolith to be ready on :8080
-        # NOTE: the monolith's own /api/inventory was removed at S11
-        # (decommission) — it now 404s by design (RemoteInventoryClient is
-        # the only inventory path, over gRPC). /api/orders (permitAll,
-        # seeded with order #1 by V2__seed_data.sql) is the readiness probe
-        # instead.
+      - name: Wait for the Order service to be ready on :8087
         run: |
           set -euo pipefail
           for i in $(seq 1 60); do
-            if curl -sf "http://localhost:8080/api/orders" > /dev/null; then
-              echo "Monolith is up."
+            if curl -sf "http://localhost:8087/api/orders" > /dev/null; then
+              echo "Order service is up."
               exit 0
             fi
             sleep 2
           done
-          echo "Monolith did not become ready in time." >&2
-          cat examples/00-monolith/monolith.log || true
+          echo "Order service did not become ready in time." >&2
+          cat examples/07-order-service/quarkus.log || true
           exit 1
 
-      - name: Wait for the monolith's order-saga Kafka consumer group to stabilize
-        # Load-bearing, not cosmetic (S10b FIX, mirroring payment-equivalence-gate):
-        # a freshly-started consumer group can take up to its session-timeout
-        # window to be assigned partitions, independent of the HTTP health check
-        # above being green. Without this wait, Scenario 1's bounded-wait-to-
-        # CONFIRMED and Scenario 3's bounded-wait-to-PAYMENT_DECLINED can race
-        # the rebalance. shipping-plan.md S10: OrderSagaListener grew from 2
-        # to 4 @KafkaListener methods at r07/S6 (payment.captured,
-        # payment.declined, shipment.dispatched, shipment.failed), all in the
-        # same monolith-order-saga consumer group — so this wait now requires
-        # ALL FOUR listener containers to log "partitions assigned" (not just
-        # two) before running the suite, or a result in the next step is a
-        # rebalance artifact rather than trustworthy evidence.
+      - name: Seed the Order service's own customers table (DRQ-073 -- store starts EMPTY, forward-filled only)
+        # See notification-equivalence-gate's identical step above — this
+        # job's Scenario 1/3 checkout fixtures also place orders for
+        # customerId=1, which would 404 without this one-time forward-fill.
+        run: |
+          set -euo pipefail
+          PGPASSWORD=monolith_dev_only psql -h localhost -U monolith -d monolith -c "
+            INSERT INTO order_service.customers (id, name, email, created_at)
+            VALUES (1, 'Ada Lovelace', 'ada@example.com', now())
+            ON CONFLICT (id) DO NOTHING;
+            SELECT setval(pg_get_serial_sequence('order_service.customers','id'),
+                          (SELECT MAX(id) FROM order_service.customers));
+          "
+
+      - name: Wait for the Order service's order-saga Kafka consumer group to stabilize
+        # Load-bearing, not cosmetic (mirrors the removed monolith-order-saga
+        # wait this replaces, S11 cascade): a freshly-started consumer group
+        # can take up to its session-timeout window to be assigned
+        # partitions, independent of the HTTP health check above being
+        # green. Without this wait, Scenario 1's bounded-wait-to-CONFIRMED
+        # and Scenario 3's bounded-wait-to-PAYMENT_DECLINED can race the
+        # rebalance. See notification-equivalence-gate's identical step above
+        # for why this greps four per-channel SmallRye connector lines
+        # (SRMSG18257) rather than a Spring-Kafka-style
+        # "partitions assigned" line.
         run: |
           set -euo pipefail
           for i in $(seq 1 60); do
-            count=$(grep -c "monolith-order-saga: partitions assigned" examples/00-monolith/monolith.log || true)
+            count=$(grep -c "belongs to the 'order-service' consumer group" examples/07-order-service/quarkus.log || true)
             if [ "${count:-0}" -ge 4 ]; then
-              echo "monolith-order-saga consumer group stabilized (all four listeners assigned)."
-              exit 0
+              echo "order-service consumer group stabilized (all four channels assigned)."
+              break
             fi
             sleep 2
           done
-          echo "monolith-order-saga consumer group did not stabilize in time." >&2
-          cat examples/00-monolith/monolith.log || true
-          exit 1
+          count=$(grep -c "belongs to the 'order-service' consumer group" examples/07-order-service/quarkus.log || true)
+          if [ "${count:-0}" -lt 4 ]; then
+            echo "order-service consumer group did not stabilize in time." >&2
+            cat examples/07-order-service/quarkus.log || true
+            exit 1
+          fi
+          sleep 5
 
       - name: Wait for the strangler proxy to be ready on :8888
         run: |
@@ -1030,8 +1210,8 @@ jobs:
           echo "::group::shipping-service quarkus.log"
           cat examples/06-shipping-service/quarkus.log || true
           echo "::endgroup::"
-          echo "::group::monolith.log"
-          cat examples/00-monolith/monolith.log || true
+          echo "::group::order-service quarkus.log"
+          cat examples/07-order-service/quarkus.log || true
           echo "::endgroup::"
           echo "::group::strangler-proxy quarkus.log"
           cat examples/01-strangler-proxy/quarkus.log || true
@@ -1049,8 +1229,8 @@ jobs:
           if [ -f examples/06-shipping-service/quarkus.pid ]; then
             kill "$(cat examples/06-shipping-service/quarkus.pid)" || true
           fi
-          if [ -f examples/00-monolith/monolith.pid ]; then
-            kill "$(cat examples/00-monolith/monolith.pid)" || true
+          if [ -f examples/07-order-service/quarkus.pid ]; then
+            kill "$(cat examples/07-order-service/quarkus.pid)" || true
           fi
           if [ -f examples/01-strangler-proxy/quarkus.pid ]; then
             kill "$(cat examples/01-strangler-proxy/quarkus.pid)" || true
@@ -1139,6 +1319,24 @@ jobs:
   # podman stack (mea-postgres/mea-kafka/mea-connect/mea-lgtm) was left
   # running, as required. The real GitHub Actions run of the job below is
   # unverifiable from this environment and is watched post-push.
+  #
+  # S11 CASCADE (order-plan.md S11, DRQ-071 — the monolith is GONE): this job
+  # runs the FULL, unfiltered suite, whose Scenario 1/3 bounded-wait a
+  # checkout to a terminal order status, now served exclusively by
+  # examples/07-order-service — the monolith's build/start/readiness/order-
+  # saga-consumer-group steps below are REMOVED (decommissioned, DRQ-070) and
+  # replaced by the equivalent order-service steps, same cascade as
+  # notification-equivalence-gate/inventory-equivalence-gate above: build,
+  # start on :8087, seed its own empty-by-design `order_service.customers`
+  # row id=1 (DRQ-073), and wait for its own `order-service` saga consumer
+  # group (4 channels) to stabilize instead of the monolith's. The GraphQL
+  # gateway is NOT added here — this job invokes plain `newman run`, which
+  # cannot flip the `graphqlGatewayEnabled` COLLECTION variable (see the
+  # top-of-file S11 header note), so the "GraphQL Gateway Contract" folder's
+  # GG-gate stays honestly PENDING here regardless, exactly as Scenario 4
+  # already does in this same job (see "WHY THE NODE-API HELPER" note in
+  # shipping-equivalence-gate below) — proving BOTH gated folders for real is
+  # `order-gateway-contract-gate`'s job, not this one's.
   payment-equivalence-gate:
     name: payment-equivalence-gate
     runs-on: ubuntu-latest
@@ -1210,15 +1408,40 @@ jobs:
       - name: Install newman
         run: npm install -g newman
 
-      # No psql pre-apply: every service below runs its OWN Flyway migrations
-      # on boot against the fresh Postgres service container (monolith:
-      # `public`, incl. V3's outbox; inventory: own `inventory` schema;
-      # payment: own `payment` schema; review/notification likewise own or
-      # share as already established). Pre-applying DDL with psql would leave
-      # a non-empty schema with no flyway_schema_history and make a service's
-      # own Flyway refuse to start.
-      - name: Build the monolith
-        run: mvn -q -DskipTests -f examples/00-monolith package
+      # S11b FIX: review-service shares the `public` schema and is NOT its
+      # own Flyway migrator (quarkus.hibernate-orm.schema-management.
+      # strategy=none, see equivalence-gate's identical step above) --
+      # `public.reviews` was historically created by the monolith's own
+      # Flyway migrations when the monolith booted. order-plan.md S11
+      # decommissioned the monolith from this workflow entirely (DRQ-071),
+      # so nothing creates `public.reviews` anymore and this job's Review
+      # Context Contract folder (and the FULL suite's /api/reviews calls)
+      # 500 the moment review is hit with "relation \"reviews\" does not
+      # exist". Apply the SAME committed, frozen monolith SQL
+      # equivalence-gate already applies, directly with psql, before the
+      # Review service starts below.
+      - name: Apply the monolith's schema + seed data to Postgres (public schema, for the Review service)
+        run: |
+          set -euo pipefail
+          PGPASSWORD=monolith_dev_only psql -h localhost -U monolith -d monolith \
+            -f examples/00-monolith/src/main/resources/db/migration/V1__init_schema.sql
+          PGPASSWORD=monolith_dev_only psql -h localhost -U monolith -d monolith \
+            -f examples/00-monolith/src/main/resources/db/migration/V2__seed_data.sql
+
+      # No psql pre-apply for any OTHER schema: every service below runs its
+      # OWN Flyway migrations on boot against the fresh Postgres service
+      # container (order-service: own `order_service` schema, incl. its own
+      # outbox and CQRS read model; inventory: own `inventory` schema;
+      # payment: own `payment` schema; notification: own `notification`
+      # schema). Those schemas are untouched by the psql step above (which
+      # only targets `public`, a schema none of them own), so each service's
+      # own flyway_schema_history is unaffected — pre-applying DDL to a
+      # service's OWN schema would leave it non-empty with no
+      # flyway_schema_history and make that service's own Flyway refuse to
+      # start.
+      - name: Build the Order service
+        working-directory: examples/07-order-service
+        run: ./mvnw -q -DskipTests package
 
       - name: Build the Inventory service
         working-directory: examples/04-inventory-service
@@ -1274,10 +1497,12 @@ jobs:
         # shipping path — Scenario 1's CONFIRMED is reached via this
         # service's Camel Saga EIP coordinator emitting shipment.dispatched,
         # not an in-process dispatch. No SHIPPING_MODE override (that flag is
-        # gone, S9) and no ORDER_SERVICE_BASE_URL override (its default,
-        # http://localhost:8080, already matches the monolith below). Started
-        # before the monolith, same discipline as the Payment service above,
-        # so the saga consumer is already subscribed before any
+        # gone, S9) and no ORDER_SERVICE_BASE_URL override: order-plan.md S10
+        # (DRQ-070) permanently rewired this service's own committed default
+        # from the (now-decommissioned) monolith's :8080 to the order
+        # service's :8087 — no runtime override needed here. Started before
+        # the order service below, same discipline as the Payment service
+        # above, so the saga consumer is already subscribed before any
         # payment.captured is produced.
         working-directory: examples/06-shipping-service
         env:
@@ -1307,29 +1532,31 @@ jobs:
           nohup java -jar target/quarkus-app/quarkus-run.jar > quarkus.log 2>&1 &
           echo $! > quarkus.pid
 
-      - name: Start the monolith (order-saga Kafka CONSUMER + outbox producer + gRPC inventory client) on :8080
-        # No PAYMENT_MODE override: payment-plan S9 removed that flag entirely
-        # — choreographed is the only checkout path left, committed. This is
-        # the monolith's FIRST Kafka consumer (OrderSagaListener, reacting to
-        # payment.captured/payment.declined), not just a producer.
-        working-directory: examples/00-monolith
+      - name: Start the Order service (outbox write path + four order-saga Kafka consumers + gRPC inventory client) on :8087
+        # S11 CASCADE: replaces the decommissioned monolith (order-plan.md
+        # S10, DRQ-070) as the sole /api/orders backend — the proxy's
+        # committed strangler.order.base-url=http://localhost:8087 default
+        # already expects it here, no runtime override needed. This is this
+        # service's own `order-service` SmallRye consumer group, reacting to
+        # payment.captured/payment.declined/shipment.dispatched/shipment.failed
+        # (OrderSagaListener, lifted unchanged from the monolith's, ch.26 S5).
+        working-directory: examples/07-order-service
         env:
-          SPRING_DATASOURCE_PASSWORD: monolith_dev_only
-          SPRING_KAFKA_BOOTSTRAP_SERVERS: localhost:9092
-          INVENTORY_GRPC_HOST: localhost
-          INVENTORY_GRPC_PORT: "9004"
+          KAFKA_BOOTSTRAP_SERVERS: localhost:9092
         run: |
-          nohup java -jar target/monolith.jar > monolith.log 2>&1 &
-          echo $! > monolith.pid
+          nohup java -jar target/quarkus-app/quarkus-run.jar > quarkus.log 2>&1 &
+          echo $! > quarkus.pid
 
       - name: Start the strangler proxy (all cutover flags at their committed defaults) on :8888
         # strangler.review.enabled / .notification.enabled / .inventory.enabled
         # / .payment.enabled / .shipping.enabled all default to true in the
         # proxy's committed application.properties — no runtime overrides
         # needed, unlike notification-equivalence-gate's historical
-        # flag-flip era. /api/orders (monolith), /api/reviews,
+        # flag-flip era. order-plan.md S10 (DRQ-070) retired
+        # strangler.order.enabled too: /api/orders is now unconditionally
+        # routed to the order service started above. /api/reviews,
         # /api/notifications, /api/inventory, /api/payments, and
-        # /api/shipments are all genuinely routed by committed default.
+        # /api/shipments are all genuinely routed by committed default too.
         working-directory: examples/01-strangler-proxy
         run: |
           nohup java -jar target/quarkus-app/quarkus-run.jar > quarkus.log 2>&1 &
@@ -1382,7 +1609,8 @@ jobs:
         # greps a connector-startup log line plus a short settle buffer
         # rather than a partitions-assigned line (the newer KIP-848 Kafka
         # consumer protocol this client uses does not emit the Spring-Kafka-
-        # style one-line INFO signal the monolith's wait below relies on).
+        # style one-line INFO signal the order service's wait below relies
+        # on).
         run: |
           set -euo pipefail
           for i in $(seq 1 60); do
@@ -1427,47 +1655,62 @@ jobs:
           cat examples/03-notification-service/quarkus.log || true
           exit 1
 
-      - name: Wait for the monolith to be ready on :8080
+      - name: Wait for the Order service to be ready on :8087
         run: |
           set -euo pipefail
           for i in $(seq 1 60); do
-            if curl -sf "http://localhost:8080/api/orders" > /dev/null; then
-              echo "Monolith is up."
+            if curl -sf "http://localhost:8087/api/orders" > /dev/null; then
+              echo "Order service is up."
               exit 0
             fi
             sleep 2
           done
-          echo "Monolith did not become ready in time." >&2
-          cat examples/00-monolith/monolith.log || true
+          echo "Order service did not become ready in time." >&2
+          cat examples/07-order-service/quarkus.log || true
           exit 1
 
-      - name: Wait for the monolith's order-saga Kafka consumer group to stabilize
-        # Load-bearing, not cosmetic: a freshly-started consumer group can take
-        # up to its session-timeout window to be assigned partitions,
-        # independent of the HTTP health check above being green. This
-        # job's own local red-then-green proof (see header) hit exactly this
-        # — a stale-member rebalance delay produced a FALSE red on Scenario 3
-        # unrelated to any real regression. shipping-plan.md S10:
-        # OrderSagaListener grew from 2 to 4 @KafkaListener methods at r07/S6
-        # (payment.captured, payment.declined, shipment.dispatched,
-        # shipment.failed), all in the same monolith-order-saga consumer
-        # group — so this wait now requires ALL FOUR listener containers to
-        # log "partitions assigned" (not just two) before running the suite,
-        # or a RED result in the next step could be a rebalance artifact
-        # rather than trustworthy evidence of a real regression.
+      - name: Seed the Order service's own customers table (DRQ-073 -- store starts EMPTY, forward-filled only)
+        # See notification-equivalence-gate's identical step above — this
+        # job's FULL-suite checkout fixtures also place orders for
+        # customerId=1, which would 404 without this one-time forward-fill.
+        run: |
+          set -euo pipefail
+          PGPASSWORD=monolith_dev_only psql -h localhost -U monolith -d monolith -c "
+            INSERT INTO order_service.customers (id, name, email, created_at)
+            VALUES (1, 'Ada Lovelace', 'ada@example.com', now())
+            ON CONFLICT (id) DO NOTHING;
+            SELECT setval(pg_get_serial_sequence('order_service.customers','id'),
+                          (SELECT MAX(id) FROM order_service.customers));
+          "
+
+      - name: Wait for the Order service's order-saga Kafka consumer group to stabilize
+        # Load-bearing, not cosmetic (mirrors the removed monolith-order-saga
+        # wait this replaces, S11 cascade): a freshly-started consumer group
+        # can take up to its session-timeout window to be assigned
+        # partitions, independent of the HTTP health check above being
+        # green. This job's own local red-then-green proof (see header) hit
+        # exactly this shape of rebalance-delay false-red against the old
+        # monolith wait. See notification-equivalence-gate's identical step
+        # above for why this greps four per-channel SmallRye connector lines
+        # (SRMSG18257) rather than a Spring-Kafka-style
+        # "partitions assigned" line.
         run: |
           set -euo pipefail
           for i in $(seq 1 60); do
-            count=$(grep -c "monolith-order-saga: partitions assigned" examples/00-monolith/monolith.log || true)
+            count=$(grep -c "belongs to the 'order-service' consumer group" examples/07-order-service/quarkus.log || true)
             if [ "${count:-0}" -ge 4 ]; then
-              echo "monolith-order-saga consumer group stabilized (all four listeners assigned)."
-              exit 0
+              echo "order-service consumer group stabilized (all four channels assigned)."
+              break
             fi
             sleep 2
           done
-          echo "monolith-order-saga consumer group did not stabilize in time." >&2
-          cat examples/00-monolith/monolith.log || true
-          exit 1
+          count=$(grep -c "belongs to the 'order-service' consumer group" examples/07-order-service/quarkus.log || true)
+          if [ "${count:-0}" -lt 4 ]; then
+            echo "order-service consumer group did not stabilize in time." >&2
+            cat examples/07-order-service/quarkus.log || true
+            exit 1
+          fi
+          sleep 5
 
       - name: Wait for the strangler proxy to be ready on :8888
         run: |
@@ -1523,8 +1766,8 @@ jobs:
           echo "::group::notification-service quarkus.log"
           cat examples/03-notification-service/quarkus.log || true
           echo "::endgroup::"
-          echo "::group::monolith.log"
-          cat examples/00-monolith/monolith.log || true
+          echo "::group::order-service quarkus.log"
+          cat examples/07-order-service/quarkus.log || true
           echo "::endgroup::"
           echo "::group::strangler-proxy quarkus.log"
           cat examples/01-strangler-proxy/quarkus.log || true
@@ -1548,8 +1791,8 @@ jobs:
           if [ -f examples/03-notification-service/quarkus.pid ]; then
             kill "$(cat examples/03-notification-service/quarkus.pid)" || true
           fi
-          if [ -f examples/00-monolith/monolith.pid ]; then
-            kill "$(cat examples/00-monolith/monolith.pid)" || true
+          if [ -f examples/07-order-service/quarkus.pid ]; then
+            kill "$(cat examples/07-order-service/quarkus.pid)" || true
           fi
           if [ -f examples/01-strangler-proxy/quarkus.pid ]; then
             kill "$(cat examples/01-strangler-proxy/quarkus.pid)" || true
@@ -1683,6 +1926,23 @@ jobs:
   # podman stack (mea-postgres/mea-kafka/mea-connect/mea-lgtm) was left
   # running, as required. The real GitHub Actions run of the job below is
   # unverifiable from this environment and is watched post-push.
+  #
+  # S11 CASCADE (order-plan.md S11, DRQ-071 — the monolith is GONE): this job
+  # runs the FULL suite via the Node-API helper, whose Scenario 1/4 bounded-
+  # wait a checkout to a terminal order status, now served exclusively by
+  # examples/07-order-service — the monolith's build/start/readiness/order-
+  # saga-consumer-group steps below are REMOVED (decommissioned, DRQ-070) and
+  # replaced by the equivalent order-service steps, same cascade as every
+  # sibling gate above: build, start on :8087, seed its own empty-by-design
+  # `order_service.customers` row id=1 (DRQ-073), and wait for its own
+  # `order-service` saga consumer group (4 channels) to stabilize instead of
+  # the monolith's. The GraphQL gateway is NOT added here —
+  # `run-shipping-newman.js` patches only `shippingSagaEnabled`, never
+  # `graphqlGatewayEnabled` (see that script's own header comment), so the
+  # "GraphQL Gateway Contract" folder's GG-gate stays honestly PENDING in
+  # this job regardless of whether the gateway is running — proving it for
+  # real is `order-gateway-contract-gate`'s job, not this one's (see the
+  # top-of-file S11 header note).
   shipping-equivalence-gate:
     name: shipping-equivalence-gate
     runs-on: ubuntu-latest
@@ -1757,15 +2017,40 @@ jobs:
         # `newman` binary on PATH.
         run: npm install newman
 
-      # No psql pre-apply: every service below runs its OWN Flyway migrations
-      # on boot against the fresh Postgres service container (monolith:
-      # `public`, incl. V4's AWAITING_SHIPMENT/SHIPPING_FAILED states;
-      # inventory/payment/review/notification/shipping each own their own
-      # schema). Pre-applying DDL with psql would leave a non-empty schema
-      # with no flyway_schema_history and make a service's own Flyway refuse
-      # to start.
-      - name: Build the monolith
-        run: mvn -q -DskipTests -f examples/00-monolith package
+      # S11b FIX: review-service shares the `public` schema and is NOT its
+      # own Flyway migrator (quarkus.hibernate-orm.schema-management.
+      # strategy=none, see equivalence-gate's identical step above) --
+      # `public.reviews` was historically created by the monolith's own
+      # Flyway migrations when the monolith booted. order-plan.md S11
+      # decommissioned the monolith from this workflow entirely (DRQ-071),
+      # so nothing creates `public.reviews` anymore and this job's Review
+      # Context Contract folder (and the FULL suite's /api/reviews calls)
+      # 500 the moment review is hit with "relation \"reviews\" does not
+      # exist". Apply the SAME committed, frozen monolith SQL
+      # equivalence-gate already applies, directly with psql, before the
+      # Review service starts below.
+      - name: Apply the monolith's schema + seed data to Postgres (public schema, for the Review service)
+        run: |
+          set -euo pipefail
+          PGPASSWORD=monolith_dev_only psql -h localhost -U monolith -d monolith \
+            -f examples/00-monolith/src/main/resources/db/migration/V1__init_schema.sql
+          PGPASSWORD=monolith_dev_only psql -h localhost -U monolith -d monolith \
+            -f examples/00-monolith/src/main/resources/db/migration/V2__seed_data.sql
+
+      # No psql pre-apply for any OTHER schema: every service below runs its
+      # OWN Flyway migrations on boot against the fresh Postgres service
+      # container (order-service: own `order_service` schema, incl. V4's
+      # AWAITING_SHIPMENT/SHIPPING_FAILED states, own outbox and CQRS read
+      # model; inventory/payment/notification/shipping each own their own
+      # schema). Those schemas are untouched by the psql step above (which
+      # only targets `public`, a schema none of them own), so each service's
+      # own flyway_schema_history is unaffected — pre-applying DDL to a
+      # service's OWN schema would leave it non-empty with no
+      # flyway_schema_history and make that service's own Flyway refuse to
+      # start.
+      - name: Build the Order service
+        working-directory: examples/07-order-service
+        run: ./mvnw -q -DskipTests package
 
       - name: Build the Inventory service
         working-directory: examples/04-inventory-service
@@ -1833,15 +2118,16 @@ jobs:
           echo $! > quarkus.pid
 
       - name: Start the Shipping service (payment.captured saga consumer + own outbox) on :8088
-        # THE CORE OF THIS GATE. No SHIPPING_MODE override on the monolith
-        # below (r07/ch.24 S9 removed that flag entirely — orchestrated is
-        # the only shipping path, committed) and no ORDER_SERVICE_BASE_URL
-        # override here (its default, http://localhost:8080, already matches
-        # the monolith started below — the saga's enrich step reads the
-        # order's shipping address from there). Started before the monolith,
-        # same ordering discipline as the Payment service above, so the saga
-        # consumer is already subscribed before any payment.captured is
-        # produced.
+        # THE CORE OF THIS GATE. No SHIPPING_MODE override (r07/ch.24 S9
+        # removed that flag entirely — orchestrated is the only shipping
+        # path, committed) and no ORDER_SERVICE_BASE_URL override: order-
+        # plan.md S10 (DRQ-070) permanently rewired this service's own
+        # committed default from the (now-decommissioned) monolith's :8080 to
+        # the order service's :8087 — the saga's enrich step reads the
+        # order's shipping address from there with no runtime override
+        # needed. Started before the order service below, same ordering
+        # discipline as the Payment service above, so the saga consumer is
+        # already subscribed before any payment.captured is produced.
         working-directory: examples/06-shipping-service
         env:
           KAFKA_BOOTSTRAP_SERVERS: localhost:9092
@@ -1849,31 +2135,31 @@ jobs:
           nohup java -jar target/quarkus-app/quarkus-run.jar > quarkus.log 2>&1 &
           echo $! > quarkus.pid
 
-      - name: Start the monolith (FOUR order-saga Kafka consumers + outbox producer + gRPC inventory client) on :8080
-        # No PAYMENT_MODE / SHIPPING_MODE overrides: both flags were removed
-        # by their respective S9 decommission steps — choreographed payment
-        # and orchestrated shipping are the only checkout paths left,
-        # committed. OrderSagaListener now has FOUR @KafkaListener methods
-        # (payment.captured, payment.declined, shipment.dispatched,
-        # shipment.failed), all in the monolith-order-saga consumer group.
-        working-directory: examples/00-monolith
+      - name: Start the Order service (outbox write path + four order-saga Kafka consumers + gRPC inventory client) on :8087
+        # S11 CASCADE: replaces the decommissioned monolith (order-plan.md
+        # S10, DRQ-070) as the sole /api/orders backend — the proxy's
+        # committed strangler.order.base-url=http://localhost:8087 default
+        # already expects it here, no runtime override needed.
+        # OrderSagaListener has FOUR @Incoming channels (payment-captured,
+        # payment-declined, shipment-dispatched, shipment-failed), all
+        # defaulted to the same `order-service` SmallRye consumer group.
+        working-directory: examples/07-order-service
         env:
-          SPRING_DATASOURCE_PASSWORD: monolith_dev_only
-          SPRING_KAFKA_BOOTSTRAP_SERVERS: localhost:9092
-          INVENTORY_GRPC_HOST: localhost
-          INVENTORY_GRPC_PORT: "9004"
+          KAFKA_BOOTSTRAP_SERVERS: localhost:9092
         run: |
-          nohup java -jar target/monolith.jar > monolith.log 2>&1 &
-          echo $! > monolith.pid
+          nohup java -jar target/quarkus-app/quarkus-run.jar > quarkus.log 2>&1 &
+          echo $! > quarkus.pid
 
       - name: Start the strangler proxy (all cutover flags at their committed defaults) on :8888
         # strangler.review.enabled / .notification.enabled / .inventory.enabled
         # / .payment.enabled / .shipping.enabled all default to true in the
         # proxy's committed application.properties (shipping-plan S9) — no
-        # runtime -D overrides needed anywhere in this job. /api/orders
-        # (monolith), /api/reviews, /api/notifications, /api/inventory,
-        # /api/payments, and /api/shipments are all genuinely routed by
-        # committed default.
+        # runtime -D overrides needed anywhere in this job. order-plan.md S10
+        # (DRQ-070) retired strangler.order.enabled too: /api/orders is now
+        # unconditionally routed to the order service started above.
+        # /api/reviews, /api/notifications, /api/inventory, /api/payments,
+        # and /api/shipments are all genuinely routed by committed default
+        # too.
         working-directory: examples/01-strangler-proxy
         run: |
           nohup java -jar target/quarkus-app/quarkus-run.jar > quarkus.log 2>&1 &
@@ -1985,47 +2271,69 @@ jobs:
           fi
           sleep 5
 
-      - name: Wait for the monolith to be ready on :8080
+      - name: Wait for the Order service to be ready on :8087
         run: |
           set -euo pipefail
           for i in $(seq 1 60); do
-            if curl -sf "http://localhost:8080/api/orders" > /dev/null; then
-              echo "Monolith is up."
+            if curl -sf "http://localhost:8087/api/orders" > /dev/null; then
+              echo "Order service is up."
               exit 0
             fi
             sleep 2
           done
-          echo "Monolith did not become ready in time." >&2
-          cat examples/00-monolith/monolith.log || true
+          echo "Order service did not become ready in time." >&2
+          cat examples/07-order-service/quarkus.log || true
           exit 1
 
-      - name: Wait for the monolith's order-saga Kafka consumer group to stabilize
-        # Load-bearing, not cosmetic (mirroring payment-equivalence-gate): a
-        # freshly-started consumer group can take up to its session-timeout
-        # window to be assigned partitions, independent of the HTTP health
-        # check above being green. OrderSagaListener has FOUR @KafkaListener
-        # methods (payment.captured, payment.declined, shipment.dispatched,
-        # shipment.failed), all in the monolith-order-saga consumer group
-        # (grown from two at r07/S6) — this wait requires ALL FOUR listener
-        # containers to log "partitions assigned" before running the suite,
-        # or a RED result in the next step could be a rebalance artifact
-        # rather than trustworthy evidence of a real regression (exactly the
-        # false-RED-on-Scenario-3 this discipline was originally added to
-        # prevent for payment, now doubly relevant with Scenario 1's longer
-        # chain and Scenario 4's new terminal outcome).
+      - name: Seed the Order service's own customers table (DRQ-073 -- store starts EMPTY, forward-filled only)
+        # See notification-equivalence-gate's identical step above — this
+        # job's FULL-suite checkout fixtures also place orders for
+        # customerId=1, which would 404 without this one-time forward-fill.
+        run: |
+          set -euo pipefail
+          PGPASSWORD=monolith_dev_only psql -h localhost -U monolith -d monolith -c "
+            INSERT INTO order_service.customers (id, name, email, created_at)
+            VALUES (1, 'Ada Lovelace', 'ada@example.com', now())
+            ON CONFLICT (id) DO NOTHING;
+            SELECT setval(pg_get_serial_sequence('order_service.customers','id'),
+                          (SELECT MAX(id) FROM order_service.customers));
+          "
+
+      - name: Wait for the Order service's order-saga Kafka consumer group to stabilize
+        # Load-bearing, not cosmetic (mirrors the removed monolith-order-saga
+        # wait this replaces, S11 cascade): a freshly-started consumer group
+        # can take up to its session-timeout window to be assigned
+        # partitions, independent of the HTTP health check above being
+        # green. OrderSagaListener has FOUR @Incoming channels
+        # (payment-captured, payment-declined, shipment-dispatched,
+        # shipment-failed), all defaulted to the SAME `order-service`
+        # SmallRye consumer group — this wait requires ALL FOUR channels to
+        # log their own "belongs to the 'order-service' consumer group"
+        # (SRMSG18257) line before running the suite (same per-channel
+        # connector-startup signal shape the Shipping service's wait above
+        # already relies on for its own, single-channel group), or a RED
+        # result in the next step could be a rebalance artifact rather than
+        # trustworthy evidence of a real regression (exactly the
+        # false-RED-on-Scenario-3 discipline the removed monolith wait
+        # existed to prevent, now doubly relevant with Scenario 1's longer
+        # chain and Scenario 4's terminal outcome).
         run: |
           set -euo pipefail
           for i in $(seq 1 60); do
-            count=$(grep -c "monolith-order-saga: partitions assigned" examples/00-monolith/monolith.log || true)
+            count=$(grep -c "belongs to the 'order-service' consumer group" examples/07-order-service/quarkus.log || true)
             if [ "${count:-0}" -ge 4 ]; then
-              echo "monolith-order-saga consumer group stabilized (all four listeners assigned)."
-              exit 0
+              echo "order-service consumer group stabilized (all four channels assigned)."
+              break
             fi
             sleep 2
           done
-          echo "monolith-order-saga consumer group did not stabilize in time." >&2
-          cat examples/00-monolith/monolith.log || true
-          exit 1
+          count=$(grep -c "belongs to the 'order-service' consumer group" examples/07-order-service/quarkus.log || true)
+          if [ "${count:-0}" -lt 4 ]; then
+            echo "order-service consumer group did not stabilize in time." >&2
+            cat examples/07-order-service/quarkus.log || true
+            exit 1
+          fi
+          sleep 5
 
       - name: Wait for the strangler proxy to be ready on :8888
         run: |
@@ -2075,8 +2383,8 @@ jobs:
           echo "::group::shipping-service quarkus.log"
           cat examples/06-shipping-service/quarkus.log || true
           echo "::endgroup::"
-          echo "::group::monolith.log"
-          cat examples/00-monolith/monolith.log || true
+          echo "::group::order-service quarkus.log"
+          cat examples/07-order-service/quarkus.log || true
           echo "::endgroup::"
           echo "::group::strangler-proxy quarkus.log"
           cat examples/01-strangler-proxy/quarkus.log || true
@@ -2100,8 +2408,625 @@ jobs:
           if [ -f examples/06-shipping-service/quarkus.pid ]; then
             kill "$(cat examples/06-shipping-service/quarkus.pid)" || true
           fi
-          if [ -f examples/00-monolith/monolith.pid ]; then
-            kill "$(cat examples/00-monolith/monolith.pid)" || true
+          if [ -f examples/07-order-service/quarkus.pid ]; then
+            kill "$(cat examples/07-order-service/quarkus.pid)" || true
+          fi
+          if [ -f examples/01-strangler-proxy/quarkus.pid ]; then
+            kill "$(cat examples/01-strangler-proxy/quarkus.pid)" || true
+          fi
+
+  # order-gateway-contract-gate (order-plan.md S11, ch.26, DRQ-071) — THE
+  # FINAL GATE, covering the LAST extraction (examples/07-order-service) and
+  # the additive GraphQL aggregation gateway (examples/08-graphql-gateway,
+  # :8090 — its own front door, never routed through the proxy, DRQ-069).
+  # Sibling of equivalence-gate (Review), notification-equivalence-gate
+  # (async outbox->Kafka), inventory-equivalence-gate (gRPC),
+  # payment-equivalence-gate (CHOREOGRAPHED saga), and shipping-equivalence-
+  # gate (ORCHESTRATED saga) above — and the ONLY one that brings up the
+  # fully-extracted system with NO LIVE MONOLITH ANYWHERE (DRQ-071): by this
+  # point order-plan.md S10 has irreversibly decommissioned it (DRQ-070), so
+  # this job's topology is the permanent shape of the system from here on —
+  # inventory/payment/shipping/review/notification/order/gateway + the
+  # proxy, now a flagless, permanent REST edge router.
+  #
+  # THE GATE: this job runs the FULL, unedited Newman collection (every
+  # folder — Smoke, Scenario 1/2/3/4, Review/Notification/Inventory/Payment/
+  # Shipping/Order Context Contract, AND the GraphQL Gateway Contract) through
+  # the proxy on :8888, via the Node-API helper (demos/lib/run-order-newman.js,
+  # modeled on run-shipping-newman.js) with BOTH collection-scoped gate
+  # variables — `shippingSagaEnabled` AND `graphqlGatewayEnabled` — patched to
+  # "true" in memory (newman's `--env-var` CLI flag cannot reach
+  # collection-scope; see that script's header comment and the top-of-file S11
+  # header note). This is non-vacuous specifically because BOTH gates are
+  # genuinely flipped: Scenario 4 (Shipping-Failure, the cross-context
+  # compensation crux) and the GraphQL Gateway Contract's GG-a/GG-b (the
+  # order(id) aggregation query spanning order+items+stock+reviews+payments+
+  # shipments, resolved by the gateway calling every extracted service over
+  # the SAME protocol its other consumers use — REST for order/payment/
+  # shipping/review, gRPC for inventory) both genuinely execute, not silently
+  # skip. A non-zero exit from the helper (newman reported >=1 failed
+  # assertion, or a setup error) fails the job.
+  #
+  # Readiness gating: the order service's own `order-service` SmallRye
+  # consumer group (FOUR @Incoming channels — payment-captured,
+  # payment-declined, shipment-dispatched, shipment-failed, all in one
+  # group) must be fully stabilized before the suite runs, or Scenario 1/3/4's
+  # bounded-waits flake/false-fail — mirroring the monolith-order-saga wait
+  # every full-suite sibling gate used before S11, now against order-service's
+  # own group (see the per-channel SRMSG18257 "belongs to the 'order-service'
+  # consumer group" line, confirmed by hand to appear exactly four times on a
+  # clean boot — one per @Incoming method). The gateway additionally gets a
+  # short settle after its own health check, since its REST/gRPC clients to
+  # every downstream service are lazily-initialized on first use and the
+  # GG-a/b assertions are the FIRST requests this job ever sends it.
+  #
+  # DRQ-073 (order-service owns its data from day one, no CDC backfill): its
+  # `order_service.customers` table starts genuinely EMPTY — this job's
+  # checkout fixtures (customerId=1) would 404 "No customer with id 1"
+  # (OrderService#placeOrder) without the one-time forward-fill seed step
+  # below, mirroring demos/demo-order-cutover.sh's identical discipline.
+  #
+  # Red->green proof (acceptance criterion, order-plan.md S11): this job was
+  # validated LOCALLY before being committed (GitHub Actions cannot be
+  # triggered from this environment) by bringing up the exact topology below
+  # — minus the monolith, which this job never starts — against the local
+  # podman stack (mea-postgres/mea-kafka) and running this job's exact
+  # commands by hand:
+  #
+  #   1. GREEN baseline: the full suite via the helper
+  #      (shippingSagaEnabled=true, graphqlGatewayEnabled=true) —
+  #      164-173/164-173 assertions across repeated runs (the small
+  #      assertion-count delta between runs is the same documented
+  #      bounded-wait retry-count variance every prior gate's header
+  #      documents, not a correctness difference), 0 failed, newman exit 0.
+  #      The helper's own console banner confirmed 'GraphQL Gateway Contract
+  #      ENABLED (graphqlGatewayEnabled=true) -- running the order(id)
+  #      aggregation assertions,' and GG-a's response carried a non-null
+  #      OrderAggregate with nested stock/reviews, at least one CAPTURED
+  #      payment, and at least one dispatched shipment — proving the
+  #      aggregation genuinely queried every extracted service live, with NO
+  #      monolith anywhere in the topology.
+  #   2. DELIBERATE BREAK #1 — CQRS non-vacuity (H2): in a LOCAL working copy
+  #      only, examples/07-order-service's OrderSagaListener#onShipmentDispatched
+  #      had its `orderViewProjector.project(order, null, "DISPATCHED");` call
+  #      commented out (the write-model `order.confirm()` call directly above
+  #      it was left untouched), the order service was rebuilt
+  #      (`./mvnw -q -DskipTests package`) and restarted. Re-running "Scenario
+  #      1 — Happy-Path Checkout" alone (after draining the order-service
+  #      consumer group's lag to zero and a settle buffer, isolating the
+  #      failure to the break itself rather than a restart-timing artifact —
+  #      this long-lived shared dev broker's accumulated history makes that
+  #      drain necessary locally; a fresh CI Kafka service container starts
+  #      with no history to replay) went RED: newman exit 1, 1/34 assertions
+  #      failed — "1c. Bounded-wait poll: order reaches CONFIRMED ... order 429
+  #      status after 20 attempt(s): expected 'AWAITING_SHIPMENT' to deeply
+  #      equal 'CONFIRMED'". A direct query confirmed the WRITE model
+  #      (order_service.orders.status) had genuinely reached `CONFIRMED` while
+  #      the READ model (order_service.order_view.status) stayed stale at
+  #      `AWAITING_SHIPMENT` — proving GET /api/orders/{id} (which reads
+  #      EXCLUSIVELY from the projection, OrderViewRepository's documented
+  #      discipline) is a real, non-vacuous CQRS read, not a disguised
+  #      pass-through to the aggregate.
+  #   3. REVERT #1: the local edit was reverted BYTE-FOR-BYTE (confirmed via
+  #      `git status --porcelain -- examples/07-order-service` reporting
+  #      nothing, i.e. a clean working tree, before this workflow file was
+  #      committed), the order service rebuilt and restarted clean, consumer
+  #      group drained, and "Scenario 1 — Happy-Path Checkout" re-run GREEN
+  #      again — 19/19 assertions, 0 failed, newman exit 0.
+  #   4. DELIBERATE BREAK #2 — compensation non-vacuity (H3): in a LOCAL
+  #      working copy only, OrderSagaListener#onShipmentFailed had its
+  #      `remoteInventoryClient.release(item.getSku(), item.getQuantity());`
+  #      call commented out (the `order.failShipping()` status transition and
+  #      the read-model projection call were left untouched), the order
+  #      service was rebuilt and restarted. Re-running "Scenario 4 —
+  #      Shipping-Failure" alone (same drain-and-settle discipline) went RED:
+  #      newman exit 1, 1/34 assertions failed — "SF-d. Bounded-wait poll:
+  #      inventory returns to net-zero after the shipping failure ...
+  #      quantityOnHand after 20 attempt(s): expected 477 to deeply equal
+  #      478" — while SF-c (order reaches SHIPPING_FAILED) still PASSED,
+  #      proving the RED was isolated cleanly to the missing compensation
+  #      (the status transition itself was never broken), not a flaky
+  #      consumer group or a confounded failure.
+  #   5. REVERT #2: the local edit was reverted BYTE-FOR-BYTE (confirmed via
+  #      `git status --porcelain -- examples/07-order-service` reporting
+  #      nothing again), the order service rebuilt and restarted clean,
+  #      consumer group drained, and the FULL suite re-run GREEN twice more
+  #      via the helper — 167/167 and 168/168 assertions, 0 failed, newman
+  #      exit 0 both times — confirming the restore and ruling out a
+  #      one-off pass.
+  #
+  # All services started during this local proof were stopped afterward; the
+  # scratch `npm install newman` performed locally to resolve the helper's
+  # `require('newman')` was removed afterward (this job installs its own
+  # copy fresh in CI, same as shipping-equivalence-gate); the podman stack
+  # (mea-postgres/mea-kafka/mea-connect/mea-lgtm) was left running, as
+  # required. The real GitHub Actions run of the job below is unverifiable
+  # from this environment and is watched post-push.
+  order-gateway-contract-gate:
+    name: order-gateway-contract-gate
+    runs-on: ubuntu-latest
+
+    # Postgres + Kafka (same images/tags/creds as every other gate — the SAME
+    # contract as local dev, not a CI-only substitute). Kafka is genuinely
+    # load-bearing: the order service's four saga consumers and the shipping
+    # service's payment.captured consumer are real consumers this job's
+    # assertions depend on.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: monolith
+          POSTGRES_USER: monolith
+          POSTGRES_PASSWORD: monolith_dev_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U monolith -d monolith"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 12
+
+      kafka:
+        image: docker.io/apache/kafka:3.8.0
+        env:
+          KAFKA_NODE_ID: 1
+          KAFKA_PROCESS_ROLES: broker,controller
+          KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+          KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+          KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+          KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+          KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+          KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+          KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+          KAFKA_NUM_PARTITIONS: 3
+          KAFKA_DEFAULT_REPLICATION_FACTOR: 1
+          KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+          KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+          KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+          KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+          CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+        ports:
+          - 9092:9092
+        options: >-
+          --health-cmd "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 24
+          --health-start-period 30s
+
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v5
+
+      - name: Set up JDK 25 (temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+
+      - name: Set up Node (for newman)
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install newman
+        # Installed as a locally-resolvable module (not just the global CLI)
+        # so demos/lib/run-order-newman.js's require('newman') resolves — same
+        # discipline as shipping-equivalence-gate's identical step.
+        run: npm install newman
+
+      # S11b FIX: review-service shares the `public` schema and is NOT its
+      # own Flyway migrator (quarkus.hibernate-orm.schema-management.
+      # strategy=none, see equivalence-gate's identical step above) --
+      # `public.reviews` was historically created by the monolith's own
+      # Flyway migrations when the monolith booted. order-plan.md S11
+      # decommissioned the monolith from this workflow entirely (DRQ-071),
+      # so nothing creates `public.reviews` anymore and this job's Review
+      # Context Contract folder (and the GraphQL gateway's own `reviews`
+      # aggregation field, DRQ-069) 500 the moment review is hit with
+      # "relation \"reviews\" does not exist". Apply the SAME committed,
+      # frozen monolith SQL equivalence-gate already applies, directly with
+      # psql, before the Review service starts below.
+      - name: Apply the monolith's schema + seed data to Postgres (public schema, for the Review service)
+        run: |
+          set -euo pipefail
+          PGPASSWORD=monolith_dev_only psql -h localhost -U monolith -d monolith \
+            -f examples/00-monolith/src/main/resources/db/migration/V1__init_schema.sql
+          PGPASSWORD=monolith_dev_only psql -h localhost -U monolith -d monolith \
+            -f examples/00-monolith/src/main/resources/db/migration/V2__seed_data.sql
+
+      # No psql pre-apply for any OTHER schema: every service below runs its
+      # OWN Flyway migrations on boot against the fresh Postgres service
+      # container — order-service migrates its own `order_service` schema
+      # (incl. its own outbox and CQRS read model); inventory/payment/
+      # notification/shipping each own their own schema. The graphql-gateway
+      # owns no schema at all (it is a pure aggregator, DRQ-069) and runs no
+      # migration. Those schemas are untouched by the psql step above (which
+      # only targets `public`, a schema none of them own), so each service's
+      # own flyway_schema_history is unaffected — pre-applying DDL to a
+      # service's OWN schema would leave it non-empty with no
+      # flyway_schema_history and make that service's own Flyway refuse to
+      # start.
+      - name: Build the Order service
+        working-directory: examples/07-order-service
+        run: ./mvnw -q -DskipTests package
+
+      - name: Build the GraphQL gateway
+        working-directory: examples/08-graphql-gateway
+        run: ./mvnw -q -DskipTests package
+
+      - name: Build the Inventory service
+        working-directory: examples/04-inventory-service
+        run: ./mvnw -q -DskipTests package
+
+      - name: Build the Payment service
+        working-directory: examples/05-payment-service
+        run: ./mvnw -q -DskipTests package
+
+      - name: Build the Review service
+        working-directory: examples/02-review-service
+        run: ./mvnw -q -DskipTests package
+
+      - name: Build the Notification service
+        working-directory: examples/03-notification-service
+        run: ./mvnw -q -DskipTests package
+
+      - name: Build the Shipping service
+        working-directory: examples/06-shipping-service
+        run: ./mvnw -q -DskipTests package
+
+      - name: Build the strangler proxy
+        working-directory: examples/01-strangler-proxy
+        run: ./mvnw -q -DskipTests package
+
+      - name: Start the Inventory service (REST :8084 + gRPC :9004) — seeds itself via Flyway
+        # Checkout's synchronous gRPC Reserve has no in-JVM fallback — started
+        # first, same discipline as every other gate.
+        working-directory: examples/04-inventory-service
+        run: |
+          nohup java -jar target/quarkus-app/quarkus-run.jar > quarkus.log 2>&1 &
+          echo $! > quarkus.pid
+
+      - name: Start the Payment service (order.placed consumer + own outbox) on :8085
+        working-directory: examples/05-payment-service
+        env:
+          KAFKA_BOOTSTRAP_SERVERS: localhost:9092
+        run: |
+          nohup java -jar target/quarkus-app/quarkus-run.jar > quarkus.log 2>&1 &
+          echo $! > quarkus.pid
+
+      - name: Start the Review service on :8081
+        # Required for the FULL suite's Review Context Contract folder.
+        working-directory: examples/02-review-service
+        run: |
+          nohup java -jar target/quarkus-app/quarkus-run.jar > quarkus.log 2>&1 &
+          echo $! > quarkus.pid
+
+      - name: Start the Notification service (Kafka consumer) on :8083
+        # Required for the FULL suite's Notification Context Contract folder.
+        working-directory: examples/03-notification-service
+        env:
+          KAFKA_BOOTSTRAP_SERVERS: localhost:9092
+        run: |
+          nohup java -jar target/quarkus-app/quarkus-run.jar > quarkus.log 2>&1 &
+          echo $! > quarkus.pid
+
+      - name: Start the Shipping service (payment.captured saga consumer + own outbox) on :8088
+        # No ORDER_SERVICE_BASE_URL override needed: order-plan.md S10
+        # (DRQ-070) permanently rewired this service's own committed default
+        # from the decommissioned monolith's :8080 to the order service's
+        # :8087 — the saga's enrich step reads the order's shipping address
+        # from there. Started before the order service below, so the saga
+        # consumer is already subscribed before any payment.captured is
+        # produced.
+        working-directory: examples/06-shipping-service
+        env:
+          KAFKA_BOOTSTRAP_SERVERS: localhost:9092
+        run: |
+          nohup java -jar target/quarkus-app/quarkus-run.jar > quarkus.log 2>&1 &
+          echo $! > quarkus.pid
+
+      - name: Start the Order service (outbox write path + four order-saga Kafka consumers + gRPC inventory client) on :8087
+        # THE CORE OF THIS GATE, alongside the gateway below. NO LIVE
+        # MONOLITH ANYWHERE in this job's topology (DRQ-071) — the proxy's
+        # committed strangler.order.base-url=http://localhost:8087 default
+        # already expects this service here, no runtime override needed.
+        working-directory: examples/07-order-service
+        env:
+          KAFKA_BOOTSTRAP_SERVERS: localhost:9092
+        run: |
+          nohup java -jar target/quarkus-app/quarkus-run.jar > quarkus.log 2>&1 &
+          echo $! > quarkus.pid
+
+      - name: Start the GraphQL gateway (order+payment+shipping+review REST clients, inventory gRPC client) on :8090
+        # THE OTHER CORE OF THIS GATE. Owns no data, routes no request through
+        # the proxy (DRQ-069, its own front door) — every downstream target
+        # is fixed operator config in its own application.properties, already
+        # matching every service's port started above (ORDER_SERVICE_URL
+        # defaults to :8087, PAYMENT_SERVICE_URL to :8085, SHIPPING_SERVICE_URL
+        # to :8088, REVIEW_SERVICE_URL to :8081, INVENTORY_GRPC_HOST/PORT to
+        # localhost:9004) — no runtime overrides needed.
+        working-directory: examples/08-graphql-gateway
+        run: |
+          nohup java -jar target/quarkus-app/quarkus-run.jar > quarkus.log 2>&1 &
+          echo $! > quarkus.pid
+
+      - name: Start the strangler proxy (all cutover flags retired, unconditional routing) on :8888
+        # order-plan.md S10 (DRQ-070) retired EVERY strangler.*.enabled flag,
+        # including strangler.order.enabled — routing is unconditional,
+        # dispatching on URI path prefix alone to one of the six services
+        # above, with NO monolith fallback anywhere. The GraphQL gateway is
+        # NEVER routed through this proxy (DRQ-069) — newman's GG-a/b requests
+        # target {{graphqlGatewayBaseUrl}} (default http://localhost:8090,
+        # already matching the gateway above) directly, independent of
+        # {{baseUrl}}.
+        working-directory: examples/01-strangler-proxy
+        run: |
+          nohup java -jar target/quarkus-app/quarkus-run.jar > quarkus.log 2>&1 &
+          echo $! > quarkus.pid
+
+      - name: Wait for the Inventory service to be ready on :8084
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 60); do
+            if curl -sf "http://localhost:8084/api/inventory" > /dev/null; then
+              echo "Inventory service is up."
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Inventory service did not become ready in time." >&2
+          cat examples/04-inventory-service/quarkus.log || true
+          exit 1
+
+      - name: Wait for the Payment service to be ready on :8085
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 60); do
+            if curl -sf "http://localhost:8085/api/payments?orderId=1" > /dev/null; then
+              echo "Payment service is up."
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Payment service did not become ready in time." >&2
+          cat examples/05-payment-service/quarkus.log || true
+          exit 1
+
+      - name: Wait for the Review service to be ready on :8081
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 60); do
+            if curl -sf "http://localhost:8081/api/reviews?sku=SKU-WIDGET-001" > /dev/null; then
+              echo "Review service is up."
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Review service did not become ready in time." >&2
+          cat examples/02-review-service/quarkus.log || true
+          exit 1
+
+      - name: Wait for the Notification service to be ready on :8083
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 60); do
+            if curl -sf "http://localhost:8083/api/notifications?customerId=1" > /dev/null; then
+              echo "Notification service is up."
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Notification service did not become ready in time." >&2
+          cat examples/03-notification-service/quarkus.log || true
+          exit 1
+
+      - name: Wait for the Shipping service to be ready on :8088
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 60); do
+            if curl -sf "http://localhost:8088/api/shipments?orderId=1" > /dev/null; then
+              echo "Shipping service is up."
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Shipping service did not become ready in time." >&2
+          cat examples/06-shipping-service/quarkus.log || true
+          exit 1
+
+      - name: Wait for the Shipping service's payment.captured saga consumer to connect
+        # See shipping-equivalence-gate's identical step for why this greps a
+        # connector-startup log line plus a short settle buffer rather than a
+        # partitions-assigned line.
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 60); do
+            if grep -q "belongs to the 'shipping-service' consumer group" examples/06-shipping-service/quarkus.log 2>/dev/null; then
+              echo "shipping-service payment.captured consumer connected."
+              break
+            fi
+            sleep 2
+          done
+          if ! grep -q "belongs to the 'shipping-service' consumer group" examples/06-shipping-service/quarkus.log 2>/dev/null; then
+            echo "shipping-service payment.captured consumer did not connect in time." >&2
+            cat examples/06-shipping-service/quarkus.log || true
+            exit 1
+          fi
+          sleep 5
+
+      - name: Wait for the Order service to be ready on :8087
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 60); do
+            if curl -sf "http://localhost:8087/api/orders" > /dev/null; then
+              echo "Order service is up."
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Order service did not become ready in time." >&2
+          cat examples/07-order-service/quarkus.log || true
+          exit 1
+
+      - name: Seed the Order service's own customers table (DRQ-073 -- store starts EMPTY, forward-filled only)
+        # order-service owns its OWN `order_service` schema from day one, with
+        # NO CDC backfill from the (decommissioned) monolith's historical
+        # customers/orders rows (DRQ-073) -- it starts genuinely empty. This
+        # job's checkout fixtures place orders for customerId=1, which would
+        # 404 "No customer with id 1" (OrderService#placeOrder) without this
+        # one-time forward-fill -- a plain idempotent INSERT, not a Flyway
+        # migration, mirroring demos/demo-order-cutover.sh's identical step.
+        run: |
+          set -euo pipefail
+          PGPASSWORD=monolith_dev_only psql -h localhost -U monolith -d monolith -c "
+            INSERT INTO order_service.customers (id, name, email, created_at)
+            VALUES (1, 'Ada Lovelace', 'ada@example.com', now())
+            ON CONFLICT (id) DO NOTHING;
+            SELECT setval(pg_get_serial_sequence('order_service.customers','id'),
+                          (SELECT MAX(id) FROM order_service.customers));
+          "
+
+      - name: Wait for the Order service's order-saga Kafka consumer group to stabilize
+        # Load-bearing, not cosmetic: a freshly-started consumer group can
+        # take up to its session-timeout window to be assigned partitions,
+        # independent of the HTTP health check above being green. Without
+        # this wait, Scenario 1/3/4's bounded-waits-to-terminal-status can
+        # race the rebalance. OrderSagaListener has FOUR @Incoming channels
+        # (payment-captured, payment-declined, shipment-dispatched,
+        # shipment-failed), all defaulted to the SAME `order-service`
+        # SmallRye consumer group — this wait requires ALL FOUR channels to
+        # log their own "belongs to the 'order-service' consumer group"
+        # (SRMSG18257) line (confirmed by hand: a clean boot produces exactly
+        # four such lines, one per @Incoming method) before running the
+        # suite, mirroring every full-suite sibling gate's former
+        # monolith-order-saga discipline, now against this service's own
+        # group.
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 60); do
+            count=$(grep -c "belongs to the 'order-service' consumer group" examples/07-order-service/quarkus.log || true)
+            if [ "${count:-0}" -ge 4 ]; then
+              echo "order-service consumer group stabilized (all four channels assigned)."
+              break
+            fi
+            sleep 2
+          done
+          count=$(grep -c "belongs to the 'order-service' consumer group" examples/07-order-service/quarkus.log || true)
+          if [ "${count:-0}" -lt 4 ]; then
+            echo "order-service consumer group did not stabilize in time." >&2
+            cat examples/07-order-service/quarkus.log || true
+            exit 1
+          fi
+          sleep 5
+
+      - name: Wait for the GraphQL gateway to be ready on :8090
+        # Probes the standard Quarkus health endpoint (quarkus-smallrye-health,
+        # same as demos/demo-order-cutover.sh's identical check) — the gateway
+        # exposes no domain REST surface of its own to probe, only /graphql.
+        # A short settle follows: its REST/gRPC clients to every downstream
+        # service are lazily-initialized on first use, and the suite's GG-a/b
+        # requests are the first this job ever sends it.
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 60); do
+            if curl -sf "http://localhost:8090/q/health" > /dev/null; then
+              echo "GraphQL gateway is up."
+              break
+            fi
+            sleep 2
+          done
+          if ! curl -sf "http://localhost:8090/q/health" > /dev/null; then
+            echo "GraphQL gateway did not become ready in time." >&2
+            cat examples/08-graphql-gateway/quarkus.log || true
+            exit 1
+          fi
+          sleep 5
+
+      - name: Wait for the strangler proxy to be ready on :8888
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 60); do
+            if curl -sf "http://localhost:8888/api/orders" > /dev/null; then
+              echo "Strangler proxy is up."
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Strangler proxy did not become ready in time." >&2
+          cat examples/01-strangler-proxy/quarkus.log || true
+          exit 1
+
+      - name: Run the FULL contract suite through the edge router, BOTH gates ENABLED — the order/gateway contract gate
+        # THE GATE. Uses the committed Node-API helper
+        # (demos/lib/run-order-newman.js), NOT a plain `newman run` CLI
+        # invocation — newman's `--env-var` flag cannot reach the
+        # collection-scoped `shippingSagaEnabled`/`graphqlGatewayEnabled`
+        # variables (see that script's header comment and the top-of-file S11
+        # header note); using it anyway would SILENTLY SKIP Scenario 4 and the
+        # GraphQL Gateway Contract folder (a false green on this extraction's
+        # crux). The helper patches BOTH variables to "true" on an IN-MEMORY
+        # copy of the collection (the committed file on disk is never written
+        # to) and runs the full, unedited suite — every folder, including
+        # Order Context Contract and GraphQL Gateway Contract — through the
+        # proxy on :8888 (the GraphQL requests themselves target
+        # {{graphqlGatewayBaseUrl}}, :8090, directly — DRQ-069). A non-zero
+        # exit from the helper (newman reported >=1 failed assertion, or a
+        # setup error) fails the job.
+        run: |
+          node demos/lib/run-order-newman.js "$PWD" "http://localhost:8888" "true"
+
+      - name: Dump service logs on failure
+        if: failure()
+        run: |
+          echo "::group::inventory-service quarkus.log"
+          cat examples/04-inventory-service/quarkus.log || true
+          echo "::endgroup::"
+          echo "::group::payment-service quarkus.log"
+          cat examples/05-payment-service/quarkus.log || true
+          echo "::endgroup::"
+          echo "::group::review-service quarkus.log"
+          cat examples/02-review-service/quarkus.log || true
+          echo "::endgroup::"
+          echo "::group::notification-service quarkus.log"
+          cat examples/03-notification-service/quarkus.log || true
+          echo "::endgroup::"
+          echo "::group::shipping-service quarkus.log"
+          cat examples/06-shipping-service/quarkus.log || true
+          echo "::endgroup::"
+          echo "::group::order-service quarkus.log"
+          cat examples/07-order-service/quarkus.log || true
+          echo "::endgroup::"
+          echo "::group::graphql-gateway quarkus.log"
+          cat examples/08-graphql-gateway/quarkus.log || true
+          echo "::endgroup::"
+          echo "::group::strangler-proxy quarkus.log"
+          cat examples/01-strangler-proxy/quarkus.log || true
+          echo "::endgroup::"
+
+      - name: Stop the services
+        if: always()
+        run: |
+          if [ -f examples/04-inventory-service/quarkus.pid ]; then
+            kill "$(cat examples/04-inventory-service/quarkus.pid)" || true
+          fi
+          if [ -f examples/05-payment-service/quarkus.pid ]; then
+            kill "$(cat examples/05-payment-service/quarkus.pid)" || true
+          fi
+          if [ -f examples/02-review-service/quarkus.pid ]; then
+            kill "$(cat examples/02-review-service/quarkus.pid)" || true
+          fi
+          if [ -f examples/03-notification-service/quarkus.pid ]; then
+            kill "$(cat examples/03-notification-service/quarkus.pid)" || true
+          fi
+          if [ -f examples/06-shipping-service/quarkus.pid ]; then
+            kill "$(cat examples/06-shipping-service/quarkus.pid)" || true
+          fi
+          if [ -f examples/07-order-service/quarkus.pid ]; then
+            kill "$(cat examples/07-order-service/quarkus.pid)" || true
+          fi
+          if [ -f examples/08-graphql-gateway/quarkus.pid ]; then
+            kill "$(cat examples/08-graphql-gateway/quarkus.pid)" || true
           fi
           if [ -f examples/01-strangler-proxy/quarkus.pid ]; then
             kill "$(cat examples/01-strangler-proxy/quarkus.pid)" || true
