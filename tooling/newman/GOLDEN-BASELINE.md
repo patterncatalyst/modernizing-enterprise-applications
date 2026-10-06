@@ -11,6 +11,27 @@ time the monolith is the referent.** Every later run of this exact collection
 checks the system against *this* captured contract, not against a second,
 independently-live monolith process.
 
+---
+
+## STATUS: the promise above is now kept (order-plan.md S10, DRQ-070/DRQ-071)
+
+The monolith has since been **fully decommissioned** — its order context
+deleted (the last of six; see `examples/00-monolith/SMELLS.md`), removed from
+the running topology (`compose.yaml`), kept frozen in-repo on `main` only as
+the "before" referent (and, completely, on the `reference/monolith-before`
+branch / `v0-monolith` tag for a genuine side-by-side comparison). Order-plan
+S9 (`examples/01-strangler-proxy/CUTOVER.md`, `examples/07-order-service/
+CUTOVER.md`) proved the suite green across the order/gateway seam one final
+time before this decommission. **This file — frozen, unedited below this
+point — is now, officially, THE contract**: `tooling/newman/
+mea.postman_collection.json`'s assertions (re-designated in its own
+`info.description`, see `tooling/newman/README.md`) mean "the system meets
+the baseline captured here," never again "matches a second, live monolith
+process." No assertion below was weakened to make this re-designation true —
+the frozen run data in this file (the exact request/response numbers,
+foot-pedal timing, and pass counts) is left completely unedited; only this
+status note and the top-of-file framing above it were added.
+
 ## What was run, and against what
 
 Full topology, committed defaults (no flags overridden except the monolith's

@@ -1,19 +1,48 @@
 package dev.patterncatalyst.strangler;
 
 import jakarta.enterprise.context.ApplicationScoped;
-import org.apache.camel.builder.PredicateBuilder;
+import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 /**
- * The Camel strangler-fig proxy (ch.14 "The Strangler Fig Pattern", r02-plan S7).
+ * The Camel edge router for the six extracted bounded contexts — originally
+ * the strangler-fig proxy (ch.14 "The Strangler Fig Pattern", r02-plan S7),
+ * now its permanent successor as of order-plan.md S10 (DRQ-070).
  *
- * <p>This is the seam machinery that sits in front of the Spring Boot monolith
- * (examples/00-monolith/) so that individual bounded contexts can be peeled off
- * onto Quarkus one at a time, with clients none the wiser about which backend
- * actually served a given request.
+ * <p><b>order-plan.md S10 update — the strangler fig completes (DRQ-070,
+ * HARD PART H4/H5):</b> Order was the sixth and last bounded context
+ * extracted from {@code examples/00-monolith/}; with the monolith now fully
+ * decommissioned (frozen in-repo as the "before" referent, not part of the
+ * running topology — see its {@code SMELLS.md}), there is no host tree left
+ * to strangle and no fallback backend to route to. The six per-context
+ * {@code strangler.*.enabled} cutover flags and the
+ * {@code strangler.monolith.base-url} default backend documented throughout
+ * the history below have all been **retired** — every field and config
+ * property that implemented them is gone from this class and from
+ * {@code application.properties}. {@link #configure()} now does straight,
+ * unconditional content-based routing on URI path prefix to one of the six
+ * extracted services; an unmatched path returns {@code 404} directly (there
+ * is nothing left to fall through to). This class is kept as the single
+ * {@code RouteBuilder} it always was — only its role changed, from a
+ * temporary seam to the system's permanent REST edge router.
  *
- * <p><b>The strangler seam:</b> every request arrives here first, on
+ * <p><b>The sections below are preserved verbatim as the historical record
+ * of each of the six cutovers</b> (the per-context "The flag: ..." and "ACL
+ * honesty note" paragraphs) — they describe real, demonstrated reversibility
+ * windows that existed right up until each context's own decommission step,
+ * and the field-by-field proof that no Camel message translator was ever
+ * needed at this layer. Read them as history, not as a description of the
+ * live `@ConfigProperty` fields on this class today (those fields no longer
+ * exist — see the field declarations and {@link #configure()} below for the
+ * current, flagless routing table).
+ *
+ * <p>This is the seam machinery that originally sat in front of the Spring
+ * Boot monolith (examples/00-monolith/) so that individual bounded contexts
+ * could be peeled off onto Quarkus one at a time, with clients none the
+ * wiser about which backend actually served a given request.
+ *
+ * <p><b>The strangler seam (historical, r02/S7):</b> every request arrives here first, on
  * {@code :8888}. By default (and for all of r02/S7) <i>every</i> request —
  * including {@code /api/reviews/**} — is forwarded unchanged to the monolith
  * on {@code :8080}: the proxy is a transparent reverse proxy. The behavior-
@@ -225,189 +254,98 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 @ApplicationScoped
 public class StranglerProxyRoute extends RouteBuilder {
 
-    /** The strangler cutover flag for Review traffic. Defaults to the monolith. */
-    @ConfigProperty(name = "strangler.review.enabled", defaultValue = "false")
-    boolean reviewEnabled;
+    // order-plan.md S10 (DRQ-070): the six strangler.*.enabled boolean flags
+    // and the strangler.monolith.base-url fallback are RETIRED. Only the six
+    // extracted services' base URLs remain -- fixed, operator-configured
+    // targets the route picks between by URI path prefix alone, never by a
+    // flag and never by a value derived from the request itself (the same
+    // secure-by-default dynamic-URI discipline the retired flags upheld,
+    // build-plan.md §F.4).
 
-    /** The strangler cutover flag for Notification traffic. Defaults to the monolith. */
-    @ConfigProperty(name = "strangler.notification.enabled", defaultValue = "false")
-    boolean notificationEnabled;
-
-    /** The strangler cutover flag for Inventory traffic (inventory-plan.md S9, ch.19, DRQ-045).
-     *  Defaults to the monolith; read-side only (see class javadoc for the ACL honesty note). */
-    @ConfigProperty(name = "strangler.inventory.enabled", defaultValue = "false")
-    boolean inventoryEnabled;
-
-    /** The strangler cutover flag for Payment traffic (payment-plan.md S7/S9, ch.23, DRQ-052).
-     *  Permanently defaults to the payment service as of S9's decommission — the monolith no
-     *  longer has anything to serve at {@code /api/payments} (see class javadoc). The
-     *  {@code defaultValue} below is an unreached fallback: {@code application.properties}
-     *  always sets this property explicitly. */
-    @ConfigProperty(name = "strangler.payment.enabled", defaultValue = "false")
-    boolean paymentEnabled;
-
-    /** The strangler cutover flag for Shipping traffic (shipping-plan.md S7/S9, ch.24, DRQ-065).
-     *  Permanently defaults to the shipping service as of S9's decommission — the monolith no
-     *  longer has anything to serve at {@code /api/shipments} (see class javadoc). The
-     *  {@code defaultValue} below is an unreached fallback: {@code application.properties}
-     *  always sets this property explicitly. */
-    @ConfigProperty(name = "strangler.shipping.enabled", defaultValue = "false")
-    boolean shippingEnabled;
-
-    /** The strangler cutover flag for Order traffic (order-plan.md S8, ch.26, DRQ-065
-     *  precedent) — the sixth and LAST strangler flag. Routes BOTH the POST checkout
-     *  command and GET reads (see class javadoc). Defaults to the monolith. */
-    @ConfigProperty(name = "strangler.order.enabled", defaultValue = "false")
-    boolean orderEnabled;
-
-    /** The monolith — the default backend for everything until a context is cut over. */
-    @ConfigProperty(name = "strangler.monolith.base-url")
-    String monolithBaseUrl;
-
-    /** The (eventually) extracted Review service — only selected once the flag is on. */
+    /** The extracted Review service (examples/02-review-service, :8081). */
     @ConfigProperty(name = "strangler.review.base-url")
     String reviewServiceBaseUrl;
 
-    /** The extracted Notification service — only selected once the flag is on. */
+    /** The extracted Notification service (examples/03-notification-service, :8083). */
     @ConfigProperty(name = "strangler.notification.base-url")
     String notificationServiceBaseUrl;
 
-    /** The extracted Inventory service (examples/04-inventory-service, :8084) — only
-     *  selected once strangler.inventory.enabled is on. */
+    /** The extracted Inventory service (examples/04-inventory-service, :8084). */
     @ConfigProperty(name = "strangler.inventory.base-url")
     String inventoryServiceBaseUrl;
 
-    /** The extracted Payment service (examples/05-payment-service, :8085) — only
-     *  selected once strangler.payment.enabled is on. */
+    /** The extracted Payment service (examples/05-payment-service, :8085). */
     @ConfigProperty(name = "strangler.payment.base-url")
     String paymentServiceBaseUrl;
 
-    /** The extracted Shipping service (examples/06-shipping-service, :8088) — only
-     *  selected once strangler.shipping.enabled is on. */
+    /** The extracted Shipping service (examples/06-shipping-service, :8088). */
     @ConfigProperty(name = "strangler.shipping.base-url")
     String shippingServiceBaseUrl;
 
-    /** The extracted Order service (examples/07-order-service, :8087) — only
-     *  selected once strangler.order.enabled is on. Not :8086 (Debezium) or
-     *  :8090 (the GraphQL gateway, order-plan.md DRQ-069). */
+    /** The extracted Order service (examples/07-order-service, :8087) -- the
+     *  sixth and last context cut over. Not :8086 (Debezium) or :8090 (the
+     *  GraphQL gateway, order-plan.md DRQ-069, which has its own front door
+     *  and is never routed through this proxy). */
     @ConfigProperty(name = "strangler.order.base-url")
     String orderServiceBaseUrl;
-
-    private static final String TARGET_PROPERTY = "stranglerTarget";
-    private static final String TARGET_REVIEW = "review";
-    private static final String TARGET_NOTIFICATION = "notification";
-    private static final String TARGET_INVENTORY = "inventory";
-    private static final String TARGET_PAYMENT = "payment";
-    private static final String TARGET_SHIPPING = "shipping";
-    private static final String TARGET_ORDER = "order";
-    private static final String TARGET_MONOLITH = "monolith";
 
     @Override
     public void configure() {
 
         from("platform-http:/api?matchOnUriPrefix=true")
-            .routeId("strangler-fig-proxy")
-            .log("strangler-proxy: ${header.CamelHttpMethod} ${header.CamelHttpPath}")
+            .routeId("edge-router")
+            .log("edge-router: ${header.CamelHttpMethod} ${header.CamelHttpPath}")
 
-            // --- Content-based routing on the Review seam -----------------------
-            // Only the Review context's path prefix is seam-aware; every other
-            // /api/** path is monolith-only for the whole of r02. The flag is
-            // read once per request but only ever resolves to one of the two
-            // fixed, operator-configured base URLs below — never a value derived
-            // from the request itself (secure-by-default dynamic-URI discipline,
-            // build-plan.md §F.4).
+            // --- Unconditional content-based routing, by URI path prefix only ---
+            // order-plan.md S10 collapse (DRQ-070): six independent per-context
+            // choice()+flag branches (one target-selection choice(), one
+            // backend-dispatch choice(), joined by an exchangeProperty) have
+            // collapsed into this single choice() that both decides AND
+            // dispatches in one step -- there is no flag left to consult, so
+            // there is nothing left to stage between "which context" and
+            // "which backend". bridgeEndpoint=true makes the HTTP producer
+            // reuse the inbound CamelHttpPath/CamelHttpQuery/CamelHttpMethod
+            // as-is (method, path, query string, headers, and body all pass
+            // through unchanged); throwExceptionOnFailure=false stops Camel
+            // turning a 4xx/5xx backend response into a thrown exception, so
+            // the real status code and body flow straight back to the caller
+            // instead of a Camel error response -- exactly what the
+            // contract/acceptance suite needs to see (same behavior the
+            // strangler-era route always had).
             //
-            // NOTE: platform-http's CamelHttpPath carries the FULL incoming path
-            // (e.g. "/api/reviews/5"), not a path relative to this route's own
-            // "/api" consumer prefix — an r02/S10 bugfix corrected an earlier
-            // version of this predicate that checked for a "/reviews" prefix and
-            // so never matched, silently sending 100% of Review traffic to the
-            // monolith regardless of the flag. (It went unnoticed under S7-S9
-            // because the monolith and review-service read/wrote the SAME shared
-            // `reviews` table, so responses were identical either way — the
-            // equivalence suite stayed green while testing the wrong backend.
-            // Caught before decommission by stopping the monolith and confirming
-            // the Review route failed instead of falling over to review-service.)
-            // NOTE (notification-plan S6): the Notification seam reuses the
-            // exact lesson CUTOVER.md §2 paid for on Review — match the FULL
-            // incoming path "/api/notifications", never a route-relative
-            // "/notifications", or the predicate silently never matches and
-            // every request falls through to the monolith regardless of the
-            // flag.
+            // NOTE: platform-http's CamelHttpPath carries the FULL incoming
+            // path (e.g. "/api/reviews/5"), not a path relative to this
+            // route's own "/api" consumer prefix -- the r02/S10 lesson
+            // (CUTOVER.md §2: a route-relative "/reviews" prefix silently
+            // never matches) applies to every branch below, for a sixth and
+            // final time.
             .choice()
-                .when(PredicateBuilder.and(
-                        simple("${header.CamelHttpPath} startsWith '/api/reviews'"),
-                        exchange -> reviewEnabled))
-                    .setProperty(TARGET_PROPERTY, constant(TARGET_REVIEW))
-                .when(PredicateBuilder.and(
-                        simple("${header.CamelHttpPath} startsWith '/api/notifications'"),
-                        exchange -> notificationEnabled))
-                    .setProperty(TARGET_PROPERTY, constant(TARGET_NOTIFICATION))
-                // NOTE (inventory-plan S9): the Inventory seam reuses the exact lesson
-                // CUTOVER.md paragraph 2 paid for on Review -- match the FULL incoming
-                // path "/api/inventory", never a route-relative "/inventory", or the
-                // predicate silently never matches and every request falls through to
-                // the monolith regardless of the flag.
-                .when(PredicateBuilder.and(
-                        simple("${header.CamelHttpPath} startsWith '/api/inventory'"),
-                        exchange -> inventoryEnabled))
-                    .setProperty(TARGET_PROPERTY, constant(TARGET_INVENTORY))
-                // NOTE (payment-plan S7): the Payment seam reuses the exact lesson
-                // CUTOVER.md paragraph 2 paid for on Review -- match the FULL incoming
-                // path "/api/payments", never a route-relative "/payments", or the
-                // predicate silently never matches and every request falls through to
-                // the monolith regardless of the flag.
-                .when(PredicateBuilder.and(
-                        simple("${header.CamelHttpPath} startsWith '/api/payments'"),
-                        exchange -> paymentEnabled))
-                    .setProperty(TARGET_PROPERTY, constant(TARGET_PAYMENT))
-                // NOTE (shipping-plan S7): the Shipping seam reuses the exact lesson
-                // CUTOVER.md paragraph 2 paid for on Review -- match the FULL incoming
-                // path "/api/shipments", never a route-relative "/shipments", or the
-                // predicate silently never matches and every request falls through to
-                // the monolith regardless of the flag.
-                .when(PredicateBuilder.and(
-                        simple("${header.CamelHttpPath} startsWith '/api/shipments'"),
-                        exchange -> shippingEnabled))
-                    .setProperty(TARGET_PROPERTY, constant(TARGET_SHIPPING))
-                // NOTE (order-plan S8): the Order seam reuses the exact lesson
-                // CUTOVER.md paragraph 2 paid for on Review -- match the FULL incoming
-                // path "/api/orders", never a route-relative "/orders", or the
-                // predicate silently never matches and every request falls through to
-                // the monolith regardless of the flag. This is the sixth and LAST
-                // strangler flag; it routes BOTH POST (checkout) and GET (reads) --
-                // the whole order context moves at once.
-                .when(PredicateBuilder.and(
-                        simple("${header.CamelHttpPath} startsWith '/api/orders'"),
-                        exchange -> orderEnabled))
-                    .setProperty(TARGET_PROPERTY, constant(TARGET_ORDER))
-                .otherwise()
-                    .setProperty(TARGET_PROPERTY, constant(TARGET_MONOLITH))
-            .end()
-
-            // --- Reverse-proxy to the chosen backend -----------------------------
-            // bridgeEndpoint=true makes the HTTP producer reuse the inbound
-            // CamelHttpPath/CamelHttpQuery/CamelHttpMethod as-is, so method, path,
-            // query string, headers, and body all pass through unchanged.
-            // throwExceptionOnFailure=false stops Camel turning a 4xx/5xx backend
-            // response into a thrown exception, so the real status code and body
-            // flow straight back to the caller instead of a Camel error response —
-            // exactly what the equivalence suite needs to see.
-            .choice()
-                .when(simple("${exchangeProperty." + TARGET_PROPERTY + "} == '" + TARGET_REVIEW + "'"))
+                .when(simple("${header.CamelHttpPath} startsWith '/api/reviews'"))
                     .to(reviewServiceBaseUrl + "?bridgeEndpoint=true&throwExceptionOnFailure=false")
-                .when(simple("${exchangeProperty." + TARGET_PROPERTY + "} == '" + TARGET_NOTIFICATION + "'"))
+                .when(simple("${header.CamelHttpPath} startsWith '/api/notifications'"))
                     .to(notificationServiceBaseUrl + "?bridgeEndpoint=true&throwExceptionOnFailure=false")
-                .when(simple("${exchangeProperty." + TARGET_PROPERTY + "} == '" + TARGET_INVENTORY + "'"))
+                .when(simple("${header.CamelHttpPath} startsWith '/api/inventory'"))
                     .to(inventoryServiceBaseUrl + "?bridgeEndpoint=true&throwExceptionOnFailure=false")
-                .when(simple("${exchangeProperty." + TARGET_PROPERTY + "} == '" + TARGET_PAYMENT + "'"))
+                .when(simple("${header.CamelHttpPath} startsWith '/api/payments'"))
                     .to(paymentServiceBaseUrl + "?bridgeEndpoint=true&throwExceptionOnFailure=false")
-                .when(simple("${exchangeProperty." + TARGET_PROPERTY + "} == '" + TARGET_SHIPPING + "'"))
+                .when(simple("${header.CamelHttpPath} startsWith '/api/shipments'"))
                     .to(shippingServiceBaseUrl + "?bridgeEndpoint=true&throwExceptionOnFailure=false")
-                .when(simple("${exchangeProperty." + TARGET_PROPERTY + "} == '" + TARGET_ORDER + "'"))
+                // The sixth and last context: routes BOTH the POST checkout
+                // command and every GET read through a single branch -- the
+                // whole order bounded context moves at once (order-plan S8),
+                // there being no narrower read/write split worth staging at
+                // this layer (the CQRS write/read split, DRQ-067, happens
+                // inside the order service itself).
+                .when(simple("${header.CamelHttpPath} startsWith '/api/orders'"))
                     .to(orderServiceBaseUrl + "?bridgeEndpoint=true&throwExceptionOnFailure=false")
+                // There is no monolith left to fall back to (DRQ-070): an
+                // unmatched /api/** path -- or any path outside /api/** this
+                // platform-http consumer's matchOnUriPrefix also catches --
+                // is answered directly with 404, never forwarded anywhere.
                 .otherwise()
-                    .to(monolithBaseUrl + "?bridgeEndpoint=true&throwExceptionOnFailure=false")
+                    .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(404))
+                    .setHeader("Content-Type", constant("application/json"))
+                    .setBody(constant("{\"error\":\"NOT_FOUND\",\"message\":\"No route for this path -- the monolith has been decommissioned (order-plan.md DRQ-070)\"}"))
             .end();
     }
 }

@@ -515,3 +515,54 @@ module (`InventoryController`/`InventoryService`/`InventoryRepository`/
 `INVENTORY_MODE` unset, still reaches a fully working monolith-served
 inventory surface — reversibility, including the write side, remains a real,
 demonstrated property (run #3 above) right up to S11.
+
+---
+
+## Decommission (order-plan.md S10, DRQ-070) — the proxy sheds its strangler role
+
+Order's own cutover (the final flag flip) and the reversibility proof across
+the order/gateway seam are recorded in `examples/07-order-service/CUTOVER.md`
+(order-plan S9) — that is the last time this proxy's routing decision was
+exercised in flag-gated form. This entry records what S10 itself changed and
+how it was verified.
+
+**What changed:** all six `strangler.*.enabled` fields and
+`strangler.monolith.base-url` were deleted from `StranglerProxyRoute.java` and
+`application.properties`; `configure()`'s two-stage choice-then-dispatch
+collapsed into one unconditional `choice()` per URI path prefix; the
+`otherwise()` branch now returns `404` directly instead of forwarding to a
+monolith that no longer exists.
+
+**How it was verified (this step):**
+
+1. **Unit-level, in-process, all six contexts + the 404 branch, for real:**
+   the six per-context `*RouteFlagOffTest`/`*RouteFlagOnTest` pairs (which
+   asserted a flag-off state that can no longer exist) were replaced by
+   `EdgeRouterRoutingTest` — one unconditional routing assertion per context
+   plus one for the `404` fallback — run against the ACTUAL compiled
+   `StranglerProxyRoute` inside a real `@QuarkusTest`-booted Camel context,
+   with six in-JVM `StubBackendServer` instances standing in for the six
+   extracted services (`EdgeRouterTestProfile`). Result: **8/8 tests green**
+   (`mvn -f examples/01-strangler-proxy clean package`) — reviews,
+   notifications, inventory, payments, shipments (path-variable form), the
+   order GET (path-variable) and the order POST (checkout) all routed to
+   their correct stub backend, and an unmatched path got a `404` with the
+   documented `NOT_FOUND` body, all through the real `platform-http` consumer
+   and the real `choice()`/`.to()` dispatch logic — not a mock of the route.
+2. **Endpoint-URI validation (camel-mcp, `camel_validate_route`):** the
+   consumer URI (`platform-http:/api?matchOnUriPrefix=true`) and all six
+   producer URIs (`http://localhost:{8081,8083,8084,8085,8087,8088}?
+   bridgeEndpoint=true&throwExceptionOnFailure=false`) were each validated
+   against the Camel 4.22.1 / Quarkus runtime catalog — all seven returned
+   `"valid": true`.
+3. **No live, full nine-process demo run was performed for this step** (unlike
+   S9's cutover, which brought up the whole topology). The routing DECISION
+   itself — the thing S10 actually changed — is fully exercised by (1) above,
+   against the real compiled route; the individual services' own business
+   behavior behind each path was already proven live, end-to-end, through
+   this same proxy at each context's own cutover step (S8/S9 of each
+   context's plan) and is unaffected by this collapse (the producer URIs and
+   `bridgeEndpoint`/`throwExceptionOnFailure` semantics are byte-for-byte
+   unchanged from the strangler-era route — only the flag check in front of
+   them was removed). The full, no-live-monolith, nine-process CI gate is
+   order-plan.md **S11**'s job, not S10's.
