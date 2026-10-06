@@ -1,0 +1,79 @@
+# Supply-chain gate (ch.31) -- ADDITIVE, separate from code-ci.yml.
+#
+# code-ci.yml proves behavior (the equivalence/contract gates). This workflow
+# proves provenance: it builds a service, generates a CycloneDX SBOM, scans it
+# against the current vulnerability DB, and fails on a High-or-worse finding --
+# the same three steps examples/10-supply-chain/demo.sh runs locally, so "green
+# locally" and "green in CI" mean the same thing (DRQ-020: security-by-design is
+# part of the Verify gate, in CI -- not a late audit).
+#
+# It gates order-service as the representative service; the matrix scales to the
+# other services by adding entries. The monolith "before" is deliberately NOT
+# gated here -- it is frozen/decommissioned in-repo; demo.sh scans it only to
+# show the gate firing on the pre-modernization artifact.
+name: Supply-chain gate
+
+on:
+  push:
+    branches: ["**"]
+    paths:
+      - "examples/07-order-service/**"
+      - "examples/10-supply-chain/**"
+      - ".github/workflows/supply-chain.yml"
+  pull_request:
+    paths:
+      - "examples/07-order-service/**"
+      - "examples/10-supply-chain/**"
+      - ".github/workflows/supply-chain.yml"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  sbom-scan:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Carry the explicit service directory: anchore/sbom-action passes `path`
+        # straight to syft without shell expansion, so a glob like
+        # examples/*-order-service would not resolve. Add an entry per service to
+        # scale the gate.
+        include:
+          - service: order-service
+            dir: examples/07-order-service
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v5
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: maven
+
+      - name: Build ${{ matrix.service }}
+        run: mvn -B -ntp -DskipTests package -f ${{ matrix.dir }}/pom.xml
+
+      # Generate the SBOM from the built runtime closure (quarkus-app), the real
+      # deployable form -- not the source tree, which also contains build-only
+      # plugin dependencies that never ship.
+      - name: Generate CycloneDX SBOM (syft)
+        uses: anchore/sbom-action@v0
+        with:
+          path: ${{ matrix.dir }}/target/quarkus-app
+          format: cyclonedx-json
+          output-file: sbom-${{ matrix.service }}.cdx.json
+          artifact-name: sbom-${{ matrix.service }}.cdx.json
+
+      # Scan the SBOM (the contract), not the filesystem again. fail-build mirrors
+      # policy.yaml's `fail-on: High`.
+      - name: Scan SBOM + apply policy (grype)
+        uses: anchore/scan-action@v6
+        with:
+          sbom: sbom-${{ matrix.service }}.cdx.json
+          fail-build: true
+          severity-cutoff: high
+          output-format: table
