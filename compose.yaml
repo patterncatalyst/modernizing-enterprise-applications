@@ -49,8 +49,11 @@
 # as break-glass on the `reference/monolith-before` branch (tag
 # `v0-monolith`) — see the project README.md.
 #
-# Apicurio is deliberately NOT included here (deferred per r02-plan S3 —
-# Review, the r02 extraction, is REST-only and has no schema-registry need).
+# Apicurio: ch.28 (DRQ-038 follow-up, DRQ-076) adds the `apicurio` service
+# below. It is used ONLY by examples/09-schema-registry-demo, the isolated
+# Avro + Apicurio Schema Registry DEMONSTRATOR module — no other service in
+# this stack (examples/01 through examples/08) talks to it, and the real
+# order.placed JSON event flows (DRQ-038) are unchanged.
 #
 # Image tags are pinned once in .env (gitignored) / .env.example (tracked) —
 # see known-issues.md #5 (image tag drift) and decisions.md's version matrix.
@@ -187,6 +190,37 @@ services:
       timeout: 5s
       retries: 15
       start_period: 45s
+    restart: unless-stopped
+
+  # ─── Apicurio Schema Registry (ch.28, DRQ-038 follow-up/DRQ-076) ─────────
+  # Used ONLY by examples/09-schema-registry-demo (see the header note above)
+  # — no depends_on, since nothing else in this stack needs it ready first.
+  # v3 image/API (confirmed by that module's `mvn dependency:tree`: the
+  # quarkus-apicurio-registry-avro extension under quarkus-bom 3.40.1 pulls
+  # io.apicurio:apicurio-registry-*:3.1.7, the v3 client line) — the image
+  # tag, this healthcheck's /apis/registry/v3 path, and the demo module's
+  # apicurio.registry.url all agree on the same major. APICURIO_STORAGE_KIND
+  # =sql / APICURIO_STORAGE_SQL_KIND=h2: Apicurio 3.1.7 removed the plain
+  # "mem" storage variant older 3.0.x images accepted (confirmed empirically
+  # against a live 3.1.7 container: APICURIO_STORAGE_KIND=mem fails to
+  # start) — embedded H2 is the closest equivalent, still ephemeral and wiped
+  # on every container restart, no external dependency, and the registry
+  # still self-reports as "Apicurio Registry (In Memory)" at /apis/registry/v3/system/info.
+  apicurio:
+    image: quay.io/apicurio/apicurio-registry:${APICURIO_IMAGE_TAG:-3.1.7}
+    container_name: mea-apicurio
+    ports:
+      - "${APICURIO_HOST_PORT:-8095}:8080"
+    environment:
+      - APICURIO_STORAGE_KIND=sql
+      - APICURIO_STORAGE_SQL_KIND=h2
+    mem_limit: 512m
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8080/apis/registry/v3/system/info"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 20s
     restart: unless-stopped
 
 volumes:

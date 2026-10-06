@@ -118,6 +118,20 @@
 # `examples/00-monolith/**` was removed (no job in this workflow builds or
 # starts it any longer — the frozen monolith's own correctness is out of this
 # workflow's scope from here on, per DRQ-071).
+#
+# ch.28 (DRQ-038 follow-up, DRQ-076) — a SEVENTH, purely ADDITIVE job,
+# `schema-registry-gate`, builds and tests the new, ISOLATED
+# examples/09-schema-registry-demo module (Avro + Apicurio Schema Registry
+# demonstrator — the real order.placed JSON event flows are untouched,
+# DRQ-038). Unlike every job above, this one does not start any of the six
+# extracted services, the proxy, or Postgres at all — the module is entirely
+# self-contained, provisioning its own Kafka + Apicurio via Quarkus Dev
+# Services/Testcontainers against the runner's Docker daemon (confirmed
+# working locally: `mvn -f examples/09-schema-registry-demo/pom.xml verify`
+# pulls quay.io/apicurio/apicurio-registry:3.1.7 and a Kafka broker on
+# demand, no `services:` block needed for this job). `examples/09-schema-
+# registry-demo/**` was added to the path filters below; none of the other
+# six jobs are touched.
 
 name: Code CI
 
@@ -133,6 +147,7 @@ on:
       - "examples/06-shipping-service/**"
       - "examples/07-order-service/**"
       - "examples/08-graphql-gateway/**"
+      - "examples/09-schema-registry-demo/**"
       - "tooling/newman/**"
       - ".github/workflows/code-ci.yml"
   pull_request:
@@ -145,6 +160,7 @@ on:
       - "examples/06-shipping-service/**"
       - "examples/07-order-service/**"
       - "examples/08-graphql-gateway/**"
+      - "examples/09-schema-registry-demo/**"
       - "tooling/newman/**"
       - ".github/workflows/code-ci.yml"
   workflow_dispatch:
@@ -3031,3 +3047,33 @@ jobs:
           if [ -f examples/01-strangler-proxy/quarkus.pid ]; then
             kill "$(cat examples/01-strangler-proxy/quarkus.pid)" || true
           fi
+
+  # schema-registry-gate (ch.28, DRQ-038 follow-up/DRQ-076) — purely
+  # ADDITIVE, the seventh and final job in this workflow. Builds and tests
+  # the ISOLATED examples/09-schema-registry-demo module (see the top-of-
+  # file header note). No services: block, no Postgres, no other extracted
+  # service: the module provisions its own Kafka + Apicurio Registry via
+  # Quarkus Dev Services/Testcontainers directly against the ubuntu-latest
+  # runner's Docker daemon (Docker is preinstalled and running on every
+  # GitHub-hosted runner) — `mvn verify` alone is both the build and the
+  # test, including OrderAvroRoundTripTest (Avro round-trip over Kafka) and
+  # SchemaCompatibilityTest (v1 registers, v2 BACKWARD-compatible accepted,
+  # v3 incompatible rejected 409). None of the other six jobs, their path
+  # filters, or tooling/newman/mea.postman_collection.json are touched by
+  # this job.
+  schema-registry-gate:
+    name: schema-registry-gate
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v5
+
+      - name: Set up JDK 25 (temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+
+      - name: Build and test the schema-registry-demo module (Dev Services provisions Kafka + Apicurio)
+        run: mvn -f examples/09-schema-registry-demo/pom.xml verify
