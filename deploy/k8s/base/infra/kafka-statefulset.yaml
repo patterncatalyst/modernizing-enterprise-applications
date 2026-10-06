@@ -26,6 +26,11 @@ metadata:
     app.kubernetes.io/part-of: mea
 spec:
   clusterIP: None
+  # ch.30 live-apply fix: a headless Service publishes DNS only for READY
+  # endpoints by default, but a single KRaft node must resolve its own
+  # controller address (kafka-0.kafka...) to BECOME ready -- a startup deadlock.
+  # Publishing not-ready addresses breaks the cycle.
+  publishNotReadyAddresses: true
   selector:
     app.kubernetes.io/name: kafka
   ports:
@@ -56,6 +61,10 @@ spec:
         app.kubernetes.io/name: kafka
         app.kubernetes.io/part-of: mea
     spec:
+      # ch.30 live-apply fix: fsGroup so the kafka user (uid 1000) can write the
+      # mounted PVC data dir (the same class of fix postgres needed for its PVC).
+      securityContext:
+        fsGroup: 1000
       containers:
         - name: kafka
           image: docker.io/apache/kafka:3.8.0
@@ -71,7 +80,11 @@ spec:
             - name: KAFKA_PROCESS_ROLES
               value: "broker,controller"
             - name: KAFKA_CONTROLLER_QUORUM_VOTERS
-              value: "1@kafka.mea.svc.cluster.local:9093"
+              # ch.30 live-apply fix: the quorum voter must be the POD-stable DNS
+              # (kafka-0.kafka...), not the Service DNS -- a StatefulSet pod's
+              # per-pod record resolves at startup (with publishNotReadyAddresses),
+              # the Service record does not until the pod is Ready.
+              value: "1@kafka-0.kafka.mea.svc.cluster.local:9093"
             - name: KAFKA_LISTENERS
               value: "PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093"
             - name: KAFKA_ADVERTISED_LISTENERS
@@ -103,6 +116,10 @@ spec:
             # destroyed and a fresh cluster identity is needed.
             - name: CLUSTER_ID
               value: "MkU3OEVBNTcwNTJENDM2Qk"
+            # ch.30 live-apply fix: write broker state to the mounted PVC, not
+            # the image's ephemeral /tmp/kafka-logs default, so it survives restarts.
+            - name: KAFKA_LOG_DIRS
+              value: "/var/lib/kafka/data"
           volumeMounts:
             - name: kafka-data
               mountPath: /var/lib/kafka/data
@@ -112,12 +129,17 @@ spec:
             initialDelaySeconds: 15
             periodSeconds: 10
             failureThreshold: 6
+            # ch.30 live-apply fix: the probe launches a JVM (kafka-*.sh), which
+            # cannot finish in the default 1s timeout, so a healthy broker is
+            # killed by its own liveness probe. Give it a realistic timeout.
+            timeoutSeconds: 10
           livenessProbe:
             exec:
               command: ["/opt/kafka/bin/kafka-broker-api-versions.sh", "--bootstrap-server", "localhost:9092"]
             initialDelaySeconds: 30
             periodSeconds: 15
             failureThreshold: 6
+            timeoutSeconds: 10
           resources:
             requests:
               cpu: 250m
@@ -130,6 +152,12 @@ spec:
           # override is needed for it to write its own data dir.
           securityContext:
             runAsNonRoot: true
+            # NOTE (ch.30 live-apply fix): the apache/kafka image's USER is the
+            # non-numeric name "appuser", which kubelet cannot verify against
+            # runAsNonRoot (it needs a numeric UID), so the pod fails with
+            # CreateContainerConfigError. Pin the image's real UID (1000)
+            # explicitly. (ch.29 omitted this; only a live apply surfaced it.)
+            runAsUser: 1000
             allowPrivilegeEscalation: false
             capabilities:
               drop: ["ALL"]

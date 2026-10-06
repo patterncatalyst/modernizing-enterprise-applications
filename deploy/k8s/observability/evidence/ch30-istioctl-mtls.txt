@@ -1,0 +1,11 @@
+Pod: order-service-748b9bd7db-d4sb5
+   Pod Revision: default
+   Pod Ports: 8087 (order-service)
+--------------------
+Service: order-service
+   Port: http 8087/HTTP targets pod port 8087
+--------------------
+Effective PeerAuthentication:
+   Workload mTLS mode: STRICT
+Applied PeerAuthentication:
+   default.mea

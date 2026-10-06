@@ -1,0 +1,21 @@
+# deploy/k8s/istio/kustomization.yaml — ch.30 (additive)
+#
+# Unlike ~/Dev/datamesh-reference-arch-quarkus/k8s/istio (which includes
+# ../base itself so it is apply-able standalone), the IstioOperator install
+# (istio-install.yaml) is applied separately via `istioctl install -f`, not
+# `kubectl apply -k` -- IstioOperator resources are reconciled by the istio
+# operator controller, not a plain kustomize/kubectl apply flow. This
+# kustomization covers only the two namespace-scoped CRs that ARE ordinary
+# kubectl-apply-able objects (PeerAuthentication, Telemetry), for
+# composition into deploy/k8s/overlays/minikube's ch.30 seam. The per-
+# Deployment `sidecar.istio.io/inject: "true"` LABEL patches (the actual
+# mesh opt-in for the 8 app Deployments) live in
+# deploy/k8s/overlays/minikube/kustomization.yaml itself, not here --
+# mirroring that overlay's existing image/NodePort patches rather than
+# introducing a second patch location.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - peer-authentication.yaml
+  - telemetry.yaml

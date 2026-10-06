@@ -1,0 +1,135 @@
+# otelcol-configmap.yaml — ch.30 (additive)
+#
+# Ported from infra/otelcol/config.yaml (the compose stack's Collector
+# config, mounted at /otel-lgtm/otelcol-config.yaml inside the single
+# grafana/otel-lgtm:0.8.1 all-in-one container — see compose.yaml's `lgtm`
+# service). Same container shape in-cluster: one Deployment, one container,
+# Tempo/Loki/Mimir/Grafana all co-located at localhost inside it, so the
+# exporter endpoints below are unchanged from the compose version.
+#
+# ONE addition for ch.30: a second Prometheus receiver
+# (`prometheus/istio-mesh`) that does Kubernetes service-discovery of pods
+# in the `mea` namespace and scrapes the istio-proxy sidecar's Envoy stats
+# endpoint (`:15090/stats/prometheus`) — this is what gets `istio_requests_total`
+# and friends into Mimir so a service-graph / per-service metrics query
+# works. Istio's mesh-telemetry traces (meshConfig.extensionProviders'
+# `otel` provider, see deploy/k8s/istio/istio-install.yaml) land via OTLP on
+# the existing `otlp` receiver below — no separate receiver needed for those.
+#
+# RBAC: the scrape needs the Pod's ServiceAccount (`lgtm`, rbac.yaml in this
+# directory) to list/watch pods in `mea` — see the ClusterRole/
+# ClusterRoleBinding there.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: lgtm-otelcol-config
+  namespace: mea
+data:
+  otelcol-config.yaml: |
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+      # Self-scrape: the otel-lgtm image's startup script polls Prometheus
+      # for otelcol_process_uptime_total to decide the stack is ready.
+      prometheus/collector:
+        config:
+          scrape_configs:
+            - job_name: 'opentelemetry-collector'
+              static_configs:
+                - targets: ['localhost:8888']
+      # ch.30: mesh metrics. Envoy's istio-proxy sidecar (native sidecar in
+      # Istio 1.29 -- an initContainer with restartPolicy: Always, but still
+      # a real running container with its own stats port) exposes
+      # Prometheus-format stats on :15090/stats/prometheus, including
+      # istio_requests_total, istio_request_duration_milliseconds, etc.
+      prometheus/istio-mesh:
+        config:
+          scrape_configs:
+            - job_name: 'istio-proxy'
+              metrics_path: /stats/prometheus
+              kubernetes_sd_configs:
+                - role: pod
+                  namespaces:
+                    names: ['mea']
+              relabel_configs:
+                # Only pods that actually carry an istio-proxy sidecar
+                # (regular container OR native-sidecar initContainer --
+                # Kubernetes SD surfaces both as discovered containers).
+                - source_labels: [__meta_kubernetes_pod_container_name]
+                  action: keep
+                  regex: istio-proxy
+                # Point the scrape at the sidecar's stats port regardless of
+                # which container port Kubernetes SD happened to discover.
+                - source_labels: [__address__]
+                  action: replace
+                  regex: '([^:]+)(?::\d+)?'
+                  replacement: '$1:15090'
+                  target_label: __address__
+                - source_labels: [__meta_kubernetes_namespace]
+                  target_label: namespace
+                - source_labels: [__meta_kubernetes_pod_name]
+                  target_label: pod
+                - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_name]
+                  target_label: app
+
+    processors:
+      memory_limiter:
+        check_interval: 1s
+        limit_mib: 512
+        spike_limit_mib: 128
+
+      batch:
+        timeout: 200ms
+        send_batch_size: 8192
+
+      resource:
+        attributes:
+          - key: deployment.environment
+            value: minikube
+            action: upsert
+
+    exporters:
+      # Tempo's OTLP ingest port is 4418 in this image's bundled
+      # tempo-config.yaml (not 3200, which is Tempo's query/API port).
+      otlphttp/tempo:
+        endpoint: http://localhost:4418
+        tls:
+          insecure: true
+
+      # Prometheus v3's native OTLP receiver (not remote-write).
+      otlphttp/metrics:
+        endpoint: http://localhost:9090/api/v1/otlp
+        tls:
+          insecure: true
+
+      otlphttp/loki:
+        endpoint: http://localhost:3100/otlp
+        tls:
+          insecure: true
+
+      debug:
+        verbosity: basic
+        sampling_initial: 5
+        sampling_thereafter: 100
+
+    service:
+      telemetry:
+        logs:
+          level: info
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [memory_limiter, resource, batch]
+          exporters: [otlphttp/tempo]
+        metrics:
+          receivers: [otlp, prometheus/collector, prometheus/istio-mesh]
+          processors: [memory_limiter, resource, batch]
+          exporters: [otlphttp/metrics]
+        logs:
+          receivers: [otlp]
+          processors: [memory_limiter, resource, batch]
+          exporters: [otlphttp/loki]

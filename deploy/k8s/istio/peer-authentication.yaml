@@ -1,0 +1,23 @@
+# peer-authentication.yaml — ch.30 (additive)
+#
+# Namespace-wide PeerAuthentication for `mea`, named `default` (the name
+# Istio requires for a namespace-scoped default policy to take effect; see
+# ~/Dev/datamesh-reference-arch-quarkus/k8s/istio/peer-authentication.yaml,
+# which this is adapted from with the codename/namespace stripped).
+#
+# Flipped PERMISSIVE -> STRICT (ch.30 build step 10) after confirming a
+# green rollout and live mTLS traffic under PERMISSIVE first (verified:
+# istio_requests_total's connection_security_policy="mutual_tls" label on
+# the strangler-proxy -> review-service edge, `istioctl x describe pod`
+# showing "Workload mTLS mode: PERMISSIVE" applied from this policy).
+# PeerAuthentication is enforced by the receiving Envoy sidecar, not the API
+# server, so postgres/kafka (no sidecar, no inject label) are unaffected --
+# they keep accepting their own operator-free plaintext exactly as before.
+apiVersion: security.istio.io/v1
+kind: PeerAuthentication
+metadata:
+  name: default
+  namespace: mea
+spec:
+  mtls:
+    mode: STRICT
