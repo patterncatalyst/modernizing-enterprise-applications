@@ -1,0 +1,24 @@
+# telemetry.yaml — ch.30 (additive)
+#
+# Mesh-wide Telemetry resource (no selector -> applies to every meshed
+# workload in `mea`): routes Envoy's own trace spans to the `otel`
+# extensionProvider (istio-install.yaml) at 100% sampling -- matching the
+# app-level `quarkus.otel.traces.sampler=always_on` demo sampler on the 3
+# instrumented modules, so a single end-to-end trace captures both the
+# mesh hop spans and the app hop spans at full fidelity. Also turns on
+# access logging via the built-in `envoy` provider, which writes to
+# meshConfig.accessLogFile (/dev/stdout, istio-install.yaml) -- visible via
+# `kubectl logs <pod> -c istio-proxy`.
+apiVersion: telemetry.istio.io/v1
+kind: Telemetry
+metadata:
+  name: mesh-default
+  namespace: istio-system
+spec:
+  tracing:
+    - providers:
+        - name: otel
+      randomSamplingPercentage: 100.00
+  accessLogging:
+    - providers:
+        - name: envoy

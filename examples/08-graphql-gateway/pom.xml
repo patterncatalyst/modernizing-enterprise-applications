@@ -51,6 +51,13 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-arc</artifactId>
         </dependency>
+        <!-- ch.30 (additive): mesh/connected-trace demo on exactly 3 modules.
+             Emits OTLP traces to the LGTM collector in the mea namespace;
+             see application.properties for exporter/service-name/sampler. -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-opentelemetry</artifactId>
+        </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit</artifactId>

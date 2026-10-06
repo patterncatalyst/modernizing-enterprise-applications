@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1780 1430" font-family="'Red Hat Text', system-ui, sans-serif" role="img">
+<defs><marker id="a" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#555"/></marker><marker id="am" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2f5f3d"/></marker></defs>
+<rect x="30" y="70" width="1720" height="560" rx="12" fill="#fafafa" stroke="#ddd"/>
+<text x="42" y="90" font-size="12" font-weight="700" fill="#1d1d1d">Telemetry pipeline — two span sources, one collector, three backends</text>
+<rect x="500" y="110" width="1220" height="480" rx="12" fill="#ffffff" stroke="#ddd"/>
+<text x="512" y="130" font-size="12" font-weight="700" fill="#1d1d1d">Pod: lgtm — single container (grafana/otel-lgtm:0.8.1)</text>
+<rect x="30" y="660" width="1720" height="720" rx="12" fill="#eaf4ec" stroke="#ddd"/>
+<text x="42" y="680" font-size="12" font-weight="700" fill="#1d1d1d">The captured trace — app spans nested inside Envoy spans (evidence/ch30-hero-trace.json)</text>
+<rect x="60" y="150" width="360" height="110" rx="9" fill="#eaf4ec" stroke="#3d7a4e" stroke-width="2"/>
+<text x="240.0" y="195.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Envoy sidecar spans</text>
+<text x="240.0" y="212.5" font-size="11.5" fill="#555555" text-anchor="middle">every mesh hop — Telemetry &quot;mesh-default&quot;</text>
+<text x="240.0" y="227.5" font-size="11.5" fill="#555555" text-anchor="middle">randomSamplingPercentage: 100</text>
+<rect x="60" y="290" width="360" height="110" rx="9" fill="#eef4fb" stroke="#2f6db5" stroke-width="2"/>
+<text x="240.0" y="335.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">App-level OpenTelemetry spans</text>
+<text x="240.0" y="352.5" font-size="11.5" fill="#555555" text-anchor="middle">graphql-gateway, order-service, inventory-service</text>
+<text x="240.0" y="367.5" font-size="11.5" fill="#555555" text-anchor="middle">quarkus.otel.traces.sampler=always_on</text>
+<rect x="60" y="430" width="360" height="110" rx="9" fill="#ffffff" stroke="#999999" stroke-width="1.5"/>
+<text x="240.0" y="475.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">istio-proxy Prometheus scrape</text>
+<text x="240.0" y="492.5" font-size="11.5" fill="#555555" text-anchor="middle">prometheus/istio-mesh receiver</text>
+<text x="240.0" y="507.5" font-size="11.5" fill="#555555" text-anchor="middle">GET :15090/stats/prometheus, pods in mea</text>
+<rect x="880" y="160" width="360" height="110" rx="9" fill="#111111" stroke="#111111" stroke-width="2"/>
+<text x="1060.0" y="205.5" font-size="13.5" font-weight="700" fill="#ffffff" text-anchor="middle">otel-lgtm collector</text>
+<text x="1060.0" y="222.5" font-size="11.5" fill="#dddddd" text-anchor="middle">OTLP receiver :4317 (grpc) / :4318 (http)</text>
+<text x="1060.0" y="237.5" font-size="11.5" fill="#dddddd" text-anchor="middle">+ prometheus/istio-mesh scrape target</text>
+<rect x="560" y="330" width="320" height="100" rx="9" fill="#ffffff" stroke="#999999" stroke-width="1.5"/>
+<text x="720.0" y="378.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Tempo</text>
+<text x="720.0" y="395.0" font-size="11.5" fill="#555555" text-anchor="middle">traces — otlphttp :4418</text>
+<rect x="920" y="330" width="320" height="100" rx="9" fill="#ffffff" stroke="#999999" stroke-width="1.5"/>
+<text x="1080.0" y="378.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Mimir</text>
+<text x="1080.0" y="395.0" font-size="11.5" fill="#555555" text-anchor="middle">metrics — otlphttp :9090/api/v1/otlp</text>
+<rect x="1280" y="330" width="320" height="100" rx="9" fill="#ffffff" stroke="#999999" stroke-width="1.5" stroke-dasharray="6 4"/>
+<text x="1440.0" y="370.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Loki</text>
+<text x="1440.0" y="387.5" font-size="11.5" fill="#555555" text-anchor="middle">logs — otlphttp :3100/otlp</text>
+<text x="1440.0" y="402.5" font-size="11.5" fill="#555555" text-anchor="middle">configured, not live</text>
+<rect x="880" y="480" width="360" height="90" rx="9" fill="#eaf4ec" stroke="#3d7a4e" stroke-width="2"/>
+<text x="1060.0" y="523.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Grafana</text>
+<text x="1060.0" y="540.0" font-size="11.5" fill="#555555" text-anchor="middle">reads Tempo + Mimir + Loki as datasources</text>
+<rect x="660" y="720" width="460" height="90" rx="9" fill="#eef4fb" stroke="#2f6db5" stroke-width="2"/>
+<text x="890.0" y="763.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">graphql-gateway — POST /graphql (SERVER)</text>
+<text x="890.0" y="780.0" font-size="11.5" fill="#555555" text-anchor="middle">83.75ms · resolves via GraphQL execution, 82.08ms</text>
+<rect x="120" y="850" width="480" height="90" rx="9" fill="#eef4fb" stroke="#2f6db5" stroke-width="2"/>
+<text x="360.0" y="893.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">graphql-gateway — GET /api/orders/{id} (CLIENT)</text>
+<text x="360.0" y="910.0" font-size="11.5" fill="#555555" text-anchor="middle">6.35ms</text>
+<rect x="160" y="960" width="480" height="90" rx="9" fill="#eaf4ec" stroke="#3d7a4e" stroke-width="2"/>
+<text x="400.0" y="1003.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">envoy (graphql-gateway) -&gt; order-service:8087 (CLIENT)</text>
+<text x="400.0" y="1020.0" font-size="11.5" fill="#555555" text-anchor="middle">5.41ms</text>
+<rect x="200" y="1070" width="480" height="90" rx="9" fill="#eaf4ec" stroke="#3d7a4e" stroke-width="2"/>
+<text x="440.0" y="1113.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">envoy (order-service) :8087 (SERVER)</text>
+<text x="440.0" y="1130.0" font-size="11.5" fill="#555555" text-anchor="middle">4.53ms</text>
+<rect x="240" y="1180" width="480" height="90" rx="9" fill="#eef4fb" stroke="#2f6db5" stroke-width="2"/>
+<text x="480.0" y="1223.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">order-service — GET /api/orders/{id} (SERVER)</text>
+<text x="480.0" y="1240.0" font-size="11.5" fill="#555555" text-anchor="middle">3.58ms</text>
+<rect x="1160" y="850" width="480" height="90" rx="9" fill="#eef4fb" stroke="#2f6db5" stroke-width="2"/>
+<text x="1400.0" y="893.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">graphql-gateway — InventoryGrpcService/GetStock (CLIENT, gRPC)</text>
+<text x="1400.0" y="910.0" font-size="11.5" fill="#555555" text-anchor="middle">67.70ms</text>
+<rect x="1120" y="960" width="480" height="90" rx="9" fill="#eaf4ec" stroke="#3d7a4e" stroke-width="2"/>
+<text x="1360.0" y="1003.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">envoy (graphql-gateway) -&gt; inventory-service:9004 (CLIENT)</text>
+<text x="1360.0" y="1020.0" font-size="11.5" fill="#555555" text-anchor="middle">4.85ms</text>
+<rect x="1080" y="1070" width="480" height="90" rx="9" fill="#eaf4ec" stroke="#3d7a4e" stroke-width="2"/>
+<text x="1320.0" y="1113.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">envoy (inventory-service) :9004 (SERVER)</text>
+<text x="1320.0" y="1130.0" font-size="11.5" fill="#555555" text-anchor="middle">3.97ms</text>
+<rect x="1040" y="1180" width="480" height="90" rx="9" fill="#eef4fb" stroke="#2f6db5" stroke-width="2"/>
+<text x="1280.0" y="1223.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">inventory-service — GetStock (SERVER, gRPC)</text>
+<text x="1280.0" y="1240.0" font-size="11.5" fill="#555555" text-anchor="middle">2.29ms</text>
+<path d="M420.0,207.1951219512195 L880.0,212.8048780487805" fill="none" stroke="#2f5f3d" stroke-width="2" marker-end="url(#am)"/>
+<text x="656.0" y="204.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">OTLP spans</text>
+<text x="656.0" y="204.0" font-size="11" fill="#2f5f3d" text-anchor="middle">OTLP spans</text>
+<path d="M420.0,316.4634146341463 L880.0,243.53658536585365" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<text x="656.0" y="274.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">OTLP spans</text>
+<text x="656.0" y="274.0" font-size="11" fill="#555" text-anchor="middle">OTLP spans</text>
+<path d="M407.03703703703707,430.0 L892.9629629629629,270.0" fill="none" stroke="#555" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#a)"/>
+<text x="656.0" y="344.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">scrape</text>
+<text x="656.0" y="344.0" font-size="11" fill="#555" text-anchor="middle">scrape</text>
+<path d="M946.6666666666666,270.0 L823.030303030303,330.0" fill="none" stroke="#2f5f3d" stroke-width="2" marker-end="url(#am)"/>
+<text x="890.8484848484848" y="294.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">traces</text>
+<text x="890.8484848484848" y="294.0" font-size="11" fill="#2f5f3d" text-anchor="middle">traces</text>
+<path d="M1066.6666666666667,270.0 L1073.939393939394,330.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<text x="1076.3030303030305" y="294.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">metrics</text>
+<text x="1076.3030303030305" y="294.0" font-size="11" fill="#555" text-anchor="middle">metrics</text>
+<path d="M1186.6666666666667,270.0 L1324.8484848484848,330.0" fill="none" stroke="#555" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#a)"/>
+<text x="1261.7575757575758" y="294.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">logs (unused path)</text>
+<text x="1261.7575757575758" y="294.0" font-size="11" fill="#555" text-anchor="middle">logs (unused path)</text>
+<path d="M837.2413793103449,430.0 L954.4827586206897,480.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<path d="M1073.103448275862,430.0 L1066.2068965517242,480.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<path d="M1308.9655172413793,430.0 L1177.9310344827586,480.0" fill="none" stroke="#555" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#a)"/>
+<path d="M706.5384615384615,810.0 L543.4615384615385,850.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<path d="M376.3636363636364,940.0 L383.6363636363636,960.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<path d="M416.3636363636364,1050.0 L423.6363636363636,1070.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<path d="M456.3636363636364,1160.0 L463.6363636363636,1180.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<path d="M1066.5384615384614,810.0 L1223.4615384615386,850.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<path d="M1383.6363636363637,940.0 L1376.3636363636363,960.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<path d="M1343.6363636363637,1050.0 L1336.3636363636363,1070.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<path d="M1303.6363636363637,1160.0 L1296.3636363636363,1180.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<text x="890.0" y="32" font-size="17" fill="#1d1d1d" text-anchor="middle" font-weight="700">ch.30 — observability trace pipeline: two span sources, one collector, the trace they produced</text>
+<text x="890.0" y="56" font-size="11.5" fill="#555555" text-anchor="middle">Envoy sidecar spans + app-level OTel spans both export OTLP to the same otel-lgtm collector — Tempo/Mimir/Loki store, Grafana reads</text>
+<text x="60" y="700" font-size="11.5" fill="#555555" text-anchor="start">blue = app-level OpenTelemetry span · green = Envoy sidecar span (mesh hop) · indent = call depth, not drawn to time scale</text>
+<text x="60" y="1410" font-size="10" fill="#777777" text-anchor="start">Sourced from deploy/k8s/istio/telemetry.yaml, deploy/k8s/observability/{otelcol-configmap,lgtm-deployment,lgtm-service,grafana-datasources-configmap}.yaml, examples/{04,07,08}&#x27;s application.properties, and evidence/ch30-hero-trace.json.</text>
+</svg>
