@@ -77,6 +77,8 @@ against the full menu:
   incremental change, or commercial-off-the-shelf software nobody can
   refactor because nobody owns its source.
 
+{% include excalidraw.html file="migration-strategy-spectrum" alt="Four migration strategies compared side by side: big-bang rewrite (highest risk, one long cutover), the strangler fig (this book's choice, incremental and independently verifiable), branch-by-abstraction (an in-process seam toggle), and parallel-run (a live comparison of two running paths)." caption="Figure 4.1 — The migration-strategy spectrum, from big-bang rewrite to the strangler fig" %}
+
 Each option trades the same two currencies against each other: **how much
 risk you take on at once**, and **how long you wait before the system is
 better**. Retain and Repurchase take almost no technical risk because they
@@ -119,6 +121,8 @@ the ease-of-migration rubric, difficult on data (one shared schema with
 cross-context foreign keys) and moderate everywhere else — a believable,
 unglamorous candidate for re-architecture rather than a straw man built to
 make the case too easy.
+
+{% include excalidraw.html file="modernization-value-vs-change-2x2" alt="A strategic-value by change-frequency quadrant: Quick wins, Strategic re-architecture, Retain, and Reconsider/Repurchase, with this book's monolith plotted in the high-value, difficult-on-data quadrant that favors re-architecture." caption="Figure 4.2 — The strategic-value x change-frequency quadrant this book's monolith sits in" %}
 
 ## The evolution arc, reframed for 2026
 
@@ -288,6 +292,8 @@ state of data separation is acceptable along the way:
 Knowing the family exists, and which variant answers which question, is
 what a strategy-level decision needs. Deciding *where* to point the proxy
 first is a different problem, the one the next section solves.
+
+{% include excalidraw.html file="strangler-evolution-arc" alt="Four snapshots of this book's own strangler-fig execution: the monolith alone (ch.8), the proxy-fronted monolith with every call still passing through (ch.14), the incrementally strangled state with review and notification live behind the proxy (ch.15-24), and the fully extracted end state where the proxy is a flagless edge router in front of all six services and the monolith sits decommissioned and unwired (ch.26)." caption="Figure 4.3 — The strangler fig's four stages, mapped onto this book's own six extractions" %}
 
 ## Assessing the monolith: how do you choose an order
 

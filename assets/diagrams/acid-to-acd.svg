@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 820" font-family="'Red Hat Text', system-ui, sans-serif" role="img">
+<defs><marker id="a" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#555"/></marker><marker id="am" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2f5f3d"/></marker></defs>
+<rect x="20" y="60" width="1360" height="260" rx="12" fill="#fafafa" stroke="#ddd"/>
+<text x="32" y="80" font-size="12" font-weight="700" fill="#1d1d1d">ACID, today — one in-process transaction spans four contexts (SMELL #3)</text>
+<rect x="20" y="380" width="1360" height="400" rx="12" fill="#eaf4ec" stroke="#ddd"/>
+<text x="32" y="400" font-size="12" font-weight="700" fill="#1d1d1d">ACD, after decomposition — four services, four commits, no cross-service isolation</text>
+<rect x="40" y="130" width="220" height="110" rx="9" fill="#eef4fb" stroke="#2f6db5" stroke-width="2"/>
+<text x="150.0" y="183.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">BEGIN @Transactional</text>
+<text x="150.0" y="200.0" font-size="11.5" fill="#555555" text-anchor="middle">OrderService.placeOrder()</text>
+<rect x="280" y="130" width="190" height="110" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
+<text x="375.0" y="190.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Inventory reserve</text>
+<rect x="490" y="130" width="190" height="110" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
+<text x="585.0" y="190.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Order persist</text>
+<rect x="700" y="130" width="190" height="110" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
+<text x="795.0" y="190.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Payment charge</text>
+<rect x="910" y="130" width="190" height="110" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
+<text x="1005.0" y="190.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Shipping dispatch</text>
+<rect x="1120" y="130" width="240" height="110" rx="9" fill="#111111" stroke="#111111" stroke-width="2"/>
+<text x="1240.0" y="183.0" font-size="13.5" font-weight="700" fill="#ffffff" text-anchor="middle">COMMIT — or ROLLBACK</text>
+<text x="1240.0" y="200.0" font-size="11.5" fill="#dddddd" text-anchor="middle">everything, automatically</text>
+<rect x="40" y="450" width="260" height="100" rx="9" fill="#eaf4ec" stroke="#3d7a4e" stroke-width="2"/>
+<text x="170.0" y="498.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Order service</text>
+<text x="170.0" y="515.0" font-size="11.5" fill="#555555" text-anchor="middle">commits locally — own DB</text>
+<rect x="330" y="450" width="260" height="100" rx="9" fill="#eaf4ec" stroke="#3d7a4e" stroke-width="2"/>
+<text x="460.0" y="498.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Inventory service</text>
+<text x="460.0" y="515.0" font-size="11.5" fill="#555555" text-anchor="middle">commits locally — own DB</text>
+<rect x="620" y="450" width="260" height="100" rx="9" fill="#eaf4ec" stroke="#3d7a4e" stroke-width="2"/>
+<text x="750.0" y="498.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Payment service</text>
+<text x="750.0" y="515.0" font-size="11.5" fill="#555555" text-anchor="middle">commits locally — own DB</text>
+<rect x="910" y="450" width="260" height="100" rx="9" fill="#eaf4ec" stroke="#3d7a4e" stroke-width="2"/>
+<text x="1040.0" y="498.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Shipping service</text>
+<text x="1040.0" y="515.0" font-size="11.5" fill="#555555" text-anchor="middle">commits locally — own DB</text>
+<rect x="620" y="610" width="260" height="110" rx="9" fill="#111111" stroke="#111111" stroke-width="2"/>
+<text x="750.0" y="655.5" font-size="13.5" font-weight="700" fill="#ffffff" text-anchor="middle">Saga — compensating action</text>
+<text x="750.0" y="672.5" font-size="11.5" fill="#dddddd" text-anchor="middle">explicit Release, triggered by</text>
+<text x="750.0" y="687.5" font-size="11.5" fill="#dddddd" text-anchor="middle">payment.declined (ch.23/24)</text>
+<path d="M260.0,185.0 L280.0,185.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<path d="M470.0,185.0 L490.0,185.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<path d="M680.0,185.0 L700.0,185.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<path d="M890.0,185.0 L910.0,185.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<path d="M1100.0,185.0 L1120.0,185.0" fill="none" stroke="#2f5f3d" stroke-width="2" marker-end="url(#am)"/>
+<text x="1116.0" y="123.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">one WAL, one commit point</text>
+<text x="1116.0" y="123.0" font-size="11" fill="#2f5f3d" text-anchor="middle">one WAL, one commit point</text>
+<path d="M300.0,500.0 L330.0,500.0" fill="none" stroke="#555" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#a)"/>
+<text x="321.0" y="494.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">separate commit, separate DB</text>
+<text x="321.0" y="494.0" font-size="11" fill="#555" text-anchor="middle">separate commit, separate DB</text>
+<path d="M590.0,500.0 L620.0,500.0" fill="none" stroke="#555" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#a)"/>
+<text x="611.0" y="494.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">no cross-service isolation</text>
+<text x="611.0" y="494.0" font-size="11" fill="#555" text-anchor="middle">no cross-service isolation</text>
+<path d="M880.0,500.0 L910.0,500.0" fill="none" stroke="#555" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#a)"/>
+<text x="901.0" y="494.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">no cross-service isolation</text>
+<text x="901.0" y="494.0" font-size="11" fill="#555" text-anchor="middle">no cross-service isolation</text>
+<path d="M750.0,550.0 L750.0,610.0" fill="none" stroke="#2f5f3d" stroke-width="2" marker-end="url(#am)"/>
+<text x="756.0" y="574.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">payment.declined</text>
+<text x="756.0" y="574.0" font-size="11" fill="#2f5f3d" text-anchor="middle">payment.declined</text>
+<text x="700.0" y="32" font-size="16" fill="#1d1d1d" text-anchor="middle" font-weight="700">ch.22 — ACID -&gt; ACD: the isolation given up, and what replaces the free rollback</text>
+<text x="40" y="272" font-size="11" fill="#555555" text-anchor="start">Atomic + Consistent + Isolated + Durable — all four, free, because there is one process and one database. Any failure anywhere rolls back everything.</text>
+<text x="40" y="575" font-size="11" fill="#555555" text-anchor="start">Kept: full LOCAL ACID inside each service&#x27;s own database. Given up: atomicity and isolation ACROSS services — four commits on four DBs, each independent of the other three.</text>
+<text x="40" y="591" font-size="11" fill="#555555" text-anchor="start">Atomic (locally) + Consistent (eventually) + Durable survive as ACD. No cross-service isolation is what the chapter&#x27;s title names as gone — not a value judgement, a tradeoff.</text>
+<text x="620" y="735" font-size="10.5" fill="#555555" text-anchor="start">Nothing makes this compensating call happen automatically the way Postgres made the monolith&#x27;s rollback automatic — a saga author writes it, names it, and tests it.</text>
+<text x="40" y="800" font-size="10" fill="#777777" text-anchor="start">Sourced from _docs/22-acid-to-acd.md; examples/00-monolith/SMELLS.md (SMELL #3); order/OrderService.java#placeOrder&#x27;s @Transactional javadoc. Two-phase commit is rejected (coordinator SPOF, blocking locks, recentralized ownership) — see the chapter&#x27;s own treatment.</text>
+</svg>
