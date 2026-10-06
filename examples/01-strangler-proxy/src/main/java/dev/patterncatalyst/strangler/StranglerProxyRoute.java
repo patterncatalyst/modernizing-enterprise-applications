@@ -179,6 +179,45 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
  * this package. See this project's README.md ("The flag:
  * strangler.shipping.enabled") for the full field-by-field writeup.
  *
+ * <p><b>The Order seam (order-plan.md S8, ch.26, DRQ-065 precedent) — the
+ * SIXTH and LAST strangler flag:</b> {@code strangler.order.enabled} is
+ * added alongside Review's, Notification's, Inventory's, Payment's, and
+ * Shipping's, with the identical content-based routing shape on the
+ * {@code /api/orders} path prefix (full path, not a route-relative prefix,
+ * per the CUTOVER.md paragraph 2 lesson, applied here for a sixth time).
+ * Unlike the five prior flags, this one routes <i>both</i> the POST checkout
+ * command and the GET reads in a single branch — the whole order bounded
+ * context (the god {@code OrderService}/{@code OrderSagaListener} hub, SMELL
+ * #2) moves at once, there being no narrower read/write split worth staging
+ * at the proxy layer (the CQRS write/read split happens inside the order
+ * service itself, DRQ-067). It defaults to {@code false} — the monolith
+ * still serves {@code /api/orders} until order-plan S9's cutover, the LAST
+ * flag flip in the whole book: order-plan S10 is the single, deliberately
+ * irreversible decommission for the whole system (there is no seventh
+ * context left to extract, and no monolith left to fall back to afterward).
+ *
+ * <p><b>ACL honesty note (DRQ-065 precedent, the same call already made for
+ * Inventory, Payment, and Shipping above):</b> the monolith's
+ * {@code common.OrderDto} and the order service's
+ * {@code dev.patterncatalyst.order.OrderDto} are byte-for-byte identical
+ * records — {@code id}, {@code customerId}, {@code status},
+ * {@code totalCents}, {@code createdAt}, {@code shippingAddress},
+ * {@code items[sku, quantity, unitPriceCents]} — same field names, types,
+ * and order; the order service's copy was lifted unchanged (order-plan
+ * S4/S5, DRQ-068/073 Phase A). {@code customerId} was already a plain
+ * {@code Long} on the wire in the monolith (the FK decomposition, DRQ-068,
+ * changes only the order service's INTERNAL JPA mapping — no more
+ * {@code @ManyToOne Customer} — never this external read contract). There is
+ * therefore nothing for a Camel message translator to translate at this
+ * seam — building one would fabricate a no-op ACL for a contract that does
+ * not differ, the same speculative-infrastructure trap the Inventory/
+ * Payment/Shipping precedents above already ruled out. This branch is
+ * therefore an honest, transparent reverse proxy, exactly like the Review,
+ * Notification, Inventory, Payment, and Shipping branches above it — there
+ * is no {@code OrderAclRoute} class in this package. See this project's
+ * README.md ("The flag: strangler.order.enabled") for the full
+ * field-by-field writeup.
+ *
  * <p>Explicitly {@code @ApplicationScoped} so Quarkus/CDI — not plain
  * reflection — constructs this bean and resolves the {@code @ConfigProperty}
  * fields before {@link #configure()} runs.
@@ -215,6 +254,12 @@ public class StranglerProxyRoute extends RouteBuilder {
     @ConfigProperty(name = "strangler.shipping.enabled", defaultValue = "false")
     boolean shippingEnabled;
 
+    /** The strangler cutover flag for Order traffic (order-plan.md S8, ch.26, DRQ-065
+     *  precedent) — the sixth and LAST strangler flag. Routes BOTH the POST checkout
+     *  command and GET reads (see class javadoc). Defaults to the monolith. */
+    @ConfigProperty(name = "strangler.order.enabled", defaultValue = "false")
+    boolean orderEnabled;
+
     /** The monolith — the default backend for everything until a context is cut over. */
     @ConfigProperty(name = "strangler.monolith.base-url")
     String monolithBaseUrl;
@@ -242,12 +287,19 @@ public class StranglerProxyRoute extends RouteBuilder {
     @ConfigProperty(name = "strangler.shipping.base-url")
     String shippingServiceBaseUrl;
 
+    /** The extracted Order service (examples/07-order-service, :8087) — only
+     *  selected once strangler.order.enabled is on. Not :8086 (Debezium) or
+     *  :8090 (the GraphQL gateway, order-plan.md DRQ-069). */
+    @ConfigProperty(name = "strangler.order.base-url")
+    String orderServiceBaseUrl;
+
     private static final String TARGET_PROPERTY = "stranglerTarget";
     private static final String TARGET_REVIEW = "review";
     private static final String TARGET_NOTIFICATION = "notification";
     private static final String TARGET_INVENTORY = "inventory";
     private static final String TARGET_PAYMENT = "payment";
     private static final String TARGET_SHIPPING = "shipping";
+    private static final String TARGET_ORDER = "order";
     private static final String TARGET_MONOLITH = "monolith";
 
     @Override
@@ -318,6 +370,17 @@ public class StranglerProxyRoute extends RouteBuilder {
                         simple("${header.CamelHttpPath} startsWith '/api/shipments'"),
                         exchange -> shippingEnabled))
                     .setProperty(TARGET_PROPERTY, constant(TARGET_SHIPPING))
+                // NOTE (order-plan S8): the Order seam reuses the exact lesson
+                // CUTOVER.md paragraph 2 paid for on Review -- match the FULL incoming
+                // path "/api/orders", never a route-relative "/orders", or the
+                // predicate silently never matches and every request falls through to
+                // the monolith regardless of the flag. This is the sixth and LAST
+                // strangler flag; it routes BOTH POST (checkout) and GET (reads) --
+                // the whole order context moves at once.
+                .when(PredicateBuilder.and(
+                        simple("${header.CamelHttpPath} startsWith '/api/orders'"),
+                        exchange -> orderEnabled))
+                    .setProperty(TARGET_PROPERTY, constant(TARGET_ORDER))
                 .otherwise()
                     .setProperty(TARGET_PROPERTY, constant(TARGET_MONOLITH))
             .end()
@@ -341,6 +404,8 @@ public class StranglerProxyRoute extends RouteBuilder {
                     .to(paymentServiceBaseUrl + "?bridgeEndpoint=true&throwExceptionOnFailure=false")
                 .when(simple("${exchangeProperty." + TARGET_PROPERTY + "} == '" + TARGET_SHIPPING + "'"))
                     .to(shippingServiceBaseUrl + "?bridgeEndpoint=true&throwExceptionOnFailure=false")
+                .when(simple("${exchangeProperty." + TARGET_PROPERTY + "} == '" + TARGET_ORDER + "'"))
+                    .to(orderServiceBaseUrl + "?bridgeEndpoint=true&throwExceptionOnFailure=false")
                 .otherwise()
                     .to(monolithBaseUrl + "?bridgeEndpoint=true&throwExceptionOnFailure=false")
             .end();
