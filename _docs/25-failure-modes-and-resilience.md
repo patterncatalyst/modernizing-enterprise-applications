@@ -103,6 +103,12 @@ public ReserveResult reserve(String sku, int quantity) {
 }
 ```
 
+The extracted order service — the current gRPC caller of the inventory
+service now that the monolith is decommissioned — carries this same
+`withDeadlineAfter(inventoryGrpcTimeoutMs, TimeUnit.MILLISECONDS)` deadline
+forward in its own `RemoteInventoryClient`, so the bound this excerpt shows
+is live in the finished system, not only in the monolith frozen here.
+
 `withDeadlineAfter(timeoutMs, TimeUnit.MILLISECONDS)` — bound to
 `inventory.grpc.timeout-ms`, defaulting to five thousand — converts "wait
 indefinitely" into "wait at most this long, then fail loudly." That

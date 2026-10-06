@@ -8,6 +8,8 @@ import dev.patterncatalyst.inventory.v1.ReserveRequest;
 import dev.patterncatalyst.inventory.v1.StockReply;
 import io.quarkus.grpc.GrpcClient;
 import jakarta.enterprise.context.ApplicationScoped;
+import java.util.concurrent.TimeUnit;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 /**
  * ch.26 S4 (DRQ-068/073, Phase A) gRPC CLIENT SCAFFOLD — the order service's
@@ -43,6 +45,19 @@ public class RemoteInventoryClient {
     InventoryGrpcServiceBlockingStub inventoryStub;
 
     /**
+     * ch.25 resilience discipline, carried forward from the monolith's
+     * {@code RemoteInventoryClient} (see {@code
+     * examples/00-monolith/.../inventory/RemoteInventoryClient}, quoted in
+     * Chapters 19 and 25): per-call gRPC deadline bound to {@code
+     * inventory.grpc.timeout-ms} (default 5000ms). Applied inline per call
+     * via {@code inventoryStub.withDeadlineAfter(...)} below so a hung or
+     * unreachable inventory service fails a checkout attempt in a bounded
+     * window instead of blocking a checkout thread forever.
+     */
+    @ConfigProperty(name = "inventory.grpc.timeout-ms", defaultValue = "5000")
+    long inventoryGrpcTimeoutMs;
+
+    /**
      * Server-side atomic check-and-decrement in the inventory service's OWN
      * database. {@code ok=false} means insufficient stock and no decrement
      * happened server-side — {@link OrderService} maps that to {@link
@@ -50,10 +65,11 @@ public class RemoteInventoryClient {
      * monolith's lifted path used.
      */
     public ReserveResult reserve(String sku, int quantity) {
-        ReserveReply reply = inventoryStub.reserve(ReserveRequest.newBuilder()
-                .setStockKeepingUnit(sku)
-                .setRequestedQty(quantity)
-                .build());
+        ReserveReply reply = inventoryStub.withDeadlineAfter(inventoryGrpcTimeoutMs, TimeUnit.MILLISECONDS)
+                .reserve(ReserveRequest.newBuilder()
+                        .setStockKeepingUnit(sku)
+                        .setRequestedQty(quantity)
+                        .build());
         return new ReserveResult(reply.getReservationOk(), reply.getOnHandQty());
     }
 
@@ -64,10 +80,11 @@ public class RemoteInventoryClient {
      * OrderService#placeOrder}'s javadoc).
      */
     public void release(String sku, int quantity) {
-        inventoryStub.release(ReleaseRequest.newBuilder()
-                .setStockKeepingUnit(sku)
-                .setRequestedQty(quantity)
-                .build());
+        inventoryStub.withDeadlineAfter(inventoryGrpcTimeoutMs, TimeUnit.MILLISECONDS)
+                .release(ReleaseRequest.newBuilder()
+                        .setStockKeepingUnit(sku)
+                        .setRequestedQty(quantity)
+                        .build());
     }
 
     /**
@@ -77,9 +94,10 @@ public class RemoteInventoryClient {
      * lifted shape exactly (DRQ-043).
      */
     public StockSnapshot getStock(String sku) {
-        StockReply reply = inventoryStub.getStock(GetStockRequest.newBuilder()
-                .setStockKeepingUnit(sku)
-                .build());
+        StockReply reply = inventoryStub.withDeadlineAfter(inventoryGrpcTimeoutMs, TimeUnit.MILLISECONDS)
+                .getStock(GetStockRequest.newBuilder()
+                        .setStockKeepingUnit(sku)
+                        .build());
         return new StockSnapshot(reply.getStockKeepingUnit(), reply.getDisplayName(), reply.getUnitPriceCents());
     }
 

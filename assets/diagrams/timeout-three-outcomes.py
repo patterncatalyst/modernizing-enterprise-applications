@@ -18,17 +18,24 @@ followed to Sam Newman's and Michael Nygard's named consequence the chapter
 quotes: a blocked thread holds its pool slot for as long as the far side
 takes, and "enough of them, blocking long enough, exhausts the monolith's
 own thread pool and turns one slow downstream dependency into a total
-outage" — cascading failure. The ghost box shows what actually prevents that
-chain in this project's own code: `withDeadlineAfter(timeoutMs)`
-(`inventory.grpc.timeout-ms`, default 5000ms) converts outcome 3 into
-outcome 2 before cascading failure has time to set in — this project has not
-observed the cascade, because the deadline already closes it off.
+outage" — cascading failure. The mitigation box is drawn as a REAL, live
+box (solid accent fill, not the dashed "ghost" style this figure used
+before the order-service extraction carried the deadline forward): both the
+monolith's `RemoteInventoryClient` (ch.19/ch.25) and
+`examples/07-order-service`'s own `RemoteInventoryClient` -- the only live
+gRPC caller of the inventory service after the monolith's decommission --
+apply `withDeadlineAfter(...)` (`inventory.grpc.timeout-ms`, default 5000ms)
+on every call, converting outcome 3 into outcome 2 before cascading failure
+has time to set in. This project has not observed the cascade, because the
+deadline closes it off on both callers, not merely on paper.
 
 Sourced from `_docs/25-failure-modes-and-resilience.md` ("Timeouts and
-deadlines: the gRPC client that fails cleanly instead of hanging") and
+deadlines: the gRPC client that fails cleanly instead of hanging"),
 `examples/00-monolith/.../inventory/RemoteInventoryClient.java`'s `reserve`
-method and javadoc, already quoted in Chapter 19. No codenames; generic/
-public names only.
+method and javadoc (already quoted in Chapter 19), and
+`examples/07-order-service/.../order/RemoteInventoryClient.java`'s own
+`withDeadlineAfter(inventoryGrpcTimeoutMs, ...)` calls. No codenames;
+generic/public names only.
 """
 import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "scripts"))
@@ -75,10 +82,10 @@ outcome3 = node(700, 460, 300, 110,
                 style="ink")
 
 mitigate = node(1080, 300, 360, 110,
-                ["Bounded here, today",
+                ["Bounded here, live in the system",
                  "the deadline fires first: outcome 3",
                  "becomes outcome 2 before it can cascade"],
-                style="ghost")
+                style="accent")
 
 cascade1 = node(700, 620, 300, 100,
                 ["Thread stays blocked",
@@ -102,7 +109,7 @@ edges = [
     connect(grpc, outcome2),
     connect(grpc, outcome3, amber=True,
             label="structural: can simply not come back", ly=10),
-    connect(outcome3, mitigate, dashed=True,
+    connect(outcome3, mitigate,
             label="inventory.grpc.timeout-ms bounds it here"),
     connect(outcome3, cascade1, amber=True,
             label="without a bound in place"),
@@ -119,10 +126,10 @@ notes = [
      "anchor": "middle", "size": 12, "color": "#555555"},
 
     {"x": 60, "y": H - 40,
-     "text": "This project's deadline already closes off the cascade below — the chain is the risk a bare gRPC call carries, not an incident this book observed.",
+     "text": "This project's deadline already closes off the cascade below, live on both gRPC callers — the chain is the risk a bare gRPC call carries, not an incident this book observed.",
      "anchor": "start", "size": 10.5, "color": "#555555"},
     {"x": 60, "y": H - 16,
-     "text": "Sourced from _docs/25-failure-modes-and-resilience.md (\"Timeouts and deadlines\") and RemoteInventoryClient#reserve's deadline and javadoc (examples/00-monolith/).",
+     "text": "Sourced from _docs/25-failure-modes-and-resilience.md (\"Timeouts and deadlines\") and both RemoteInventoryClients' deadline and javadoc (examples/00-monolith/, examples/07-order-service/).",
      "anchor": "start", "size": 10, "color": "#777777"},
 ]
 

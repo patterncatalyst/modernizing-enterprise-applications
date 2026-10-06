@@ -2,6 +2,12 @@
 # demo-cutover.sh — demonstrate the Review strangler-fig CUTOVER + DECOMMISSION
 # (r02-plan S10, build-plan.md §E step 1).
 #
+# NOTE: this reconstructs an INTERMEDIATE migration state and depends on the
+# frozen examples/00-monolith (running on :8080) to show the strangler cutover
+# against it. In the FINISHED system the monolith is decommissioned — see
+# demos/demo-final-topology.sh for the end-state (flagless edge router, no
+# monolith).
+#
 # This is a narration + verification script, not a service launcher: it
 # assumes the three r02 services are already built and running (see
 # "Prerequisites" below) and walks through the same evidence trail captured

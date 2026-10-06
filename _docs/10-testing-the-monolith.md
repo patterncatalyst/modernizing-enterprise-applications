@@ -24,21 +24,21 @@ chapter walks the code as it exists on disk.
 
 ## Three tiers, one `mvn verify`
 
-Eleven test classes carry the pyramid: three Tier 1 unit-test classes against
-the three services with real branching logic — `InventoryServiceTest`,
-`OrderServiceTest`, `PaymentServiceTest` (shipping and notification have no
-branching logic to unit-test), five Tier 2 `@WebMvcTest` slices against the
-five REST controllers, and a mixed Tier 3 of two `@DataJpaTest` repository
-tests plus one full-stack smoke test. Counting
-methods rather than classes: thirty-four plain `@Test` methods, plus one
+Thirteen test classes carry the pyramid: four Tier 1 unit-test classes against
+the four services with real branching logic — `InventoryServiceTest`,
+`OrderServiceTest`, `PaymentServiceTest`, `ReviewServiceTest` (shipping and
+notification have no branching logic to unit-test), six Tier 2 `@WebMvcTest`
+slices against the six REST controllers, and a mixed Tier 3 of two
+`@DataJpaTest` repository tests plus one full-stack smoke test. Counting
+methods rather than classes: forty-one plain `@Test` methods, plus one
 `@ParameterizedTest` in `PaymentServiceTest` that expands into four more
-executions at run time — thirty-eight test executions in total, every one of
+executions at run time — forty-five test executions in total, every one of
 them green on a clean `mvn verify`. That is a modest number for a production
 codebase and exactly the right number for a reference monolith: enough
 coverage per context to make the smells demonstrable, not so much that the
 example stops being readable in one sitting.
 
-{% include excalidraw.html file="test-pyramid" alt="The monolith's three-tier test pyramid: Tier 1 unit tests (3 classes, Mockito, every collaborator mocked) prove a class's logic does the right thing; Tier 2 slice tests (5 classes, @WebMvcTest, service mocked) prove a controller binds, validates, and serializes correctly; Tier 3 integration tests (3 classes, real Postgres via Testcontainers) prove the code works against a real database. 11 classes, 34 @Test methods plus 1 parameterized test expanding to 4 executions, 38 executions total, all green on mvn verify." caption="Figure 10.1 — The monolith's test pyramid: three tiers, eleven classes, thirty-eight executions" %}
+{% include excalidraw.html file="test-pyramid" alt="The monolith's three-tier test pyramid: Tier 1 unit tests (4 classes, Mockito, every collaborator mocked) prove a class's logic does the right thing; Tier 2 slice tests (6 classes, @WebMvcTest, service mocked) prove a controller binds, validates, and serializes correctly; Tier 3 integration tests (3 classes, real Postgres via Testcontainers) prove the code works against a real database. 13 classes, 41 @Test methods plus 1 parameterized test expanding to 4 executions, 45 executions total, all green on mvn verify." caption="Figure 10.1 — The monolith's test pyramid: three tiers, thirteen classes, forty-five executions" %}
 
 The three tiers answer three different questions, and keeping them separate
 matters before looking at any one of them in detail:
@@ -543,8 +543,8 @@ commit ledger rather than re-executed for this chapter specifically: commit
 `e6d62bc` ("add three-tier JUnit test layer to monolith... `mvn verify`
 green") and commit `6cb113e` ("add behavior-equivalence suite (Newman);
 49 assertions green on monolith"), both cited in Chapter 7. The test-method
-and execution counts in this chapter (eleven classes, thirty-four `@Test`
-methods, thirty-eight executions once the one parameterized test expands)
+and execution counts in this chapter (thirteen classes, forty-one `@Test`
+methods, forty-five executions once the one parameterized test expands)
 were counted directly against the files on disk during authoring, not copied
 from an earlier summary — worth a quick `mvn verify` re-run on a real machine
 before this count is treated as permanently fixed, since a future iteration
