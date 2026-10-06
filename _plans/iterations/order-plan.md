@@ -946,42 +946,42 @@ evidence trail.
 ---
 
 ## ch.26 EXIT CHECKLIST (the strangler completes + ACID→ACD realized for ALL contexts)
-- [ ] **Order extraction decided & applied (DRQ-066/073):** the god `OrderService`, the four
+- [x] **Order extraction decided & applied (DRQ-066/073):** the god `OrderService`, the four
       `OrderSagaListener` reactions, `Order`/`OrderItem`/`Customer`, the gRPC inventory client,
       and the outbox are extracted to `examples/07-order-service` (own schema, FKs decomposed,
       two-phase A→B, measured); the order service is the external `order.placed` producer.
-- [ ] **CQRS shape genuinely taught (DRQ-067):** a separate denormalized `order_view` read
+- [x] **CQRS shape genuinely taught (DRQ-067):** a separate denormalized `order_view` read
       model projected from the lifecycle events, reads served exclusively from it, rebuildable
       from the aggregate, read-after-write eventual consistency demonstrated; the
       projection-disabled negative check goes RED.
-- [ ] **GraphQL aggregation gateway delivered (DRQ-069):** `examples/08-graphql-gateway` owns no
+- [x] **GraphQL aggregation gateway delivered (DRQ-069):** `examples/08-graphql-gateway` owns no
       data and stitches order + payments + shipments + reviews + stock over REST + gRPC; depth/
       complexity bounded; the GraphQL Gateway Contract folder passes.
-- [ ] **Lifted saga reactions preserve their guarantees (DRQ-074):** at-most-once compensating
+- [x] **Lifted saga reactions preserve their guarantees (DRQ-074):** at-most-once compensating
       `Release`, status-guard idempotency, and the payment-decline vs shipment-failure mutual
       exclusion all hold in the extracted service (tests + redelivery proof).
-- [ ] **Equivalence green across the seam (S9) then converted to a contract suite (DRQ-071):**
+- [x] **Equivalence green across the seam (S9) then converted to a contract suite (DRQ-071):**
       all four scenarios + Order + GraphQL contract folders green across the seam; the frozen S2
       golden baseline re-designated as the contract; CI drops the live monolith; the negative
       checks are preserved and prove non-vacuity.
-- [ ] **Reversibility shown one last time (DRQ-072)** at S9 (flip back → monolith serves checkout,
+- [x] **Reversibility shown one last time (DRQ-072)** at S9 (flip back → monolith serves checkout,
       green) before the final irreversible decommission; the frozen-not-deleted monolith is the
       break-glass referent.
-- [ ] **Strangler completes + monolith decommissioned (DRQ-070):** `/api/orders` served by the
+- [x] **Strangler completes + monolith decommissioned (DRQ-070):** `/api/orders` served by the
       order service; the monolith is out of the running topology, frozen in-repo (DRQ-024); the
       proxy is a flagless REST edge router (`strangler.*` flags + monolith default backend
       retired).
-- [ ] **SMELL #2 & #3 fully cured; ACID→ACD realized for ALL contexts (DRQ-075):** the god
+- [x] **SMELL #2 & #3 fully cured; ACID→ACD realized for ALL contexts (DRQ-075):** the god
       service is an independent CQRS service; the one remaining local `@Transactional` spans only
       the order service's own schema; SMELLS.md #2 + #3 struck through with evidence;
       `SixContextsSmokeTest` asserts `/api/orders` → 404 on the monolith.
-- [ ] **Code-CI green:** the order/gateway contract gate exercises the fully-extracted system (no
+- [x] **Code-CI green:** the order/gateway contract gate exercises the fully-extracted system (no
       live monolith) incl. CQRS + GraphQL end-to-end (red-then-green via disabling the projection
       / a compensation); sibling gates still green with the final topology (cascade handled).
-- [ ] **ch.26 authored ≥2000 words**, runnable examples (order service + gateway), embedded
+- [x] **ch.26 authored ≥2000 words**, runnable examples (order service + gateway), embedded
       diagrams, real "ADLC in Action" callout, verification-status footer; REST/gRPC/GraphQL +
       CQRS + strangler-completes taught.
-- [ ] **Ledger reconciled:** `decisions.md` DRQ-066…075 accepted + version matrix updated; §E row
+- [x] **Ledger reconciled:** `decisions.md` DRQ-066…075 accepted + version matrix updated; §E row
       6 DONE (**6 of 6**); this plan's steps and exit checklist marked DONE.
 
 ## Biggest risks
