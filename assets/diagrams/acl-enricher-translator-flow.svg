@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1560 620" font-family="'Red Hat Text', system-ui, sans-serif" role="img">
+<defs><marker id="a" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#555"/></marker><marker id="am" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2f5f3d"/></marker></defs>
+<rect x="20" y="60" width="1520" height="420" rx="12" fill="#eaf4ec" stroke="#ddd"/>
+<text x="32" y="80" font-size="12" font-weight="700" fill="#1d1d1d">InventoryAclRoute — from(&quot;direct:stockFor&quot;)</text>
+<rect x="50" y="110" width="220" height="120" rx="9" fill="#ffffff" stroke="#999999" stroke-width="1.5"/>
+<text x="160.0" y="160.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">direct:stockFor</text>
+<text x="160.0" y="177.5" font-size="11.5" fill="#555555" text-anchor="middle">exchange arrives</text>
+<text x="160.0" y="192.5" font-size="11.5" fill="#555555" text-anchor="middle">header: sku only</text>
+<rect x="300" y="110" width="230" height="120" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
+<text x="415.0" y="160.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">.choice()</text>
+<text x="415.0" y="177.5" font-size="11.5" fill="#555555" text-anchor="middle">flag: strangler.inventory.enabled</text>
+<text x="415.0" y="192.5" font-size="11.5" fill="#555555" text-anchor="middle">setProperty(stockLookupTarget, uri)</text>
+<rect x="560" y="110" width="230" height="120" rx="9" fill="#eaf4ec" stroke="#3d7a4e" stroke-width="2"/>
+<text x="675.0" y="160.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">.enrich(stockLookupTarget, ...)</text>
+<text x="675.0" y="177.5" font-size="11.5" fill="#555555" text-anchor="middle">dynamic request-reply fetch</text>
+<text x="675.0" y="192.5" font-size="11.5" fill="#555555" text-anchor="middle">against the resolved URI</text>
+<rect x="820" y="110" width="250" height="120" rx="9" fill="#eaf4ec" stroke="#3d7a4e" stroke-width="2"/>
+<text x="945.0" y="160.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">StockDtoTranslatingStrategy</text>
+<text x="945.0" y="177.5" font-size="11.5" fill="#555555" text-anchor="middle">.aggregate(original, resource)</text>
+<text x="945.0" y="192.5" font-size="11.5" fill="#555555" text-anchor="middle">StockDtoTranslator.translate(reply)</text>
+<rect x="1100" y="110" width="250" height="120" rx="9" fill="#111111" stroke="#111111" stroke-width="2"/>
+<text x="1225.0" y="160.5" font-size="13.5" font-weight="700" fill="#ffffff" text-anchor="middle">original exchange, merged</text>
+<text x="1225.0" y="177.5" font-size="11.5" fill="#dddddd" text-anchor="middle">body = StockDto</text>
+<text x="1225.0" y="192.5" font-size="11.5" fill="#dddddd" text-anchor="middle">header: stockQuantity</text>
+<rect x="430" y="330" width="260" height="100" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
+<text x="560.0" y="370.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">otherwise: monolith</text>
+<text x="560.0" y="387.5" font-size="11.5" fill="#555555" text-anchor="middle">GET /api/inventory/{sku} — :8080</text>
+<text x="560.0" y="402.5" font-size="11.5" fill="#555555" text-anchor="middle">already builds StockDto</text>
+<rect x="720" y="330" width="260" height="100" rx="9" fill="#ffffff" stroke="#999999" stroke-width="1.5" stroke-dasharray="6 4"/>
+<text x="850.0" y="370.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">when inventoryEnabled: inventory svc</text>
+<text x="850.0" y="387.5" font-size="11.5" fill="#555555" text-anchor="middle">ch.19 gRPC — :9004</text>
+<text x="850.0" y="402.5" font-size="11.5" fill="#555555" text-anchor="middle">StockReply — different vocabulary</text>
+<path d="M270.0,170.0 L300.0,170.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<path d="M530.0,170.0 L560.0,170.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<text x="551.0" y="100.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">stockLookupTarget resolved</text>
+<text x="551.0" y="100.0" font-size="11" fill="#555" text-anchor="middle">stockLookupTarget resolved</text>
+<path d="M790.0,170.0 L820.0,170.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<text x="811.0" y="100.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">resource exchange (raw reply)</text>
+<text x="811.0" y="100.0" font-size="11" fill="#555" text-anchor="middle">resource exchange (raw reply)</text>
+<path d="M1070.0,170.0 L1100.0,170.0" fill="none" stroke="#2f5f3d" stroke-width="2" marker-end="url(#am)"/>
+<text x="1091.0" y="100.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">original.getMessage().setBody(stock)</text>
+<text x="1091.0" y="100.0" font-size="11" fill="#2f5f3d" text-anchor="middle">original.getMessage().setBody(stock)</text>
+<path d="M456.42857142857144,230.0 L525.4761904761905,330.0" fill="none" stroke="#555" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#a)"/>
+<text x="496.95238095238096" y="274.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">otherwise</text>
+<text x="496.95238095238096" y="274.0" font-size="11" fill="#555" text-anchor="middle">otherwise</text>
+<path d="M530.0,225.51724137931035 L746.4285714285714,330.0" fill="none" stroke="#555" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#a)"/>
+<text x="686.2142857142858" y="307.7586206896552" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">when flag=true</text>
+<text x="686.2142857142858" y="307.7586206896552" font-size="11" fill="#555" text-anchor="middle">when flag=true</text>
+<path d="M587.3809523809524,330.0 L642.1428571428571,230.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<text x="620.7619047619048" y="274.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">reply</text>
+<text x="620.7619047619048" y="274.0" font-size="11" fill="#555" text-anchor="middle">reply</text>
+<path d="M808.3333333333334,330.0 L725.0,230.0" fill="none" stroke="#555" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#a)"/>
+<text x="772.6666666666667" y="274.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">reply (ch.19)</text>
+<text x="772.6666666666667" y="274.0" font-size="11" fill="#555" text-anchor="middle">reply (ch.19)</text>
+<text x="780.0" y="32" font-size="16" fill="#1d1d1d" text-anchor="middle" font-weight="700">ch.16 — the ACL pipeline: SKU in, StockDto out, regardless of which backend answered</text>
+<text x="50" y="550" font-size="11" fill="#555555" text-anchor="start">Returning the ORIGINAL exchange (not the resource exchange) from aggregate() is what keeps this a merge: headers and properties the caller already set survive; only the body changes.</text>
+<text x="50" y="584" font-size="11" fill="#555555" text-anchor="start">InventoryAclRoute is a sketch in this chapter — not wired into examples/01-strangler-proxy/ yet; the ch.19 backend box above is drawn ghost for that reason.</text>
+<text x="50" y="608" font-size="10" fill="#777777" text-anchor="start">Sourced from _docs/16-content-based-routing-acl.md (&quot;The ACL route, sketched&quot;; &quot;How the route works&quot;).</text>
+</svg>

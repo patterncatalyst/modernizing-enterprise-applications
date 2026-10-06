@@ -171,6 +171,8 @@ discipline of forcing that decision to be made explicitly, for every seam, so
 the relationship between two contexts is something somebody chose rather
 than something nobody noticed.
 
+{% include excalidraw.html file="context-map" alt="A context map of the monolith's six bounded contexts: order's edge into inventory is conformist, with no anti-corruption layer at the seam, even though inventory's own StockDto contract already exists unused; order's edges into payment, shipping, and notification are direct synchronous calls inside one transaction, with no port; review has zero outbound edges to any sibling context; and all six sit on one Postgres schema, a shared kernel with no governed edges." caption="Figure 11.1 — Context map: six bounded contexts, one relationship nobody decided" %}
+
 ## Tactical DDD: modeling what lives inside a seam
 
 Strategic DDD decides where the lines go. **Tactical DDD** decides what the
@@ -282,6 +284,8 @@ is exactly why Chapters 16, 17, 19, 23, and 24 each have to remove one of
 `OrderService`'s direct edges before Chapter 26 can extract order at all:
 ports-and-adapters discipline is a force multiplier on a boundary decision
 already made, not a substitute for making one.
+
+{% include excalidraw.html file="hexagonal-ports-adapters" alt="A hexagonal-architecture diagram: a domain core at center, holding entities, aggregates, and business logic, with no dependency on any web framework, ORM, or message broker; driving adapters (a REST controller, a gRPC service, a message consumer) each depending inward on an inbound port; driven adapters (a database repository, an event publisher) each depending inward on an outbound port the core declared." caption="Figure 11.2 — Hexagonal architecture: ports and adapters, dependencies pointing inward" %}
 
 ## Why Review could leave first: ports, measured in a real diff
 

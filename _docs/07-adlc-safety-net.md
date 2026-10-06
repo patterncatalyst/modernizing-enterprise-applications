@@ -261,6 +261,11 @@ judgment call mattered more than a green suite run in this loop.
 
 ## Operate: flipping the flag — and catching bug #2
 
+{% include excalidraw.html
+   file="shared-table-routing-defect"
+   alt="Two panels. Left: the Camel strangler proxy can route a request to the Spring monolith or the Quarkus review-service, but both read and write the same reviews table in the shared public schema, so a behavior-equivalence suite that only checks the HTTP response sees identical results either way. Right: the differential test that disambiguates them — stop the monolith, re-run the same route, and only the service the proxy's decision actually reaches can still answer; GET /api/reviews returns 200 from review-service while GET /api/orders still 500s against the dead monolith."
+   caption="Figure 7.1 — Why 49/49 green couldn't tell a routing bug from a correct cutover, and the test that could" %}
+
 Operate is where the extracted service stops being a side-by-side comparison
 and starts actually serving traffic, gated by a feature flag rather than a
 redeploy. `examples/01-strangler-proxy/` fronts the monolith with a Camel
@@ -436,6 +441,11 @@ illustrate the ADLC after the fact; it is the actual record this chapter has
 been quoting from the start.
 
 ## The lesson: necessary, not sufficient
+
+{% include excalidraw.html
+   file="adlc-safety-net-layers"
+   alt="Three stacked layers. Layer 1, automated: the Newman behavior-equivalence suite, re-run against every candidate build, which caught the native-image @RegisterForReflection gap; removing this layer lets that regression ship silently. Layer 2, adversarial verification: the differential test that stopped the monolith and asked whether the proxy's routing decision survives one backend being gone, which caught the routing defect hidden behind two backends sharing one table; removing this layer lets that defect ship 49-for-49. Layer 3, human judgment: plan approval and equivalence sign-off, which decide whether the first two layers' coverage is the right coverage for the stakes; removing this layer means a green suite run gets trusted as self-certifying."
+   caption="Figure 7.2 — The safety net's three layers, and the specific bug each one stops" %}
 
 Pull back from the specifics and the shape is simple enough to state in one
 sentence: the ADLC is only as safe as its safety net, and that net has three

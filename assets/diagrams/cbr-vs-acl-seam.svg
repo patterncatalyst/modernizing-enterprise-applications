@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 970" font-family="'Red Hat Text', system-ui, sans-serif" role="img">
+<defs><marker id="a" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#555"/></marker><marker id="am" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2f5f3d"/></marker></defs>
+<rect x="20" y="70" width="1560" height="830" rx="12" fill="#fafafa" stroke="#ddd"/>
+<text x="32" y="90" font-size="12" font-weight="700" fill="#1d1d1d">The same physical seam — direct:stockFor / InventoryAclRoute</text>
+<rect x="620.0" y="425.0" width="360" height="120" rx="9" fill="#111111" stroke="#111111" stroke-width="2"/>
+<text x="800.0" y="475.5" font-size="13.5" font-weight="700" fill="#ffffff" text-anchor="middle">.enrich() — InventoryAclRoute</text>
+<text x="800.0" y="492.5" font-size="11.5" fill="#dddddd" text-anchor="middle">one Camel step: performs the routed fetch</text>
+<text x="800.0" y="507.5" font-size="11.5" fill="#dddddd" text-anchor="middle">AND triggers the translation below</text>
+<rect x="60" y="430.0" width="300" height="110" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
+<text x="210.0" y="475.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">otherwise: the monolith</text>
+<text x="210.0" y="492.5" font-size="11.5" fill="#555555" text-anchor="middle">GET /api/inventory/{sku} — :8080</text>
+<text x="210.0" y="507.5" font-size="11.5" fill="#555555" text-anchor="middle">StockDto already built there (ch.11)</text>
+<rect x="1240" y="430.0" width="300" height="110" rx="9" fill="#ffffff" stroke="#999999" stroke-width="1.5" stroke-dasharray="6 4"/>
+<text x="1390.0" y="475.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">when inventoryEnabled: inventory svc</text>
+<text x="1390.0" y="492.5" font-size="11.5" fill="#555555" text-anchor="middle">ch.19 Quarkus gRPC — :9004</text>
+<text x="1390.0" y="507.5" font-size="11.5" fill="#555555" text-anchor="middle">not live yet in this chapter</text>
+<rect x="610.0" y="110" width="380" height="110" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
+<text x="800.0" y="155.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">resource exchange: the raw reply</text>
+<text x="800.0" y="172.5" font-size="11.5" fill="#555555" text-anchor="middle">monolith JSON today / StockReply (ch.19)</text>
+<text x="800.0" y="187.5" font-size="11.5" fill="#555555" text-anchor="middle">the shape the ACL must NOT pass through</text>
+<rect x="610.0" y="760" width="380" height="110" rx="9" fill="#eaf4ec" stroke="#3d7a4e" stroke-width="2"/>
+<text x="800.0" y="805.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">StockDto</text>
+<text x="800.0" y="822.5" font-size="11.5" fill="#555555" text-anchor="middle">the one contract order may hold,</text>
+<text x="800.0" y="837.5" font-size="11.5" fill="#555555" text-anchor="middle">regardless of which backend answered</text>
+<path d="M360.0,485.0 L620.0,485.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<text x="496.0" y="479.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">flag=false -&gt; monolith URI</text>
+<text x="496.0" y="479.0" font-size="11" fill="#555" text-anchor="middle">flag=false -&gt; monolith URI</text>
+<path d="M980.0,485.0 L1240.0,485.0" fill="none" stroke="#555" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#a)"/>
+<text x="1116.0" y="479.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">flag=true (ch.19) -&gt; inventory svc URI</text>
+<text x="1116.0" y="479.0" font-size="11" fill="#555" text-anchor="middle">flag=true (ch.19) -&gt; inventory svc URI</text>
+<path d="M800.0,220.0 L800.0,425.0" fill="none" stroke="#555" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#a)"/>
+<text x="806.0" y="316.5" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">enrich() request-reply fetch</text>
+<text x="806.0" y="316.5" font-size="11" fill="#555" text-anchor="middle">enrich() request-reply fetch</text>
+<path d="M800.0,545.0 L800.0,760.0" fill="none" stroke="#2f5f3d" stroke-width="2" marker-end="url(#am)"/>
+<text x="806.0" y="646.5" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">StockDtoTranslatingStrategy.aggregate() -&gt; StockDto</text>
+<text x="806.0" y="646.5" font-size="11" fill="#2f5f3d" text-anchor="middle">StockDtoTranslatingStrategy.aggregate() -&gt; StockDto</text>
+<text x="800.0" y="32" font-size="16" fill="#1d1d1d" text-anchor="middle" font-weight="700">ch.16 — one seam, two orthogonal questions: which backend answers, and what is safe to carry back</text>
+<text x="800.0" y="390.0" font-size="11.5" fill="#555555" text-anchor="middle">ROUTING AXIS — .choice() on strangler.inventory.enabled decides WHICH backend answers</text>
+<text x="60" y="575.0" font-size="11.5" fill="#555555" text-anchor="start">ACL AXIS — enrich() + AggregationStrategy decide WHAT shape is safe to carry back, independent of which side answered</text>
+<text x="60" y="880" font-size="10.5" fill="#555555" text-anchor="start">Full property write on both branches: enrich() calls setProperty(stockLookupTarget, monolithBaseUrl+... | inventoryServiceBaseUrl+...).</text>
+<text x="60" y="916" font-size="11" fill="#555555" text-anchor="start">A perfectly-routed request down either branch above still corrupts the caller if the vertical axis is missing — that is exactly Smell 5.</text>
+<text x="60" y="950" font-size="10" fill="#777777" text-anchor="start">Sourced from _docs/16-content-based-routing-acl.md (&quot;Where content-based routing stops helping&quot;; &quot;The ACL route, sketched&quot;) and examples/01-strangler-proxy/.../StranglerProxyRoute.java (the strangler.review.enabled choice() this router mirrors).</text>
+</svg>

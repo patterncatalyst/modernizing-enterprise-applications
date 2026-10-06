@@ -138,6 +138,8 @@ one side never silently becomes a breaking change on the other. It is not,
 itself, a single mechanism — it is a responsibility, and Camel gives that
 responsibility to two concrete, well-named patterns working together.
 
+{% include excalidraw.html file="cbr-vs-acl-seam" alt="A cross-shaped diagram centered on InventoryAclRoute's enrich() step. The horizontal axis is content-based routing: .choice() on strangler.inventory.enabled selects the monolith's /api/inventory/{sku} endpoint on :8080 today, or inventory's own gRPC service on :9004 from chapter 19 onward. The vertical axis is the anti-corruption layer: the raw reply from whichever backend answered feeds into a StockDtoTranslatingStrategy that always produces StockDto. The two axes cross at one physical seam but answer independent questions." caption="Figure 16.1 — One seam, two orthogonal questions: which backend answers, and what is safe to carry back" %}
+
 The **content enricher** is the half that performs the actual cross-seam
 fetch. Camel's own catalog describes `enrich` as a step that "enriches the
 message with additional data obtained by sending to another endpoint using
@@ -341,6 +343,8 @@ the response shape matches what `StockDtoTranslator` expects; that
 confirmation is exactly the kind of claim this book's verification footer
 below refuses to mark checked until a real run proves it.
 
+{% include excalidraw.html file="acl-enricher-translator-flow" alt="A left-to-right pipeline through InventoryAclRoute: an exchange arrives on direct:stockFor knowing only a SKU; .choice() on strangler.inventory.enabled resolves a backend URI, either the monolith's REST endpoint or, from chapter 19 on, inventory's own gRPC service; .enrich() performs a request-reply fetch against that URI; StockDtoTranslatingStrategy.aggregate() converts the reply via StockDtoTranslator.translate() and merges StockDto onto the original exchange; the exchange leaves the route knowing the stock fact." caption="Figure 16.2 — The ACL pipeline: a SKU goes in, StockDto comes out, regardless of which backend answered" %}
+
 ## The decorating collaborator, named
 
 This route is also this book's first worked instance of a fourth pattern
@@ -408,6 +412,8 @@ could rename every column in `inventory_items`, swap Hibernate for a hand-
 rolled JDBC mapper, or move the whole table to a different database engine,
 and nothing in the right-hand column would need to change, because nothing
 in the right-hand column ever saw the thing that changed.
+
+{% include excalidraw.html file="leaked-entity-vs-stockdto" alt="A two-panel comparison. Left, today: order.OrderService#placeOrder calls inventoryService.findBySkuOrThrow(sku) as an ordinary in-process Java call and holds InventoryItem, a JPA @Entity owned by inventory's own EntityManager — a compile-time import of inventory's persistence class. Right, through the ACL: the same call goes through producerTemplate.requestBodyAndHeader against direct:stockFor and returns StockDto, a plain record with no persistence annotations and no compile-time dependency on InventoryItem at all." caption="Figure 16.3 — What crosses the seam: a raw @Entity import versus a plain-record contract" %}
 
 ## What this buys Chapter 19
 
