@@ -36,8 +36,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        service:
-          - order-service
+        # Carry the explicit service directory: anchore/sbom-action passes `path`
+        # straight to syft without shell expansion, so a glob like
+        # examples/*-order-service would not resolve. Add an entry per service to
+        # scale the gate.
+        include:
+          - service: order-service
+            dir: examples/07-order-service
     steps:
       - name: Check out repo
         uses: actions/checkout@v5
@@ -50,7 +55,7 @@ jobs:
           cache: maven
 
       - name: Build ${{ matrix.service }}
-        run: mvn -B -ntp -DskipTests package -f examples/*-${{ matrix.service }}/pom.xml
+        run: mvn -B -ntp -DskipTests package -f ${{ matrix.dir }}/pom.xml
 
       # Generate the SBOM from the built runtime closure (quarkus-app), the real
       # deployable form -- not the source tree, which also contains build-only
@@ -58,7 +63,7 @@ jobs:
       - name: Generate CycloneDX SBOM (syft)
         uses: anchore/sbom-action@v0
         with:
-          path: examples/*-${{ matrix.service }}/target/quarkus-app
+          path: ${{ matrix.dir }}/target/quarkus-app
           format: cyclonedx-json
           output-file: sbom-${{ matrix.service }}.cdx.json
           artifact-name: sbom-${{ matrix.service }}.cdx.json
