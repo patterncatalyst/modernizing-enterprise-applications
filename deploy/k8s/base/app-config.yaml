@@ -1,0 +1,116 @@
+# app-config.yaml — shared env contract for all 8 app Deployments.
+#
+# Adapted from ~/Dev/datamesh-reference-arch-quarkus/k8s/base/config.yaml's
+# idiom (one %prod env-driven ConfigMap feeding every image, consumed via
+# envFrom + per-service explicit env where a key must differ per service).
+# Every in-cluster DNS name below is a Service defined elsewhere in this
+# base/ tree (per-service <svc>.yaml, or infra/postgres-statefulset.yaml /
+# infra/kafka-statefulset.yaml) — do not hand-edit a value here without
+# checking the matching Service name stays in sync.
+#
+# Two kinds of keys live in this one ConfigMap:
+#
+#   (a) ORDINAL-OVERRIDE keys — the target application.properties key is
+#       HARDCODED (e.g. `quarkus.datasource.jdbc.url=jdbc:postgresql://
+#       localhost:5432/monolith?currentSchema=...`, no `${...}` placeholder).
+#       MicroProfile Config's EnvConfigSource has ordinal 300; Quarkus's own
+#       PropertiesConfigSource (application.properties, profile-prefixed or
+#       not) has ordinal 250 — so setting the correctly-mapped env var
+#       (dots/dashes -> underscores, upper-cased: `quarkus.datasource.jdbc.url`
+#       -> `QUARKUS_DATASOURCE_JDBC_URL`) always wins over the hardcoded
+#       property, in every profile, with NO code change. Flagged inline below.
+#   (b) NATIVE PLACEHOLDER keys — the property already reads
+#       `${SOME_ENV_VAR:default-value}` (e.g. graphql-gateway's REST client
+#       URLs, shipping-service's ORDER_SERVICE_BASE_URL, every service's
+#       `kafka.bootstrap.servers=${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}`).
+#       These need no ordinal trick; the env var is the documented knob.
+#
+# Every Deployment in base/*.yaml pulls this whole ConfigMap via `envFrom`,
+# so a service harmlessly receives keys it has no code path for (same
+# "harmless to the other Deployments" discipline the datamesh config.yaml
+# documents for its own cross-service INVENTORY_GRPC_HOST/PORT keys). The
+# per-service `*_SERVICE_JDBC_URL` keys are the one exception: they are
+# deliberately NOT named `QUARKUS_DATASOURCE_JDBC_URL` (six services would
+# collide on one key with six different values), so each DB-backed
+# Deployment adds one explicit `env: - name: QUARKUS_DATASOURCE_JDBC_URL
+# valueFrom: configMapKeyRef: {name: mea-app-config, key: <SVC>_SERVICE_JDBC_URL}`
+# on top of its blanket envFrom — see <svc>.yaml.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mea-app-config
+  namespace: mea
+  labels:
+    app.kubernetes.io/part-of: mea
+data:
+  # ── native placeholder: kafka.bootstrap.servers=${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+  # (every Kafka-consuming/producing service: 03/04/05/06/07) ───────────────
+  KAFKA_BOOTSTRAP_SERVERS: "kafka.mea.svc.cluster.local:9092"
+
+  # ── ordinal-override: no application.properties key reads quarkus.profile
+  # from an env placeholder; QUARKUS_PROFILE is Quarkus's own first-class
+  # env var for selecting the active profile at runtime. ────────────────────
+  QUARKUS_PROFILE: "prod"
+
+  # ── ordinal-override: QUARKUS_DATASOURCE_JDBC_URL, per service ───────────
+  # Each service hardcodes `quarkus.datasource.jdbc.url=jdbc:postgresql://
+  # localhost:5432/monolith[?currentSchema=...]` (review-service: unprefixed,
+  # NO currentSchema -- it reads the monolith's shared `public` schema, see
+  # its application.properties; the other five: %prod-prefixed, own schema).
+  # Keyed per service here (not all named QUARKUS_DATASOURCE_JDBC_URL, which
+  # would collide) -- each Deployment below maps its own key onto the
+  # container env var QUARKUS_DATASOURCE_JDBC_URL via configMapKeyRef.
+  REVIEW_SERVICE_JDBC_URL: "jdbc:postgresql://postgres.mea.svc.cluster.local:5432/monolith"
+  NOTIFICATION_SERVICE_JDBC_URL: "jdbc:postgresql://postgres.mea.svc.cluster.local:5432/monolith?currentSchema=notification"
+  INVENTORY_SERVICE_JDBC_URL: "jdbc:postgresql://postgres.mea.svc.cluster.local:5432/monolith?currentSchema=inventory"
+  PAYMENT_SERVICE_JDBC_URL: "jdbc:postgresql://postgres.mea.svc.cluster.local:5432/monolith?currentSchema=payment"
+  SHIPPING_SERVICE_JDBC_URL: "jdbc:postgresql://postgres.mea.svc.cluster.local:5432/monolith?currentSchema=shipping"
+  ORDER_SERVICE_JDBC_URL: "jdbc:postgresql://postgres.mea.svc.cluster.local:5432/monolith?currentSchema=order_service"
+
+  # ── ordinal-override: strangler-proxy's six strangler.<ctx>.base-url
+  # properties (examples/01-strangler-proxy/.../application.properties) are
+  # HARDCODED to http://localhost:<port> with no ${...} placeholder.
+  # MicroProfile's env-var name mapping (non-alphanumeric -> `_`, upper-cased)
+  # turns `strangler.review.base-url` into exactly `STRANGLER_REVIEW_BASE_URL`,
+  # so these six keys override StranglerProxyRoute's fixed backend targets
+  # with ZERO code change. Harmless to every other Deployment (envFrom-only
+  # consumers that never read a `strangler.*` property). ────────────────────
+  STRANGLER_REVIEW_BASE_URL: "http://review-service.mea.svc.cluster.local:8081"
+  STRANGLER_NOTIFICATION_BASE_URL: "http://notification-service.mea.svc.cluster.local:8083"
+  STRANGLER_INVENTORY_BASE_URL: "http://inventory-service.mea.svc.cluster.local:8084"
+  STRANGLER_PAYMENT_BASE_URL: "http://payment-service.mea.svc.cluster.local:8085"
+  STRANGLER_SHIPPING_BASE_URL: "http://shipping-service.mea.svc.cluster.local:8088"
+  STRANGLER_ORDER_BASE_URL: "http://order-service.mea.svc.cluster.local:8087"
+
+  # ── native placeholder, shipping-service only: order.service.base-url=
+  # ${ORDER_SERVICE_BASE_URL:http://localhost:8087} (OrderReadClient's saga
+  # enrich-step target, examples/06-shipping-service). ──────────────────────
+  ORDER_SERVICE_BASE_URL: "http://order-service.mea.svc.cluster.local:8087"
+
+  # ── native placeholder, graphql-gateway's four REST clients
+  # (examples/08-graphql-gateway/.../application.properties). NOTE the
+  # deviation from this ticket's literal key list: the gateway's OWN order
+  # client reads `${ORDER_SERVICE_URL:...}`, a DIFFERENT env var name than
+  # shipping's `ORDER_SERVICE_BASE_URL` above -- both real property names are
+  # ground truth, not a choice made here, so both keys are set (same value).
+  # PAYMENT_SERVICE_URL/SHIPPING_SERVICE_URL/REVIEW_SERVICE_URL are likewise
+  # the gateway's real placeholder names, added so it can actually reach its
+  # three other REST dependencies in-cluster (the ticket's literal list named
+  # only the order-service leg; the other three follow the identical already-
+  # parameterized pattern and are zero-code-change additions). ─────────────
+  ORDER_SERVICE_URL: "http://order-service.mea.svc.cluster.local:8087"
+  PAYMENT_SERVICE_URL: "http://payment-service.mea.svc.cluster.local:8085"
+  SHIPPING_SERVICE_URL: "http://shipping-service.mea.svc.cluster.local:8088"
+  REVIEW_SERVICE_URL: "http://review-service.mea.svc.cluster.local:8081"
+
+  # ── graphql-gateway's gRPC client: native placeholder
+  # (quarkus.grpc.clients.inventory.host=${INVENTORY_GRPC_HOST:localhost},
+  # .port=${INVENTORY_GRPC_PORT:9004}). order-service's identical gRPC
+  # client is HARDCODED (quarkus.grpc.clients.inventory.host=localhost /
+  # .port=9004, examples/07-order-service) -- ordinal-override via the
+  # mapped env var names QUARKUS_GRPC_CLIENTS_INVENTORY_HOST/_PORT covers
+  # that one with no code change. Both pairs point at the same Service. ────
+  INVENTORY_GRPC_HOST: "inventory-service.mea.svc.cluster.local"
+  INVENTORY_GRPC_PORT: "9004"
+  QUARKUS_GRPC_CLIENTS_INVENTORY_HOST: "inventory-service.mea.svc.cluster.local"
+  QUARKUS_GRPC_CLIENTS_INVENTORY_PORT: "9004"

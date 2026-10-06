@@ -1,0 +1,124 @@
+# notification-service -- owns its own `notification` Postgres schema
+# (ch.17 Phase B, DRQ-035/DRQ-038) and runs two SmallRye Reactive Messaging
+# Kafka consumers on `order.placed` (order-placed: persistence, shared
+# consumer group defaulting to quarkus.application.name;
+# order-placed-push: per-replica unique group for WebSocket fan-out). Health:
+# quarkus-smallrye-health is on the classpath (examples/03-notification-service/
+# pom.xml), so /q/health/{started,ready,live} are real httpGet targets.
+#
+# Graceful shutdown: a Kafka consumer group member that is SIGKILLed/SIGTERMed
+# without a chance to leave cleanly forces the broker to wait out
+# session.timeout.ms before rebalancing. terminationGracePeriodSeconds: 45 +
+# a 10s preStop sleep give the consumer loop time to notice the shutdown
+# signal and send a clean LeaveGroupRequest before the container actually
+# receives SIGTERM.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notification-service
+  namespace: mea
+  labels:
+    app.kubernetes.io/name: notification-service
+    app.kubernetes.io/part-of: mea
+    app.kubernetes.io/component: bounded-context
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: notification-service
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: notification-service
+        app.kubernetes.io/part-of: mea
+        app.kubernetes.io/component: bounded-context
+    spec:
+      terminationGracePeriodSeconds: 45
+      containers:
+        - name: notification-service
+          image: mea/notification-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8083
+          envFrom:
+            - configMapRef:
+                name: mea-app-config
+          env:
+            - name: QUARKUS_DATASOURCE_JDBC_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: mea-app-config
+                  key: NOTIFICATION_SERVICE_JDBC_URL
+            - name: QUARKUS_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: mea-postgres-app
+                  key: username
+            - name: QUARKUS_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mea-postgres-app
+                  key: password
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sh", "-c", "sleep 10"]
+          startupProbe:
+            httpGet:
+              path: /q/health/started
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 30
+          readinessProbe:
+            httpGet:
+              path: /q/health/ready
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /q/health/live
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 185
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: notification-service
+  namespace: mea
+  labels:
+    app.kubernetes.io/name: notification-service
+    app.kubernetes.io/part-of: mea
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: notification-service
+  ports:
+    - name: http
+      port: 8083
+      targetPort: http
