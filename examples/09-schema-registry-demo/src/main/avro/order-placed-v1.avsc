@@ -1,0 +1,15 @@
+{
+  "type": "record",
+  "name": "OrderPlaced",
+  "namespace": "dev.patterncatalyst.contracts.avro",
+  "doc": "ch.28 (DRQ-038 follow-up, DRQ-076) — Avro mirror of examples/07-order-service's OrderPlacedEvent JSON record, field-for-field identical (same 7 fields, same meaning). This is a DEMONSTRATOR schema only: the live order.placed JSON event flows produced by the real order service (examples/07-order-service) and consumed by notification/payment are UNCHANGED (DRQ-038) — this record is published to a separate demo topic (order.events.avro.demo) by examples/09-schema-registry-demo, to teach Avro + Apicurio schema registration and BACKWARD compatibility checking in isolation.",
+  "fields": [
+    { "name": "orderId", "type": "long", "doc": "The saga correlation key — this order's identifier." },
+    { "name": "customerId", "type": "long", "doc": "The customer who placed the order." },
+    { "name": "customerEmail", "type": "string", "doc": "Denormalized customer email snapshot, carried on the wire so downstream consumers never need to look up the customer." },
+    { "name": "totalCents", "type": "long", "doc": "The order total, in cents." },
+    { "name": "paymentMethod", "type": "string", "doc": "The checkout request's payment method." },
+    { "name": "confirmationMessage", "type": "string", "doc": "The order-confirmation message text." },
+    { "name": "placedAt", "type": { "type": "long", "logicalType": "timestamp-millis" }, "doc": "When the order was placed." }
+  ]
+}
