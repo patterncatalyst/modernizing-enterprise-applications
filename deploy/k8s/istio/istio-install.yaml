@@ -1,0 +1,33 @@
+# istio-install.yaml — ch.30 (additive)
+#
+# IstioOperator for `istioctl install -f ...`. `default` profile: istiod +
+# the ingress gateway (not `minimal`, which omits the gateway; not `demo`,
+# which adds addons this tutorial doesn't use -- the LGTM stack in
+# ../observability is the addon). Mesh telemetry (traces + access logs)
+# routes to the same LGTM backend the 3 OTel-instrumented app modules
+# (examples/{04,07,08}) emit to directly -- `otel` extensionProvider here is
+# how Envoy's OWN spans (not app spans) reach lgtm.mea.svc.cluster.local,
+# giving a connected trace that includes mesh hops, not just app hops.
+#
+# meshConfig.accessLogFile: Telemetry's `accessLogging` stanza
+# (telemetry.yaml) only has effect once a destination is configured; the
+# built-in `envoy` access-log provider writes to this path. /dev/stdout
+# means `kubectl logs <pod> -c istio-proxy` (or, for native sidecars,
+# `-c istio-proxy` as the initContainer) shows per-request access log lines.
+apiVersion: install.istio.io/v1alpha1
+kind: IstioOperator
+metadata:
+  name: mea-istio
+  namespace: istio-system
+spec:
+  profile: default
+  meshConfig:
+    accessLogFile: /dev/stdout
+    extensionProviders:
+      - name: otel
+        opentelemetry:
+          port: 4317
+          service: lgtm.mea.svc.cluster.local
+    defaultConfig:
+      tracing:
+        sampling: 100.00

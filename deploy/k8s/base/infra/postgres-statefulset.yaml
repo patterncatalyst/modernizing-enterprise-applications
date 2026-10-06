@@ -92,16 +92,32 @@ spec:
       # ("postgres"). fsGroup lets the kubelet chown the PVC's mount to that
       # group on attach so a non-root postgres process can still write to it.
       securityContext:
-        fsGroup: 999
+        # ch.30 live-apply fix: postgres:16-alpine's postgres user is uid/gid 70
+        # (Debian's image uses 999). fsGroup must match so the chowned PVC is
+        # writable by the user initdb runs as.
+        fsGroup: 70
       containers:
         - name: postgres
           image: docker.io/library/postgres:16-alpine
           imagePullPolicy: IfNotPresent
-          command: ["postgres", "-c", "wal_level=logical", "-c", "max_replication_slots=4", "-c", "max_wal_senders=4"]
+          # NOTE (ch.30 live-apply fix): these must be `args`, not `command`.
+          # In k8s `command` replaces the image ENTRYPOINT (docker-entrypoint.sh),
+          # so initdb + POSTGRES_* handling never runs and postgres starts against
+          # an uninitialized data dir. `args` keeps the entrypoint and appends
+          # these flags to its `postgres` CMD. (ch.29 shipped this as `command`;
+          # dry-run validation could not catch it -- only a live apply did.)
+          args: ["postgres", "-c", "wal_level=logical", "-c", "max_replication_slots=4", "-c", "max_wal_senders=4"]
           ports:
             - name: postgres
               containerPort: 5432
           env:
+            # ch.30 live-apply fix: the PVC mount point /var/lib/postgresql/data
+            # is owned by root (fsGroup only sets the GROUP, not the owner), so
+            # initdb running as uid 70 cannot chmod it. Point PGDATA at a subdir
+            # the postgres user creates itself (owned by 70) — the standard fix
+            # for the official postgres image on a mounted volume.
+            - name: PGDATA
+              value: "/var/lib/postgresql/data/pgdata"
             - name: POSTGRES_DB
               value: "monolith"
             - name: POSTGRES_USER
@@ -140,7 +156,7 @@ spec:
               memory: 1Gi
           securityContext:
             runAsNonRoot: true
-            runAsUser: 999
+            runAsUser: 70
             allowPrivilegeEscalation: false
             capabilities:
               drop: ["ALL"]
