@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1320 620" font-family="'Red Hat Text', system-ui, sans-serif" role="img">
+<defs><marker id="a" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#555"/></marker><marker id="am" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2f5f3d"/></marker></defs>
+<rect x="380" y="90" width="560" height="410" rx="12" fill="#fafafa" stroke="#ddd"/>
+<text x="392" y="110" font-size="12" font-weight="700" fill="#1d1d1d">the gate  —  same three steps, local (demo.sh) and in CI (supply-chain.yml)</text>
+<rect x="60" y="120" width="260" height="110" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
+<text x="190.0" y="158.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">monolith.jar  (before)</text>
+<text x="190.0" y="175.0" font-size="11.5" fill="#555555" text-anchor="middle">Spring Boot 3.5 fat jar</text>
+<text x="190.0" y="190.0" font-size="11.5" fill="#555555" text-anchor="middle">spring-webmvc / tomcat /</text>
+<text x="190.0" y="205.0" font-size="11.5" fill="#555555" text-anchor="middle">jackson / postgresql</text>
+<rect x="60" y="360" width="260" height="110" rx="9" fill="#eaf4ec" stroke="#3d7a4e" stroke-width="2"/>
+<text x="190.0" y="398.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">order-service  (after)</text>
+<text x="190.0" y="415.0" font-size="11.5" fill="#555555" text-anchor="middle">Quarkus 3.40.1</text>
+<text x="190.0" y="430.0" font-size="11.5" fill="#555555" text-anchor="middle">target/quarkus-app</text>
+<text x="190.0" y="445.0" font-size="11.5" fill="#555555" text-anchor="middle">runtime closure</text>
+<rect x="410" y="150" width="240" height="90" rx="9" fill="#ffffff" stroke="#999999" stroke-width="1.5"/>
+<text x="530.0" y="185.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">1 · syft</text>
+<text x="530.0" y="202.5" font-size="11.5" fill="#555555" text-anchor="middle">CycloneDX SBOM</text>
+<text x="530.0" y="217.5" font-size="11.5" fill="#555555" text-anchor="middle">the bill of materials</text>
+<rect x="410" y="270" width="240" height="90" rx="9" fill="#ffffff" stroke="#999999" stroke-width="1.5"/>
+<text x="530.0" y="305.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">2 · grype</text>
+<text x="530.0" y="322.5" font-size="11.5" fill="#555555" text-anchor="middle">scan the SBOM</text>
+<text x="530.0" y="337.5" font-size="11.5" fill="#555555" text-anchor="middle">vs current CVE DB</text>
+<rect x="410" y="390" width="240" height="90" rx="9" fill="#111111" stroke="#111111" stroke-width="2"/>
+<text x="530.0" y="425.5" font-size="13.5" font-weight="700" fill="#ffffff" text-anchor="middle">3 · policy.yaml</text>
+<text x="530.0" y="442.5" font-size="11.5" fill="#dddddd" text-anchor="middle">fail-on: High</text>
+<text x="530.0" y="457.5" font-size="11.5" fill="#dddddd" text-anchor="middle">policy-as-code</text>
+<rect x="700" y="270" width="210" height="90" rx="9" fill="#f4f4f4" stroke="#888888" stroke-width="1.5"/>
+<text x="805.0" y="305.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">vulnerability DB</text>
+<text x="805.0" y="322.5" font-size="11.5" fill="#555555" text-anchor="middle">grype, built 2026-10-06</text>
+<text x="805.0" y="337.5" font-size="11.5" fill="#555555" text-anchor="middle">a moving target</text>
+<rect x="1000" y="120" width="260" height="110" rx="9" fill="#111111" stroke="#111111" stroke-width="2"/>
+<text x="1130.0" y="158.0" font-size="13.5" font-weight="700" fill="#ffffff" text-anchor="middle">FAIL  (gate fires)</text>
+<text x="1130.0" y="175.0" font-size="11.5" fill="#dddddd" text-anchor="middle">4 Critical · 6 High · 8 Medium</text>
+<text x="1130.0" y="190.0" font-size="11.5" fill="#dddddd" text-anchor="middle">78 components</text>
+<text x="1130.0" y="205.0" font-size="11.5" fill="#dddddd" text-anchor="middle">non-zero exit -&gt; CI red</text>
+<rect x="1000" y="360" width="260" height="110" rx="9" fill="#eaf4ec" stroke="#3d7a4e" stroke-width="2"/>
+<text x="1130.0" y="398.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">PASS  (within policy)</text>
+<text x="1130.0" y="415.0" font-size="11.5" fill="#555555" text-anchor="middle">0 Critical · 0 High · 0 Medium</text>
+<text x="1130.0" y="430.0" font-size="11.5" fill="#555555" text-anchor="middle">522 components</text>
+<text x="1130.0" y="445.0" font-size="11.5" fill="#555555" text-anchor="middle">exit 0 -&gt; CI green</text>
+<path d="M320.0,182.64705882352942 L410.0,187.94117647058823" fill="none" stroke="#2f5f3d" stroke-width="2" marker-end="url(#am)"/>
+<path d="M275.0,360.0 L460.45454545454544,240.0" fill="none" stroke="#2f5f3d" stroke-width="2" marker-end="url(#am)"/>
+<path d="M530.0,240.0 L530.0,270.0" fill="none" stroke="#2f5f3d" stroke-width="2" marker-end="url(#am)"/>
+<path d="M700.0,315.0 L650.0,315.0" fill="none" stroke="#555" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#a)"/>
+<text x="681.0" y="309.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">feeds</text>
+<text x="681.0" y="309.0" font-size="11" fill="#555" text-anchor="middle">feeds</text>
+<path d="M530.0,360.0 L530.0,390.0" fill="none" stroke="#2f5f3d" stroke-width="2" marker-end="url(#am)"/>
+<path d="M633.8461538461538,390.0 L1003.0769230769231,230.0" fill="none" stroke="#2f5f3d" stroke-width="2" marker-end="url(#am)"/>
+<text x="824.4615384615385" y="304.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">monolith</text>
+<text x="824.4615384615385" y="304.0" font-size="11" fill="#2f5f3d" text-anchor="middle">monolith</text>
+<path d="M650.0,431.0 L1000.0,419.3333333333333" fill="none" stroke="#2f5f3d" stroke-width="2" marker-end="url(#am)"/>
+<text x="831.0" y="419.16666666666663" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">order-service</text>
+<text x="831.0" y="419.16666666666663" font-size="11" fill="#2f5f3d" text-anchor="middle">order-service</text>
+<text x="660.0" y="34" font-size="16" fill="#1d1d1d" text-anchor="middle" font-weight="700">ch.31 — the supply-chain gate: the monolith fails it, the modernized service passes it</text>
+<text x="660.0" y="56" font-size="11" fill="#555555" text-anchor="middle">the modernization, made measurable — captured live 2026-10-06 (syft 1.44.0 / grype 0.112.0)</text>
+<text x="60" y="598" font-size="10" fill="#777777" text-anchor="start">Counts move as the vulnerability DB updates; the gate runs on every push, not once. Full output: examples/10-supply-chain/evidence/.</text>
+</svg>
