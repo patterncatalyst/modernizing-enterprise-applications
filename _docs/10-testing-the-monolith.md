@@ -38,6 +38,8 @@ codebase and exactly the right number for a reference monolith: enough
 coverage per context to make the smells demonstrable, not so much that the
 example stops being readable in one sitting.
 
+{% include excalidraw.html file="test-pyramid" alt="The monolith's three-tier test pyramid: Tier 1 unit tests (3 classes, Mockito, every collaborator mocked) prove a class's logic does the right thing; Tier 2 slice tests (5 classes, @WebMvcTest, service mocked) prove a controller binds, validates, and serializes correctly; Tier 3 integration tests (3 classes, real Postgres via Testcontainers) prove the code works against a real database. 11 classes, 34 @Test methods plus 1 parameterized test expanding to 4 executions, 38 executions total, all green on mvn verify." caption="Figure 10.1 — The monolith's test pyramid: three tiers, eleven classes, thirty-eight executions" %}
+
 The three tiers answer three different questions, and keeping them separate
 matters before looking at any one of them in detail:
 
@@ -377,6 +379,8 @@ A fifth folder, "Review Context Contract," is a forward reference: it already
 specifies the exact shape of Review's REST surface that Chapter 15's
 extraction will have to reproduce, written against the monolith's existing
 `/api/reviews` endpoints before that code moves anywhere.
+
+{% include excalidraw.html file="whitebox-pyramid-vs-blackbox-equivalence" alt="Left, white-box: the Tier 1 through 3 pyramid calling monolith internals directly — OrderService, PaymentService, live Postgres rows — and unable to compile against a different implementation's class names. Right, black-box: the Newman behavior-equivalence suite, which sees only HTTP and targets a baseUrl collection variable, so the same unedited collection can point at the monolith today or a freshly extracted Quarkus service tomorrow." caption="Figure 10.2 — White-box pyramid versus black-box equivalence suite: same system, two vantage points" %}
 
 Putting the same behavior next to its two different test-tier expressions
 makes the contrast concrete. Here is the payment-decline branch proven at

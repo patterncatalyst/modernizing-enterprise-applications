@@ -147,6 +147,8 @@ nothing to protect the caller's own resources from a dependency that is
 *reliably* slow rather than occasionally hung, which is exactly the problem a
 circuit breaker is built to solve and this project has not yet built one for.
 
+{% include excalidraw.html file="timeout-three-outcomes" alt="A checkout thread's call to RemoteInventoryClient#reserve branches into three outcomes once it crosses the gRPC boundary: returns a ReserveReply, throws a StatusRuntimeException mapped to a 500, or never returns at all. The never-returns branch leads to a blocked thread holding its pool slot and, without a bound in place, cascading failure as enough blocked threads exhaust the pool. A ghost box shows the deadline that bounds this outcome in this project's own code today." caption="Figure 25.1 — A gRPC call's third outcome, and the cascading-failure path a deadline cuts off" %}
+
 ## Retries demand idempotency: the outbox's at-least-once contract, reread
 
 Chapter 20 already walked the transactional outbox at the depth this book's
@@ -258,6 +260,8 @@ for the full deadline window on every attempt. An open breaker short-circuits
 that entirely — it fails in microseconds, not seconds, the moment it already
 knows the answer, and it stops hammering a dependency that is trying to
 recover.
+
+{% include excalidraw.html file="circuit-breaker-states" alt="The circuit breaker state machine: closed, where calls flow through normally; open, where calls fail immediately without attempting the network round-trip once a failure threshold trips; and half-open, where a trial call checks whether the dependency has recovered before the breaker closes again or a failed trial re-opens it. A dashed callout marks RemoteInventoryClient#reserve and #release as where this would wrap, and notes that no @CircuitBreaker annotation exists in this codebase today." caption="Figure 25.2 — The circuit breaker's closed/open/half-open state machine, named here and not yet built" %}
 
 In this system, the place a breaker would wrap is unambiguous:
 `RemoteInventoryClient`'s `reserve` and `release` calls, the one synchronous,
@@ -540,6 +544,8 @@ here); platform-level consumption of the health endpoints that already exist
 compensating `Release` call itself (named in its own javadoc and inherited
 as a stated gap by both of Part 7's saga chapters, not patched over
 here).
+
+{% include excalidraw.html file="resilience-scorecard" alt="A two-column scorecard. Left, implemented and proven by a negative check: the per-call gRPC deadline, at-least-once delivery paired with two-layer idempotent consumption, the explicit compensating action in place of rollback, transparent un-degraded failure propagation at the proxy, and MicroProfile Health endpoints on both Quarkus services. Right, deferred by design with a stated reason: a circuit breaker, a bulkhead, retry backoff/jitter/cap on the outbox relay, a dead-letter path, platform-level consumption of the health endpoints, and an idempotency key on the compensating Release call." caption="Figure 25.3 — The resilience scorecard: what this project built, and what it left for measured traffic to justify" %}
 
 Chapter 3 named the discipline this scorecard is an instance of:
 **microservices are not the goal**, and neither is a resilience pattern

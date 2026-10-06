@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 640" font-family="'Red Hat Text', system-ui, sans-serif" role="img">
+<defs><marker id="a" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#555"/></marker><marker id="am" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2f5f3d"/></marker></defs>
+<rect x="20" y="60" width="650" height="540" rx="12" fill="#fafafa" stroke="#ddd"/>
+<text x="32" y="80" font-size="12" font-weight="700" fill="#1d1d1d">TODAY — the leaked entity (order/OrderService.java)</text>
+<rect x="730" y="60" width="650" height="540" rx="12" fill="#eaf4ec" stroke="#ddd"/>
+<text x="742" y="80" font-size="12" font-weight="700" fill="#1d1d1d">THROUGH THE ACL — the translated contract (illustrative, ch.19)</text>
+<rect x="50" y="120" width="260" height="90" rx="9" fill="#eef4fb" stroke="#2f6db5" stroke-width="2"/>
+<text x="180.0" y="163.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">order.OrderService</text>
+<text x="180.0" y="180.0" font-size="11.5" fill="#555555" text-anchor="middle">placeOrder()</text>
+<rect x="50" y="250" width="260" height="100" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
+<text x="180.0" y="290.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">inventoryService.findBySkuOrThrow(sku)</text>
+<text x="180.0" y="307.5" font-size="11.5" fill="#555555" text-anchor="middle">ordinary Java method call —</text>
+<text x="180.0" y="322.5" font-size="11.5" fill="#555555" text-anchor="middle">same JVM, same process</text>
+<rect x="50" y="400" width="260" height="110" rx="9" fill="#111111" stroke="#111111" stroke-width="2"/>
+<text x="180.0" y="445.5" font-size="13.5" font-weight="700" fill="#ffffff" text-anchor="middle">InventoryItem</text>
+<text x="180.0" y="462.5" font-size="11.5" fill="#dddddd" text-anchor="middle">@Entity — inventory&#x27;s own</text>
+<text x="180.0" y="477.5" font-size="11.5" fill="#dddddd" text-anchor="middle">EntityManager + table mapping</text>
+<rect x="760" y="120" width="260" height="90" rx="9" fill="#eef4fb" stroke="#2f6db5" stroke-width="2"/>
+<text x="890.0" y="163.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">order.OrderService</text>
+<text x="890.0" y="180.0" font-size="11.5" fill="#555555" text-anchor="middle">placeOrder() — ch.19 shape</text>
+<rect x="760" y="250" width="260" height="100" rx="9" fill="#eaf4ec" stroke="#3d7a4e" stroke-width="2"/>
+<text x="890.0" y="290.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">producerTemplate.requestBodyAndHeader(</text>
+<text x="890.0" y="307.5" font-size="11.5" fill="#555555" text-anchor="middle">&quot;direct:stockFor&quot;, sku)</text>
+<text x="890.0" y="322.5" font-size="11.5" fill="#555555" text-anchor="middle">seam address, not backend address</text>
+<rect x="760" y="400" width="260" height="110" rx="9" fill="#eaf4ec" stroke="#3d7a4e" stroke-width="2"/>
+<text x="890.0" y="445.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">StockDto</text>
+<text x="890.0" y="462.5" font-size="11.5" fill="#555555" text-anchor="middle">plain record — no persistence</text>
+<text x="890.0" y="477.5" font-size="11.5" fill="#555555" text-anchor="middle">annotations, no column coupling</text>
+<rect x="1040" y="400" width="310" height="110" rx="9" fill="#ffffff" stroke="#999999" stroke-width="1.5" stroke-dasharray="6 4"/>
+<text x="1195.0" y="445.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">InventoryItem — never imported</text>
+<text x="1195.0" y="462.5" font-size="11.5" fill="#555555" text-anchor="middle">no compile-time coupling to</text>
+<text x="1195.0" y="477.5" font-size="11.5" fill="#555555" text-anchor="middle">inventory&#x27;s persistence model</text>
+<path d="M180.0,210.0 L180.0,250.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<path d="M180.0,350.0 L180.0,400.0" fill="none" stroke="#2f5f3d" stroke-width="2" marker-end="url(#am)"/>
+<text x="186.0" y="369.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">compile-time import</text>
+<text x="186.0" y="369.0" font-size="11" fill="#2f5f3d" text-anchor="middle">compile-time import</text>
+<path d="M890.0,210.0 L890.0,250.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+<path d="M890.0,350.0 L890.0,400.0" fill="none" stroke="#2f5f3d" stroke-width="2" marker-end="url(#am)"/>
+<text x="896.0" y="369.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">InventoryAclRoute resolves + translates</text>
+<text x="896.0" y="369.0" font-size="11" fill="#2f5f3d" text-anchor="middle">InventoryAclRoute resolves + translates</text>
+<path d="M937.3275862068965,210.0 L1137.155172413793,400.0" fill="none" stroke="#555" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#a)"/>
+<text x="1043.2413793103447" y="299.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">no dependency</text>
+<text x="1043.2413793103447" y="299.0" font-size="11" fill="#555" text-anchor="middle">no dependency</text>
+<path d="M670,300 L730,300" fill="none" stroke="#2f5f3d" stroke-width="2" marker-end="url(#am)"/>
+<text x="706.0" y="294.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">ch.16&#x27;s ACL</text>
+<text x="706.0" y="294.0" font-size="11" fill="#2f5f3d" text-anchor="middle">ch.16&#x27;s ACL</text>
+<text x="700.0" y="32" font-size="16" fill="#1d1d1d" text-anchor="middle" font-weight="700">ch.16 — before and after: what type does the caller actually hold after a stock lookup?</text>
+<text x="50" y="545" font-size="11" fill="#555555" text-anchor="start">OrderService depends, at compile time, on inventory&#x27;s own</text>
+<text x="50" y="561" font-size="11" fill="#555555" text-anchor="start">persistence class — lazy-loading, column names, and migrations</text>
+<text x="50" y="577" font-size="11" fill="#555555" text-anchor="start">all become order&#x27;s problem too (Smell 5).</text>
+<text x="760" y="545" font-size="11" fill="#555555" text-anchor="start">Inventory can rename columns, swap its persistence provider,</text>
+<text x="760" y="561" font-size="11" fill="#555555" text-anchor="start">or move databases entirely, and nothing here has to change —</text>
+<text x="760" y="577" font-size="11" fill="#555555" text-anchor="start">this side never saw the thing that changed.</text>
+<text x="40" y="626" font-size="10" fill="#777777" text-anchor="start">Sourced from _docs/16-content-based-routing-acl.md (&quot;Before and after: what crosses the seam&quot;) and examples/00-monolith/.../order/OrderService.java#placeOrder (SMELL[ch.16], unmodified).</text>
+</svg>
