@@ -1,0 +1,2 @@
+monolith       [before] components=78   Critical=4  High=6  Medium=8  FAIL
+order-service  [after ] components=522  Critical=0  High=0  Medium=0  PASS
