@@ -1,0 +1,119 @@
+{{- $dns := include "mea.dns" . -}}
+# Shared Postgres (db `monolith`, one schema per extracted service). Port of
+# deploy/k8s/base/infra/postgres-statefulset.yaml, preserving its ch.30
+# live-apply fixes: `args` (not `command`) so the entrypoint's initdb runs; PGDATA
+# in a subdir the postgres user owns; fsGroup 70 for PVC writability;
+# wal_level=logical for the CDC story. On OpenShift it additionally runs under the
+# mea-infra ServiceAccount (nonroot-v2 SCC) so uid 70 is actually permitted.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-initdb
+  labels:
+    app.kubernetes.io/name: postgres
+    {{- include "mea.labels" . | nindent 4 }}
+data:
+  01-create-schemas.sql: |
+    -- Defensive, idempotent: each service's Flyway history creates its schema on
+    -- first migrate anyway; this makes them present at cluster bring-up.
+    CREATE SCHEMA IF NOT EXISTS notification AUTHORIZATION monolith;
+    CREATE SCHEMA IF NOT EXISTS inventory AUTHORIZATION monolith;
+    CREATE SCHEMA IF NOT EXISTS payment AUTHORIZATION monolith;
+    CREATE SCHEMA IF NOT EXISTS shipping AUTHORIZATION monolith;
+    CREATE SCHEMA IF NOT EXISTS order_service AUTHORIZATION monolith;
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  labels:
+    app.kubernetes.io/name: postgres
+    {{- include "mea.labels" . | nindent 4 }}
+spec:
+  clusterIP: None
+  selector:
+    app.kubernetes.io/name: postgres
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: postgres
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+  labels:
+    app.kubernetes.io/name: postgres
+    {{- include "mea.labels" . | nindent 4 }}
+spec:
+  serviceName: postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: postgres
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: postgres
+        app.kubernetes.io/part-of: mea
+    spec:
+      serviceAccountName: {{ .Values.infra.serviceAccountName }}
+      securityContext:
+        fsGroup: 70
+      containers:
+        - name: postgres
+          image: {{ .Values.postgres.image | quote }}
+          imagePullPolicy: IfNotPresent
+          args: ["postgres", "-c", "wal_level=logical", "-c", "max_replication_slots=4", "-c", "max_wal_senders=4"]
+          ports:
+            - name: postgres
+              containerPort: 5432
+          env:
+            - name: PGDATA
+              value: "/var/lib/postgresql/data/pgdata"
+            - name: POSTGRES_DB
+              value: "monolith"
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef: { name: mea-postgres-app, key: username }
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef: { name: mea-postgres-app, key: password }
+          volumeMounts:
+            - name: postgres-data
+              mountPath: /var/lib/postgresql/data
+            - name: postgres-initdb
+              mountPath: /docker-entrypoint-initdb.d
+          readinessProbe:
+            exec: { command: ["pg_isready", "-U", "monolith", "-d", "monolith"] }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            failureThreshold: 6
+          livenessProbe:
+            exec: { command: ["pg_isready", "-U", "monolith", "-d", "monolith"] }
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            failureThreshold: 6
+          resources:
+            requests: { cpu: 250m, memory: 512Mi }
+            limits:   { cpu: 1000m, memory: 1Gi }
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 70
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
+      volumes:
+        - name: postgres-initdb
+          configMap:
+            name: postgres-initdb
+  volumeClaimTemplates:
+    - metadata:
+        name: postgres-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: {{ .Values.postgres.storage | quote }}

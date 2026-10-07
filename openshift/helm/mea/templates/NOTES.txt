@@ -1,0 +1,15 @@
+The modernized system is deploying to namespace "{{ .Release.Namespace }}".
+
+Watch it come up:
+  oc get pods -n {{ .Release.Namespace }} -w
+
+Infrastructure (postgres, kafka) starts first; the eight app workloads become
+Ready once their probes pass. The external entry points are Routes:
+{{- range $name, $svc := .Values.services }}
+{{- if $svc.route }}
+  {{ $name }}:  oc get route {{ $name }} -n {{ $.Release.Namespace }} -o jsonpath='{.spec.host}'
+{{- end }}
+{{- end }}
+
+The strangler-proxy Route is the system's REST edge; the graphql-gateway Route is
+the GraphQL API. Everything else is ClusterIP-only (reachable in-cluster).
