@@ -1,0 +1,48 @@
+{{- $dns := include "mea.dns" . -}}
+# Shared env contract for all eight app Deployments — the Helm port of
+# deploy/k8s/base/app-config.yaml. Every cross-service address is built from the
+# release namespace ({{ .Release.Namespace }}) so the chart is namespace-portable.
+# Keys are either ordinal-override (env var out-ranks a hardcoded
+# application.properties value, MicroProfile EnvConfigSource ordinal 300 > 250) or
+# native ${ENV:default} placeholders — see the source manifest for the full why.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mea-app-config
+  labels:
+    {{- include "mea.labels" . | nindent 4 }}
+data:
+  KAFKA_BOOTSTRAP_SERVERS: "kafka.{{ $dns }}:9092"
+  QUARKUS_PROFILE: "prod"
+
+  # Per-service datasource URLs (keyed distinctly to avoid one colliding key).
+  REVIEW_SERVICE_JDBC_URL: "jdbc:postgresql://postgres.{{ $dns }}:5432/monolith"
+  NOTIFICATION_SERVICE_JDBC_URL: "jdbc:postgresql://postgres.{{ $dns }}:5432/monolith?currentSchema=notification"
+  INVENTORY_SERVICE_JDBC_URL: "jdbc:postgresql://postgres.{{ $dns }}:5432/monolith?currentSchema=inventory"
+  PAYMENT_SERVICE_JDBC_URL: "jdbc:postgresql://postgres.{{ $dns }}:5432/monolith?currentSchema=payment"
+  SHIPPING_SERVICE_JDBC_URL: "jdbc:postgresql://postgres.{{ $dns }}:5432/monolith?currentSchema=shipping"
+  ORDER_SERVICE_JDBC_URL: "jdbc:postgresql://postgres.{{ $dns }}:5432/monolith?currentSchema=order_service"
+
+  # strangler-proxy's six hardcoded backend targets (ordinal-override).
+  STRANGLER_REVIEW_BASE_URL: "http://review-service.{{ $dns }}:8081"
+  STRANGLER_NOTIFICATION_BASE_URL: "http://notification-service.{{ $dns }}:8083"
+  STRANGLER_INVENTORY_BASE_URL: "http://inventory-service.{{ $dns }}:8084"
+  STRANGLER_PAYMENT_BASE_URL: "http://payment-service.{{ $dns }}:8085"
+  STRANGLER_SHIPPING_BASE_URL: "http://shipping-service.{{ $dns }}:8088"
+  STRANGLER_ORDER_BASE_URL: "http://order-service.{{ $dns }}:8087"
+
+  # shipping-service's saga enrich-step target (native placeholder).
+  ORDER_SERVICE_BASE_URL: "http://order-service.{{ $dns }}:8087"
+
+  # graphql-gateway's four REST clients (its own placeholder names).
+  ORDER_SERVICE_URL: "http://order-service.{{ $dns }}:8087"
+  PAYMENT_SERVICE_URL: "http://payment-service.{{ $dns }}:8085"
+  SHIPPING_SERVICE_URL: "http://shipping-service.{{ $dns }}:8088"
+  REVIEW_SERVICE_URL: "http://review-service.{{ $dns }}:8081"
+
+  # inventory gRPC client coordinates (gateway: native placeholder;
+  # order-service: ordinal-override via the mapped QUARKUS_* names).
+  INVENTORY_GRPC_HOST: "inventory-service.{{ $dns }}"
+  INVENTORY_GRPC_PORT: "9004"
+  QUARKUS_GRPC_CLIENTS_INVENTORY_HOST: "inventory-service.{{ $dns }}"
+  QUARKUS_GRPC_CLIENTS_INVENTORY_PORT: "9004"

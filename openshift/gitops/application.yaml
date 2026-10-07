@@ -1,0 +1,29 @@
+# ILLUSTRATIVE — the managed, GitOps counterpart to running `helm upgrade --install`
+# by hand. This is an OpenShift GitOps (Argo CD) Application that points at the
+# same Helm chart in this repo; Argo CD reconciles the cluster to it continuously.
+#
+# NOT part of the appendix's verified deploy: it assumes the OpenShift GitOps
+# operator is installed (Argo CD running in openshift-gitops) and that this repo is
+# reachable from the cluster. Apply with: oc apply -f openshift/gitops/application.yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: mea
+  namespace: openshift-gitops
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/patterncatalyst/modernizing-enterprise-applications.git
+    targetRevision: main
+    path: openshift/helm/mea
+    helm:
+      releaseName: mea
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: mea
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

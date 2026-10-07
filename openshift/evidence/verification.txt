@@ -1,0 +1,51 @@
+# OpenShift appendix — live verification evidence
+# Captured 2026-10-07T02:29:57Z on CRC 2.64.0+458092 / OpenShift 4.22.14
+
+## oc get pods -n mea
+NAME                                    READY   STATUS    RESTARTS        AGE
+graphql-gateway-56d756db7f-bghqk        1/1     Running   0               9m33s
+inventory-service-65b8f4b764-wdhjm      1/1     Running   4 (4m14s ago)   9m33s
+kafka-0                                 1/1     Running   0               3m55s
+notification-service-55fbd9d966-qt8xk   1/1     Running   9 (4m20s ago)   9m33s
+order-service-864dbf8f66-kjd2h          1/1     Running   4 (4m7s ago)    9m33s
+payment-service-7dcc588c68-xvqzw        1/1     Running   4 (4m29s ago)   9m33s
+postgres-0                              1/1     Running   0               4m7s
+review-service-745b864f8c-wnzht         1/1     Running   1               9m33s
+shipping-service-79fd848f4c-d5mwz       1/1     Running   4 (4m29s ago)   9m33s
+strangler-proxy-848449b845-sq7nh        1/1     Running   0               9m33s
+
+## oc get route -n mea
+NAME              HOST/PORT                              PATH   SERVICES          PORT   TERMINATION     WILDCARD
+graphql-gateway   graphql-gateway-mea.apps-crc.testing          graphql-gateway   http   edge/Redirect   None
+strangler-proxy   strangler-proxy-mea.apps-crc.testing          strangler-proxy   http   edge/Redirect   None
+
+## oc get sa,rolebinding -n mea (infra SCC grant)
+NAME        AGE
+mea-infra   9m33s
+NAME            ROLE                                          AGE
+mea-infra-scc   ClusterRole/system:openshift:scc:nonroot-v2   9m34s
+
+## SCC + assigned UID per pod
+graphql-gateway-56d756db7f-bghqk	 scc=restricted-v2	 runAsUser=1000660000
+inventory-service-65b8f4b764-wdhjm	 scc=restricted-v2	 runAsUser=1000660000
+kafka-0	 scc=nonroot-v2	 runAsUser=1000
+notification-service-55fbd9d966-qt8xk	 scc=restricted-v2	 runAsUser=1000660000
+order-service-864dbf8f66-kjd2h	 scc=restricted-v2	 runAsUser=1000660000
+payment-service-7dcc588c68-xvqzw	 scc=restricted-v2	 runAsUser=1000660000
+postgres-0	 scc=nonroot-v2	 runAsUser=70
+review-service-745b864f8c-wnzht	 scc=restricted-v2	 runAsUser=1000660000
+shipping-service-79fd848f4c-d5mwz	 scc=restricted-v2	 runAsUser=1000660000
+strangler-proxy-848449b845-sq7nh	 scc=restricted-v2	 runAsUser=1000660000
+
+## graphql-gateway /q/health/ready via Route (https edge)
+{
+    "status": "UP",
+    "checks": [
+    ]
+}
+## strangler-proxy Route -> /api/inventory (external client -> Route -> Camel -> inventory-service -> Postgres)
+[{"sku":"SKU-WIDGET-001","name":"Standard Widget","priceCents":1999,"quantityOnHand":100},{"sku":"SKU-GADGET-002","name":"Deluxe Gadget","priceCents":4999,"quantityOnHand":50},{"sku":"SKU-GIZMO-003","name":"Pocket Gizmo","priceCents":999,"quantityOnHand":5}]
+
+## KNOWN GAP: review-service -> /api/reviews returns 500
+## cause: reads the monolith's shared public.reviews table, which a fresh
+## cluster has no monolith to create. Data-seeding gap, not an OpenShift issue.
