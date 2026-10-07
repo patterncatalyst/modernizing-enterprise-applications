@@ -895,12 +895,23 @@ authoring, not decomposition, and resumes at:
   Python marked documentation so Java reads as the repo's primary language).
 - **Then the presentation rebuild** (lgtm-presentation, mirroring the book's
   final parts) — deferred past all of the above, per build-plan §I/§J.
-- **Then (deferred past the presentations):** an **appendix on converting the
-  project to OpenShift** — user-requested backlog item (sequenced after the
-  presentation rebuild). Scope TBD; likely covers OpenShift-specific deploy
-  (Routes/DeploymentConfigs or Deployments + Routes, `oc`/`odo`, Source-to-Image
-  or the existing Containerfiles, OpenShift GitOps/Pipelines as the managed
-  Argo/Tekton counterpart to ch.31's deferred GitOps loop).
+- **Appendix A — Deploying to OpenShift — DONE, verified live 2026-10-06.**
+  `_docs/33-appendix-openshift.md` (new `_parts/11-appendices.md` "Appendices"
+  part) + the `openshift/` tree: a Helm chart (`openshift/helm/mea`, 27 objects
+  from a values-driven template), `openshift/README.md`, `openshift/gitops/application.yaml`
+  (Argo, authored-not-applied), and `openshift/evidence/verification.txt`.
+  **Verified on OpenShift Local (CRC 2.64.0 / OpenShift 4.22.14, 20 GB/8 vCPU):**
+  all 10 workloads `1/1` in ns `mea`; app pods under `restricted-v2` (assigned UID
+  1000660000, the pinned `runAsUser:185` dropped), postgres/kafka under `nonroot-v2`
+  (uid 70/1000) via the `mea-infra` SA; graphql-gateway `/q/health/ready` → UP and
+  strangler-proxy Route → `/api/inventory` → 200 seeded JSON, both over
+  `apps-crc.testing`. **Known gap:** review-service `/api/reviews` 500 (reads the
+  monolith's shared `public.reviews`, absent on a monolith-free cluster — data
+  seeding, not deployment). **Not verified:** GitOps/Tekton (no operators). Images
+  built from `examples/*/Dockerfile.jvm` + pushed to the internal registry;
+  postgres/kafka mirrored through the host because the CRC VM lacked Docker Hub egress.
+  (Note: this shipped *before* the presentation rebuild's successor work, not after —
+  the decks were already done, so the appendix was the remaining final item.)
 
 Nothing in Part 8–10 or the presentation rebuild touches the extraction
 ledgers (`decisions.md`/`build-plan.md`/`reconciliation.md`) as a *decomposition*
