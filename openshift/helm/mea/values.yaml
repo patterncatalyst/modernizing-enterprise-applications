@@ -1,0 +1,102 @@
+# values.yaml — the knobs for deploying the modernized system to OpenShift.
+#
+# The eight application workloads are described declaratively in `services`
+# below; templates/app-deployment.yaml and app-service.yaml range over this map,
+# so the whole topology is one template driven by data (the same idiom the
+# deploy/k8s/base/ hand-written manifests spell out one file per service).
+
+# Container image settings. On OpenShift the images live in the integrated
+# registry; in-cluster pulls use the registry's Service DNS, which is what a
+# Deployment's imagePullPolicy sees. Override `registry` for an external registry
+# (Quay, etc.).
+image:
+  registry: "image-registry.openshift-image-registry.svc:5000/mea"
+  tag: "1.0"
+  pullPolicy: IfNotPresent
+
+# Dev-only Postgres credential, republished from deploy/k8s/base/app-secret.yaml.
+# PRODUCTION: replace with a SealedSecret / ExternalSecret — never plaintext here.
+postgres:
+  username: "monolith"
+  password: "monolith_dev_only"
+  # Mirrored into the internal registry: the CRC VM cannot reach Docker Hub, so
+  # the upstream docker.io/library/postgres:16-alpine was pulled on the host and
+  # pushed here. On a cluster with Docker Hub egress, use the upstream ref directly.
+  image: "image-registry.openshift-image-registry.svc:5000/mea/postgres:16-alpine"
+  storage: "2Gi"
+
+kafka:
+  # Mirrored like postgres above (upstream: docker.io/apache/kafka:3.8.0).
+  image: "image-registry.openshift-image-registry.svc:5000/mea/kafka:3.8.0"
+  clusterId: "MkU3OEVBNTcwNTJENDM2Qk"
+  storage: "2Gi"
+
+# ServiceAccount for the infra StatefulSets (postgres/kafka). Their upstream
+# images require specific non-root UIDs (70 / 1000), which OpenShift's default
+# `restricted-v2` SCC will not allow (it assigns a random UID from the namespace
+# range). Binding this SA to `nonroot-v2` lets those pods keep their own UID.
+# The application pods need no such grant: the UBI9 OpenJDK images run happily
+# under an arbitrary assigned UID, so they use the default SA + restricted-v2.
+infra:
+  serviceAccountName: "mea-infra"
+  scc: "nonroot-v2"
+
+# Two external Routes: the strangler proxy (the system's permanent REST edge)
+# and the GraphQL gateway. Flip `route: true` on any other service to expose it.
+services:
+  strangler-proxy:
+    port: 8888
+    probe: tcp          # no quarkus-smallrye-health on the classpath → TCP probe
+    size: small
+    route: true
+  review-service:
+    port: 8081
+    probe: tcp          # review-service also ships without smallrye-health
+    size: small
+    db: REVIEW_SERVICE_JDBC_URL      # reads the shared public schema
+  notification-service:
+    port: 8083
+    probe: http
+    size: large
+    db: NOTIFICATION_SERVICE_JDBC_URL
+    kafka: true          # Kafka consumer → graceful-shutdown window
+  inventory-service:
+    port: 8084
+    grpcPort: 9004
+    probe: http
+    size: large
+    db: INVENTORY_SERVICE_JDBC_URL
+    kafka: true
+  payment-service:
+    port: 8085
+    probe: http
+    size: large
+    db: PAYMENT_SERVICE_JDBC_URL
+    kafka: true
+  shipping-service:
+    port: 8088
+    probe: http
+    size: large
+    db: SHIPPING_SERVICE_JDBC_URL
+    kafka: true
+  order-service:
+    port: 8087
+    probe: http
+    size: large
+    db: ORDER_SERVICE_JDBC_URL
+    kafka: true
+  graphql-gateway:
+    port: 8090
+    grpcPort: 9093
+    probe: http
+    size: small
+    route: true
+
+# Resource tiers referenced by each service's `size`.
+resources:
+  small:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits:   { cpu: 500m, memory: 512Mi }
+  large:
+    requests: { cpu: 150m, memory: 320Mi }
+    limits:   { cpu: 750m, memory: 640Mi }
