@@ -69,6 +69,12 @@
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/newman.sh
+source "${SCRIPT_DIR}/lib/newman.sh"   # newman or the pinned npx form (DRQ-077)
+
+# Resolve newman for the Node-API helper up front: a missing module must stop
+# the demo here, not surface later as a "RED as expected" negative check.
+newman_node_api || exit 2
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 cd "${PROJECT_ROOT}"
 

@@ -27,6 +27,8 @@
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/newman.sh
+source "${SCRIPT_DIR}/lib/newman.sh"   # newman or the pinned npx form (DRQ-077)
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 cd "${PROJECT_ROOT}"
 
@@ -98,7 +100,7 @@ stop_named() {
 run_folder() {
     # run_folder <base-url> <folder-name> -> exit 0 iff newman reported 0 failures
     local base="$1" folder="$2"
-    npx newman run "${PROJECT_ROOT}/tooling/newman/mea.postman_collection.json" \
+    newman_cli run "${PROJECT_ROOT}/tooling/newman/mea.postman_collection.json" \
         --environment "${PROJECT_ROOT}/tooling/newman/local.postman_environment.json" \
         --env-var "baseUrl=${base}" \
         --folder "${folder}" \

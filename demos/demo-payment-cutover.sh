@@ -48,6 +48,8 @@
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/newman.sh
+source "${SCRIPT_DIR}/lib/newman.sh"   # newman or the pinned npx form (DRQ-077)
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 cd "${PROJECT_ROOT}"
 
@@ -217,7 +219,7 @@ start_jar_props proxy-payment-on2 -Dstrangler.payment.enabled=true -- "${PROXY_J
 
 stop_named payment
 echo "payment-service stopped — re-running Scenario 1 folder, expecting RED..."
-if npx newman run tooling/newman/mea.postman_collection.json \
+if newman_cli run tooling/newman/mea.postman_collection.json \
     --environment tooling/newman/local.postman_environment.json \
     --env-var "baseUrl=http://localhost:8888" \
     --folder "Scenario 1 — Happy-Path Checkout" \
@@ -240,7 +242,7 @@ start_jar payment "${PAYMENT_JAR}" "http://localhost:8085/api/payments?orderId=1
 # rebalance).
 sleep 3
 echo "re-running Scenario 1 folder, expecting GREEN..."
-if npx newman run tooling/newman/mea.postman_collection.json \
+if newman_cli run tooling/newman/mea.postman_collection.json \
     --environment tooling/newman/local.postman_environment.json \
     --env-var "baseUrl=http://localhost:8888" \
     --folder "Scenario 1 — Happy-Path Checkout" \
