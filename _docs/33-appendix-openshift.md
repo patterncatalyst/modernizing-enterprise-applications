@@ -34,11 +34,13 @@ You do not need a paid subscription or a cloud account. **OpenShift Local** (CRC
    Local and the pull secret.
 2. **Download OpenShift Local and its pull secret** from
    [console.redhat.com/openshift/create/local](https://console.redhat.com/openshift/create/local):
-   - the **OpenShift Local** archive for your platform (the `crc` binary), and
+   - the **OpenShift Local** archive for Linux (the `crc` binary), and
    - the **pull secret** (a small JSON file). Save it as `~/Downloads/pull-secret.txt`.
-3. **Install `crc`.** Extract the archive and put the `crc` binary on your `PATH`
+3. **Install `crc`** on a Fedora or RHEL host (bare metal, or a VM with nested
+   virtualization). Extract the archive and put the `crc` binary on your `PATH`
    (e.g. `~/.local/bin/crc`). This appendix used **CRC 2.64.0**, which bundles
-   **OpenShift 4.22.14**.
+   **OpenShift 4.22.14**. CRC wants the machine to itself: stop any running
+   minikube profile first (`minikube stop -p mea`).
 4. **Size the host.** CRC's defaults (4 vCPU / ~10.5 GB RAM) are not enough for
    eight Quarkus services *plus* Postgres and Kafka *plus* OpenShift itself — the
    infra pods will sit `Pending` with `Insufficient memory`. Give it more:
@@ -58,21 +60,27 @@ You do not need a paid subscription or a cloud account. **OpenShift Local** (CRC
    `crc setup` needs root for a couple of steps (it installs a small setuid helper
    and configures the libvirt network), so run it in a terminal where `sudo` can
    prompt you. The first `crc start` provisions the VM and waits for the cluster to
-   settle — budget 10–15 minutes. When it finishes it prints the `kubeadmin`
-   console URL and credentials.
+   settle — budget 10–15 minutes. It also prints the console URL and a login;
+   none of the steps below need it, so keep it out of shared terminals and notes.
 
-6. **Get `oc`.** CRC ships a version-matched `oc`; `eval $(crc oc-env)` puts it on
-   your `PATH`. (There is no supported `oc` package in Fedora's repositories — use
-   CRC's, or the tarball from `mirror.openshift.com`.) Then log in:
+6. **Get `oc`.** CRC ships a version-matched `oc`; `eval "$(crc oc-env)"` puts it
+   on your `PATH`. (There is no supported `oc` package in Fedora's repositories —
+   use CRC's, or the tarball from `mirror.openshift.com`.) No password handling
+   is needed: `crc start` writes a `crc-admin` kubeconfig context, and every
+   command and script below names it explicitly:
 
    ```sh
-   eval $(crc oc-env)
-   oc login -u kubeadmin -p <printed-password> https://api.crc.testing:6443
+   eval "$(crc oc-env)"
+   oc --context crc-admin whoami --show-server     # https://api.crc.testing:6443
    ```
 
-   You will also need `helm` (v3+; this appendix used v4). Right after `crc start`
-   returns, the API server may briefly reset connections while its operators roll
-   out — if `oc login` fails with `EOF`, wait a minute and retry.
+   If you want the web console, `crc console --credentials` prints the login;
+   run it yourself and keep the output out of notes and commits. You will also
+   need `helm` (v3+; this appendix used v4), `skopeo`, and the JDK 25 + Maven
+   toolchain from Chapter 1 — but **no container engine**: every image is
+   built inside the cluster. Right after `crc start` returns, the API server may
+   briefly reset connections while its operators roll out — if a command fails
+   with `EOF`, wait a minute and retry.
 
 ## What changes when the target is OpenShift
 
@@ -89,7 +97,7 @@ pod a high UID from a per-namespace range and **rejects** a pod that demands a
 specific one. Pin `185` and the pod never admits.
 
 The fix is counterintuitive: **drop `runAsUser` entirely** and let OpenShift pick.
-The UBI9 OpenJDK images are designed for this — their files are group-`0` readable
+The UBI OpenJDK images are designed for this — their files are group-`0` readable
 and writable, so they run fine as an arbitrary UID. On the live cluster the app
 pods were assigned UID `1000660000`:
 
@@ -205,38 +213,49 @@ entrypoint and `PGDATA` subdirectory, Kafka's `publishNotReadyAddresses` and
 pod-stable quorum-voter DNS and 10-second probe timeout — because those bugs bite
 on OpenShift exactly as they did on minikube.
 
-## Building and pushing the images
+## Building the images inside the cluster
 
-The eight services were already built to `examples/*/target/quarkus-app/` earlier
-in the book, and each ships a `src/main/docker/Dockerfile.jvm`. Build each image and
-push it to the internal registry (after exposing its route and logging `podman` in):
+The eight services build to `examples/*/target/quarkus-app/` with Maven on the
+host, and each ships a `src/main/docker/Dockerfile.jvm` on
+`ubi10/openjdk-25-runtime`. Nothing on the host turns those into images:
+[`openshift/build-images.sh`](https://github.com/patterncatalyst/modernizing-enterprise-applications/blob/main/openshift/build-images.sh)
+gives each service a **Docker-strategy binary BuildConfig** and streams it a
+minimal context — the `quarkus-app` directory plus the Containerfile — with
+`oc start-build --from-dir`. OpenShift runs the build and pushes `<svc>:1.0`
+to an ImageStream in project `mea`, which is exactly the
+`image-registry.openshift-image-registry.svc:5000/mea/<svc>:1.0` reference the
+chart uses:
 
 ```sh
-REG=default-route-openshift-image-registry.apps-crc.testing
-podman login -u kubeadmin -p "$(oc whoami -t)" --tls-verify=false "$REG"
-
-for name in strangler-proxy review-service notification-service inventory-service \
-            payment-service shipping-service order-service graphql-gateway; do
-  dir="examples/$(ls examples | grep -- "-$name$")"
-  podman build -f "$dir/src/main/docker/Dockerfile.jvm" -t "$REG/mea/$name:1.0" "$dir"
-  podman push --tls-verify=false "$REG/mea/$name:1.0"
-done
+oc --context crc-admin new-project mea
+openshift/build-images.sh                  # all eight; or name services to rebuild
 ```
 
-Pushing to the registry auto-creates an ImageStream per image in the namespace.
+The core of the loop, per service:
+
+```sh
+oc --context crc-admin -n mea new-build --binary --strategy=docker \
+   --name=order-service --to=order-service:1.0          # once
+oc --context crc-admin -n mea start-build order-service \
+   --from-dir="$ctx" --follow --wait                     # $ctx = quarkus-app + Dockerfile
+```
+
+No registry is exposed for the builds and no credentials leave the cluster.
 
 **One real snag worth planning for:** the CRC VM could not reach Docker Hub
 (`dial tcp registry-1.docker.io:443: i/o timeout`), so Postgres and Kafka —
 upstream images — landed in `ImagePullBackOff`. The *host* could reach Docker Hub,
-so the fix was to mirror them through the host into the internal registry and point
-the chart at the mirror:
+so the fix is to copy them through the host into the internal registry and point
+the chart at the copies.
+[`openshift/mirror-infra-images.sh`](https://github.com/patterncatalyst/modernizing-enterprise-applications/blob/main/openshift/mirror-infra-images.sh)
+does that with `skopeo` — no container engine — verifying TLS against the
+cluster's own ingress CA and authenticating with a 15-minute token for the
+project's `builder` ServiceAccount, held in a private authfile and never printed:
 
 ```sh
-for ref in library/postgres:16-alpine apache/kafka:3.8.0; do
-  podman pull "docker.io/$ref"
-  podman tag  "docker.io/$ref" "$REG/mea/${ref##*/}"
-  podman push --tls-verify=false "$REG/mea/${ref##*/}"
-done
+openshift/mirror-infra-images.sh
+# skopeo copy docker://docker.io/library/postgres:18.6-alpine docker://$REG/mea/postgres:18.6-alpine
+# skopeo copy docker://docker.io/apache/kafka:4.3.1          docker://$REG/mea/kafka:4.3.1
 ```
 
 On a cluster with Docker Hub egress you would skip this and reference the upstream
@@ -245,10 +264,12 @@ images directly — `values.yaml` has both forms, one commented.
 ## Deploying, and watching it come up
 
 ```sh
-oc new-project mea
-helm upgrade --install mea openshift/helm/mea --namespace mea
-oc get pods -n mea -w
+openshift/deploy.sh          # helm upgrade --install mea, then rollout status for all ten
 ```
+
+`deploy.sh` is `helm upgrade --install mea openshift/helm/mea --kube-context
+crc-admin --namespace mea` followed by `oc rollout status` for each StatefulSet
+and Deployment, so it returns only once everything is actually up.
 
 Two things are worth expecting. First, if you skipped the memory bump, the infra
 pods sit `Pending` — `oc describe pod postgres-0` says `Insufficient memory`, and the
@@ -282,10 +303,13 @@ above is what a plain `helm install` does, and it converges.)
 
 ## Verifying it works
 
-Health, through the GraphQL gateway's Route (edge TLS):
+Health, through the GraphQL gateway's Route (edge TLS). Verify the certificate
+against the cluster's ingress CA rather than switching verification off:
 
 ```sh
-$ curl -sk https://graphql-gateway-mea.apps-crc.testing/q/health/ready
+$ oc --context crc-admin get configmap default-ingress-cert -n openshift-config-managed \
+    -o jsonpath='{.data.ca-bundle\.crt}' > /tmp/ingress-ca.crt
+$ curl -s --cacert /tmp/ingress-ca.crt https://graphql-gateway-mea.apps-crc.testing/q/health/ready
 { "status": "UP", "checks": [ ] }
 ```
 
@@ -293,7 +317,7 @@ The full path, through the strangler proxy's Route — external client → Route
 Camel edge router → inventory-service → its own Postgres `inventory` schema:
 
 ```sh
-$ curl -sk https://strangler-proxy-mea.apps-crc.testing/api/inventory
+$ curl -s --cacert /tmp/ingress-ca.crt https://strangler-proxy-mea.apps-crc.testing/api/inventory
 [{"sku":"SKU-WIDGET-001","name":"Standard Widget","priceCents":1999,"quantityOnHand":100},
  {"sku":"SKU-GADGET-002","name":"Deluxe Gadget","priceCents":4999,"quantityOnHand":50},
  {"sku":"SKU-GIZMO-003","name":"Pocket Gizmo","priceCents":999,"quantityOnHand":5}]
@@ -310,6 +334,14 @@ owning its own schema, and a fresh cluster has no monolith to create that table.
 Seeding it (or finishing review-service's extraction) is the fix; the deployment
 mechanics are sound.
 
+## Cleaning up
+
+OpenShift Local is a shared, single-node machine: leave it empty.
+[`openshift/teardown.sh`](https://github.com/patterncatalyst/modernizing-enterprise-applications/blob/main/openshift/teardown.sh)
+uninstalls the release, deletes project `mea` (its PVCs, BuildConfigs and
+ImageStreams go with it), hides the registry route the mirror step exposed, and
+runs `crc stop` (`--no-stop` to keep the VM up).
+
 ## The managed counterpart: GitOps and Pipelines
 
 Everything above was imperative — you ran `helm install`. The OpenShift-native way
@@ -319,7 +351,7 @@ reconciles the cluster to it, continuously, pruning drift and self-healing. A
 starter manifest is committed at
 [`openshift/gitops/application.yaml`](https://github.com/patterncatalyst/modernizing-enterprise-applications/blob/main/openshift/gitops/application.yaml).
 Its symmetric partner is **OpenShift Pipelines** (Tekton) for the build half — the
-`podman build`/`push` loop above becomes a `Pipeline` triggered on push, the
+`build-images.sh` loop above becomes a `Pipeline` triggered on push, the
 managed counterpart to the GitHub Actions workflows of Chapter 31. Both are
 deliberately left as starting points rather than part of the verified deploy: each
 needs its operator installed, and GitOps needs this repo reachable from the cluster.
@@ -348,3 +380,15 @@ this chart ports); `examples/*/src/main/docker/Dockerfile.jvm`. Re-confirm by
 re-running `helm upgrade --install` against a fresh `crc start`, then re-driving the
 two Route `curl`s and re-reading the pod SCC annotations — the assigned UID will
 differ per cluster, but the SCC names and the 200s should not.*
+
+*2026-10-09 update (DRQ-085), **not yet re-verified live**: the commands above
+were changed after the run recorded here. The images are now built inside the
+cluster (`openshift/build-images.sh`) instead of with a host `podman build`/`push`
+loop, Postgres and Kafka are copied with `skopeo` (`openshift/mirror-infra-images.sh`)
+instead of `podman pull`/`push`, the Route checks verify TLS with the ingress CA,
+and the pins moved to Postgres `18.6-alpine` (PVC at `/var/lib/postgresql`,
+`PGDATA=/var/lib/postgresql/18/docker`), Kafka `4.3.1`, and
+`ubi10/openjdk-25-runtime:1.24-15`. The verification paragraph above and
+`openshift/evidence/verification.txt` describe the 2026-10-06 run as it
+happened; re-run the sequence in `_plans/live-retest-inventory.md` to refresh
+them.*
