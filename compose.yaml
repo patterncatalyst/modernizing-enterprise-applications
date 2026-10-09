@@ -20,9 +20,10 @@
 #                 schema/migrations). Each extracted service now owns its own
 #                 schema within this same database/server (e.g. the order
 #                 service's `order_service` schema via
-#                 `currentSchema=order_service` on its JDBC URL) — this stack
-#                 only ever provisioned the server, never one schema's worth
-#                 of tables. Reconfigured for LOGICAL replication (r05/ch.19,
+#                 `currentSchema=order_service` on its JDBC URL). On a fresh
+#                 volume the init scripts also apply the frozen monolith's
+#                 Flyway SQL to `public` (review-service, the Debezium
+#                 connector and the demos still use those tables; DRQ-077). Reconfigured for LOGICAL replication (r05/ch.19,
 #                 step S3) so Debezium can tail the WAL — see `command:`
 #                 below.
 #   - kafka     : single-broker KRaft-mode Kafka (no ZooKeeper) for the
@@ -121,6 +122,12 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql:Z
       - ./infra/db/init:/docker-entrypoint-initdb.d:Z
+      # The frozen monolith's Flyway SQL, applied to `public` by
+      # infra/db/init/10-monolith-public-schema.sh on a fresh volume:
+      # review-service, the Debezium connector and the demos still use the
+      # tables it creates (DRQ-077). Read-only; `z` (shared label) because
+      # the directory stays part of the source tree.
+      - ./examples/00-monolith/src/main/resources/db/migration:/monolith-migrations:ro,z
     mem_limit: 1g
     healthcheck:
       # -h 127.0.0.1: TCP, not the Unix socket. The image's initdb phase runs
