@@ -1,11 +1,11 @@
 # kafka-statefulset.yaml -- single-broker KRaft-mode Kafka (no ZooKeeper),
 # mirroring compose.yaml's `kafka` service: same image family/tag
-# (apache/kafka:3.8.0, .env.example KAFKA_IMAGE_TAG), the same KRaft
+# (apache/kafka:4.3.1, .env.example KAFKA_IMAGE_TAG), the same KRaft
 # broker+controller-combined-role env block, and the same topic defaults
 # (KAFKA_AUTO_CREATE_TOPICS_ENABLE=true, 3 partitions, replication factor 1
 # -- a single-broker cluster can't replicate beyond 1 anyway). Two
 # differences from compose.yaml, both because there is only ONE network
-# here (no separate host-vs-container-network split the way podman compose
+# here (no separate host-vs-container-network split the way docker compose
 # needs one): (1) a single PLAINTEXT listener (no DOCKER:9094 listener --
 # every client, in-cluster or not, reaches this broker the same way, via the
 # `kafka` Service); (2) KAFKA_ADVERTISED_LISTENERS/KAFKA_CONTROLLER_QUORUM_
@@ -67,7 +67,7 @@ spec:
         fsGroup: 1000
       containers:
         - name: kafka
-          image: docker.io/apache/kafka:3.8.0
+          image: docker.io/apache/kafka:4.3.1
           imagePullPolicy: IfNotPresent
           ports:
             - name: plaintext

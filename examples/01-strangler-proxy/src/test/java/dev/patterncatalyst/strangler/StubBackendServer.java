@@ -14,7 +14,7 @@ import java.nio.charset.StandardCharsets;
  * test can assert the route's content-based target selection without
  * needing the real monolith or payment service up and without colliding
  * with their fixed ports (:8080 / :8085) if those happen to be running —
- * the real end-to-end proof through the full podman stack is payment-plan
+ * the real end-to-end proof through the full compose stack is payment-plan
  * S8, not here.
  *
  * <p>Deliberately JDK-only ({@code com.sun.net.httpserver}) so this test

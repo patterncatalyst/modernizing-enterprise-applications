@@ -2,7 +2,8 @@
 # Shared Postgres (db `monolith`, one schema per extracted service). Port of
 # deploy/k8s/base/infra/postgres-statefulset.yaml, preserving its ch.30
 # live-apply fixes: `args` (not `command`) so the entrypoint's initdb runs; PGDATA
-# in a subdir the postgres user owns; fsGroup 70 for PVC writability;
+# in a subdir the postgres user owns (from Postgres 18 the image default,
+# /var/lib/postgresql/18/docker, with the PVC at /var/lib/postgresql); fsGroup 70 for PVC writability;
 # wal_level=logical for the CDC story. On OpenShift it additionally runs under the
 # mea-infra ServiceAccount (nonroot-v2 SCC) so uid 70 is actually permitted.
 apiVersion: v1
@@ -70,7 +71,7 @@ spec:
               containerPort: 5432
           env:
             - name: PGDATA
-              value: "/var/lib/postgresql/data/pgdata"
+              value: "/var/lib/postgresql/18/docker"
             - name: POSTGRES_DB
               value: "monolith"
             - name: POSTGRES_USER
@@ -81,16 +82,16 @@ spec:
                 secretKeyRef: { name: mea-postgres-app, key: password }
           volumeMounts:
             - name: postgres-data
-              mountPath: /var/lib/postgresql/data
+              mountPath: /var/lib/postgresql
             - name: postgres-initdb
               mountPath: /docker-entrypoint-initdb.d
           readinessProbe:
-            exec: { command: ["pg_isready", "-U", "monolith", "-d", "monolith"] }
+            exec: { command: ["pg_isready", "-h", "127.0.0.1", "-U", "monolith", "-d", "monolith"] }
             initialDelaySeconds: 5
             periodSeconds: 10
             failureThreshold: 6
           livenessProbe:
-            exec: { command: ["pg_isready", "-U", "monolith", "-d", "monolith"] }
+            exec: { command: ["pg_isready", "-h", "127.0.0.1", "-U", "monolith", "-d", "monolith"] }
             initialDelaySeconds: 15
             periodSeconds: 10
             failureThreshold: 6

@@ -27,7 +27,8 @@
 # NOT start/stop the service it tests — that is the caller's responsibility
 # (see tooling/newman/README.md for how to bring up the monolith locally).
 #
-# Requires: newman (npm i -g newman), or run via npx.
+# Requires: Node + npm. Uses an installed `newman` when one is on PATH;
+# otherwise the pinned `npx -y newman@6.2.3` (demos/lib/newman.sh, DRQ-077).
 
 set -euo pipefail
 
@@ -38,9 +39,10 @@ ENVIRONMENT="${PROJECT_ROOT}/tooling/newman/local.postman_environment.json"
 
 BASE_URL="${1:-http://localhost:8080}"
 
-if ! command -v newman >/dev/null 2>&1; then
-    echo "error: newman is not installed or not on PATH." >&2
-    echo "       install it with: npm install -g newman" >&2
+# shellcheck source=lib/newman.sh
+source "${SCRIPT_DIR}/lib/newman.sh"
+if ! command -v newman >/dev/null 2>&1 && ! command -v npx >/dev/null 2>&1; then
+    echo "error: neither newman nor npx is on PATH (install Node.js + npm)." >&2
     exit 1
 fi
 
@@ -49,7 +51,7 @@ echo "collection : ${COLLECTION}"
 echo "environment: ${ENVIRONMENT} (baseUrl overridden to ${BASE_URL})"
 echo "==================================================================="
 
-newman run "${COLLECTION}" \
+newman_cli run "${COLLECTION}" \
     --environment "${ENVIRONMENT}" \
     --env-var "baseUrl=${BASE_URL}" \
     --reporters cli

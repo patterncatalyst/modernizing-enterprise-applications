@@ -6,7 +6,7 @@ description: "The ADLC's ledger — the decision log, the build plan, the iterat
 ---
 
 Chapter 1 got the toolchain running: SDKMAN, JDK 25, Maven, the Quarkus and
-Camel CLIs, and a local podman stack standing in for the services this book's
+Camel CLIs, and a local Docker compose stack standing in for the services this book's
 monolith will eventually depend on. Everything from here forward assumes that
 toolchain works. But before any of it touches the monolith this book builds in
 Part 3, there is one more piece of setup, and it is not a tool at all — it is
@@ -92,6 +92,13 @@ DRQ-001 | Podman is the default toolchain (lgtm-podman-stack); minikube
 inheritance from DataMesh. | User-fixed. Single compose source avoids Dev
 Services image-tag mismatch; one dev-loop/CI substrate. | fixed
 ```
+
+A fixed decision is not a permanent one; it is one that only the person who
+fixed it can reopen, on the record. DRQ-001 was reopened exactly that way:
+DRQ-077 (2026-10-09) moved every path to Docker Engine and the
+`docker compose` plugin, keeping DRQ-001's actual rationale (one engine, one
+set of image pins for the dev loop, the tests, and CI) and marking DRQ-001
+superseded rather than editing it.
 
 Nothing about that row is dramatic, which is the point. Without it written
 down, a later contributor — human or agent — reaching for container tooling

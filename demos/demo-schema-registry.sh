@@ -7,14 +7,14 @@
 # publishes a field-for-field Avro mirror of examples/07-order-service's
 # OrderPlacedEvent (dev.patterncatalyst.contracts.avro.OrderPlaced) to its OWN
 # topic (order.events.avro.demo), fronted by the `apicurio` compose service
-# (quay.io/apicurio/apicurio-registry:3.1.7, v3 API). This script: (1) brings
+# (quay.io/apicurio/apicurio-registry:3.3.3, v3 API). This script: (1) brings
 # up the stack (which now includes `apicurio`), (2) builds and starts the
 # demo app, (3) POSTs a demo order and shows the consumer deserializing it
 # back, (4) curls the registry API to show the auto-registered artifact +
 # version, then (5) applies a BACKWARD compatibility rule to that SAME
 # artifact and shows a schema evolution that adds a field WITH a default
 # (v2) succeed, and one that retypes a field incompatibly (v3) rejected with
-# HTTP 409 / RuleViolationException.
+# HTTP 400 / RuleViolationException (Apicurio 3.3; 3.1 answered 409).
 #
 # WHAT THIS IS NOT: this does NOT touch, replace, or reroute the real
 # order.placed JSON event (DRQ-038) — examples/00-monolith through
@@ -25,10 +25,10 @@
 # not a second production event path. The live checkout flows stay JSON
 # forever (DRQ-038); only this one demonstrator module uses Avro.
 #
-# Prerequisites: the podman stack (mea-kafka, mea-apicurio) must be
+# Prerequisites: the compose stack (mea-kafka, mea-apicurio) must be
 # reachable — this script runs scripts/stack-up.sh if it isn't already up,
 # but will NOT tear it down. The demo app process this script starts is
-# stopped on exit; the podman stack is always left running.
+# stopped on exit; the compose stack is always left running.
 #
 # Usage: demos/demo-schema-registry.sh
 
@@ -57,7 +57,7 @@ fail() { echo "  FAIL $*" >&2; OVERALL_RESULT=1; }
 section() { echo; echo "== $* =========================================================="; }
 
 cleanup() {
-    section "Cleanup — stopping the demo app (podman stack left running)"
+    section "Cleanup — stopping the demo app (compose stack left running)"
     if [ -n "${APP_PID}" ] && kill -0 "${APP_PID}" 2>/dev/null; then
         kill "${APP_PID}" 2>/dev/null
         echo "  stopped schema-registry-demo (pid ${APP_PID})"
@@ -106,9 +106,9 @@ registry_host_port() {
 }
 REGISTRY_BASE_URL="http://localhost:$(registry_host_port)/apis/registry/v3"
 
-section "0. Podman stack (Kafka + Apicurio)"
-if podman ps --format '{{.Names}}' 2>/dev/null | grep -q '^mea-kafka$' \
-    && podman ps --format '{{.Names}}' 2>/dev/null | grep -q '^mea-apicurio$'; then
+section "0. Compose stack (Kafka + Apicurio)"
+if docker ps --format '{{.Names}}' 2>/dev/null | grep -q '^mea-kafka$' \
+    && docker ps --format '{{.Names}}' 2>/dev/null | grep -q '^mea-apicurio$'; then
     pass "mea-kafka and mea-apicurio already up — leaving as-is"
 else
     echo "stack not detected — running scripts/stack-up.sh"
@@ -217,7 +217,7 @@ else
     fail "expected HTTP 200 registering v2, got ${V2_STATUS}"
 fi
 
-section "7. v3 — retypes totalCents long->string (BACKWARD-INCOMPATIBLE) — expect REJECTED (409)"
+section "7. v3 — retypes totalCents long->string (BACKWARD-INCOMPATIBLE) — expect REJECTED (400)"
 V3_BODY="$(python3 -c '
 import json, sys
 schema = open(sys.argv[1]).read()
@@ -227,10 +227,10 @@ V3_STATUS="$(curl -s -o "${LOG_DIR}/v3_response.json" -w '%{http_code}' -X POST 
     "${REGISTRY_BASE_URL}/groups/default/artifacts/${EVOLUTION_ARTIFACT_ID}/versions" \
     -H 'Content-Type: application/json' --data "${V3_BODY}")"
 echo "  response: $(cat "${LOG_DIR}/v3_response.json")"
-if [ "${V3_STATUS}" = "409" ] && grep -q "RuleViolationException" "${LOG_DIR}/v3_response.json"; then
+if [ "${V3_STATUS}" = "400" ] && grep -q "RuleViolationException" "${LOG_DIR}/v3_response.json"; then
     pass "v3 REJECTED (HTTP ${V3_STATUS}, RuleViolationException) — the incompatible retype was caught"
 else
-    fail "expected HTTP 409 + RuleViolationException rejecting v3, got HTTP ${V3_STATUS}"
+    fail "expected HTTP 400 + RuleViolationException rejecting v3, got HTTP ${V3_STATUS}"
 fi
 
 section "Demo complete"

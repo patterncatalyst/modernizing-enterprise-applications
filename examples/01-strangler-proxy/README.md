@@ -390,7 +390,7 @@ strangler.order.base-url=http://localhost:8087
 ## Running it
 
 ```bash
-# 1. podman stack + monolith already up (see tooling/newman/README.md)
+# 1. compose stack + monolith already up (see tooling/newman/README.md)
 # 2. build and run the proxy
 cd examples/01-strangler-proxy
 mvn -q -DskipTests package

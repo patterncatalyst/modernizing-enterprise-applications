@@ -21,7 +21,7 @@ import java.time.Instant;
  *
  * <p>SMELL[ch.18] (carried over, not cured here): still joins directly to the
  * shared {@code customers} and {@code inventory_items} tables in the SAME
- * podman-stack Postgres the monolith uses — see {@link Customer} and
+ * compose-stack Postgres the monolith uses — see {@link Customer} and
  * {@link InventoryItem} for the minimal read-only projections that stand in
  * for those monolith entities. True database decomposition is deferred to the
  * data-across-the-seam chapters (ch.18/19), not this step.

@@ -39,7 +39,10 @@ function resolveNewman() {
     } catch (e) {
         // Fall through to common global-install locations.
     }
+    // NEWMAN_MODULE_DIR: the pinned npx package demos/lib/newman.sh
+    // resolves when no newman is installed (DRQ-077).
     const candidates = [
+        ...(process.env.NEWMAN_MODULE_DIR ? [process.env.NEWMAN_MODULE_DIR] : []),
         path.join(process.env.HOME || "", ".local/lib/node_modules/newman"),
         "/usr/local/lib/node_modules/newman",
         "/usr/lib/node_modules/newman",
@@ -54,7 +57,8 @@ function resolveNewman() {
     console.error(
         "Could not resolve the 'newman' module via require('newman') or any known global " +
             "install location (" + candidates.join(", ") + "). Install it with " +
-            "'npm install -g newman' or 'npm install newman' in this project."
+            "'npm install -g newman' or 'npm install newman' in this project, or run " +
+            "this helper through a demo script (demos/lib/newman.sh fetches the pinned npx package)."
     );
     process.exit(2);
 }

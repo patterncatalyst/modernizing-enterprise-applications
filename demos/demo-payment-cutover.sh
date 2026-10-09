@@ -37,17 +37,19 @@
 # stale 201/CONFIRMED assertions in the cutover state — NOT a choreography
 # defect; see CUTOVER.md's "A known, honest gap" section).
 #
-# Prerequisites: the podman stack (mea-postgres, mea-kafka) must be
+# Prerequisites: the compose stack (mea-postgres, mea-kafka) must be
 # reachable — this script will run scripts/stack-up.sh if it isn't already
 # up, but will NOT tear the stack down afterwards. All services this script
 # itself starts (inventory/payment/review/notification/monolith/proxy) are
-# stopped on exit; the podman stack is always left running.
+# stopped on exit; the compose stack is always left running.
 #
 # Usage: demos/demo-payment-cutover.sh
 
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/newman.sh
+source "${SCRIPT_DIR}/lib/newman.sh"   # newman or the pinned npx form (DRQ-077)
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 cd "${PROJECT_ROOT}"
 
@@ -66,7 +68,7 @@ fail() { echo "  FAIL $*" >&2; }
 section() { echo; echo "== $* =========================================================="; }
 
 cleanup() {
-    section "Cleanup — stopping everything this script started (podman stack left running)"
+    section "Cleanup — stopping everything this script started (compose stack left running)"
     for name in "${!PIDS[@]}"; do
         pid="${PIDS[$name]}"
         if kill -0 "${pid}" 2>/dev/null; then
@@ -143,9 +145,9 @@ stop_named() {
     unset "PIDS[$name]"
 }
 
-section "0. Podman stack (Postgres + Kafka)"
-if podman ps --format '{{.Names}}' 2>/dev/null | grep -q '^mea-postgres$' \
-    && podman ps --format '{{.Names}}' 2>/dev/null | grep -q '^mea-kafka$'; then
+section "0. Compose stack (Postgres + Kafka)"
+if docker ps --format '{{.Names}}' 2>/dev/null | grep -q '^mea-postgres$' \
+    && docker ps --format '{{.Names}}' 2>/dev/null | grep -q '^mea-kafka$'; then
     pass "mea-postgres and mea-kafka already up — leaving as-is"
 else
     echo "stack not detected — running scripts/stack-up.sh"
@@ -158,7 +160,7 @@ start_jar payment "${PAYMENT_JAR}" "http://localhost:8085/api/payments?orderId=1
 start_jar review "${REVIEW_JAR}" "http://localhost:8081/api/reviews"
 start_jar notification "${NOTIFICATION_JAR}" "http://localhost:8083/api/notifications?customerId=1"
 # The monolith's application.yml default datasource password doesn't match
-# the podman-stack's actual POSTGRES_PASSWORD (see CUTOVER.md "Operational
+# the compose-stack's actual POSTGRES_PASSWORD (see CUTOVER.md "Operational
 # note") — overridden here, every time, not a payment-specific flag.
 start_jar monolith-choreographed "${MONOLITH_JAR}" "http://localhost:8080/api/orders" \
     SPRING_DATASOURCE_PASSWORD=monolith_dev_only PAYMENT_MODE=choreographed
@@ -217,7 +219,7 @@ start_jar_props proxy-payment-on2 -Dstrangler.payment.enabled=true -- "${PROXY_J
 
 stop_named payment
 echo "payment-service stopped — re-running Scenario 1 folder, expecting RED..."
-if npx newman run tooling/newman/mea.postman_collection.json \
+if newman_cli run tooling/newman/mea.postman_collection.json \
     --environment tooling/newman/local.postman_environment.json \
     --env-var "baseUrl=http://localhost:8888" \
     --folder "Scenario 1 — Happy-Path Checkout" \
@@ -240,7 +242,7 @@ start_jar payment "${PAYMENT_JAR}" "http://localhost:8085/api/payments?orderId=1
 # rebalance).
 sleep 3
 echo "re-running Scenario 1 folder, expecting GREEN..."
-if npx newman run tooling/newman/mea.postman_collection.json \
+if newman_cli run tooling/newman/mea.postman_collection.json \
     --environment tooling/newman/local.postman_environment.json \
     --env-var "baseUrl=http://localhost:8888" \
     --folder "Scenario 1 — Happy-Path Checkout" \

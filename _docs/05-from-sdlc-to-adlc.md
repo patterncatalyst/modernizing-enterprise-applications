@@ -191,7 +191,7 @@ machine, or inside a managed, shared execution environment.
 
 {% include excalidraw.html
    file="adlc-local-vs-hosted"
-   alt="A shared outer path (express intent, learn and iterate, monitoring and observability, deploy and ship) flanked by two parallel inner bands covering agent understands through human review. The local band runs each step through a local agent runtime, a local coding agent plus Podman, and a cloud dev environment. The hosted band runs the same steps through a hosted AI platform end to end. Both bands converge back onto the shared deploy-and-ship step."
+   alt="A shared outer path (express intent, learn and iterate, monitoring and observability, deploy and ship) flanked by two parallel inner bands covering agent understands through human review. The local band runs each step through a local agent runtime, a local coding agent plus Docker Engine, and a cloud dev environment. The hosted band runs the same steps through a hosted AI platform end to end. Both bands converge back onto the shared deploy-and-ship step."
    caption="Figure 5.3 — The same agentic loop, run two ways: a local execution path (local coding agent plus a local container runtime) versus a hosted path (a managed, hosted AI platform)" %}
 
 The **local** path in Figure 5.3 keeps the agent on the developer's own
@@ -224,7 +224,7 @@ model's possibly-stale memory of a framework: a **Quarkus Agent MCP server**
 that drives the `migrate-spring-to-quarkus` process, starts and inspects a
 running Quarkus instance, and searches version-matched documentation; and a
 **Camel MCP server** that validates routes, checks migration compatibility,
-and queries the EIP and component catalogs. **Podman** is the local container
+and queries the EIP and component catalogs. **Docker Engine** is the local container
 runtime underneath both — Dev Services, Testcontainers, the behavior-
 equivalence suite's Postgres and Kafka — and **Quarkus** is the concrete
 target runtime every extraction migrates onto.

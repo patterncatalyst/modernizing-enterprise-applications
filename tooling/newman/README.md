@@ -224,6 +224,21 @@ demos/demo-equivalence.sh http://localhost:8080
 demos/demo-equivalence.sh http://localhost:8081
 ```
 
+`demos/demo-equivalence.sh` and the cutover demos use an installed `newman`
+when one is on `PATH`; otherwise they run the pinned `npx -y newman@6.2.3`
+(newest non-prerelease on npm, 2026-10-09; `demos/lib/newman.sh`, DRQ-077),
+which installs into the per-user npm cache: no `sudo`, no global install.
+`NEWMAN_VERSION=<x.y.z>` overrides the pin. CI installs the same version.
+
+To run the suite through the edge router against the finished topology, keep
+the apps up after the capstone demo:
+
+```bash
+demos/demo-final-topology.sh --keep-running
+demos/demo-equivalence.sh http://localhost:8888
+demos/demo-final-topology.sh --stop
+```
+
 Equivalently, with the `newman` CLI directly:
 
 ```bash
@@ -245,12 +260,17 @@ not as something a day-to-day contributor needs to do:
 #    shell left:
 git worktree add /tmp/mea-before reference/monolith-before   # or: git checkout v0-monolith
 
-# 2. podman stack up (Postgres on localhost:5432, db `monolith`) — see compose.yaml
-podman compose --env-file .env up -d postgres
+# 2. compose stack up (Postgres on localhost:5432) — see compose.yaml. Its
+#    initdb already applies main's V1-V4 to db `monolith` (DRQ-077), which the
+#    "before" monolith (V1-V2 only, ddl-auto=validate) would reject, so give it
+#    an empty database of its own:
+docker compose --env-file .env up -d postgres
+docker exec mea-postgres createdb -U monolith monolith_before
 
 # 3. build + run the preserved monolith (Flyway migrates + seeds automatically)
 cd /tmp/mea-before/examples/00-monolith
 mvn -q -DskipTests package
+SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/monolith_before \
 SPRING_DATASOURCE_PASSWORD="$(grep ^POSTGRES_PASSWORD ../../.env | cut -d= -f2)" \
     java -jar target/monolith.jar
 

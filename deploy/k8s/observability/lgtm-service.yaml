@@ -3,6 +3,7 @@
 # `lgtm` (ClusterIP): the in-cluster DNS name every app/mesh-provider config
 # points at -- lgtm.mea.svc.cluster.local -- carrying all 6 signal ports.
 # This is what examples/{04,07,08}'s quarkus.otel.exporter.otlp.traces.endpoint
+# (via base/app-config.yaml's OTEL_EXPORTER_OTLP_TRACES_ENDPOINT)
 # and deploy/k8s/istio/istio-install.yaml's `otel` extensionProvider both
 # target.
 #
@@ -66,3 +67,7 @@ spec:
     - name: grafana
       port: 3000
       targetPort: 3000
+      # Fixed NodePort, published on 127.0.0.1:30300 when the minikube
+      # profile is created (deploy/k8s/scripts/setup-profile.sh), so Grafana
+      # is http://127.0.0.1:30300 with no port-forward or tunnel.
+      nodePort: 30300
