@@ -56,11 +56,41 @@
 # the stack down afterwards. Every app process this script starts is stopped on
 # exit; the compose stack is always left running.
 #
-# Usage: demos/demo-final-topology.sh
+# Usage: demos/demo-final-topology.sh                 # prove, then stop the apps
+#        demos/demo-final-topology.sh --keep-running  # prove, leave the apps up
+#                                                     # (e.g. for demos/demo-equivalence.sh
+#                                                     #  http://localhost:8888)
+#        demos/demo-final-topology.sh --stop          # stop apps a --keep-running left up
 
 set -uo pipefail
 
+# --keep-running hands the started processes over in this file (one
+# "<name> <pid>" per line); --stop reads it back (DRQ-077: the inventory's
+# B10 step runs the contract suite against this topology after the demo).
+PIDFILE="${TMPDIR:-/tmp}/mea-final-topology.pids"
+KEEP_RUNNING=false
+case "${1:-}" in
+    --keep-running) KEEP_RUNNING=true ;;
+    --stop)
+        if [ ! -f "${PIDFILE}" ]; then echo "nothing to stop (${PIDFILE} absent)"; exit 0; fi
+        while read -r name pid; do
+            kill "${pid}" 2>/dev/null && echo "  stopped ${name} (pid ${pid})"
+        done < "${PIDFILE}"
+        sleep 2
+        while read -r name pid; do kill -9 "${pid}" 2>/dev/null || true; done < "${PIDFILE}"
+        rm -f "${PIDFILE}"
+        exit 0 ;;
+    "") ;;
+    *) echo "usage: $0 [--keep-running | --stop]" >&2; exit 2 ;;
+esac
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/newman.sh
+source "${SCRIPT_DIR}/lib/newman.sh"   # newman or the pinned npx form (DRQ-077)
+
+# Resolve newman for the Node-API helper up front: a missing module must stop
+# the demo here, not surface later as a "RED as expected" negative check.
+newman_node_api || exit 2
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 cd "${PROJECT_ROOT}"
 
@@ -82,6 +112,15 @@ fail() { echo "  FAIL $*" >&2; OVERALL_RESULT=1; }
 section() { echo; echo "== $* =========================================================="; }
 
 cleanup() {
+    if [ "${KEEP_RUNNING}" = true ] && [ "${OVERALL_RESULT}" -eq 0 ]; then
+        section "Leaving the topology running (--keep-running)"
+        : > "${PIDFILE}"
+        for name in "${!PIDS[@]}"; do echo "${name} ${PIDS[$name]}" >> "${PIDFILE}"; done
+        echo "  edge router: http://localhost:8888   gateway: http://localhost:8090/graphql"
+        echo "  stop with:   demos/demo-final-topology.sh --stop   (pids in ${PIDFILE})"
+        echo "Logs kept at ${LOG_DIR}"
+        return
+    fi
     section "Cleanup — stopping everything this script started (compose stack left running)"
     for name in "${!PIDS[@]}"; do
         pid="${PIDS[$name]}"
@@ -239,11 +278,17 @@ gql_id="$(json_field "${gql_resp}" 'd["data"]["order"]["id"]')"
 gql_has_stock="$(json_field "${gql_resp}" 'd["data"]["order"]["items"][0]["stock"] is not None')"
 gql_has_payments="$(json_field "${gql_resp}" 'len(d["data"]["order"]["payments"]) >= 1')"
 gql_has_shipments="$(json_field "${gql_resp}" 'len(d["data"]["order"]["shipments"]) >= 1')"
+# reviews resolve over REST from review-service; a failed call comes back as a
+# GraphQL `errors` entry with `reviews: null`, not as a missing order (DRQ-077:
+# this used to pass with review-service 500ing on a missing public.reviews).
+gql_has_reviews="$(json_field "${gql_resp}" 'd["data"]["order"]["items"][0]["reviews"] is not None')"
+gql_no_errors="$(json_field "${gql_resp}" 'not d.get("errors")')"
 if [ "${agg_status}" = "CONFIRMED" ] && [ "${gql_id}" = "${agg_order_id}" ] \
-    && [ "${gql_has_stock}" = "True" ] && [ "${gql_has_payments}" = "True" ] && [ "${gql_has_shipments}" = "True" ]; then
+    && [ "${gql_has_stock}" = "True" ] && [ "${gql_has_payments}" = "True" ] && [ "${gql_has_shipments}" = "True" ] \
+    && [ "${gql_has_reviews}" = "True" ] && [ "${gql_no_errors}" = "True" ]; then
     pass "gateway aggregated order ${agg_order_id} across REST (order/reviews/payments/shipments) and gRPC (inventory stock) into one OrderAggregate"
 else
-    fail "gateway aggregation incomplete: id=${gql_id} stock=${gql_has_stock} payments=${gql_has_payments} shipments=${gql_has_shipments} status=${agg_status}"
+    fail "gateway aggregation incomplete: id=${gql_id} stock=${gql_has_stock} reviews=${gql_has_reviews} payments=${gql_has_payments} shipments=${gql_has_shipments} errors-free=${gql_no_errors} status=${agg_status}"
 fi
 
 section "4. UNWIRED — the monolith is out of the topology"
