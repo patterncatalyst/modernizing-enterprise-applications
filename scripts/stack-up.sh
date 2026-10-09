@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # scripts/stack-up.sh — bring up the r02 local infra/observability stack.
 #
-# Docker Engine + the `docker compose` v2 plugin (DRQ-085, superseding the
+# Docker Engine + the `docker compose` v2 plugin (DRQ-077, superseding the
 # podman-only DRQ-001); never the legacy `docker-compose` v1 binary. Run from
 # anywhere; paths are resolved relative to this script's location so it works
 # from any cwd.

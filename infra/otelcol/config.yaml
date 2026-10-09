@@ -15,7 +15,7 @@
 # otel-collector-cardinality.yaml patterns from the lgtm-docker-stack skill
 # once multiple extracted services are producing volume (r04+).
 #
-# 2026-10-09 (DRQ-085): rewritten for grafana/otel-lgtm 0.36.0. The exporter
+# 2026-10-09 (DRQ-077): rewritten for grafana/otel-lgtm 0.36.0. The exporter
 # names, endpoints and the health_check extension follow that image's own
 # shipped default (`docker run --rm --entrypoint cat
 # grafana/otel-lgtm:0.36.0 /otel-lgtm/otelcol-config.yaml`):

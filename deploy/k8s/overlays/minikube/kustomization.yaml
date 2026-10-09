@@ -13,7 +13,7 @@ resources:
   - ../../istio
   - ../../observability
 
-# Images (DRQ-085): built on the host with Docker Engine (`docker build -t
+# Images (DRQ-077): built on the host with Docker Engine (`docker build -t
 # mea/<svc>:1.0`) and copied into the profile's containerd with `minikube -p
 # mea image load mea/<svc>:1.0` -- deploy/k8s/scripts/build-images.sh does
 # both. The cluster runs --driver=docker --container-runtime=containerd, so

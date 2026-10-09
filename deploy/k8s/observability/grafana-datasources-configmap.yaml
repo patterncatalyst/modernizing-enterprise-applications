@@ -4,7 +4,7 @@
 # mounted into the lgtm container at
 # /otel-lgtm/grafana/conf/provisioning/datasources/grafana-datasources.yaml
 # (the image's own default filename, so ours replaces it rather than losing
-# a uid collision to it -- DRQ-085), same as compose.yaml's `lgtm` service.
+# a uid collision to it -- DRQ-077), same as compose.yaml's `lgtm` service.
 apiVersion: v1
 kind: ConfigMap
 metadata:

@@ -2,7 +2,7 @@
 #
 # Ported from infra/otelcol/config.yaml (the compose stack's Collector
 # config, mounted at /otel-lgtm/otelcol-config.yaml inside the single
-# grafana/otel-lgtm all-in-one container (0.36.0 since DRQ-085) — see compose.yaml's `lgtm`
+# grafana/otel-lgtm all-in-one container (0.36.0 since DRQ-077) — see compose.yaml's `lgtm`
 # service). Same container shape in-cluster: one Deployment, one container,
 # Tempo/Loki/Mimir/Grafana all co-located at localhost inside it, so the
 # exporter endpoints below are unchanged from the compose version.
@@ -76,7 +76,7 @@ data:
                   target_label: app
 
     # otel-lgtm 0.36.0's run-all.sh waits for http://127.0.0.1:13133/ready
-    # before it reports the stack ready (DRQ-085).
+    # before it reports the stack ready (DRQ-077).
     extensions:
       health_check:
         endpoint: 0.0.0.0:13133

@@ -46,7 +46,7 @@ deploy/k8s/
 
 The minikube path runs on **Docker Engine** (docker-ce, docker context
 `default`) on a Fedora or RHEL host, with minikube's `docker` driver and the
-`containerd` runtime inside the node (DRQ-085, superseding the original podman
+`containerd` runtime inside the node (DRQ-077, superseding the original podman
 driver). Docker Desktop is never required. Every script names its target
 explicitly (`minikube -p mea`, `kubectl --context mea`) and never touches
 kubectl's current-context or `minikube config`.

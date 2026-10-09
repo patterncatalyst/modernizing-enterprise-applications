@@ -111,7 +111,7 @@ spec:
             - name: postgres
               containerPort: 5432
           env:
-            # ch.30 live-apply fix, carried to Postgres 18 (DRQ-085): the PVC
+            # ch.30 live-apply fix, carried to Postgres 18 (DRQ-077): the PVC
             # mount point is owned by root (fsGroup only sets the GROUP, not
             # the owner), so initdb running as uid 70 cannot chmod it. PGDATA
             # must be a subdirectory the postgres user creates itself. From

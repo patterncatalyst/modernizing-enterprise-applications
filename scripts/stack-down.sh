@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # scripts/stack-down.sh — tear down the r02 local infra/observability stack.
 #
-# Docker Engine + `docker compose` (DRQ-085). By default preserves named volumes (postgres-data,
+# Docker Engine + `docker compose` (DRQ-077). By default preserves named volumes (postgres-data,
 # kafka-data) so seed data / topics survive a restart. Pass -v to wipe them
 # (e.g. to recover from the Kafka KRaft cluster-ID mismatch described in
 # known-issues.md).
