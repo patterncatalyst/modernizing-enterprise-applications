@@ -201,12 +201,19 @@ services:
       - CONFIG_STORAGE_REPLICATION_FACTOR=1
       - OFFSET_STORAGE_REPLICATION_FACTOR=1
       - STATUS_STORAGE_REPLICATION_FACTOR=1
+      # Bound the heap (DRQ-077). Without HEAP_OPTS, connect-distributed.sh
+      # defaults to -Xmx2G inside this container's memory limit; 3.7.0.Final
+      # scans ~15 connector plugins at boot (3.0.0.Final shipped far fewer),
+      # the heap grows past the cgroup limit, and the kernel OOM-kills the
+      # worker in a restart loop (seen live: OOMKilled=true, 9 restarts).
+      - HEAP_OPTS=-Xms256m -Xmx768m
     depends_on:
       kafka:
         condition: service_healthy
       postgres:
         condition: service_healthy
-    mem_limit: 1g
+    # 768m heap + metaspace/threads/direct buffers; 1g was 3.0.0.Final's budget.
+    mem_limit: 1536m
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://localhost:8083/connectors"]
       interval: 10s
