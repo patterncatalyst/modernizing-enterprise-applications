@@ -42,7 +42,7 @@ data" teaching point of DRQ-035.
 
 Concretely:
 
-- Same podman-stack Postgres **instance** every example in this repo uses
+- Same compose-stack Postgres **instance** every example in this repo uses
   (`localhost:5432`, db `monolith`) — **not** a separate database or server.
 - Own Postgres **schema**: `notification`, created and migrated by this
   service's own Flyway history (`src/main/resources/db/migration/`), never
@@ -69,7 +69,7 @@ Concretely:
   real `@Incoming` pipeline via SmallRye's in-memory connector: happy path +
   an idempotency test proving redelivery yields exactly one notification),
   `OrderNotificationSocketTest` (1, WebSocket handshake).
-- **End-to-end** (podman-stack Kafka + Postgres up, monolith started with
+- **End-to-end** (compose-stack Kafka + Postgres up, monolith started with
   `NOTIFICATION_MODE=outbox`, this service packaged and run on `:8083`): a
   real checkout against the monolith (`POST :8080/api/orders`) produced an
   `order.placed` outbox row, the `OutboxRelay` published it to Kafka, and
@@ -87,7 +87,7 @@ ASYNC sibling of `equivalence-gate` (which covers Review, a synchronous REST
 passthrough). This job brings up a disposable GitHub Actions Postgres
 service container (schema from the monolith's committed
 `V1__init_schema.sql`/`V2__seed_data.sql`/`V3__outbox.sql`) **and** a
-single-broker KRaft-mode Kafka service container (`apache/kafka:3.8.0`,
+single-broker KRaft-mode Kafka service container (`apache/kafka:4.3.1`,
 matching `compose.yaml`/`.env.example`), builds and starts the monolith
 (`:8080`, outbox write path + Kafka producer), this service (`:8083`, the
 `@Incoming("order-placed")` consumer), and the strangler proxy
@@ -101,7 +101,7 @@ absorbs the relay's ~2s poll-interval latency; no change to the collection
 itself is needed to run it here (R8, no suite drift).
 
 Before this workflow was committed it was validated locally both ways
-(podman-stack Postgres + Kafka, all three services built and run exactly as
+(compose-stack Postgres + Kafka, all three services built and run exactly as
 the CI job runs them, `newman run ... --folder "Notification Context
 Contract" --env-var baseUrl=http://localhost:8888`):
 

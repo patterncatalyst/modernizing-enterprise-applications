@@ -313,7 +313,7 @@ between them is the clearest evidence available for everything above.
 
 `examples/02-review-service` is still, as of this writing, in its Phase A
 form (DRQ-029), and its own `README.md` states the deferral in plain terms:
-it persists against "the SAME podman-stack Postgres the monolith uses...
+it persists against "the SAME compose-stack Postgres the monolith uses...
 reading/writing the existing `reviews` table plus minimal read-only
 projections of the shared `customers`/`inventory_items` tables," and "owns
 **no** schema of its own yet — true database decomposition is deferred to the

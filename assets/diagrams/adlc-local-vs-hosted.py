@@ -2,7 +2,7 @@
 """ch.05 figure: adlc-local-vs-hosted.
 
 The agentic loop split into a "local" execution path (local coding agent +
-Podman + cloud dev environment) and a "hosted" path (hosted AI platform),
+Docker Engine + cloud dev environment) and a "hosted" path (hosted AI platform),
 side by side — generalized from the deck's slide 6. Steps 1, 6, 7, 8 are
 shared/common; steps 2-5 branch into the two paths and converge again.
 """
@@ -28,8 +28,8 @@ n6 = node(shared_x, 530, NW, NH, ["6. Deploy & ship", "(Minutes)"], style="accen
 # local band (steps 2-5)
 local_x = 360
 l2 = node(local_x, 110, NW, NH, ["2. Agent understands", "local agent runtime"], style="accent")
-l3 = node(local_x, 250, NW, NH, ["3. Agent implements", "local coding agent + Podman"], style="accent")
-l4 = node(local_x, 390, NW, NH, ["4. Agent tests + docs", "local coding agent + Podman"], style="accent")
+l3 = node(local_x, 250, NW, NH, ["3. Agent implements", "local coding agent + Docker"], style="accent")
+l4 = node(local_x, 390, NW, NH, ["4. Agent tests + docs", "local coding agent + Docker"], style="accent")
 l5 = node(local_x, 530, NW, NH, ["5. Human review", "local coding agent + cloud dev environment"], style="accent")
 
 # hosted band (steps 2-5)

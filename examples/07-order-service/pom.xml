@@ -20,6 +20,14 @@
 
     <dependencyManagement>
         <dependencies>
+            <!-- GHSA-mcr4-qmvw-px4g: the platform BOM pins lz4-java 1.11.1 (via
+                 kafka-clients); 1.11.4 is the fixed patch on the same line.
+                 Declared before the BOM import so it takes precedence. -->
+            <dependency>
+                <groupId>at.yawk.lz4</groupId>
+                <artifactId>lz4-java</artifactId>
+                <version>1.11.4</version>
+            </dependency>
             <dependency>
                 <groupId>${quarkus.platform.group-id}</groupId>
                 <artifactId>${quarkus.platform.artifact-id}</artifactId>

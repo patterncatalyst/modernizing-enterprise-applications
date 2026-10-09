@@ -2,7 +2,7 @@
 """ch.01 figure: toolchain-and-repo-layout — the local toolchain and repo tree
 `_docs/01-prerequisites.md` walks a reader through before any pattern gets
 discussed: SDKMAN-managed JDK/Maven/Quarkus-CLI/Camel-CLI on one side, the
-podman-only compose stack (Postgres, Kafka in KRaft mode, the Grafana LGTM
+docker compose stack on Docker Engine (Postgres, Kafka in KRaft mode, the Grafana LGTM
 bundle) on the other, both landing in the same repository tree underneath.
 
 LEFT band — "Local toolchain, installed via SDKMAN": JDK 25 (Temurin) and
@@ -12,11 +12,12 @@ drawn dashed/ghost because the chapter is explicit both are optional
 conveniences scoped to later parts ("optional, but convenient" / "optional,
 scoped to Part 5 onward").
 
-RIGHT band — "Podman stack": the three services `compose.yaml` defines and
+RIGHT band — "Docker compose stack": the three services `compose.yaml` defines and
 `scripts/stack-up.sh` brings up and health-checks — Postgres, single-broker
 KRaft-mode Kafka ("no ZooKeeper"), and the Grafana LGTM bundle (Loki, Grafana,
 Tempo, Mimir, plus an embedded OpenTelemetry Collector). The chapter is
-explicit this is podman compose, never docker compose.
+explicit this is the docker compose v2 plugin on Docker Engine (DRQ-077;
+originally podman compose under DRQ-001).
 
 BOTTOM band — repository layout, the exact directories from the chapter's own
 orientation table: `examples/`, `tooling/`, `demos/`, `infra/`, `scripts/`,
@@ -26,7 +27,7 @@ calls out by name, drawn accent; the rest are drawn plain for context.
 Two edges carry the only two cross-references the chapter draws explicitly:
 Maven/the wrapper builds and runs `examples/` (`mvn -f examples/00-monolith
 package`, `./mvnw package`), and `scripts/stack-up.sh` / `stack-down.sh`
-bring the podman stack up and down.
+bring the compose stack up and down.
 
 Sourced from `_docs/01-prerequisites.md` ("What you need, and where it comes
 from", "Bring up the infrastructure stack", "Finding your way around the
@@ -57,10 +58,10 @@ camel_cli = node(390, 205, 330, 85, ["Camel CLI", "sdk install camel", "optional
 tool_nodes = [jdk, mvn, quarkus_cli, camel_cli]
 
 # ============================================================================
-# RIGHT band — podman stack (compose.yaml; podman compose, not docker)
+# RIGHT band — compose stack (compose.yaml; docker compose on Docker Engine)
 # ============================================================================
 band_podman = {"x": 760, "y": 60, "w": 720, "h": 250,
-               "label": "Podman stack — compose.yaml (podman compose, not docker)", "fill": "#eaf4ec"}
+               "label": "Compose stack — compose.yaml (docker compose, Docker Engine)", "fill": "#eaf4ec"}
 
 postgres = node(780, 120, 213, 160, ["Postgres", "monolith + review DB (shared)"], style="box")
 kafka = node(1013, 120, 213, 160, ["Kafka — KRaft mode", "single broker, no ZooKeeper"], style="box")
@@ -113,14 +114,14 @@ notes = [
     {"x": W / 2, "y": 32, "text": "ch.01 — Toolchain and repo layout: what you install, and where it lands",
      "anchor": "middle", "bold": True, "size": 16},
     {"x": W / 2, "y": 52,
-     "text": "SDKMAN-managed JDK/Maven/CLI tooling and the podman compose stack both build and back the examples/ tree checked into this repository",
+     "text": "SDKMAN-managed JDK/Maven/CLI tooling and the docker compose stack both build and back the examples/ tree checked into this repository",
      "anchor": "middle", "size": 11.5, "color": "#555555"},
 
     {"x": 20, "y": 632,
      "text": "Required for every chapter: JDK 25 (Temurin) and Maven 3.9.x, or each project's own ./mvnw. The Quarkus CLI and Camel CLI are optional conveniences scoped to Part 5 onward.",
      "anchor": "start", "size": 10.5, "color": "#555555"},
     {"x": 20, "y": 648,
-     "text": "podman compose, not docker compose, is a fixed decision: compose.yaml pins the exact Postgres, Kafka, and Grafana LGTM image tags Quarkus Dev Services and Testcontainers expect later.",
+     "text": "One engine for every path: Docker Engine runs the compose stack, Testcontainers/Dev Services and minikube, so the image tags compose.yaml pins are the ones every path runs.",
      "anchor": "start", "size": 10.5, "color": "#555555"},
 
     {"x": 20, "y": 684,

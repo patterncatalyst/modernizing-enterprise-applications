@@ -630,15 +630,15 @@ leadSlide("APPENDIX · CONTRACTS", "The behaviour-equivalence suite",
   addStatusTable(s, [
     { code: "JDK 25", name: "runtime", purpose: "Language runtime (SDKMAN); native via GraalVM/Mandrel." },
     { code: "Quarkus 3.40.1", name: "services", purpose: "The target runtime — fast startup, Dev Services, native builds." },
-    { code: "Spring Boot 3.5", name: "monolith", purpose: "The reference 'before'." },
-    { code: "Apache Camel 4.2x", name: "routing", purpose: "Strangler proxy and the orchestrated saga (Java DSL)." },
-    { code: "Kafka 3.8 (KRaft)", name: "events", purpose: "Outbox relays and saga choreography." },
-    { code: "PostgreSQL", name: "data", purpose: "Per-service schemas, the outbox." },
-    { code: "Apicurio 3.1.7", name: "contracts", purpose: "Avro schema registry." },
-    { code: "Debezium 3.0", name: "CDC", purpose: "Inventory backfill — transition-only." },
-    { code: "Istio 1.29 / LGTM", name: "operate", purpose: "Mesh + mTLS; Loki/Grafana/Tempo/Mimir + OpenTelemetry (minikube)." },
+    { code: "Spring Boot 4.1", name: "monolith", purpose: "The reference 'before'." },
+    { code: "Apache Camel 4.22", name: "routing", purpose: "Strangler proxy and the orchestrated saga (Java DSL)." },
+    { code: "Kafka 4.3 (KRaft)", name: "events", purpose: "Outbox relays and saga choreography." },
+    { code: "PostgreSQL 18", name: "data", purpose: "Per-service schemas, the outbox." },
+    { code: "Apicurio 3.3.3", name: "contracts", purpose: "Avro schema registry." },
+    { code: "Debezium 3.7", name: "CDC", purpose: "Inventory backfill — transition-only." },
+    { code: "Istio 1.31 / LGTM", name: "operate", purpose: "Mesh + mTLS; Loki/Grafana/Tempo/Mimir + OpenTelemetry (minikube)." },
   ], { colW: [3.05, 1.95, 7.09], rowH: 0.42, fontSize: 11.5 });
-  addNotes(s, "The stack, pinned. JDK 25 is the runtime, with native images via GraalVM or Mandrel. Quarkus 3.40.1 runs the six services; Spring Boot 3.5 is the monolith we started from; Camel 4.2x is the strangler proxy and the orchestrated saga. Kafka in KRaft mode is the event backbone behind the outbox relays and the choreographed sagas; PostgreSQL holds each service's own schema and its outbox. Apicurio is the Avro registry; Debezium handled the inventory backfill and was retired afterward. Istio and the LGTM stack — Loki, Grafana, Tempo, Mimir — with OpenTelemetry provide the mesh and observability on minikube. These versions drift; the repository's decisions log is the source of truth, and the numbers are worth re-checking against upstream before a talk.");
+  addNotes(s, "The stack, pinned. JDK 25 is the runtime, with native images via GraalVM or Mandrel. Quarkus 3.40.1 runs the six services; Spring Boot is the monolith we started from (3.5 then, 4.1 now); Camel 4.22 is the strangler proxy and the orchestrated saga. Kafka in KRaft mode is the event backbone behind the outbox relays and the choreographed sagas; PostgreSQL holds each service's own schema and its outbox. Apicurio is the Avro registry; Debezium handled the inventory backfill and was retired afterward. Istio and the LGTM stack — Loki, Grafana, Tempo, Mimir — with OpenTelemetry provide the mesh and observability on minikube. These versions drift; the repository's decisions log is the source of truth, and the numbers are worth re-checking against upstream before a talk.");
 }
 
 {
@@ -688,11 +688,11 @@ twoUp("APPENDIX · FIGURES", "Background figures (2 of 2)",
   addContentTitle(s, "CLOSING · GO DEEPER", "Where to go from here");
   leadBullets(s, [
     { lead: "The book", text: "the full 32-chapter tutorial site — every chapter with a runnable example and a verification footer." },
-    { lead: "The repo", text: "the monolith, the six services, the proxy, the equivalence suite, and the deploy tree — runnable on Podman and minikube." },
+    { lead: "The repo", text: "the monolith, the six services, the proxy, the equivalence suite, and the deploy tree — runnable on Docker Engine and minikube." },
     { lead: "Start where your pain is", text: "a smell in the monolith section, the seam-finding method, or the supply-chain gate you can run today." },
   ], { fontSize: 17 });
   addCaption(s, "Modernizing Enterprise Applications — 201 implementation deep-dive · " + REV);
-  addNotes(s, "Where to go next. The book site carries all thirty-two chapters, each with a runnable example and a verification footer that states how far to trust it. The repository runs on Podman and minikube — the monolith, the six services, the proxy, the equivalence suite, and the Kubernetes deploy tree. The most useful entry point is wherever your own pain is: pick a smell from the monolith section, apply the seam-finding method to your own domain, or run the supply-chain gate against your own artifacts this afternoon and see what it reports. Thank you.");
+  addNotes(s, "Where to go next. The book site carries all thirty-two chapters, each with a runnable example and a verification footer that states how far to trust it. The repository runs on Docker Engine and minikube — the monolith, the six services, the proxy, the equivalence suite, and the Kubernetes deploy tree. The most useful entry point is wherever your own pain is: pick a smell from the monolith section, apply the seam-finding method to your own domain, or run the supply-chain gate against your own artifacts this afternoon and see what it reports. Thank you.");
 }
 
 pres.writeFile({ fileName: OUT })

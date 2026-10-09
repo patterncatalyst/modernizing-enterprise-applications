@@ -10,6 +10,9 @@
 -- (examples/00-monolith/) per _plans/iterations/r02-plan.md. This script
 -- only ensures the extensions the monolith will want are present so Flyway's
 -- first migration doesn't need superuser privileges to add them later.
+--
+-- DRQ-077: with the monolith decommissioned, 10-monolith-public-schema.sh
+-- (next in this directory) applies its committed migrations to `public`.
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";

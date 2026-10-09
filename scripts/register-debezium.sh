@@ -49,7 +49,7 @@ fi
 echo "Setting REPLICA IDENTITY FULL on public.inventory_items (so Debezium emits a full"
 echo "before-image on UPDATE/DELETE, not just the Postgres default primary-key-only"
 echo "before-image) ..."
-podman exec mea-postgres psql -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" \
+docker exec mea-postgres psql -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" \
   -c "ALTER TABLE public.inventory_items REPLICA IDENTITY FULL;"
 
 echo "Registering connector '${CONNECTOR_NAME}' against ${CONNECT_URL} ..."

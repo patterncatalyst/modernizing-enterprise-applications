@@ -304,22 +304,18 @@ Testcontainers working as designed: at startup, its container-runtime client
 looks for a reachable Docker Engine API along a short, ordered list of
 places — the `DOCKER_HOST` environment variable first, then a
 `~/.testcontainers.properties` override, then a handful of well-known local
-socket paths — and connects to whichever one answers. Podman's rootless API
-socket speaks that same Docker-compatible API, so once the local toolchain
-exports `DOCKER_HOST` at the user's Podman socket (enabled once per machine
-with `systemctl --user enable --now podman.socket`, the kind of one-time
-setup this project's Chapter 1, "Prerequisites & the Toolchain," covers),
-every `new PostgreSQLContainer<>("postgres:16-alpine")` call above just
-works — no code in the monolith's test tree has any idea it is talking to
-Podman rather than Docker, and none of it should have to. The one caveat
-worth knowing before a test run mysteriously hangs: Testcontainers' Ryuk
-resource-reaper, which normally guarantees a leaked container gets cleaned up
-even after a crashed JVM, needs privileges that a locked-down rootless Podman
-setup doesn't always grant by default; where that's the case, disabling Ryuk
-(`TESTCONTAINERS_RYUK_DISABLED=true`) trades automatic cleanup for a test run
-that actually starts, at the cost of remembering to `podman rm -f` an
-abandoned container by hand once in a while. Either way, the self-provisioning
-promise holds: nobody has to run `podman compose up` before `mvn verify` — the
+socket paths — and connects to whichever one answers. On this project's
+toolchain that is Docker Engine's own `/var/run/docker.sock` (Chapter 1,
+"Prerequisites & the Toolchain," installs `docker-ce` and adds you to the
+`docker` group), so no `DOCKER_HOST` export is needed and every
+`new PostgreSQLContainer<>("postgres:16-alpine")` call above just works — no
+code in the monolith's test tree knows or cares which engine answered. The
+one caveat worth knowing before a test run mysteriously hangs: Testcontainers'
+Ryuk resource-reaper, which guarantees a leaked container gets cleaned up even
+after a crashed JVM, needs to reach the same socket; a non-default docker
+context or a stray `DOCKER_HOST` pointing elsewhere is the usual cause, and
+`docker context use default` the usual fix. Either way, the self-provisioning
+promise holds: nobody has to run `docker compose up` before `mvn verify` — the
 Postgres instance these tests need is thrown away and rebuilt on every run,
 which is exactly what makes them trustworthy rather than merely convenient.
 
@@ -473,7 +469,7 @@ To see the behavior-equivalence suite run against a live monolith:
 
 ```bash
 # 1. Postgres for the running app (separate from the throwaway Testcontainers instances above)
-podman compose --env-file .env up -d postgres
+docker compose --env-file .env up -d postgres
 
 # 2. build and run the monolith; Flyway migrates and seeds automatically
 cd examples/00-monolith && mvn -q -DskipTests package
@@ -487,6 +483,14 @@ demos/demo-equivalence.sh
 A green run reports every scenario folder passing against `http://localhost:8080`
 — the monolith baseline this entire suite is captured from, and the baseline
 every later extraction gets measured against.
+
+The listings in this chapter are the "before" monolith as it stood on the
+`reference/monolith-before` branch: Spring Boot 3.5, Testcontainers 1.x and
+`postgres:16-alpine`. The frozen shell on `main` has since moved to Spring Boot
+4.1.1 (DRQ-077), where the same test reads `new
+PostgreSQLContainer("postgres:18.6-alpine")` from Testcontainers 2's
+`org.testcontainers.postgresql` package and gets its `TestRestTemplate` from
+`spring-boot-resttestclient`; the shape of the pyramid is unchanged.
 
 ## Cross-check
 
@@ -509,7 +513,7 @@ by hand during authoring.
   validation, and error-mapping a unit test structurally can't see; Tier 3
   `@DataJpaTest` and `@SpringBootTest` classes prove the same logic survives
   contact with a real, Flyway-migrated Postgres, provisioned fresh by
-  Testcontainers on every run over the local Podman socket.
+  Testcontainers on every run over the local Docker Engine socket.
 - Surefire and Failsafe split those tiers by filename convention alone
   (`*Test` vs `*IT`) — powerful because it needs zero configuration, fragile
   because nothing stops a slow, container-backed test from being named

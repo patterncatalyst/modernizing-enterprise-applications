@@ -152,7 +152,7 @@ is more useful than describing skills in the abstract:
   including the tooling figure Chapter 5 showed, from a short Python spec of
   boxes and arrows, so the diagrams across 33 chapters share one visual
   language instead of each chapter inventing its own.
-- **`lgtm-podman-stack`** stands up the local observability substrate —
+- **`lgtm-docker-stack`** stands up the local observability substrate —
   Postgres, Kafka, the LGTM stack — that every extraction's Dev Services and
   behavior-equivalence suite run against.
 - **`lgtm-github`** carries the release-sync and commit-convention discipline

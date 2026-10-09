@@ -17,7 +17,7 @@ import org.junit.jupiter.api.Test;
  * compatibility rule against the three evolution fixtures under
  * {@code src/test/resources/avro/}: v1 registers cleanly, v2 (adds
  * {@code giftMessage} WITH a default) is accepted, and v3 (retypes {@code
- * totalCents} {@code long -> string}) is rejected with a 409 {@code
+ * totalCents} {@code long -> string}) is rejected with a 400 {@code
  * RuleViolationException}.
  *
  * <p>Talks to Apicurio's v3 REST API directly via REST Assured (plain HTTP,
@@ -27,9 +27,13 @@ import org.junit.jupiter.api.Test;
  * profile because application.properties deliberately leaves {@code
  * mp.messaging.connector.smallrye-kafka.apicurio.registry.url} unset there.
  * Every request/response shape below (artifact creation, the rules
- * endpoint, the 409 payload on violation) was verified by hand against a
+ * endpoint, the payload on violation) was verified by hand against a
  * live {@code quay.io/apicurio/apicurio-registry:3.1.7} container before
- * being encoded here — not guessed from documentation.
+ * being encoded here — not guessed from documentation. DRQ-077 moved the
+ * registry to 3.3.3, re-checked by hand the same way: the requests are
+ * unchanged, but a rule violation now answers HTTP 400 (an RFC 7807 problem
+ * body, still {@code "name": "RuleViolationException"}) where 3.1.7 answered
+ * 409.
  */
 @QuarkusTest
 class SchemaCompatibilityTest {
@@ -100,8 +104,9 @@ class SchemaCompatibilityTest {
                 .statusCode(200)
                 .body("version", equalTo("2"));
 
-        // 4. v3 (retypes totalCents long -> string) MUST be rejected: 409 +
-        // RuleViolationException, per Apicurio's BACKWARD rule.
+        // 4. v3 (retypes totalCents long -> string) MUST be rejected: 400 +
+        // RuleViolationException, per Apicurio's BACKWARD rule (409 on
+        // registry versions before 3.3).
         given()
                 .baseUri(baseUrl)
                 .contentType("application/json")
@@ -111,7 +116,7 @@ class SchemaCompatibilityTest {
                 .when()
                 .post("/groups/default/artifacts/" + ARTIFACT_ID + "/versions")
                 .then()
-                .statusCode(409)
+                .statusCode(400)
                 .body("name", equalTo("RuleViolationException"));
     }
 

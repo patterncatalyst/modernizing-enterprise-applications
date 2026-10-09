@@ -37,58 +37,55 @@ deploy/k8s/
     kustomization.yaml
   overlays/
     minikube/
-      kustomization.yaml        # ../../base + image newTags + strangler-proxy -> NodePort
+      kustomization.yaml        # ../../base + istio + observability; image tags,
+                                # pullPolicy Never, strangler-proxy -> NodePort 30888
+  scripts/                      # setup-profile, install-istio, build-images, deploy, teardown
 ```
 
-## Build + load images into minikube (podman driver)
+## Cluster, images, deploy (Docker Engine + minikube)
 
-This repo's toolchain is **podman**, not docker (see `compose.yaml`'s header
-and `lgtm-docker-stack`/project convention) — use `minikube podman-env`, not
-`minikube docker-env`.
+The minikube path runs on **Docker Engine** (docker-ce, docker context
+`default`) on a Fedora or RHEL host, with minikube's `docker` driver and the
+`containerd` runtime inside the node (DRQ-077, superseding the original podman
+driver). Docker Desktop is never required. Every script names its target
+explicitly (`minikube -p mea`, `kubectl --context mea`) and never touches
+kubectl's current-context or `minikube config`.
 
 ```bash
-eval $(minikube podman-env)
+# 1. Profile `mea`: Kubernetes v1.36.5, docker driver, containerd, NodePorts
+#    30888 (strangler-proxy) and 30300 (Grafana) published on 127.0.0.1.
+deploy/k8s/scripts/setup-profile.sh
 
-# JVM-mode image per service (repeat for all 8 — build context is each
-# service's own examples/<svc> directory, not the repo root, since none of
-# these services share a reactor module the way datamesh's domain-model does)
-podman build -f examples/01-strangler-proxy/src/main/docker/Dockerfile.jvm \
-  -t mea/strangler-proxy:latest examples/01-strangler-proxy
-podman build -f examples/02-review-service/src/main/docker/Dockerfile.jvm \
-  -t mea/review-service:latest examples/02-review-service
-podman build -f examples/03-notification-service/src/main/docker/Dockerfile.jvm \
-  -t mea/notification-service:latest examples/03-notification-service
-podman build -f examples/04-inventory-service/src/main/docker/Dockerfile.jvm \
-  -t mea/inventory-service:latest examples/04-inventory-service
-podman build -f examples/05-payment-service/src/main/docker/Dockerfile.jvm \
-  -t mea/payment-service:latest examples/05-payment-service
-podman build -f examples/06-shipping-service/src/main/docker/Dockerfile.jvm \
-  -t mea/shipping-service:latest examples/06-shipping-service
-podman build -f examples/07-order-service/src/main/docker/Dockerfile.jvm \
-  -t mea/order-service:latest examples/07-order-service
-podman build -f examples/08-graphql-gateway/src/main/docker/Dockerfile.jvm \
-  -t mea/graphql-gateway:latest examples/08-graphql-gateway
+# 2. Istio 1.31.1 (istioctl 1.31.1 on PATH)
+deploy/k8s/scripts/install-istio.sh
+
+# 3. mvn package -> docker build -f src/main/docker/Dockerfile.jvm
+#    -> minikube -p mea image load mea/<svc>:1.0, for all eight services
+deploy/k8s/scripts/build-images.sh
+
+# 4. kubectl --context mea apply -k deploy/k8s/overlays/minikube, then wait
+deploy/k8s/scripts/deploy.sh
+
+# 5. Reach it directly on the published NodePorts (no port-forward, no tunnel)
+curl -s http://127.0.0.1:30888/api/inventory
+xdg-open http://127.0.0.1:30300          # Grafana
+
+# 6. Stop when idle (one local cluster at a time)
+deploy/k8s/scripts/teardown.sh            # --delete to remove the profile
 ```
 
-Each `Dockerfile.jvm` expects `target/quarkus-app/` to already exist (run
-`mvn package` in that service's directory first). Alternatively, build
-anywhere and sideload with `minikube image load mea/<svc>:latest`, which
-avoids the `podman-env` shell-env dance entirely:
+Images are registry-free (`mea/<svc>:1.0`). The minikube overlay sets
+`imagePullPolicy: Never` on all eight Deployments, so the kubelet only ever
+uses the image `minikube image load` put in the node; a missing load shows as
+`ErrImageNeverPull` rather than a failed pull from `docker.io/mea/...`. After
+rebuilding, `build-images.sh <svc>` reloads and restarts that Deployment.
+`Dockerfile.native` is also available per service (`mvn package -Dnative
+-Dquarkus.native.container-build=true`, Mandrel builder on Docker); swap it for
+`Dockerfile.jvm` in `build-images.sh` to run native.
 
-```bash
-mvn -f examples/04-inventory-service/pom.xml package
-podman build -f examples/04-inventory-service/src/main/docker/Dockerfile.jvm \
-  -t mea/inventory-service:latest examples/04-inventory-service
-minikube image load mea/inventory-service:latest
-```
-
-Every image name is registry-free (`mea/<svc>`, no registry host) and every
-Deployment sets `imagePullPolicy: IfNotPresent` (`deploy/k8s/base/*.yaml`),
-so once the exact `name:tag` exists in minikube's image store the kubelet
-never attempts a network pull. `Dockerfile.native` is also available per
-service (native-image builds, `mvn package -Pnative`) for the lighter/
-faster-startup path; swap `Dockerfile.jvm` for `Dockerfile.native` above if
-you build native.
+Host ports are fixed when the profile is created. Adding a NodePort means
+adding it to `deploy/k8s/scripts/lib.sh` and recreating the profile
+(`setup-profile.sh --replace`).
 
 `examples/04-inventory-service` and `examples/05-payment-service` did not
 previously have a `src/main/docker/` directory (04) or had an empty one
@@ -106,7 +103,7 @@ kubectl kustomize deploy/k8s/base
 kubectl kustomize deploy/k8s/overlays/minikube
 
 # 2. Client-side admission validation of every rendered object:
-kubectl kustomize deploy/k8s/overlays/minikube | kubectl apply --dry-run=client -f -
+kubectl kustomize deploy/k8s/overlays/minikube | kubectl --context mea apply --dry-run=client -f -
 ```
 
 Step 2 needs a reachable Kubernetes API server for its RESTMapping
@@ -125,7 +122,7 @@ needs a live cluster, which this step is explicitly scoped to avoid.
 ## Apply (once a real minikube cluster is up)
 
 ```bash
-kubectl apply -k deploy/k8s/overlays/minikube
+kubectl --context mea apply -k deploy/k8s/overlays/minikube   # or deploy/k8s/scripts/deploy.sh
 ```
 
 ## Env contract

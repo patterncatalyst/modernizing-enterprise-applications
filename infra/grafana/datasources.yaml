@@ -4,12 +4,19 @@
 # (r02 walking skeleton, S3 — see _plans/iterations/r02-plan.md).
 #
 # Mounted into the lgtm container at
-# /otel-lgtm/grafana/conf/provisioning/datasources/datasources.yaml so all
+# /otel-lgtm/grafana/conf/provisioning/datasources/grafana-datasources.yaml so all
 # three signal datasources (Tempo/Loki/Prometheus) are wired on first boot —
 # no manual click-through in the Grafana UI.
 #
-# Adapted from the lgtm-podman-stack skill template
-# (templates/grafana-datasources.yaml) verbatim except for this header.
+# The mount target is the image's OWN default provisioning filename
+# (grafana-datasources.yaml), not a new file next to it: Grafana loads every
+# *.yaml in that directory in lexical order and the later file wins on a uid
+# collision, so a differently named datasources.yaml was silently overridden
+# by the image's built-in tempo/loki/prometheus entries (DRQ-077). Backends
+# are addressed as 127.0.0.1, as otel-lgtm 0.36.0's own file does.
+#
+# Adapted from the lgtm-docker-stack skill template
+# (templates/grafana-datasources.yaml).
 
 apiVersion: 1
 
@@ -18,7 +25,7 @@ datasources:
   - name: Tempo
     type: tempo
     access: proxy
-    url: http://localhost:3200
+    url: http://127.0.0.1:3200
     uid: tempo
     isDefault: false
     editable: true
@@ -58,7 +65,7 @@ datasources:
   - name: Loki
     type: loki
     access: proxy
-    url: http://localhost:3100
+    url: http://127.0.0.1:3100
     uid: loki
     isDefault: false
     editable: true
@@ -74,7 +81,7 @@ datasources:
   - name: Prometheus
     type: prometheus
     access: proxy
-    url: http://localhost:9090
+    url: http://127.0.0.1:9090
     uid: prometheus
     isDefault: true
     editable: true

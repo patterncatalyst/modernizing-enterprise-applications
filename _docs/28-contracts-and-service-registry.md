@@ -184,7 +184,7 @@ sitting above it is explicit about the blast radius: "it is used ONLY by
 ```yaml
 # compose.yaml
 apicurio:
-  image: quay.io/apicurio/apicurio-registry:${APICURIO_IMAGE_TAG:-3.1.7}
+  image: quay.io/apicurio/apicurio-registry:${APICURIO_IMAGE_TAG:-3.3.3}
   container_name: mea-apicurio
   ports:
     - "${APICURIO_HOST_PORT:-8095}:8080"
@@ -193,7 +193,7 @@ apicurio:
     - APICURIO_STORAGE_SQL_KIND=h2
   mem_limit: 512m
   healthcheck:
-    test: ["CMD", "curl", "-sf", "http://localhost:8080/apis/registry/v3/system/info"]
+    test: ["CMD", "curl", "-sf", "http://localhost:9000/health/ready"]
     interval: 5s
     timeout: 3s
     retries: 12
@@ -213,7 +213,11 @@ healthcheck's `/apis/registry/v3/system/info` path, and the application's own
 `.../apis/registry/v3` registry URL all agree on that same major version,
 which matters because Apicurio's v2 and v3 REST APIs are not
 wire-compatible — a mismatch here wouldn't fail loudly, it would fail as
-confusing 404s the first time anything tried to register a schema.
+confusing 404s the first time anything tried to register a schema. (Since
+DRQ-077 the server image is 3.3.3, still the v3 API the 3.1.7 client speaks;
+3.3 moved the health endpoints to the management port, so the healthcheck
+now probes `:9000/health/ready` inside the container. The rest of this
+section describes the 3.1.7 bring-up as it happened.)
 
 Second, the storage: `APICURIO_STORAGE_KIND=sql` with
 `APICURIO_STORAGE_SQL_KIND=h2`, an embedded, in-memory H2 database rather
@@ -308,7 +312,7 @@ target, Quarkus Dev Services stands up its own disposable Testcontainers
 instance automatically. Here that means two containers, not one — a Kafka
 broker *and* an Apicurio registry — both ephemeral, both torn down when the
 test JVM exits, which is exactly what makes `mvn verify` on this module
-self-contained: no dependency on the long-lived podman-stack Apicurio
+self-contained: no dependency on the long-lived compose-stack Apicurio
 instance at all, as long as a container runtime is available to the test run.
 
 ## Register, serialize, deserialize
@@ -496,27 +500,30 @@ given()
         .when()
         .post("/groups/default/artifacts/" + ARTIFACT_ID + "/versions")
         .then()
-        .statusCode(409)
+        .statusCode(400)
         .body("name", equalTo("RuleViolationException"));
 ```
 
-HTTP 409, `RuleViolationException`. This is the registration that never
+HTTP 400, `RuleViolationException`. (The chapter was written against
+Apicurio 3.1.7, which answered 409; 3.3 reports the same violation as a 400
+problem document with the same `name`, and the test and demo moved with it
+under DRQ-077.) This is the registration that never
 happens — the schema is rejected at the moment someone tries to publish it,
 not discovered as a deserialization failure in a consumer three services
 downstream, days or weeks later. `SchemaCompatibilityTest`'s own class
 javadoc notes that every one of these request/response shapes — the artifact
-creation body, the rules endpoint, the exact 409 payload — "was verified by
+creation body, the rules endpoint, the exact violation payload — "was verified by
 hand against a live `quay.io/apicurio/apicurio-registry:3.1.7` container
 before being encoded here — not guessed from documentation," which matters
 because Apicurio's exact REST contract (the v3 API in particular) is young
 enough that assuming shapes from memory would have been a real risk.
 
 `demos/demo-schema-registry.sh` runs this identical progression against the
-live podman stack rather than Dev Services — create an artifact, apply the
-BACKWARD rule, register v2 (expect 200), register v3 (expect 409) — and
+live compose stack rather than Dev Services — create an artifact, apply the
+BACKWARD rule, register v2 (expect 200), register v3 (expect 400) — and
 prints its own pass/fail verdict based on the actual HTTP status codes it
 observes, not a canned expectation. Run end to end against the live stack,
-it reports exactly this outcome: v2 accepted, v3 rejected with 409 and
+it reported exactly this outcome: v2 accepted, v3 rejected (409 on 3.1.7) and
 `RuleViolationException`, the same two results `SchemaCompatibilityTest`
 already proved under Dev Services.
 
@@ -594,7 +601,7 @@ rest of the migration is a smaller lift than it is.
   set of safe type promotions (`int`→`long`, `long`→`double`, and similarly
   narrow cases), and `totalCents`'s `long`→`string` retype falls well
   outside that set, which is exactly why Apicurio's BACKWARD rule rejects it
-  with HTTP 409 rather than attempting a conversion that has no defined
+  (HTTP 400 on Apicurio 3.3, 409 on 3.1) rather than attempting a conversion that has no defined
   meaning.
 - **Proving a mechanism and adopting it project-wide are different
   commitments** — this chapter proves Avro + Apicurio registration,
@@ -637,8 +644,8 @@ fields, `paymentMethod` included), and
 `examples/03-notification-service/.../OrderPlacedEvent.java` (six fields,
 `paymentMethod` absent) — all three read directly, not reconstructed from
 memory. Re-confirm by reproducing: `demos/demo-schema-registry.sh` against a
-live `podman compose up` stack, and `mvn -f examples/09-schema-registry-demo/pom.xml
-verify` independently of the podman stack entirely (Dev Services needs only
+live `docker compose up` stack, and `mvn -f examples/09-schema-registry-demo/pom.xml
+verify` independently of the compose stack entirely (Dev Services needs only
 a container runtime). The one property worth re-checking on a fresh run:
 Apicurio's H2 storage is ephemeral by design, so any artifact registered by
 hand against the live stack's registry (as opposed to by the test suite or

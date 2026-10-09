@@ -2,7 +2,7 @@
 #
 # Ported from infra/otelcol/config.yaml (the compose stack's Collector
 # config, mounted at /otel-lgtm/otelcol-config.yaml inside the single
-# grafana/otel-lgtm:0.8.1 all-in-one container — see compose.yaml's `lgtm`
+# grafana/otel-lgtm all-in-one container (0.36.0 since DRQ-077) — see compose.yaml's `lgtm`
 # service). Same container shape in-cluster: one Deployment, one container,
 # Tempo/Loki/Mimir/Grafana all co-located at localhost inside it, so the
 # exporter endpoints below are unchanged from the compose version.
@@ -33,16 +33,15 @@ data:
             endpoint: 0.0.0.0:4317
           http:
             endpoint: 0.0.0.0:4318
-      # Self-scrape: the otel-lgtm image's startup script polls Prometheus
-      # for otelcol_process_uptime_total to decide the stack is ready.
+      # Self-monitoring: scrape the collector's own metrics endpoint.
       prometheus/collector:
         config:
           scrape_configs:
             - job_name: 'opentelemetry-collector'
               static_configs:
-                - targets: ['localhost:8888']
+                - targets: ['127.0.0.1:8888']
       # ch.30: mesh metrics. Envoy's istio-proxy sidecar (native sidecar in
-      # Istio 1.29 -- an initContainer with restartPolicy: Always, but still
+      # Istio 1.29+ -- an initContainer with restartPolicy: Always, but still
       # a real running container with its own stats port) exposes
       # Prometheus-format stats on :15090/stats/prometheus, including
       # istio_requests_total, istio_request_duration_milliseconds, etc.
@@ -76,6 +75,13 @@ data:
                 - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_name]
                   target_label: app
 
+    # otel-lgtm 0.36.0's run-all.sh waits for http://127.0.0.1:13133/ready
+    # before it reports the stack ready (DRQ-077).
+    extensions:
+      health_check:
+        endpoint: 0.0.0.0:13133
+        path: "/ready"
+
     processors:
       memory_limiter:
         check_interval: 1s
@@ -95,19 +101,20 @@ data:
     exporters:
       # Tempo's OTLP ingest port is 4418 in this image's bundled
       # tempo-config.yaml (not 3200, which is Tempo's query/API port).
-      otlphttp/tempo:
-        endpoint: http://localhost:4418
+      # Exporter names follow the image's own otlp_http/<signal> convention.
+      otlp_http/traces:
+        endpoint: http://127.0.0.1:4418
         tls:
           insecure: true
 
       # Prometheus v3's native OTLP receiver (not remote-write).
-      otlphttp/metrics:
-        endpoint: http://localhost:9090/api/v1/otlp
+      otlp_http/metrics:
+        endpoint: http://127.0.0.1:9090/api/v1/otlp
         tls:
           insecure: true
 
-      otlphttp/loki:
-        endpoint: http://localhost:3100/otlp
+      otlp_http/logs:
+        endpoint: http://127.0.0.1:3100/otlp
         tls:
           insecure: true
 
@@ -117,6 +124,7 @@ data:
         sampling_thereafter: 100
 
     service:
+      extensions: [health_check]
       telemetry:
         logs:
           level: info
@@ -124,12 +132,12 @@ data:
         traces:
           receivers: [otlp]
           processors: [memory_limiter, resource, batch]
-          exporters: [otlphttp/tempo]
+          exporters: [otlp_http/traces]
         metrics:
           receivers: [otlp, prometheus/collector, prometheus/istio-mesh]
           processors: [memory_limiter, resource, batch]
-          exporters: [otlphttp/metrics]
+          exporters: [otlp_http/metrics]
         logs:
           receivers: [otlp]
           processors: [memory_limiter, resource, batch]
-          exporters: [otlphttp/loki]
+          exporters: [otlp_http/logs]

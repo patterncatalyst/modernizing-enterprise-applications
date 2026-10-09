@@ -1,18 +1,26 @@
 # OpenShift appendix — live verification evidence
-# Captured 2026-10-07T02:29:57Z on CRC 2.64.0+458092 / OpenShift 4.22.14
+# Captured 2026-10-09T21:52:49Z on CRC 2.64.0+458092 / OpenShift 4.22.14 (DRQ-077: Docker Engine host, newest stable pins)
 
 ## oc get pods -n mea
-NAME                                    READY   STATUS    RESTARTS        AGE
-graphql-gateway-56d756db7f-bghqk        1/1     Running   0               9m33s
-inventory-service-65b8f4b764-wdhjm      1/1     Running   4 (4m14s ago)   9m33s
-kafka-0                                 1/1     Running   0               3m55s
-notification-service-55fbd9d966-qt8xk   1/1     Running   9 (4m20s ago)   9m33s
-order-service-864dbf8f66-kjd2h          1/1     Running   4 (4m7s ago)    9m33s
-payment-service-7dcc588c68-xvqzw        1/1     Running   4 (4m29s ago)   9m33s
-postgres-0                              1/1     Running   0               4m7s
-review-service-745b864f8c-wnzht         1/1     Running   1               9m33s
-shipping-service-79fd848f4c-d5mwz       1/1     Running   4 (4m29s ago)   9m33s
-strangler-proxy-848449b845-sq7nh        1/1     Running   0               9m33s
+NAME                                    READY   STATUS      RESTARTS      AGE
+graphql-gateway-1-build                 0/1     Completed   0             2m10s
+graphql-gateway-56d756db7f-hzb9b        1/1     Running     0             109s
+inventory-service-1-build               0/1     Completed   0             4m26s
+inventory-service-65b8f4b764-znl9q      1/1     Running     1 (86s ago)   109s
+kafka-0                                 1/1     Running     0             109s
+notification-service-1-build            0/1     Completed   0             5m1s
+notification-service-55fbd9d966-ss7jc   1/1     Running     2 (87s ago)   109s
+order-service-1-build                   0/1     Completed   0             2m45s
+order-service-864dbf8f66-pvrvm          1/1     Running     1 (85s ago)   109s
+payment-service-1-build                 0/1     Completed   0             3m53s
+payment-service-7dcc588c68-h5hwm        1/1     Running     2 (86s ago)   109s
+postgres-0                              1/1     Running     0             109s
+review-service-1-build                  0/1     Completed   0             5m32s
+review-service-745b864f8c-qjdx4         1/1     Running     0             109s
+shipping-service-1-build                0/1     Completed   0             3m21s
+shipping-service-79fd848f4c-zww98       1/1     Running     2 (86s ago)   109s
+strangler-proxy-1-build                 0/1     Completed   0             5m59s
+strangler-proxy-848449b845-jpr6j        1/1     Running     0             109s
 
 ## oc get route -n mea
 NAME              HOST/PORT                              PATH   SERVICES          PORT   TERMINATION     WILDCARD
@@ -21,31 +29,45 @@ strangler-proxy   strangler-proxy-mea.apps-crc.testing          strangler-proxy 
 
 ## oc get sa,rolebinding -n mea (infra SCC grant)
 NAME        AGE
-mea-infra   9m33s
+mea-infra   109s
 NAME            ROLE                                          AGE
-mea-infra-scc   ClusterRole/system:openshift:scc:nonroot-v2   9m34s
+mea-infra-scc   ClusterRole/system:openshift:scc:nonroot-v2   109s
 
 ## SCC + assigned UID per pod
-graphql-gateway-56d756db7f-bghqk	 scc=restricted-v2	 runAsUser=1000660000
-inventory-service-65b8f4b764-wdhjm	 scc=restricted-v2	 runAsUser=1000660000
+graphql-gateway-1-build	 scc=privileged	 runAsUser=0
+graphql-gateway-56d756db7f-hzb9b	 scc=restricted-v2	 runAsUser=1000660000
+inventory-service-1-build	 scc=privileged	 runAsUser=0
+inventory-service-65b8f4b764-znl9q	 scc=restricted-v2	 runAsUser=1000660000
 kafka-0	 scc=nonroot-v2	 runAsUser=1000
-notification-service-55fbd9d966-qt8xk	 scc=restricted-v2	 runAsUser=1000660000
-order-service-864dbf8f66-kjd2h	 scc=restricted-v2	 runAsUser=1000660000
-payment-service-7dcc588c68-xvqzw	 scc=restricted-v2	 runAsUser=1000660000
+notification-service-1-build	 scc=privileged	 runAsUser=0
+notification-service-55fbd9d966-ss7jc	 scc=restricted-v2	 runAsUser=1000660000
+order-service-1-build	 scc=privileged	 runAsUser=0
+order-service-864dbf8f66-pvrvm	 scc=restricted-v2	 runAsUser=1000660000
+payment-service-1-build	 scc=privileged	 runAsUser=0
+payment-service-7dcc588c68-h5hwm	 scc=restricted-v2	 runAsUser=1000660000
 postgres-0	 scc=nonroot-v2	 runAsUser=70
-review-service-745b864f8c-wnzht	 scc=restricted-v2	 runAsUser=1000660000
-shipping-service-79fd848f4c-d5mwz	 scc=restricted-v2	 runAsUser=1000660000
-strangler-proxy-848449b845-sq7nh	 scc=restricted-v2	 runAsUser=1000660000
+review-service-1-build	 scc=privileged	 runAsUser=0
+review-service-745b864f8c-qjdx4	 scc=restricted-v2	 runAsUser=1000660000
+shipping-service-1-build	 scc=privileged	 runAsUser=0
+shipping-service-79fd848f4c-zww98	 scc=restricted-v2	 runAsUser=1000660000
+strangler-proxy-1-build	 scc=privileged	 runAsUser=0
+strangler-proxy-848449b845-jpr6j	 scc=restricted-v2	 runAsUser=1000660000
 
-## graphql-gateway /q/health/ready via Route (https edge)
-{
-    "status": "UP",
-    "checks": [
-    ]
-}
-## strangler-proxy Route -> /api/inventory (external client -> Route -> Camel -> inventory-service -> Postgres)
-[{"sku":"SKU-WIDGET-001","name":"Standard Widget","priceCents":1999,"quantityOnHand":100},{"sku":"SKU-GADGET-002","name":"Deluxe Gadget","priceCents":4999,"quantityOnHand":50},{"sku":"SKU-GIZMO-003","name":"Pocket Gizmo","priceCents":999,"quantityOnHand":5}]
+## Images built in the cluster and mirrored in (ImageStreamTags)
+TAG
+graphql-gateway:1.0
+inventory-service:1.0
+kafka:4.3.1
+notification-service:1.0
+order-service:1.0
+payment-service:1.0
+postgres:18.6-alpine
+review-service:1.0
+shipping-service:1.0
+strangler-proxy:1.0
 
-## KNOWN GAP: review-service -> /api/reviews returns 500
-## cause: reads the monolith's shared public.reviews table, which a fresh
-## cluster has no monolith to create. Data-seeding gap, not an OpenShift issue.
+## Routes over TLS (ingress CA)
+graphql-gateway /q/health/ready: {"status":"UP","checks":[]}
+strangler-proxy /api/inventory: HTTP 200
+["SKU-WIDGET-001","SKU-GADGET-002","SKU-GIZMO-003"]
+strangler-proxy /api/reviews: HTTP 200 (monolith public schema bootstrapped by openshift/deploy.sh; was 500 before DRQ-077)

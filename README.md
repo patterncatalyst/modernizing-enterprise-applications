@@ -3,7 +3,7 @@
 ![License](https://img.shields.io/badge/license-Apache%202.0-blue)
 ![JDK](https://img.shields.io/badge/JDK-25-orange)
 ![Quarkus](https://img.shields.io/badge/Quarkus-3.40.1-blue)
-![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.x-brightgreen)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.1.1-brightgreen)
 
 A **runnable, chapter-by-chapter account of strangling a Spring Boot monolith
 into Quarkus + Camel microservices** — one seam at a time, with a
@@ -74,20 +74,24 @@ cd examples/00-monolith && mvn spring-boot:run     # :8080
 cd examples/02-review-service && mvn quarkus:dev
 ```
 
-The dev substrate is **Podman** by day-to-day default (one `compose.yaml`
-source, shared by local dev and CI); a local **minikube** cluster is used only
-for the Kubernetes-native chapters (service mesh, observability, deployment).
-There is no Docker inheritance — see
+The dev substrate is **Docker Engine** (`docker-ce`, docker context `default`)
+with the **`docker compose` v2 plugin**, on a Fedora or RHEL host — one
+`compose.yaml` source, the same image pins CI uses. Docker Desktop is never
+required. A local **minikube** cluster (docker driver, containerd runtime) is
+used only for the Kubernetes-native chapters (service mesh, observability,
+deployment), and OpenShift Local (CRC) only for the OpenShift appendix — one
+local cluster at a time. See
 [Prerequisites](https://patterncatalyst.github.io/modernizing-enterprise-applications/docs/01-prerequisites/)
 for full environment setup.
 
-Running the Testcontainers-backed tests? Point Testcontainers at Podman first —
-it looks for a Docker socket by default, and Docker is not a dependency:
+Testcontainers and Quarkus Dev Services find Docker Engine on
+`/var/run/docker.sock` with no extra configuration (no `DOCKER_HOST` export).
 
-```bash
-systemctl --user enable --now podman.socket
-export DOCKER_HOST="unix://${XDG_RUNTIME_DIR}/podman/podman.sock"
-```
+| Path | Bring-up | Reach it |
+|---|---|---|
+| Compose (daily dev, demos) | `./scripts/stack-up.sh` | Grafana `localhost:3000`, Prometheus `localhost:19090` (Cockpit owns 9090) |
+| minikube (ch. 29–30) | `deploy/k8s/scripts/setup-profile.sh` → `install-istio.sh` → `build-images.sh` → `deploy.sh` | edge `127.0.0.1:30888`, Grafana `127.0.0.1:30300` (NodePorts published at profile creation) |
+| OpenShift Local (appendix) | `openshift/mirror-infra-images.sh` → `build-images.sh` → `deploy.sh` | Routes on `*.apps-crc.testing` |
 
 ## The behavior-equivalence suite
 
@@ -111,7 +115,7 @@ contract gate for the order/gateway seam) on every push — see
 
 | Example | Demonstrates | Chapters |
 |---------|--------------|----------|
-| `examples/00-monolith` | Spring Boot 3.5 monolith, six bounded contexts, six tagged smells, three-tier JUnit tests | Part 3 (ch. 8–10) |
+| `examples/00-monolith` | Spring Boot 4.1 monolith (frozen shell; built on 3.5), six bounded contexts, six tagged smells, three-tier JUnit tests | Part 3 (ch. 8–10) |
 | `examples/01-strangler-proxy` | Camel strangler proxy, flag-gated routing, the equivalence suite through the proxy | Part 5 (ch. 14–16) |
 | `examples/02-review-service` | First extraction; two-phase Spring→Quarkus migration (lift via Spring-compat, then idiomatic) | ch. 15 |
 | `examples/03-notification-service` | Async extraction; transactional outbox → Kafka, SmallRye consumer, WebSocket push | ch. 17 |
@@ -150,14 +154,17 @@ Eleven parts (**Part 0** through **Part 10**), 33 chapters:
 |-----------|------|
 | JDK 25 (SDKMAN) | Language runtime |
 | Quarkus 3.40.1 | Target runtime (fast startup, Dev Services, native builds) |
-| Spring Boot 3.5.x | The reference monolith ("before") |
-| Apache Camel 4.2x | Strangler proxy, orchestrated saga (Java DSL) |
-| Apache Kafka (KRaft) `3.8.0` | Event backbone (outbox relays, saga choreography) |
-| PostgreSQL | Persistent storage, per-service schemas, the outbox |
-| Apicurio Registry 3.1.7 | Avro schema registry (contract-first events) |
-| Debezium Connect 3.0 | CDC backfill during the inventory cutover (transition-only) |
-| Istio 1.29.2 | Service mesh / mTLS / tracing (minikube chapters) |
-| Grafana + Loki + Tempo + Mimir | Observability (LGTM stack + OpenTelemetry Collector) |
+| Spring Boot 4.1.1 | The reference monolith ("before") |
+| Apache Camel 4.22.1 (Camel Quarkus 3.40.0, via the Quarkus 3.40.1 platform) | Strangler proxy, orchestrated saga (Java DSL) |
+| Apache Kafka (KRaft) `4.3.1` | Event backbone (outbox relays, saga choreography) |
+| PostgreSQL 18.6 | Persistent storage, per-service schemas, the outbox |
+| Apicurio Registry 3.3.3 | Avro schema registry (contract-first events) |
+| Debezium Connect 3.7.0.Final | CDC backfill during the inventory cutover (transition-only) |
+| Docker Engine + `docker compose` | Local container engine for every path (Fedora/RHEL hosts) |
+| minikube 1.39 / Kubernetes v1.36.5 | Cluster for the Kubernetes chapters (docker driver, containerd) |
+| Istio 1.31.1 | Service mesh / mTLS / tracing (minikube chapters) |
+| `grafana/otel-lgtm` 0.36.0 | Observability (Grafana + Loki + Tempo + Prometheus + OpenTelemetry Collector) |
+| UBI 10 (`ubi10/openjdk-25-runtime:1.24-15`) | Application base images |
 | Newman / Postman | The behavior-equivalence suite |
 
 ## Repo map
@@ -166,11 +173,13 @@ Eleven parts (**Part 0** through **Part 10**), 33 chapters:
 examples/        — the monolith, the strangler proxy, and the ten runnable
                     services/demonstrators (00-monolith … 09-schema-registry-demo)
 demos/           — demo-*.sh scripts: equivalence, per-seam cutovers, final topology
-deploy/k8s/      — kustomize base + minikube overlay, Istio, LGTM observability
+deploy/k8s/      — kustomize base + minikube overlay, Istio, LGTM observability,
+                    and scripts/ for the minikube profile, images and deploy
+openshift/       — OpenShift Local appendix: Helm chart + build/deploy/teardown scripts
 scripts/         — local stack up/down, Debezium register/retire, CDC verify,
                     and the diagram generator
 assets/diagrams/ — paired SVG + Excalidraw figures (one generator per figure)
-compose.yaml     — the single Podman compose source (dev + CI substrate)
+compose.yaml     — the single docker compose source (dev + CI substrate)
 _docs/           — the tutorial chapters (Jekyll docs collection)
 _parts/          — the eleven parts
 _plans/          — build plan, decisions log (DRQ-NNN), reconciliation log

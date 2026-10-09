@@ -38,7 +38,7 @@ spec:
       serviceAccountName: lgtm
       containers:
         - name: lgtm
-          image: docker.io/grafana/otel-lgtm:0.8.1
+          image: docker.io/grafana/otel-lgtm:0.36.0
           imagePullPolicy: IfNotPresent
           env:
             - name: GF_AUTH_ANONYMOUS_ENABLED
@@ -86,7 +86,7 @@ spec:
               mountPath: /otel-lgtm/otelcol-config.yaml
               subPath: otelcol-config.yaml
             - name: grafana-datasources
-              mountPath: /otel-lgtm/grafana/conf/provisioning/datasources/datasources.yaml
+              mountPath: /otel-lgtm/grafana/conf/provisioning/datasources/grafana-datasources.yaml
               subPath: datasources.yaml
       volumes:
         - name: otelcol-config

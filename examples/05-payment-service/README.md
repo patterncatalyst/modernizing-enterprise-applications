@@ -69,7 +69,7 @@ invisible to the read contract.
   `GET /api/payments?orderId=` against this service's own Flyway-migrated
   `payment` schema, asserting the exact `PaymentDto` JSON shape and the 404
   contract).
-- Started on `:8085` against the real podman-stack Postgres
+- Started on `:8085` against the real compose-stack Postgres
   (`quarkus.flyway.schemas=payment`, own schema, own migration history) and
   confirmed live: `GET http://localhost:8085/api/payments/1` → `200` with the
   `V2__seed_demo_payment.sql` row's `PaymentDto` shape.

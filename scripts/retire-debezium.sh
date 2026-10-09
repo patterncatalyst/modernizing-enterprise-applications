@@ -23,8 +23,8 @@
 #   scripts/retire-debezium.sh              # delete connector + drop slot/publication
 #   scripts/retire-debezium.sh --status      # just report current state (no changes)
 #
-# Requires: curl, jq, podman (mea-postgres, mea-connect must be reachable).
-# Does NOT touch the podman stack itself — no `compose down`, no `-v`, no
+# Requires: curl, jq, docker (mea-postgres, mea-connect must be reachable).
+# Does NOT touch the compose stack itself — no `compose down`, no `-v`, no
 # removal of mea-postgres/mea-connect/mea-kafka. Only this one connector +
 # its slot/publication are retired.
 set -euo pipefail
@@ -54,10 +54,10 @@ report_status() {
   fi
   echo
   echo "=== Replication slot (${SLOT_NAME}) ==="
-  podman exec mea-postgres psql -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" \
+  docker exec mea-postgres psql -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" \
     -c "SELECT slot_name, active, wal_status FROM pg_replication_slots WHERE slot_name = '${SLOT_NAME}';"
   echo "=== Publication (${PUBLICATION_NAME}) ==="
-  podman exec mea-postgres psql -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" \
+  docker exec mea-postgres psql -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" \
     -c "SELECT pubname FROM pg_publication WHERE pubname = '${PUBLICATION_NAME}';"
 }
 
@@ -97,7 +97,7 @@ rm -f /tmp/mea-inventory-connector.delete.json
 echo "Dropping replication slot '${SLOT_NAME}' on mea-postgres (if present) ..."
 slot_dropped=false
 for attempt in $(seq 1 10); do
-  if podman exec mea-postgres psql -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" -v ON_ERROR_STOP=1 -c "
+  if docker exec mea-postgres psql -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" -v ON_ERROR_STOP=1 -c "
 DO \$\$
 BEGIN
   IF EXISTS (SELECT 1 FROM pg_replication_slots WHERE slot_name = '${SLOT_NAME}') THEN
@@ -124,7 +124,7 @@ if [ "$slot_dropped" != true ]; then
 fi
 
 echo "Dropping publication '${PUBLICATION_NAME}' on mea-postgres (if present) ..."
-podman exec mea-postgres psql -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" \
+docker exec mea-postgres psql -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" \
   -c "DROP PUBLICATION IF EXISTS ${PUBLICATION_NAME};"
 
 echo

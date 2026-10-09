@@ -12,7 +12,7 @@ Debezium-CDC-backed owned schema (DRQ-039...046). **Phase B (S6) is complete**
   external contract to the monolith): `GET /api/inventory` (array of
   `StockDto`), `GET /api/inventory/{sku}` (`StockDto`, 404 if unknown).
 - **Persistence: OWNS ITS OWN SCHEMA from day one.** Points at the SAME
-  podman-stack Postgres *instance* every example in this repo shares
+  compose-stack Postgres *instance* every example in this repo shares
   (`localhost:5432`, db `monolith`), but lives in its own `inventory` Postgres
   SCHEMA, migrated by its own Flyway history
   (`src/main/resources/db/migration`) -- it never reads or writes the
@@ -67,11 +67,11 @@ Debezium-CDC-backed owned schema (DRQ-039...046). **Phase B (S6) is complete**
     `Release` restores/unknown-sku, and a **concurrency test**: two
     concurrent `Reserve` calls racing the last unit of stock -- exactly one
     succeeds.
-- Live smoke test against the real podman-stack Postgres + Kafka (packaged
+- Live smoke test against the real compose-stack Postgres + Kafka (packaged
   JVM build, `:8084` HTTP + `:9004` gRPC via `grpcurl`): `Reserve` decremented
   stock by exactly the requested quantity; the compensating `Release`
   restored it exactly to baseline; an over-large `Reserve` left stock
   untouched. See `MIGRATION.md` for the full transcript + before/after
   startup/RSS metrics.
-- End-to-end backfill against the live podman stack + registered Debezium
+- End-to-end backfill against the live compose stack + registered Debezium
   connector: see `CUTOVER.md`/the r05 plan evidence trail (appended at S10).

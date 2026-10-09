@@ -27,7 +27,7 @@ TOPIC="${TOPIC_PREFIX}.public.${TABLE}"
 
 SKU="${1:-}"
 if [ -z "$SKU" ]; then
-  SKU=$(podman exec mea-postgres psql -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" -tA \
+  SKU=$(docker exec mea-postgres psql -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" -tA \
     -c "SELECT sku FROM ${TABLE} ORDER BY id LIMIT 1;")
 fi
 SKU="$(echo "$SKU" | xargs)"
@@ -39,7 +39,7 @@ fi
 
 echo "Starting a background consumer on topic '${TOPIC}' (new messages only)..."
 CONSUMER_OUT="$(mktemp)"
-podman exec mea-kafka /opt/kafka/bin/kafka-console-consumer.sh \
+docker exec mea-kafka /opt/kafka/bin/kafka-console-consumer.sh \
   --bootstrap-server localhost:9092 \
   --topic "$TOPIC" \
   --timeout-ms 20000 \
@@ -51,7 +51,7 @@ CONSUMER_PID=$!
 sleep 2
 
 echo "UPDATE-ing sku='${SKU}' in public.${TABLE} via mea-postgres ..."
-podman exec mea-postgres psql -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" \
+docker exec mea-postgres psql -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" \
   -c "UPDATE ${TABLE} SET quantity_on_hand = quantity_on_hand - 1, updated_at = now() WHERE sku = '${SKU}';"
 
 echo "Waiting for the consumer to capture the change event..."

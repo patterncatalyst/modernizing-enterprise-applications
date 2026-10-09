@@ -112,7 +112,7 @@ spec:
               cpu: {{ $res.limits.cpu }}
               memory: {{ $res.limits.memory }}
           # No runAsUser: OpenShift's restricted-v2 SCC assigns a UID from the
-          # namespace range, and the UBI9 OpenJDK image runs fine as any UID
+          # namespace range, and the UBI OpenJDK image runs fine as any UID
           # (group 0, g+rwx on /deployments). This is the key change from the
           # deploy/k8s/base manifests, which pinned runAsUser: 185.
           securityContext:

@@ -20,7 +20,7 @@ import org.junit.jupiter.api.Test;
  * Dev Services (Kafka + Apicurio Testcontainers, auto-started because no
  * explicit {@code kafka.bootstrap.servers}/{@code apicurio.registry.url} is
  * configured for the {@code %test} profile — see application.properties)
- * and so requires a container runtime (podman/docker) to execute.
+ * and so requires a container runtime (Docker Engine) to execute.
  */
 @QuarkusTest
 class OrderAvroRoundTripTest {

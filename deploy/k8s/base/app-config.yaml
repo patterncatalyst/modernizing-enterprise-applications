@@ -47,6 +47,14 @@ data:
   # (every Kafka-consuming/producing service: 03/04/05/06/07) ───────────────
   KAFKA_BOOTSTRAP_SERVERS: "kafka.mea.svc.cluster.local:9092"
 
+  # ── native placeholder: quarkus.otel.exporter.otlp.traces.endpoint=
+  # ${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:http://localhost:4317}
+  # (the OTel-instrumented services: 04/07/08). The default targets the
+  # compose collector; in-cluster it is the ch.30 `lgtm` Service
+  # (deploy/k8s/observability/lgtm-service.yaml). Harmless when that
+  # additive stack is not deployed: export fails and is logged, as before.
+  OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: "http://lgtm.mea.svc.cluster.local:4317"
+
   # ── ordinal-override: no application.properties key reads quarkus.profile
   # from an env placeholder; QUARKUS_PROFILE is Quarkus's own first-class
   # env var for selecting the active profile at runtime. ────────────────────

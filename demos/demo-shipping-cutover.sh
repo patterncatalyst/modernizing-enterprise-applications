@@ -58,17 +58,23 @@
 # collection file on disk is never touched. See
 # examples/06-shipping-service/CUTOVER.md for the full writeup.
 #
-# Prerequisites: the podman stack (mea-postgres, mea-kafka) must be
+# Prerequisites: the compose stack (mea-postgres, mea-kafka) must be
 # reachable — this script will run scripts/stack-up.sh if it isn't already
 # up, but will NOT tear the stack down afterwards. All services this script
 # itself starts (inventory/payment/review/notification/shipping/monolith/
-# proxy) are stopped on exit; the podman stack is always left running.
+# proxy) are stopped on exit; the compose stack is always left running.
 #
 # Usage: demos/demo-shipping-cutover.sh
 
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/newman.sh
+source "${SCRIPT_DIR}/lib/newman.sh"   # newman or the pinned npx form (DRQ-077)
+
+# Resolve newman for the Node-API helper up front: a missing module must stop
+# the demo here, not surface later as a "RED as expected" negative check.
+newman_node_api || exit 2
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 cd "${PROJECT_ROOT}"
 
@@ -90,7 +96,7 @@ fail() { echo "  FAIL $*" >&2; OVERALL_RESULT=1; }
 section() { echo; echo "== $* =========================================================="; }
 
 cleanup() {
-    section "Cleanup — stopping everything this script started (podman stack left running)"
+    section "Cleanup — stopping everything this script started (compose stack left running)"
     for name in "${!PIDS[@]}"; do
         pid="${PIDS[$name]}"
         if kill -0 "${pid}" 2>/dev/null; then
@@ -179,9 +185,9 @@ run_shipping_suite() {
     node "${SCRIPT_DIR}/lib/run-shipping-newman.js" "${PROJECT_ROOT}" "${base_url}" "${saga_enabled}" "${folder}"
 }
 
-section "0. Podman stack (Postgres + Kafka)"
-if podman ps --format '{{.Names}}' 2>/dev/null | grep -q '^mea-postgres$' \
-    && podman ps --format '{{.Names}}' 2>/dev/null | grep -q '^mea-kafka$'; then
+section "0. Compose stack (Postgres + Kafka)"
+if docker ps --format '{{.Names}}' 2>/dev/null | grep -q '^mea-postgres$' \
+    && docker ps --format '{{.Names}}' 2>/dev/null | grep -q '^mea-kafka$'; then
     pass "mea-postgres and mea-kafka already up — leaving as-is"
 else
     echo "stack not detected — running scripts/stack-up.sh"
@@ -195,7 +201,7 @@ start_jar review "${REVIEW_JAR}" "http://localhost:8081/api/reviews"
 start_jar notification "${NOTIFICATION_JAR}" "http://localhost:8083/api/notifications?customerId=1"
 start_jar shipping "${SHIPPING_JAR}" "http://localhost:8088/api/shipments?orderId=1"
 # The monolith's application.yml default datasource password doesn't match
-# the podman-stack's actual POSTGRES_PASSWORD (pre-existing operational
+# the compose-stack's actual POSTGRES_PASSWORD (pre-existing operational
 # note, documented in examples/05-payment-service/CUTOVER.md) — overridden
 # here every time, not a shipping-specific flag.
 start_jar monolith-orchestrated "${MONOLITH_JAR}" "http://localhost:8080/api/orders" \

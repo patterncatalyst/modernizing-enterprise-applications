@@ -13,45 +13,36 @@ resources:
   - ../../istio
   - ../../observability
 
-# Images: built with `podman build -t mea/<svc>:latest`, then sideloaded
-# into minikube's containerd via `podman save | minikube image load
-# <tarball>` -- this cluster runs --container-runtime=containerd, and
-# `minikube podman-env` refuses to wire up for anything but the `crio`
-# runtime ("the podman-env command is only compatible with the 'crio'
-# runtime"), so the README's `eval $(minikube podman-env)` direct-build path
-# doesn't apply here; save+load is the alternative minikube documents.
-# podman's save/load round-trip always qualifies an unqualified repo name
-# with the implicit `localhost/` prefix (confirmed via `crictl images` on
-# the mea node after loading), so `newName` below retargets each image
-# reference to match what's actually sitting in containerd's local store --
-# without it, the kubelet's `mea/<svc>:latest` reference gets normalized to
-# `docker.io/mea/<svc>:latest` and attempts (and fails) a real registry
-# pull. `newTag` still pins the tag.
+# Images (DRQ-077): built on the host with Docker Engine (`docker build -t
+# mea/<svc>:1.0`) and copied into the profile's containerd with `minikube -p
+# mea image load mea/<svc>:1.0` -- deploy/k8s/scripts/build-images.sh does
+# both. The cluster runs --driver=docker --container-runtime=containerd, so
+# there is no shared image store and no registry: the kubelet must use the
+# loaded image or fail loudly, hence imagePullPolicy: Never on every app
+# Deployment below (ErrImageNeverPull names a missing load instead of a
+# confusing pull from docker.io/mea/...). The tag is a fixed `1.0` rather
+# than `latest`; rebuild + reload + `kubectl rollout restart` to pick up a
+# new build. (The podman save/load round-trip this overlay used before
+# qualified names as localhost/mea/...; Docker-built images load as
+# docker.io/mea/..., which is what the bare `mea/<svc>` reference
+# normalizes to, so no newName is needed.)
 images:
   - name: mea/strangler-proxy
-    newName: localhost/mea/strangler-proxy
-    newTag: latest
+    newTag: "1.0"
   - name: mea/review-service
-    newName: localhost/mea/review-service
-    newTag: latest
+    newTag: "1.0"
   - name: mea/notification-service
-    newName: localhost/mea/notification-service
-    newTag: latest
+    newTag: "1.0"
   - name: mea/inventory-service
-    newName: localhost/mea/inventory-service
-    newTag: latest
+    newTag: "1.0"
   - name: mea/payment-service
-    newName: localhost/mea/payment-service
-    newTag: latest
+    newTag: "1.0"
   - name: mea/shipping-service
-    newName: localhost/mea/shipping-service
-    newTag: latest
+    newTag: "1.0"
   - name: mea/order-service
-    newName: localhost/mea/order-service
-    newTag: latest
+    newTag: "1.0"
   - name: mea/graphql-gateway
-    newName: localhost/mea/graphql-gateway
-    newTag: latest
+    newTag: "1.0"
 
 # strangler-proxy is the system's single REST edge router (every client
 # request enters here, see strangler-proxy.yaml) -- the one Service this
@@ -67,6 +58,13 @@ patches:
       - op: replace
         path: /spec/type
         value: NodePort
+      # Fixed NodePort, published to the host at profile creation
+      # (deploy/k8s/scripts/setup-profile.sh: --ports=127.0.0.1:30888:30888),
+      # so http://127.0.0.1:30888 reaches the edge router directly. No
+      # port-forward, no tunnel, no `minikube service`.
+      - op: add
+        path: /spec/ports/0/nodePort
+        value: 30888
 
   # ch.30 mesh opt-in: a pod-template LABEL (not annotation) on each of the
   # 8 app Deployments -- Istio's sidecar-injection MutatingWebhookConfiguration's
@@ -86,6 +84,9 @@ patches:
       - op: add
         path: /spec/template/metadata/labels/sidecar.istio.io~1inject
         value: "true"
+      - op: replace
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: Never
   - target:
       kind: Deployment
       name: review-service
@@ -93,6 +94,9 @@ patches:
       - op: add
         path: /spec/template/metadata/labels/sidecar.istio.io~1inject
         value: "true"
+      - op: replace
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: Never
   - target:
       kind: Deployment
       name: notification-service
@@ -100,6 +104,9 @@ patches:
       - op: add
         path: /spec/template/metadata/labels/sidecar.istio.io~1inject
         value: "true"
+      - op: replace
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: Never
   - target:
       kind: Deployment
       name: inventory-service
@@ -107,6 +114,9 @@ patches:
       - op: add
         path: /spec/template/metadata/labels/sidecar.istio.io~1inject
         value: "true"
+      - op: replace
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: Never
   - target:
       kind: Deployment
       name: payment-service
@@ -114,6 +124,9 @@ patches:
       - op: add
         path: /spec/template/metadata/labels/sidecar.istio.io~1inject
         value: "true"
+      - op: replace
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: Never
   - target:
       kind: Deployment
       name: shipping-service
@@ -121,6 +134,9 @@ patches:
       - op: add
         path: /spec/template/metadata/labels/sidecar.istio.io~1inject
         value: "true"
+      - op: replace
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: Never
   - target:
       kind: Deployment
       name: order-service
@@ -128,6 +144,9 @@ patches:
       - op: add
         path: /spec/template/metadata/labels/sidecar.istio.io~1inject
         value: "true"
+      - op: replace
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: Never
   - target:
       kind: Deployment
       name: graphql-gateway
@@ -135,3 +154,6 @@ patches:
       - op: add
         path: /spec/template/metadata/labels/sidecar.istio.io~1inject
         value: "true"
+      - op: replace
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: Never

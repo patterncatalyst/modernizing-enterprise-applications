@@ -12,7 +12,7 @@ import jakarta.persistence.Table;
  * {@code dev.patterncatalyst.monolith.inventory.InventoryItem} for the full
  * entity owned by the eventual Inventory extraction, ch.19).
  *
- * <p>Same deferral as {@link Customer}: this is the SAME podman-stack
+ * <p>Same deferral as {@link Customer}: this is the SAME compose-stack
  * Postgres and the existing {@code inventory_items} table, not an owned
  * schema. Data-across-the-seam work (ch.18/19) is explicitly out of scope
  * for this step.

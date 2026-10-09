@@ -581,14 +581,14 @@ divider("D", "Appendix", "Reference — keep open in another window",
   addStatusTable(s, [
     { code: "JDK 25", name: "Language runtime", purpose: "SDKMAN; the JVM path plus the JDK 25 AOT cache." },
     { code: "Quarkus 3.40.1", name: "Service runtime", purpose: "Platform BOM for every service and gateway." },
-    { code: "Camel 4.2x", name: "Integration", purpose: "camel-quarkus; the edge router and the saga." },
-    { code: "Spring Boot 3.5", name: "The 'before'", purpose: "The reference monolith; Phase A compat bridge." },
-    { code: "Kafka 3.8 (KRaft)", name: "Event backbone", purpose: "Outbox relays and choreographed saga events." },
-    { code: "PostgreSQL", name: "Storage", purpose: "One schema per service; the outbox tables." },
-    { code: "Apicurio 3.1.7", name: "Schema registry", purpose: "Avro, contract-first event evolution." },
+    { code: "Camel 4.22", name: "Integration", purpose: "camel-quarkus; the edge router and the saga." },
+    { code: "Spring Boot 4.1", name: "The 'before'", purpose: "The reference monolith; Phase A compat bridge." },
+    { code: "Kafka 4.3 (KRaft)", name: "Event backbone", purpose: "Outbox relays and choreographed saga events." },
+    { code: "PostgreSQL 18", name: "Storage", purpose: "One schema per service; the outbox tables." },
+    { code: "Apicurio 3.3.3", name: "Schema registry", purpose: "Avro, contract-first event evolution." },
     { code: "Mandrel", name: "Native builder", purpose: "GraalVM-based native-image compilation." },
   ], { colW: [2.70, 2.30, 7.09], rowH: 0.42 });
-  addNotes(s, "The pinned versions, for reproducibility — these drift, so re-check them against the repository before quoting them. JDK 25 is the baseline, with both the JVM and the AOT-cache path in play. Quarkus 3.40.1 is the platform BOM shared by every service, which is what keeps the extension versions aligned. Camel 4.2x arrives through camel-quarkus. Spring Boot 3.5 is the monolith and the Phase A compatibility bridge. Kafka in KRaft mode is the event backbone; PostgreSQL holds one schema per service plus the outbox tables; Apicurio provides the Avro registry for contract-first events; and Mandrel is the native-image builder. The general 201 and the book carry the full matrix with the per-service specifics.");
+  addNotes(s, "The pinned versions, for reproducibility — these drift, so re-check them against the repository before quoting them. JDK 25 is the baseline, with both the JVM and the AOT-cache path in play. Quarkus 3.40.1 is the platform BOM shared by every service, which is what keeps the extension versions aligned. Camel 4.22 arrives through camel-quarkus. Spring Boot 4.1 runs the frozen monolith shell (it was built on 3.5) and 3.5 was the Phase A compatibility bridge. Kafka in KRaft mode is the event backbone; PostgreSQL holds one schema per service plus the outbox tables; Apicurio provides the Avro registry for contract-first events; and Mandrel is the native-image builder. The general 201 and the book carry the full matrix with the per-service specifics.");
 }
 
 leadSlide("APPENDIX · GLOSSARY", "Glossary",
@@ -609,12 +609,12 @@ leadSlide("APPENDIX · GLOSSARY", "Glossary",
   const s = S();
   addContentTitle(s, "CLOSING", "Where to go deeper");
   leadBullets(s, [
-    { lead: "The repository", text: "every snippet here is a real file — the routes, the extensions, the messaging wiring, runnable on Podman and minikube." },
+    { lead: "The repository", text: "every snippet here is a real file — the routes, the extensions, the messaging wiring, runnable on Docker Engine and minikube." },
     { lead: "The book", text: "the full 32-chapter tutorial, each chapter with a runnable example and a verification footer." },
     { lead: "The other decks", text: "the 101 for the ideas, the general 201 for the whole migration; this deck is the framework lens on both." },
     { lead: "Start where your pain is", text: "pick the service in the capability map that matches your problem, and read its module." },
   ]);
-  addNotes(s, "To close: this deck was the framework lens, and the best next step is the code it points at. Everything shown is a real file in the repository — the edge router, the saga route, the extension lists, the messaging configuration — and all of it runs on Podman for development and minikube for the Kubernetes chapters. The book carries the full narrative, chapter by chapter, each with a runnable example and a verification footer. The other two decks cover the parts this one assumed: the 101 for the ideas and the general 201 for the whole migration. And the most practical entry point is the capability map a few slides back — find the service that matches the problem in front of you and read that module first.");
+  addNotes(s, "To close: this deck was the framework lens, and the best next step is the code it points at. Everything shown is a real file in the repository — the edge router, the saga route, the extension lists, the messaging configuration — and all of it runs on Docker Engine for development and minikube for the Kubernetes chapters. The book carries the full narrative, chapter by chapter, each with a runnable example and a verification footer. The other two decks cover the parts this one assumed: the 101 for the ideas and the general 201 for the whole migration. And the most practical entry point is the capability map a few slides back — find the service that matches the problem in front of you and read that module first.");
 }
 
 pres.writeFile({ fileName: OUT })
