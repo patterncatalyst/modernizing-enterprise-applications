@@ -652,11 +652,11 @@ traffic to confirm the span shape and the `mutual_tls` edges haven't
 drifted, since both are live-cluster facts this chapter captured once
 rather than values baked into any committed manifest.*
 
-*2026-10-09 update (DRQ-077), **not yet re-verified live**: the cluster recipe
+*2026-10-09 update (DRQ-077), **re-verified live 2026-10-09**: the cluster recipe
 moved to Docker Engine with the docker driver, Kubernetes v1.36.5, Istio 1.31.1,
 `otel-lgtm:0.36.0`, Postgres `18.6-alpine` and Kafka `4.3.1`, with images
 loaded by `minikube image load` and the edge router and Grafana on NodePorts
 30888/30300 published at profile creation. The status paragraph above and the
 files under `deploy/k8s/observability/evidence/` record the earlier run as it
 happened; re-run the minikube sequence in `_plans/live-retest-inventory.md` to
-refresh them.*
+refresh them. Re-verified live 2026-10-09 on a fresh `mea` profile (minikube 1.39.0, Kubernetes v1.36.5, Istio 1.31.1): the edge router answered on 127.0.0.1:30888 and the equivalence suite passed through it (49 requests, 140 assertions, 0 failed), Grafana was healthy on 30300, and `istio_requests_total` carried 9 series. Two fixes came out of that run: a workload-scoped PERMISSIVE policy for the strangler-proxy (NodePort traffic arrives as plaintext from outside the mesh), and `deploy.sh` bootstrapping the monolith's `public` schema and the suite's customer fixture on a fresh database.*

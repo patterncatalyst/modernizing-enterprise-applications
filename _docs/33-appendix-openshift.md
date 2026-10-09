@@ -326,13 +326,14 @@ $ curl -s --cacert /tmp/ingress-ca.crt https://strangler-proxy-mea.apps-crc.test
 That is a 200 with seeded data: the Route, the SCC-assigned UID, the ConfigMap
 wiring, the Flyway migration, and the Camel route all working together.
 
-**One real gap.** `GET /api/reviews` through the proxy returns **500**, and the
-review-service log says `relation "reviews" does not exist`. This is not an
-OpenShift problem — review-service is the one service still in the *shared-data*
-phase (Chapter 18): it reads the monolith's `public.reviews` table rather than
-owning its own schema, and a fresh cluster has no monolith to create that table.
-Seeding it (or finishing review-service's extraction) is the fix; the deployment
-mechanics are sound.
+**The shared schema.** review-service is the one service still in the
+*shared-data* phase (Chapter 18): it reads the monolith's `public.reviews` table
+rather than owning its own schema, and a fresh cluster has no monolith to create
+that table. So `deploy.sh` applies the frozen monolith's committed Flyway SQL
+(V1–V4) to `public` once, on a fresh database, the same way the compose stack
+(`infra/db/init/10-monolith-public-schema.sh`), the minikube deploy and CI do.
+Before that step existed, `GET /api/reviews` through the proxy returned **500**
+with `relation "reviews" does not exist`; it now returns 200.
 
 ## Cleaning up
 
@@ -367,10 +368,10 @@ Kafka StatefulSets). The SCC behaviour was confirmed by reading each pod's
 `nonroot-v2` with UIDs `70`/`1000`. The GraphQL gateway's `/q/health/ready` returned
 `{"status":"UP"}` and the strangler-proxy Route returned seeded inventory JSON, both
 over the external `apps-crc.testing` hostnames. The full capture is committed at
-`openshift/evidence/verification.txt`. **Known gap:** `review-service`'s
-`/api/reviews` returns 500 (`relation "reviews" does not exist`) because it reads
-the monolith's shared `public` schema, absent on a monolith-free cluster — a
-data-seeding matter, not a deployment defect. **Not verified:** the GitOps
+`openshift/evidence/verification.txt`. Re-verified 2026-10-09 on the DRQ-077 pins
+(UBI 10 images built in the cluster, Postgres 18.6 and Kafka 4.3.1 mirrored with
+skopeo): same SCC/UID picture, gateway `UP`, inventory 200, and `/api/reviews`
+200 now that `deploy.sh` bootstraps the monolith's `public` schema. **Not verified:** the GitOps
 `Application` and any Tekton pipeline were authored but not applied (no operators
 installed). The image mirror step is CRC-network-specific; on a cluster with Docker
 Hub egress, the upstream `postgres`/`kafka` refs apply unchanged. Cited:
@@ -381,7 +382,7 @@ re-running `helm upgrade --install` against a fresh `crc start`, then re-driving
 two Route `curl`s and re-reading the pod SCC annotations — the assigned UID will
 differ per cluster, but the SCC names and the 200s should not.*
 
-*2026-10-09 update (DRQ-077), **not yet re-verified live**: the commands above
+*2026-10-09 update (DRQ-077), **re-verified live 2026-10-09**: the commands above
 were changed after the run recorded here. The images are now built inside the
 cluster (`openshift/build-images.sh`) instead of with a host `podman build`/`push`
 loop, Postgres and Kafka are copied with `skopeo` (`openshift/mirror-infra-images.sh`)
@@ -391,4 +392,4 @@ and the pins moved to Postgres `18.6-alpine` (PVC at `/var/lib/postgresql`,
 `ubi10/openjdk-25-runtime:1.24-15`. The verification paragraph above and
 `openshift/evidence/verification.txt` describe the 2026-10-06 run as it
 happened; re-run the sequence in `_plans/live-retest-inventory.md` to refresh
-them.*
+them. Re-verified live 2026-10-09 on CRC 2.64.0 / OpenShift 4.22.14 with these commands: the skopeo mirror, all eight in-cluster builds and the deploy succeeded, and the Route checks passed (see the verification paragraph above and `openshift/evidence/verification.txt`).*

@@ -1,7 +1,7 @@
 ---
 title: "Live retest inventory — Docker Engine, minikube, OpenShift Local"
 description: "Every runnable script, demo and example in the repository, grouped by path, with the exact command, prerequisites, rough duration and pass condition. Written for the DRQ-077 retest (2026-10-09)."
-status: "open — nothing below has been re-run live since DRQ-077"
+status: "done — sections A–D re-run live 2026-10-09 (see Results)"
 ---
 
 # Live retest inventory (DRQ-077, 2026-10-09)
@@ -144,3 +144,11 @@ installed by the appendix); not part of the retest.
 | `.github/workflows/pages.yml` | any push | Jekyll build green |
 
 The workflows were edited but not run (no push from this branch yet).
+
+## Results — 2026-10-09 (Fedora 44, Docker Engine 29.8.2)
+
+- **A (Maven):** `mvn verify` green in all ten modules, 127 tests.
+- **B (compose), fresh volume:** B1–B12 all pass. Datasources loki/prometheus/tempo; Debezium register → CDC → retire; final topology with `--keep-running`, equivalence suite through :8888, then `--stop`; inventory, notification and schema-registry demos; Tempo held 5 traces and Prometheus answered. Fixes found: the monolith's `public` schema is applied on a fresh volume (`infra/db/init/10-monolith-public-schema.sh`), Debezium Connect heap bounded, OTLP traces endpoint configurable with a compose default, pinned `npx newman@6.2.3` fallback, stricter final-topology assertions.
+- **C (minikube), fresh `mea` profile:** C1–C10 all pass. 8 images loaded; edge 200 with three SKUs; equivalence 49 requests / 140 assertions / 0 failed; sidecars injected; Grafana healthy; 9 `istio_requests_total` series. Fixes found: workload-scoped PERMISSIVE PeerAuthentication for the strangler-proxy (NodePort plaintext), `deploy.sh` bootstraps the monolith schema and seeds `order_service.customers` id=1.
+- **D (CRC 2.64.0 / OpenShift 4.22.14):** D1–D8 all pass. skopeo mirror and all eight in-cluster builds succeeded on the first run; apps under `restricted-v2`, Postgres/Kafka under `nonroot-v2` (UIDs 70/1000); gateway `UP`, inventory 200, `/api/reviews` 200 after `openshift/deploy.sh` gained the same schema bootstrap (it returned 500 before). Evidence refreshed in `openshift/evidence/verification.txt`; teardown left CRC stopped.
+- **Not run:** `examples/10-supply-chain/demo.sh` (syft/grype not installed), and the four `stage/*`-only cutover demos (out of scope, see Flags).
