@@ -30,7 +30,7 @@
 #      Quarkus and everything else by the five-context monolith.
 #
 # Prerequisites (not started by this script):
-#   - podman stack up (mea-postgres on :5432)
+#   - compose stack up (mea-postgres on :5432)
 #   - monolith running on :8080            (examples/00-monolith)
 #   - review-service running on :8081      (examples/02-review-service)
 #   - strangler proxy running on :8888     (examples/01-strangler-proxy)

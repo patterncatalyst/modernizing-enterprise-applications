@@ -28,9 +28,9 @@
 # is pointed at the order service (ORDER_SERVICE_BASE_URL) since the order service
 # is the only thing serving /api/orders.
 #
-# Prerequisites: the podman stack (mea-postgres, mea-kafka) must be reachable —
+# Prerequisites: the compose stack (mea-postgres, mea-kafka) must be reachable —
 # this script runs scripts/stack-up.sh if it isn't already up, but will NOT tear
-# it down. Every app process this script starts is stopped on exit; the podman
+# it down. Every app process this script starts is stopped on exit; the compose
 # stack is always left running.
 #
 # Usage: demos/demo-notification-cutover.sh
@@ -57,7 +57,7 @@ fail() { echo "  FAIL $*" >&2; OVERALL_RESULT=1; }
 section() { echo; echo "== $* =========================================================="; }
 
 cleanup() {
-    section "Cleanup — stopping everything this script started (podman stack left running)"
+    section "Cleanup — stopping everything this script started (compose stack left running)"
     for name in "${!PIDS[@]}"; do
         pid="${PIDS[$name]}"
         if kill -0 "${pid}" 2>/dev/null; then
@@ -113,7 +113,7 @@ stop_named() {
 }
 
 psql_c() {
-    podman exec mea-postgres psql -U monolith -d monolith -t -A -c "$1"
+    docker exec mea-postgres psql -U monolith -d monolith -t -A -c "$1"
 }
 
 run_order_suite() {
@@ -126,7 +126,7 @@ wait_for_order_consumer_caught_up() {
     local attempts=40
     for ((i = 1; i <= attempts; i++)); do
         local lag_sum
-        lag_sum="$(podman exec mea-kafka /opt/kafka/bin/kafka-consumer-groups.sh \
+        lag_sum="$(docker exec mea-kafka /opt/kafka/bin/kafka-consumer-groups.sh \
             --bootstrap-server localhost:9092 --describe --group order-service 2>/dev/null \
             | awk '$6 ~ /^[0-9]+$/ {sum+=$6} END {print sum+0}')"
         if [ "${lag_sum}" = "0" ]; then
@@ -161,9 +161,9 @@ burn_in_past_historical_max() {
     pass "order-id sequence now at ${current} (cleared ${target})"
 }
 
-section "0. Podman stack (Postgres + Kafka)"
-if podman ps --format '{{.Names}}' 2>/dev/null | grep -q '^mea-postgres$' \
-    && podman ps --format '{{.Names}}' 2>/dev/null | grep -q '^mea-kafka$'; then
+section "0. Compose stack (Postgres + Kafka)"
+if docker ps --format '{{.Names}}' 2>/dev/null | grep -q '^mea-postgres$' \
+    && docker ps --format '{{.Names}}' 2>/dev/null | grep -q '^mea-kafka$'; then
     pass "mea-postgres and mea-kafka already up — leaving as-is"
 else
     echo "stack not detected — running scripts/stack-up.sh"

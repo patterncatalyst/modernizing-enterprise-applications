@@ -7,7 +7,7 @@
 # publishes a field-for-field Avro mirror of examples/07-order-service's
 # OrderPlacedEvent (dev.patterncatalyst.contracts.avro.OrderPlaced) to its OWN
 # topic (order.events.avro.demo), fronted by the `apicurio` compose service
-# (quay.io/apicurio/apicurio-registry:3.1.7, v3 API). This script: (1) brings
+# (quay.io/apicurio/apicurio-registry:3.3.3, v3 API). This script: (1) brings
 # up the stack (which now includes `apicurio`), (2) builds and starts the
 # demo app, (3) POSTs a demo order and shows the consumer deserializing it
 # back, (4) curls the registry API to show the auto-registered artifact +
@@ -25,10 +25,10 @@
 # not a second production event path. The live checkout flows stay JSON
 # forever (DRQ-038); only this one demonstrator module uses Avro.
 #
-# Prerequisites: the podman stack (mea-kafka, mea-apicurio) must be
+# Prerequisites: the compose stack (mea-kafka, mea-apicurio) must be
 # reachable — this script runs scripts/stack-up.sh if it isn't already up,
 # but will NOT tear it down. The demo app process this script starts is
-# stopped on exit; the podman stack is always left running.
+# stopped on exit; the compose stack is always left running.
 #
 # Usage: demos/demo-schema-registry.sh
 
@@ -57,7 +57,7 @@ fail() { echo "  FAIL $*" >&2; OVERALL_RESULT=1; }
 section() { echo; echo "== $* =========================================================="; }
 
 cleanup() {
-    section "Cleanup — stopping the demo app (podman stack left running)"
+    section "Cleanup — stopping the demo app (compose stack left running)"
     if [ -n "${APP_PID}" ] && kill -0 "${APP_PID}" 2>/dev/null; then
         kill "${APP_PID}" 2>/dev/null
         echo "  stopped schema-registry-demo (pid ${APP_PID})"
@@ -106,9 +106,9 @@ registry_host_port() {
 }
 REGISTRY_BASE_URL="http://localhost:$(registry_host_port)/apis/registry/v3"
 
-section "0. Podman stack (Kafka + Apicurio)"
-if podman ps --format '{{.Names}}' 2>/dev/null | grep -q '^mea-kafka$' \
-    && podman ps --format '{{.Names}}' 2>/dev/null | grep -q '^mea-apicurio$'; then
+section "0. Compose stack (Kafka + Apicurio)"
+if docker ps --format '{{.Names}}' 2>/dev/null | grep -q '^mea-kafka$' \
+    && docker ps --format '{{.Names}}' 2>/dev/null | grep -q '^mea-apicurio$'; then
     pass "mea-kafka and mea-apicurio already up — leaving as-is"
 else
     echo "stack not detected — running scripts/stack-up.sh"

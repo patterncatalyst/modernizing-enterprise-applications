@@ -12,8 +12,19 @@
 # No sampling/cardinality-control processors yet (base config) — r02 has a
 # single monolith emitting telemetry, so there is nothing to sample or
 # constrain yet. Layer in otel-collector-tail-sampling.yaml /
-# otel-collector-cardinality.yaml patterns from the lgtm-podman-stack skill
+# otel-collector-cardinality.yaml patterns from the lgtm-docker-stack skill
 # once multiple extracted services are producing volume (r04+).
+#
+# 2026-10-09 (DRQ-085): rewritten for grafana/otel-lgtm 0.36.0. The exporter
+# names, endpoints and the health_check extension follow that image's own
+# shipped default (`docker run --rm --entrypoint cat
+# grafana/otel-lgtm:0.36.0 /otel-lgtm/otelcol-config.yaml`):
+#   1. run-all.sh blocks until http://127.0.0.1:13133/ready answers, so the
+#      health_check extension on 0.0.0.0:13133 (path /ready) is mandatory.
+#      (0.8.1 polled Prometheus for otelcol_process_uptime_total instead.)
+#   2. Exporters are named otlp_http/<signal>; the image's run-otelcol.sh
+#      overlay (OTEL_EXPORTER_OTLP_*_ENDPOINT) references exactly these names.
+#   3. Backends are addressed as 127.0.0.1, as the image does.
 
 receivers:
   otlp:
@@ -22,18 +33,20 @@ receivers:
         endpoint: 0.0.0.0:4317
       http:
         endpoint: 0.0.0.0:4318
-  # Self-scrape: the otel-lgtm image's startup script (run-all.sh) polls
-  # Prometheus for the otelcol_process_uptime_total metric to decide the
-  # whole stack is ready. Without this receiver feeding that metric into the
-  # metrics pipeline, the container never reports healthy (confirmed by
-  # bring-up during S3 — stock default config.yaml has this; the generic
-  # lgtm-podman-stack base template does not, so it must be added back here).
+  # Self-monitoring: scrape the collector's own metrics endpoint (:8888),
+  # as the image's default config does.
   prometheus/collector:
     config:
       scrape_configs:
         - job_name: 'opentelemetry-collector'
           static_configs:
-            - targets: ['localhost:8888']
+            - targets: ['127.0.0.1:8888']
+
+extensions:
+  # run-all.sh polls this endpoint before it reports the stack ready.
+  health_check:
+    endpoint: 0.0.0.0:13133
+    path: "/ready"
 
 processors:
   # memory_limiter is the most important processor: without it a telemetry
@@ -57,20 +70,20 @@ exporters:
   # Tempo's OTLP ingest port is 4418 in this image's bundled tempo-config.yaml
   # (distributor.receivers.otlp.protocols.http.endpoint) — NOT 3200, which is
   # Tempo's query/API port. Sending traces to 3200 silently no-ops.
-  otlphttp/tempo:
-    endpoint: http://localhost:4418
+  otlp_http/traces:
+    endpoint: http://127.0.0.1:4418
     tls:
       insecure: true
 
   # Prometheus v3's native OTLP receiver (not the remote-write endpoint) —
   # matches this image's bundled default and keeps metric metadata intact.
-  otlphttp/metrics:
-    endpoint: http://localhost:9090/api/v1/otlp
+  otlp_http/metrics:
+    endpoint: http://127.0.0.1:9090/api/v1/otlp
     tls:
       insecure: true
 
-  otlphttp/loki:
-    endpoint: http://localhost:3100/otlp
+  otlp_http/logs:
+    endpoint: http://127.0.0.1:3100/otlp
     tls:
       insecure: true
 
@@ -80,6 +93,7 @@ exporters:
     sampling_thereafter: 100
 
 service:
+  extensions: [health_check]
   telemetry:
     logs:
       level: info
@@ -87,12 +101,12 @@ service:
     traces:
       receivers: [otlp]
       processors: [memory_limiter, resource, batch]
-      exporters: [otlphttp/tempo]
+      exporters: [otlp_http/traces]
     metrics:
       receivers: [otlp, prometheus/collector]
       processors: [memory_limiter, resource, batch]
-      exporters: [otlphttp/metrics]
+      exporters: [otlp_http/metrics]
     logs:
       receivers: [otlp]
       processors: [memory_limiter, resource, batch]
-      exporters: [otlphttp/loki]
+      exporters: [otlp_http/logs]

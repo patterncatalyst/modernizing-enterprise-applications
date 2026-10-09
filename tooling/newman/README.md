@@ -245,8 +245,8 @@ not as something a day-to-day contributor needs to do:
 #    shell left:
 git worktree add /tmp/mea-before reference/monolith-before   # or: git checkout v0-monolith
 
-# 2. podman stack up (Postgres on localhost:5432, db `monolith`) — see compose.yaml
-podman compose --env-file .env up -d postgres
+# 2. compose stack up (Postgres on localhost:5432, db `monolith`) — see compose.yaml
+docker compose --env-file .env up -d postgres
 
 # 3. build + run the preserved monolith (Flyway migrates + seeds automatically)
 cd /tmp/mea-before/examples/00-monolith

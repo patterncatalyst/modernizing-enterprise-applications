@@ -46,7 +46,7 @@ command: ["postgres", "-c", "wal_level=logical", "-c", "max_replication_slots=4"
 ```
 
 This requires a Postgres **restart** to take effect (handled automatically
-by `podman compose up -d`); the `postgres-data` named volume persists, so no
+by `docker compose up -d`); the `postgres-data` named volume persists, so no
 monolith data is lost. The bootstrap superuser (`POSTGRES_USER` from `.env`)
 already has `REPLICATION` privilege, so no separate grant/init script is
 needed for a single-connector dev stack.
@@ -134,7 +134,7 @@ scripts/retire-debezium.sh --status   # report connector/slot/publication state,
 3. Drops the publication `mea_inventory_publication` via
    `DROP PUBLICATION IF EXISTS`.
 
-This does **not** touch the podman stack itself (`mea-postgres`,
+This does **not** touch the compose stack itself (`mea-postgres`,
 `mea-connect`, `mea-kafka` all keep running) and does **not** revert
 `wal_level=logical` on `mea-postgres` (harmless to leave set — see "Postgres:
 logical replication" above; it only affects what's recorded in the WAL, not
@@ -170,7 +170,7 @@ A replication slot that nobody is draining holds WAL segments on disk
 indefinitely — if the connector is deleted or dies without the slot being
 dropped, WAL will grow unbounded.
 
-- **Normal stop/start** (`podman compose stop`/`start`, `scripts/stack-down.sh`
+- **Normal stop/start** (`docker compose stop`/`start`, `scripts/stack-down.sh`
   without `-v`): the slot persists in the `postgres-data` volume and Debezium
   resumes from its last confirmed LSN. This is expected and fine.
 - **Deleting the connector** (`DELETE /connectors/mea-inventory-connector`):
@@ -180,7 +180,7 @@ dropped, WAL will grow unbounded.
   SELECT pg_drop_replication_slot('mea_inventory_slot');
   DROP PUBLICATION mea_inventory_publication;
   ```
-- **`podman compose down -v`** (wipes `postgres-data`): removes the slot
+- **`docker compose down -v`** (wipes `postgres-data`): removes the slot
   along with all Postgres state. Do not run this against a shared/working
   stack — see the standing "no destructive `down -v`" constraint for this task.
 - **At decommission (ch.19 S11): DONE.** `scripts/retire-debezium.sh`

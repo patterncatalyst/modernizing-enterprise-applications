@@ -170,13 +170,13 @@ jobs:
     name: equivalence-gate
     runs-on: ubuntu-latest
 
-    # Postgres, pinned to the same tag/creds the project's podman stack and
+    # Postgres, pinned to the same tag/creds the project's compose stack and
     # review-service's application.properties use (.env: POSTGRES_IMAGE_TAG,
     # POSTGRES_DB/_USER/_PASSWORD) so this is the SAME contract, not a
     # CI-only substitute.
     services:
       postgres:
-        image: postgres:16-alpine
+        image: docker.io/library/postgres:18.6-alpine
         env:
           POSTGRES_DB: monolith
           POSTGRES_USER: monolith
@@ -184,7 +184,7 @@ jobs:
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U monolith -d monolith"
+          --health-cmd "pg_isready -h 127.0.0.1 -U monolith -d monolith"
           --health-interval 5s
           --health-timeout 3s
           --health-retries 12
@@ -329,15 +329,15 @@ jobs:
     name: notification-equivalence-gate
     runs-on: ubuntu-latest
 
-    # Postgres (same image tag/creds the podman stack uses, matching
+    # Postgres (same image tag/creds the compose stack uses, matching
     # equivalence-gate above) PLUS a single-broker KRaft-mode Kafka,
     # pinned to the same apache/kafka tag compose.yaml/.env.example use
-    # (KAFKA_IMAGE_TAG=3.8.0) — the SAME contract as local dev, not a
+    # (KAFKA_IMAGE_TAG=4.3.1) — the SAME contract as local dev, not a
     # CI-only substitute. Both are GitHub Actions service containers with
     # health checks, so the job's steps don't start until each is ready.
     services:
       postgres:
-        image: postgres:16-alpine
+        image: docker.io/library/postgres:18.6-alpine
         env:
           POSTGRES_DB: monolith
           POSTGRES_USER: monolith
@@ -345,7 +345,7 @@ jobs:
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U monolith -d monolith"
+          --health-cmd "pg_isready -h 127.0.0.1 -U monolith -d monolith"
           --health-interval 5s
           --health-timeout 3s
           --health-retries 12
@@ -358,7 +358,7 @@ jobs:
       # the runner's own localhost, the same way service containers already
       # make Postgres reachable at localhost:5432 above.
       kafka:
-        image: docker.io/apache/kafka:3.8.0
+        image: docker.io/apache/kafka:4.3.1
         env:
           KAFKA_NODE_ID: 1
           KAFKA_PROCESS_ROLES: broker,controller
@@ -860,8 +860,8 @@ jobs:
     name: inventory-equivalence-gate
     runs-on: ubuntu-latest
 
-    # Postgres (same image tag/creds the podman stack and the other gates
-    # use) PLUS Kafka (same apache/kafka:3.8.0 tag, pinned in
+    # Postgres (same image tag/creds the compose stack and the other gates
+    # use) PLUS Kafka (same apache/kafka:4.3.1 tag, pinned in
     # .env.example's KAFKA_IMAGE_TAG). Kafka is genuinely load-bearing here
     # (S10b FIX) — it is no longer just "present so the outbox producer boots
     # cleanly": Scenario 1 and Scenario 3's checkout-driven bounded-waits
@@ -872,7 +872,7 @@ jobs:
     # seeds itself via its own Flyway migration instead.
     services:
       postgres:
-        image: postgres:16-alpine
+        image: docker.io/library/postgres:18.6-alpine
         env:
           POSTGRES_DB: monolith
           POSTGRES_USER: monolith
@@ -880,13 +880,13 @@ jobs:
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U monolith -d monolith"
+          --health-cmd "pg_isready -h 127.0.0.1 -U monolith -d monolith"
           --health-interval 5s
           --health-timeout 3s
           --health-retries 12
 
       kafka:
-        image: docker.io/apache/kafka:3.8.0
+        image: docker.io/apache/kafka:4.3.1
         env:
           KAFKA_NODE_ID: 1
           KAFKA_PROCESS_ROLES: broker,controller
@@ -1365,7 +1365,7 @@ jobs:
     # consumers this job's assertions depend on.
     services:
       postgres:
-        image: postgres:16-alpine
+        image: docker.io/library/postgres:18.6-alpine
         env:
           POSTGRES_DB: monolith
           POSTGRES_USER: monolith
@@ -1373,13 +1373,13 @@ jobs:
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U monolith -d monolith"
+          --health-cmd "pg_isready -h 127.0.0.1 -U monolith -d monolith"
           --health-interval 5s
           --health-timeout 3s
           --health-retries 12
 
       kafka:
-        image: docker.io/apache/kafka:3.8.0
+        image: docker.io/apache/kafka:4.3.1
         env:
           KAFKA_NODE_ID: 1
           KAFKA_PROCESS_ROLES: broker,controller
@@ -1970,7 +1970,7 @@ jobs:
     # job's assertions depend on.
     services:
       postgres:
-        image: postgres:16-alpine
+        image: docker.io/library/postgres:18.6-alpine
         env:
           POSTGRES_DB: monolith
           POSTGRES_USER: monolith
@@ -1978,13 +1978,13 @@ jobs:
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U monolith -d monolith"
+          --health-cmd "pg_isready -h 127.0.0.1 -U monolith -d monolith"
           --health-interval 5s
           --health-timeout 3s
           --health-retries 12
 
       kafka:
-        image: docker.io/apache/kafka:3.8.0
+        image: docker.io/apache/kafka:4.3.1
         env:
           KAFKA_NODE_ID: 1
           KAFKA_PROCESS_ROLES: broker,controller
@@ -2569,7 +2569,7 @@ jobs:
     # assertions depend on.
     services:
       postgres:
-        image: postgres:16-alpine
+        image: docker.io/library/postgres:18.6-alpine
         env:
           POSTGRES_DB: monolith
           POSTGRES_USER: monolith
@@ -2577,13 +2577,13 @@ jobs:
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U monolith -d monolith"
+          --health-cmd "pg_isready -h 127.0.0.1 -U monolith -d monolith"
           --health-interval 5s
           --health-timeout 3s
           --health-retries 12
 
       kafka:
-        image: docker.io/apache/kafka:3.8.0
+        image: docker.io/apache/kafka:4.3.1
         env:
           KAFKA_NODE_ID: 1
           KAFKA_PROCESS_ROLES: broker,controller

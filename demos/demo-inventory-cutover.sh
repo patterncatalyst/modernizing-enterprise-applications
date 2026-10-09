@@ -17,9 +17,9 @@
 #     git checkout stage/03-inventory-extracted
 # and read ch.19's "cutover" and "reversibility" sections alongside it.
 #
-# Prerequisites: the podman stack (mea-postgres, mea-kafka) must be reachable —
+# Prerequisites: the compose stack (mea-postgres, mea-kafka) must be reachable —
 # this script runs scripts/stack-up.sh if it isn't already up, but will NOT tear
-# it down. Every app process this script starts is stopped on exit; the podman
+# it down. Every app process this script starts is stopped on exit; the compose
 # stack is always left running.
 #
 # Usage: demos/demo-inventory-cutover.sh
@@ -42,7 +42,7 @@ fail() { echo "  FAIL $*" >&2; OVERALL_RESULT=1; }
 section() { echo; echo "== $* =========================================================="; }
 
 cleanup() {
-    section "Cleanup — stopping everything this script started (podman stack left running)"
+    section "Cleanup — stopping everything this script started (compose stack left running)"
     for name in "${!PIDS[@]}"; do
         pid="${PIDS[$name]}"
         if kill -0 "${pid}" 2>/dev/null; then
@@ -105,9 +105,9 @@ run_folder() {
         --reporters cli
 }
 
-section "0. Podman stack (Postgres + Kafka)"
-if podman ps --format '{{.Names}}' 2>/dev/null | grep -q '^mea-postgres$' \
-    && podman ps --format '{{.Names}}' 2>/dev/null | grep -q '^mea-kafka$'; then
+section "0. Compose stack (Postgres + Kafka)"
+if docker ps --format '{{.Names}}' 2>/dev/null | grep -q '^mea-postgres$' \
+    && docker ps --format '{{.Names}}' 2>/dev/null | grep -q '^mea-kafka$'; then
     pass "mea-postgres and mea-kafka already up — leaving as-is"
 else
     echo "stack not detected — running scripts/stack-up.sh"

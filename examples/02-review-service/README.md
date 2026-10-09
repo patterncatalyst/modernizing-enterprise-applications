@@ -15,7 +15,7 @@ contract. See `MIGRATION.md` for the before/after measurements.
 - Port `8081`. Endpoints (identical external contract to the monolith):
   `GET /api/reviews?sku=...`, `GET /api/reviews/{id}`, `POST /api/reviews`
   (HTTP Basic, `demo-customer`/`demo-pass`, role `CUSTOMER`).
-- Persistence: the SAME podman-stack Postgres the monolith uses
+- Persistence: the SAME compose-stack Postgres the monolith uses
   (`localhost:5432`, db `monolith`), reading/writing the existing `reviews`
   table plus minimal read-only projections of the shared `customers`/
   `inventory_items` tables. This service owns **no** schema of its own yet —
@@ -38,7 +38,7 @@ running in CI for the first time.
 
 Before this workflow was committed it was validated locally both ways:
 
-- **Green:** with the unmodified service running against the podman-stack
+- **Green:** with the unmodified service running against the compose-stack
   Postgres, `newman run ... --folder "Review Context Contract"` passed all 16
   assertions, exit code `0`.
 - **Red:** `ReviewCreate`'s `@Max(5)` on `rating` was temporarily widened to

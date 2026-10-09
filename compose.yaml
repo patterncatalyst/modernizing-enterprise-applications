@@ -1,15 +1,16 @@
 # compose.yaml — r02 walking-skeleton local infra/observability stack
 #
 # Owned exclusively by iteration r02, step S3 (_plans/iterations/r02-plan.md).
-# PODMAN ONLY (DRQ-001) — run with the podman-compose-v2 plugin:
+# DOCKER ENGINE + the `docker compose` v2 plugin (DRQ-085, superseding the
+# original podman-only DRQ-001). Docker Engine (docker-ce, context `default`)
+# on a Fedora or RHEL host; Docker Desktop is never required:
 #
-#   podman compose --env-file .env up -d
-#   podman compose ps
-#   podman compose down            # keep volumes
-#   podman compose down -v         # wipe volumes (fresh Kafka/Postgres state)
+#   docker compose --env-file .env up -d
+#   docker compose ps
+#   docker compose down            # keep volumes
+#   docker compose down -v         # wipe volumes (fresh Kafka/Postgres state)
 #
-# Never substitute `docker compose` / `docker-compose` for this file or pull
-# in lgtm-docker-stack / DataMesh's Docker compose (R5 in build-plan.md §M).
+# Never the legacy hyphenated `docker-compose` v1 binary.
 #
 # Services:
 #   - lgtm      : Grafana + Tempo + Mimir + Loki + an embedded OTel Collector
@@ -67,7 +68,10 @@ services:
       - "3000:3000"   # Grafana UI
       - "4317:4317"   # OTLP gRPC
       - "4318:4318"   # OTLP HTTP (preferred — see otlp-endpoints reference)
-      - "9090:9090"   # Mimir / Prometheus remote-write + query
+      # Prometheus query + OTLP metrics ingest. Host port 19090, not 9090:
+      # Cockpit owns 9090 on Fedora Server and RHEL (DRQ-085). Inside the
+      # container (and to anything on the compose network) it is still :9090.
+      - "${PROMETHEUS_HOST_PORT:-19090}:9090"
       - "3100:3100"   # Loki
       - "3200:3200"   # Tempo
     environment:
@@ -76,9 +80,12 @@ services:
       - GF_AUTH_DISABLE_LOGIN_FORM=true
     volumes:
       - ./infra/otelcol/config.yaml:/otel-lgtm/otelcol-config.yaml:Z
-      - ./infra/grafana/datasources.yaml:/otel-lgtm/grafana/conf/provisioning/datasources/datasources.yaml:Z
-    mem_limit: 1g
-    # NOTE: the otel-lgtm:0.8.1 image does not ship wget (confirmed during S3
+      # Mounted over the image's own default provisioning filename so ours
+      # wins the uid collision (see infra/grafana/datasources.yaml's header).
+      - ./infra/grafana/datasources.yaml:/otel-lgtm/grafana/conf/provisioning/datasources/grafana-datasources.yaml:Z
+    # 0.36.0 runs Pyroscope and OBI alongside L/G/T/M; 1g was 0.8.1's budget.
+    mem_limit: 2g
+    # NOTE: the otel-lgtm image does not ship wget (confirmed during S3
     # bring-up — the skill template's wget-based healthcheck always exits 127
     # in this image). curl IS present; use it instead.
     healthcheck:
@@ -102,17 +109,24 @@ services:
       - POSTGRES_INITDB_ARGS=--encoding=UTF8 --locale=C
     # LOGICAL replication (r05/ch.19 step S3, DRQ-040) — required for the
     # Debezium Postgres connector to tail the WAL via pgoutput. Requires a
-    # restart of this container to take effect (handled by `podman compose
+    # restart of this container to take effect (handled by `docker compose
     # up -d`); the postgres-data volume persists across it, so no data is
     # lost. max_replication_slots/max_wal_senders=4 leaves headroom beyond
     # the single `mea_inventory_slot` this stack currently uses.
     command: ["postgres", "-c", "wal_level=logical", "-c", "max_replication_slots=4", "-c", "max_wal_senders=4"]
+    # Postgres 18 images keep PGDATA in a major-version subdirectory
+    # (/var/lib/postgresql/18/docker), so the volume mounts at
+    # /var/lib/postgresql, not .../data (DRQ-085). A volume left over from
+    # the 16-alpine pin is not upgraded in place: `docker compose down -v`.
     volumes:
-      - postgres-data:/var/lib/postgresql/data:Z
+      - postgres-data:/var/lib/postgresql:Z
       - ./infra/db/init:/docker-entrypoint-initdb.d:Z
     mem_limit: 1g
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      # -h 127.0.0.1: TCP, not the Unix socket. The image's initdb phase runs
+      # a temporary server on the socket only and then restarts, so a socket
+      # probe can report ready before the real server listens.
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
       timeout: 3s
       retries: 12
@@ -164,8 +178,10 @@ services:
   # scripts/register-debezium.sh — not baked into this compose file, so the
   # connector config (infra/debezium/inventory-connector.json) can evolve
   # without a container rebuild.
+  # Image moved to quay.io: Debezium stopped publishing to Docker Hub after
+  # 3.0.0.Final (DRQ-085).
   connect:
-    image: docker.io/debezium/connect:${CONNECT_IMAGE_TAG}
+    image: quay.io/debezium/connect:${CONNECT_IMAGE_TAG}
     container_name: mea-connect
     ports:
       - "${CONNECT_HOST_PORT:-8086}:8083"   # host 8086 (NOT 8083 — see header note); container always binds 8083
@@ -197,9 +213,9 @@ services:
   # — no depends_on, since nothing else in this stack needs it ready first.
   # v3 image/API (confirmed by that module's `mvn dependency:tree`: the
   # quarkus-apicurio-registry-avro extension under quarkus-bom 3.40.1 pulls
-  # io.apicurio:apicurio-registry-*:3.1.7, the v3 client line) — the image
-  # tag, this healthcheck's /apis/registry/v3 path, and the demo module's
-  # apicurio.registry.url all agree on the same major. APICURIO_STORAGE_KIND
+  # io.apicurio:apicurio-registry-*:3.1.7, the v3 client line; the 3.3.3
+  # server speaks the same /apis/registry/v3 API) — the image major and the
+  # demo module's apicurio.registry.url agree on v3. APICURIO_STORAGE_KIND
   # =sql / APICURIO_STORAGE_SQL_KIND=h2: Apicurio 3.1.7 removed the plain
   # "mem" storage variant older 3.0.x images accepted (confirmed empirically
   # against a live 3.1.7 container: APICURIO_STORAGE_KIND=mem fails to
@@ -207,7 +223,7 @@ services:
   # on every container restart, no external dependency, and the registry
   # still self-reports as "Apicurio Registry (In Memory)" at /apis/registry/v3/system/info.
   apicurio:
-    image: quay.io/apicurio/apicurio-registry:${APICURIO_IMAGE_TAG:-3.1.7}
+    image: quay.io/apicurio/apicurio-registry:${APICURIO_IMAGE_TAG:-3.3.3}
     container_name: mea-apicurio
     ports:
       - "${APICURIO_HOST_PORT:-8095}:8080"
@@ -216,7 +232,9 @@ services:
       - APICURIO_STORAGE_SQL_KIND=h2
     mem_limit: 512m
     healthcheck:
-      test: ["CMD", "curl", "-sf", "http://localhost:8080/apis/registry/v3/system/info"]
+      # Apicurio Registry 3.3 serves health on the management interface
+      # (container port 9000, not published); /health/ready on 8080 is a 404.
+      test: ["CMD", "curl", "-sf", "http://localhost:9000/health/ready"]
       interval: 5s
       timeout: 3s
       retries: 12
