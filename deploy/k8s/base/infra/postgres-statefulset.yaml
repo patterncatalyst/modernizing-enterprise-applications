@@ -2,7 +2,7 @@
 # in this topology points at (db `monolith`, one schema per extracted
 # service -- see app-config.yaml's *_SERVICE_JDBC_URL keys). Mirrors
 # compose.yaml's `postgres` service: same image family/tag
-# (postgres:16-alpine, .env.example POSTGRES_IMAGE_TAG), same
+# (postgres:18.6-alpine, .env.example POSTGRES_IMAGE_TAG), same
 # POSTGRES_DB/POSTGRES_USER/POSTGRES_PASSWORD values (sourced here from the
 # mea-postgres-app Secret instead of compose's plain env, so there is one
 # credential source for both the server and its client Deployments), and the
@@ -88,17 +88,17 @@ spec:
     spec:
       # NOTE: the app Deployments' securityContext (runAsUser: 185, the
       # Quarkus/UBI convention) does NOT apply here -- the official
-      # postgres:16-alpine image owns /var/lib/postgresql/data as uid 999
+      # postgres alpine image owns its data directory as uid 70
       # ("postgres"). fsGroup lets the kubelet chown the PVC's mount to that
       # group on attach so a non-root postgres process can still write to it.
       securityContext:
-        # ch.30 live-apply fix: postgres:16-alpine's postgres user is uid/gid 70
+        # ch.30 live-apply fix: the alpine image's postgres user is uid/gid 70
         # (Debian's image uses 999). fsGroup must match so the chowned PVC is
         # writable by the user initdb runs as.
         fsGroup: 70
       containers:
         - name: postgres
-          image: docker.io/library/postgres:16-alpine
+          image: docker.io/library/postgres:18.6-alpine
           imagePullPolicy: IfNotPresent
           # NOTE (ch.30 live-apply fix): these must be `args`, not `command`.
           # In k8s `command` replaces the image ENTRYPOINT (docker-entrypoint.sh),
@@ -111,13 +111,15 @@ spec:
             - name: postgres
               containerPort: 5432
           env:
-            # ch.30 live-apply fix: the PVC mount point /var/lib/postgresql/data
-            # is owned by root (fsGroup only sets the GROUP, not the owner), so
-            # initdb running as uid 70 cannot chmod it. Point PGDATA at a subdir
-            # the postgres user creates itself (owned by 70) — the standard fix
-            # for the official postgres image on a mounted volume.
+            # ch.30 live-apply fix, carried to Postgres 18 (DRQ-085): the PVC
+            # mount point is owned by root (fsGroup only sets the GROUP, not
+            # the owner), so initdb running as uid 70 cannot chmod it. PGDATA
+            # must be a subdirectory the postgres user creates itself. From
+            # 18 the image's own default already is one: the volume mounts at
+            # /var/lib/postgresql and PGDATA is /var/lib/postgresql/18/docker
+            # (set explicitly so the path is visible here).
             - name: PGDATA
-              value: "/var/lib/postgresql/data/pgdata"
+              value: "/var/lib/postgresql/18/docker"
             - name: POSTGRES_DB
               value: "monolith"
             - name: POSTGRES_USER
@@ -132,18 +134,18 @@ spec:
                   key: password
           volumeMounts:
             - name: postgres-data
-              mountPath: /var/lib/postgresql/data
+              mountPath: /var/lib/postgresql
             - name: postgres-initdb
               mountPath: /docker-entrypoint-initdb.d
           readinessProbe:
             exec:
-              command: ["pg_isready", "-U", "monolith", "-d", "monolith"]
+              command: ["pg_isready", "-h", "127.0.0.1", "-U", "monolith", "-d", "monolith"]
             initialDelaySeconds: 5
             periodSeconds: 10
             failureThreshold: 6
           livenessProbe:
             exec:
-              command: ["pg_isready", "-U", "monolith", "-d", "monolith"]
+              command: ["pg_isready", "-h", "127.0.0.1", "-U", "monolith", "-d", "monolith"]
             initialDelaySeconds: 15
             periodSeconds: 10
             failureThreshold: 6

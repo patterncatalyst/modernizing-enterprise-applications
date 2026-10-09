@@ -2,8 +2,9 @@
 #
 # Ported verbatim (content unchanged) from infra/grafana/datasources.yaml,
 # mounted into the lgtm container at
-# /otel-lgtm/grafana/conf/provisioning/datasources/datasources.yaml, same as
-# compose.yaml's `lgtm` service.
+# /otel-lgtm/grafana/conf/provisioning/datasources/grafana-datasources.yaml
+# (the image's own default filename, so ours replaces it rather than losing
+# a uid collision to it -- DRQ-085), same as compose.yaml's `lgtm` service.
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -18,7 +19,7 @@ data:
       - name: Tempo
         type: tempo
         access: proxy
-        url: http://localhost:3200
+        url: http://127.0.0.1:3200
         uid: tempo
         isDefault: false
         editable: true
@@ -55,7 +56,7 @@ data:
       - name: Loki
         type: loki
         access: proxy
-        url: http://localhost:3100
+        url: http://127.0.0.1:3100
         uid: loki
         isDefault: false
         editable: true
@@ -71,7 +72,7 @@ data:
       - name: Prometheus
         type: prometheus
         access: proxy
-        url: http://localhost:9090
+        url: http://127.0.0.1:9090
         uid: prometheus
         isDefault: true
         editable: true
