@@ -148,7 +148,7 @@ database, import, restart everything — the schema split happens as a
 *backfill*, underneath a system that keeps running the entire time. That
 backfill is **change data capture**, and this project's version of it is as
 close to the textbook mechanism as the stack allows: a **Debezium Postgres
-connector**, running on **Kafka Connect** (added to the podman stack for this
+connector**, running on **Kafka Connect** (added to the compose stack for this
 chapter), reads the monolith Postgres instance's write-ahead log directly —
 not a polling query, not a table scan, the actual WAL — and turns every insert,
 update, and delete against `public.inventory_items` into an ordered stream of
@@ -274,7 +274,7 @@ slot would otherwise retain WAL on the monolith's Postgres indefinitely, a
 disk-fill risk with no offsetting benefit once CDC's job is done.
 
 That retirement creates a problem a CDC-only story would paper over: a
-fresh environment — a clean CI run, a new developer's first `podman compose up`
+fresh environment — a clean CI run, a new developer's first `docker compose up`
 — has no upstream writer left whose log a connector could tail, so without
 something else, `inventory.inventory_items` would boot empty. The fix is a
 Flyway migration, `V2__seed_inventory.sql`, that seeds the same three demo

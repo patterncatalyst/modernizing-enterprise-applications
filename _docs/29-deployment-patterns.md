@@ -6,7 +6,7 @@ description: "Rolling, breaking-schema-change, and blue-green deployment, tied t
 ---
 
 Every chapter since Part 5 has treated "running the system" as something that
-happens on a developer's own machine: `mvn quarkus:dev` for a service, `podman
+happens on a developer's own machine: `mvn quarkus:dev` for a service, `docker
 compose up -d` for the shared infrastructure that service talks to. That split
 has held for the whole migration so far — compose.yaml's own header
 comment says it directly: the six extracted services and the strangler proxy
@@ -174,17 +174,18 @@ change this chapter's artifacts make outside `deploy/k8s/` itself, and it's
 additive: two new files, nothing edited.
 
 `Dockerfile.jvm` is a four-layer copy from `target/quarkus-app/` onto
-`registry.access.redhat.com/ubi9/openjdk-25-runtime:1.24`, running as UID 185
+`registry.access.redhat.com/ubi10/openjdk-25-runtime:1.24-15`, running as UID 185
 (the same non-root UID the Kubernetes manifests' `securityContext.runAsUser`
 pins), launched through `run-java.sh`. `Dockerfile.native` starts from
-`registry.access.redhat.com/ubi9/ubi-minimal:9.7`, copies one file —
+`registry.access.redhat.com/ubi10/ubi-minimal:10.2-1791444377`, copies one file —
 `target/*-runner`, the statically-compiled native executable `mvn package
 -Pnative` produces — and runs it directly as UID 1001, no JVM in the image at
 all.
 
 The choice this chapter's manifests make is JVM by default: every Deployment
 in `deploy/k8s/base/` names its image as `mea/<svc>:latest`, built from
-`Dockerfile.jvm`. Chapter 27 already put a number on what native buys over
+`Dockerfile.jvm` (the minikube overlay pins the tag to `1.0` and sets
+`imagePullPolicy: Never`). Chapter 27 already put a number on what native buys over
 that default for one service — review-service's own measured numbers, not
 re-derived here:
 
@@ -209,12 +210,14 @@ discipline: native's build is slower and its failure modes are sharper (ch.27's
 of thing that only shows up under native), so the default path optimizes for
 getting a correct container running first.
 
-Building into minikube itself is a `podman build` plus either `minikube
-image load` or building directly against minikube's own podman daemon via
-`eval $(minikube podman-env)` — this project's toolchain is podman throughout
-(compose.yaml's own header, DRQ-001), not docker, so `minikube docker-env`
-doesn't apply here. `deploy/k8s/README.md` spells out both paths in full,
-and one detail stands out: every build context is the service's own
+Building into minikube itself is a `docker build` on the host's Docker Engine
+followed by `minikube -p mea image load mea/<svc>:1.0`, which copies the image
+into the node's containerd store (the profile runs `--driver=docker
+--container-runtime=containerd`, so there is no shared image store to build
+into directly). `deploy/k8s/scripts/build-images.sh` does both for all eight
+services, and the overlay's `imagePullPolicy: Never` makes a missing load fail
+loudly as `ErrImageNeverPull` instead of as a pull from `docker.io/mea/...`.
+`deploy/k8s/README.md` spells out the whole sequence, and one detail stands out: every build context is the service's own
 `examples/<svc>` directory, not the repo root — these eight Maven
 reactors share no parent POM or common module, so there's no reactor-root
 context to build from the way a multi-module project might.
@@ -538,8 +541,12 @@ the Kubernetes ecosystem has a specific `Ingress` resource this tree doesn't
 use. There's no `Ingress` object, no ingress controller, no hostname-based
 routing layer here — `NodePort` is the plainest exposure mechanism
 Kubernetes offers, binding a port on every node directly to the Service, with
-`minikube service strangler-proxy -n mea` (or the node IP and the allocated
-port directly) as the way to reach it from the host. That's a deliberate
+a fixed `nodePort: 30888` that `deploy/k8s/scripts/setup-profile.sh` publishes
+on the host's loopback when it creates the profile
+(`minikube start --ports=127.0.0.1:30888:30888`), so
+`http://127.0.0.1:30888` reaches the edge router directly — no
+`port-forward`, no tunnel, no `minikube service`. Host ports are fixed when the
+profile is created; adding another NodePort means recreating it. That's a deliberate
 minimum for a single-node minikube target, not a production ingress
 strategy — an `Ingress` resource with a real controller (and, past that,
 whatever an Istio `VirtualGateway` would add on top) is exactly the kind of
@@ -557,7 +564,7 @@ and its own `PersistentVolumeClaim` via `volumeClaimTemplates`, the two
 properties a StatefulSet gives a workload that a Deployment doesn't.
 
 Postgres mirrors compose.yaml's own `postgres` service closely: the same
-`postgres:16-alpine` image family, the same `POSTGRES_DB=monolith` database
+`postgres` alpine image (`18.6-alpine` since DRQ-077), the same `POSTGRES_DB=monolith` database
 (now sourced from the `mea-postgres-app` Secret rather than plain compose
 env, so there's one credential source for both the server and its six
 client Deployments), and the identical `wal_level=logical`,
@@ -569,7 +576,7 @@ owned-schema service (`notification`, `inventory`, `payment`, `shipping`,
 `order_service`) — a belt-and-suspenders bootstrap, not a replacement for
 each service's own Flyway migration, which would create its schema on first
 run regardless. Kafka is a single-broker KRaft deployment (no ZooKeeper),
-the same `apache/kafka:3.8.0` image and topic defaults
+the same `apache/kafka` image (`4.3.1` since DRQ-077) and topic defaults
 (`KAFKA_AUTO_CREATE_TOPICS_ENABLE=true`, three partitions, replication
 factor 1 — a single broker can't replicate past one anyway) compose.yaml
 already runs, with its advertised listener pointed at the in-cluster DNS name
@@ -627,8 +634,8 @@ is missing a resource or duplicating one.
 What this workflow explicitly does not verify, and what Chapter 30 picks up
 instead: whether `kubectl apply -k deploy/k8s/overlays/minikube` against a
 real running minikube actually schedules ten pods successfully; whether the
-images referenced by those eight Deployments exist in minikube's local
-podman image store (they don't yet — nothing in this chapter builds or loads
+images referenced by those eight Deployments exist in minikube's
+containerd image store (they don't yet — nothing in this chapter builds or loads
 one); whether any startup, readiness, or liveness probe actually passes
 against a live container; whether a rolling update's `maxUnavailable: 0`
 behaves the way this chapter describes under a real rollout; and whether a

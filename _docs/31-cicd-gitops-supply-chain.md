@@ -52,7 +52,7 @@ demonstrator from Chapter 28). Each job is **path-filtered**: the workflow's
 `on.push.paths` and `on.pull_request.paths` lists mean a change under
 `examples/03-notification-service/**` runs the notification gate without paying
 to rebuild the schema-registry demonstrator, and vice versa. The shape inside
-every job is the same three beats — stand up Postgres (a `postgres:16-alpine`
+every job is the same three beats — stand up Postgres (a `postgres:18.6-alpine`
 service container) and, where the seam is event-driven, a Kafka broker; boot
 the service(s) under test and wait for a *specific* readiness signal (for the
 Kafka consumers, the job waits on the literal "partitions assigned" log line,

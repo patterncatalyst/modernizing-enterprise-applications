@@ -61,6 +61,29 @@ no-speculative-infrastructure discipline this book has held since Chapter 3.
 
 {% include excalidraw.html file="mesh-sidecar-data-path" alt="A multi-pod view of the mea namespace. An external client enters over NodePort :8888 (plaintext, unmeshed) to strangler-proxy; then sidecar-to-sidecar mTLS (STRICT) hops carry strangler-proxy to order-service and graphql-gateway to order-service (REST :8087) and inventory-service (gRPC :9004). Each app pod holds an application container plus an istio-proxy Envoy sidecar — four pods shown in full and four more summarized. Every sidecar ships telemetry to an unmeshed lgtm Deployment, and postgres and kafka sit outside the mesh with no sidecar." caption="Figure 30.1 — The mesh data path: each app pod pairs its container with an Envoy sidecar, and sidecar-to-sidecar hops carry mTLS, access logs, and trace spans without the application's involvement" %}
 
+## Bringing up the cluster
+
+The run recorded in this chapter used the toolchain of the day (podman driver,
+Kubernetes v1.33.3, Istio 1.29.2). The scripts in `deploy/k8s/scripts/` now
+reproduce it on the current pins (DRQ-077): Docker Engine on a Fedora or RHEL
+host, minikube 1.39 with `--driver=docker --container-runtime=containerd`,
+Kubernetes v1.36.5, Istio 1.31.1, `grafana/otel-lgtm:0.36.0`. Every call names
+the profile (`minikube -p mea`, `kubectl --context mea`), and the two
+host-facing Services use fixed NodePorts published on the loopback when the
+profile is created, so nothing depends on a port-forward or tunnel staying up:
+
+```bash
+deploy/k8s/scripts/setup-profile.sh   # profile mea; 127.0.0.1:30888 (edge), 127.0.0.1:30300 (Grafana)
+deploy/k8s/scripts/install-istio.sh   # istioctl 1.31.1 install -f deploy/k8s/istio/istio-install.yaml
+deploy/k8s/scripts/build-images.sh    # mvn package, docker build, minikube image load (x8)
+deploy/k8s/scripts/deploy.sh          # kubectl apply -k deploy/k8s/overlays/minikube + rollout status
+curl -s http://127.0.0.1:30888/api/inventory
+deploy/k8s/scripts/teardown.sh        # minikube stop -p mea when idle
+```
+
+Stop any other local cluster first (another minikube profile, or OpenShift
+Local); `setup-profile.sh` refuses to start beside one.
+
 ## Installing Istio on minikube
 
 Getting a mesh onto this cluster is a two-tool story: `istioctl` installs
@@ -261,15 +284,25 @@ expects:
 # deploy/k8s/observability/lgtm-deployment.yaml
       containers:
         - name: lgtm
-          image: docker.io/grafana/otel-lgtm:0.8.1
+          image: docker.io/grafana/otel-lgtm:0.36.0
           volumeMounts:
             - name: otelcol-config
               mountPath: /otel-lgtm/otelcol-config.yaml
               subPath: otelcol-config.yaml
             - name: grafana-datasources
-              mountPath: /otel-lgtm/grafana/conf/provisioning/datasources/datasources.yaml
+              mountPath: /otel-lgtm/grafana/conf/provisioning/datasources/grafana-datasources.yaml
               subPath: datasources.yaml
 ```
+
+Two details changed with the move from `otel-lgtm:0.8.1` (the image this
+chapter's run used) to `0.36.0`. The image's startup script now waits for the
+Collector's `health_check` extension on `:13133/ready`, so the custom Collector
+config has to enable that extension and name its exporters the way the image
+does (`otlp_http/traces`, `otlp_http/metrics`, `otlp_http/logs`); without it the
+container never reports ready. And the datasources file is mounted over the
+image's own `grafana-datasources.yaml` rather than beside it: Grafana loads the
+directory in lexical order and the later file wins a uid collision, so a
+differently named file silently lost to the built-in one.
 
 One addition exists on top of the ported compose config, and it's the piece
 that makes mesh metrics visible at all: a second Prometheus receiver in the
@@ -618,3 +651,12 @@ readiness counts still match; re-query Tempo and Mimir after driving fresh
 traffic to confirm the span shape and the `mutual_tls` edges haven't
 drifted, since both are live-cluster facts this chapter captured once
 rather than values baked into any committed manifest.*
+
+*2026-10-09 update (DRQ-077), **not yet re-verified live**: the cluster recipe
+moved to Docker Engine with the docker driver, Kubernetes v1.36.5, Istio 1.31.1,
+`otel-lgtm:0.36.0`, Postgres `18.6-alpine` and Kafka `4.3.1`, with images
+loaded by `minikube image load` and the edge router and Grafana on NodePorts
+30888/30300 published at profile creation. The status paragraph above and the
+files under `deploy/k8s/observability/evidence/` record the earlier run as it
+happened; re-run the minikube sequence in `_plans/live-retest-inventory.md` to
+refresh them.*

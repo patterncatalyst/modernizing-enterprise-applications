@@ -11,7 +11,7 @@ this book strangling. Before anything can be modernized, it has to exist as
 something worth modernizing — a believable "before": a system a real team
 could have shipped, that does real work, that a customer would actually
 notice if it went down. That system is
-`examples/00-monolith/`, a plain Spring Boot 3.5 application on JDK 25, one
+`examples/00-monolith/`, a plain Spring Boot application on JDK 25 (3.5 when it was built; the frozen shell is on 4.1.1 since DRQ-077), one
 deployable JAR, one PostgreSQL schema, one JVM, built around a shipping and
 e-commerce domain split into six bounded contexts. This chapter walks its
 design — the domain, the layering, the schema, the API surface — and makes
@@ -302,7 +302,7 @@ call inside checkout's transaction — not the delivery mechanism.
 noting is its class-level Javadoc, already discussed above, documenting the
 module's own history accurately instead of erasing that Review was ever there.
 `application.yml` configures a Postgres datasource pointed at the project's
-local podman-stack coordinates (`jdbc:postgresql://localhost:5432/monolith`),
+local compose-stack coordinates (`jdbc:postgresql://localhost:5432/monolith`),
 sets `spring.jpa.hibernate.ddl-auto: validate` — meaning Hibernate checks the
 schema matches its entity mappings at startup but never generates or alters
 tables itself — and turns on Flyway (`spring.flyway.enabled: true`) pointed
@@ -385,7 +385,7 @@ relies on `BIGSERIAL` assigning IDs 1, 2, 3... in insertion order against a
 schema that was just created fresh, so a hardcoded `customer_id = 1` in a
 later `INSERT` reliably means Ada. That is a fine assumption for a Flyway
 migration that only ever runs once per fresh database — which is exactly
-what both the local podman-stack Postgres and the Testcontainers-backed
+what both the local compose-stack Postgres and the Testcontainers-backed
 integration tests give it — and it would be a dangerous assumption anywhere
 IDs might already be in use. The pattern is common enough in demo fixtures
 that it is easy to copy uncritically into a context where it no longer holds.
@@ -507,7 +507,7 @@ mvn verify          # three-tier suite: unit + slice + Testcontainers integratio
 mvn spring-boot:run # starts the app on :8080 against application.yml's datasource
 ```
 
-With the application running and the local podman-stack Postgres up and
+With the application running and the local compose-stack Postgres up and
 seeded, `curl http://localhost:8080/api/inventory` returns the three seeded
 SKUs; `curl -X POST http://localhost:8080/api/orders` with a JSON body
 shaped like `OrderCreate` runs the full checkout flow this chapter just

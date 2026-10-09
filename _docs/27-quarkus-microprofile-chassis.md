@@ -153,7 +153,7 @@ configuration decision hiding inside the first: leaving the `%test` profile
 without an explicit datasource lets Quarkus Dev
 Services stand up an isolated, ephemeral Testcontainers Postgres for
 `@QuarkusTest` runs, rather than pointing tests at the same long-lived
-podman-stack database `%dev` and `%prod` share. The gateway and shipping
+compose-stack database `%dev` and `%prod` share. The gateway and shipping
 both also use environment-variable defaults inside their property values —
 `${ORDER_SERVICE_URL:http://localhost:8087}` in the gateway,
 `${ORDER_SERVICE_BASE_URL:http://localhost:8087}` in shipping, the same
@@ -546,7 +546,7 @@ One place this project turns a piece of that convenience off, by stated
 choice: `quarkus.datasource.devservices.enabled=false` is
 set in every service's `application.properties`, and review-service's own
 file states the reason directly: these services, for now, share a single
-long-lived podman-stack Postgres instance rather than each dev loop spinning
+long-lived compose-stack Postgres instance rather than each dev loop spinning
 up its own ephemeral Testcontainers database, because Phase A's whole point
 for review-service was "the same shared database, unchanged," not an
 isolated per-run database Dev Services would otherwise provide

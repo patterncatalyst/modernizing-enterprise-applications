@@ -2,7 +2,7 @@
 title: "Prerequisites & the Toolchain"
 order: 1
 part: "Setting Up"
-description: "SDKMAN, JDK 25, Maven, the Quarkus and Camel CLIs, the podman observability stack, and a verify-your-setup gate."
+description: "SDKMAN, JDK 25, Maven, the Quarkus and Camel CLIs, Docker Engine and the compose observability stack, and a verify-your-setup gate."
 ---
 
 The introduction promised a monolith you can actually run, extractions you can
@@ -18,7 +18,7 @@ already exist — `examples/00-monolith/`, `examples/01-strangler-proxy/`, and
 and 15 are where each one gets explained properly; this chapter's bar is
 lower and more mechanical: clone, install, start, and confirm.
 
-{% include excalidraw.html file="toolchain-and-repo-layout" alt="The local toolchain split into required (JDK 25, Maven) and optional (Quarkus CLI, Camel CLI) pieces, the podman compose stack (Postgres, Kafka in KRaft mode, the Grafana LGTM bundle), and the examples/, tooling/, demos/, infra/, scripts/, and _docs/ directories those two feed." caption="Figure 1.1 — The local toolchain and the repository layout it builds, runs, and stands up." %}
+{% include excalidraw.html file="toolchain-and-repo-layout" alt="The local toolchain split into required (JDK 25, Maven) and optional (Quarkus CLI, Camel CLI) pieces, the docker compose stack on Docker Engine (Postgres, Kafka in KRaft mode, the Grafana LGTM bundle), and the examples/, tooling/, demos/, infra/, scripts/, and _docs/ directories those two feed." caption="Figure 1.1 — The local toolchain and the repository layout it builds, runs, and stands up." %}
 
 ## What you need, and where it comes from
 
@@ -52,9 +52,8 @@ The `-tem` suffix selects the Eclipse Temurin distribution, the same one the
 project's GitHub Actions CI job installs (`actions/setup-java@v4` with
 `distribution: temurin`, `java-version: "25"`) — matching your local JDK
 vendor to CI's is one fewer variable the next time a build behaves
-differently in the two places. If your Linux distribution or macOS package
-manager already ships a JDK 25 build you are comfortable with, that works
-too; SDKMAN is the recommendation because it makes it trivial to hold two or
+differently in the two places. If your Fedora or RHEL host already has a JDK 25
+package you are comfortable with, that works too; SDKMAN is the recommendation because it makes it trivial to hold two or
 three JDKs side by side and switch per-shell, which matters once you are
 flipping between this book's JVM-mode and native-image examples in Part 5.
 
@@ -111,40 +110,52 @@ sdk install camel
 camel --version
 ```
 
-**Podman and the `podman compose` plugin — not Docker.** This is the one
-substitution in the toolchain that is a fixed decision for this book, not a
-convenience recommendation: everywhere a
-modernization book might reach for `docker compose`, this one uses
-`podman compose` instead, and `compose.yaml` at the repository root says so
-directly in its own header comment — "PODMAN ONLY" — with a warning against
-substituting the Docker CLI or pulling in a Docker-flavored compose file from
-elsewhere. The reason is narrower than a general tooling preference: this
-project's local stack (Postgres, Kafka, the Grafana LGTM observability
-bundle) has to present the *exact* image tags and ports that Quarkus Dev
-Services and Testcontainers expect later in the book, and keeping a single
-compose source under a single container engine is what prevents a silent
-image-tag mismatch between your everyday dev loop and the ephemeral
-containers a test run spins up for itself. Install Podman from your
-distribution's package manager (it ships in Fedora, RHEL, and most current
-Linux distributions by default; macOS and Windows users should use the
-official Podman Desktop installer, which also provisions the Podman machine
-VM those platforms need), then confirm the `compose` subcommand resolves to
-the `podman-compose-v2` plugin rather than the legacy standalone
-`podman-compose` Python script:
+**Docker Engine and the `docker compose` plugin.** The local stack
+(Postgres, Kafka, the Grafana LGTM observability bundle), Testcontainers and
+Quarkus Dev Services in the test suites, the native-image container builds,
+and the minikube cluster in Part 9 all run on **Docker Engine** — the
+`docker-ce` packages from Docker's own repository, talking to
+`/var/run/docker.sock` through the docker context named `default`. Docker
+Desktop is never required. Compose is the v2 CLI plugin, invoked as
+`docker compose` (a space, not the hyphenated legacy `docker-compose`
+binary). One container engine for every path is the point: the image tags
+`.env` pins for the compose stack are the same ones the test containers and
+the cluster pull, so the everyday dev loop and the containers a test run
+spins up for itself cannot drift apart. The book is written and verified on
+**Fedora and RHEL** hosts (bare metal or VM). Install from Docker's
+repository — Fedora (dnf5) is shown; on RHEL the repository line is
+`sudo dnf config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo`:
 
 ```bash
-podman --version
-podman compose version
+sudo dnf -y install dnf-plugins-core
+sudo dnf config-manager addrepo --from-repofile=https://download.docker.com/linux/fedora/docker-ce.repo
+sudo dnf -y install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+sudo systemctl enable --now docker
+sudo usermod -aG docker "$USER"        # then log out and back in
 ```
+
+Remove `podman-docker` first if it is installed — it shadows the `docker`
+command. Then confirm the engine, the context, and the plugin:
+
+{% raw %}
+```bash
+docker context show        # default
+docker version --format '{{.Server.Version}}'
+docker compose version
+```
+{% endraw %}
+
+With the engine on the default socket, Testcontainers and Quarkus Dev Services
+find it with no further configuration (no `DOCKER_HOST` export needed).
 
 **Node.js and Newman — for the behavior-equivalence suite.** The suite that
 gates every extraction in this book from Chapter 15 onward is a Postman
 collection run through **Newman**, Postman's command-line collection runner,
 which itself runs on Node.js. You do not need Node for anything else in this
 book — no JavaScript application code appears anywhere in the examples — so a
-recent LTS release (Node 20 or 22; the project's CI job uses Node 22 via
-`actions/setup-node@v4`) installed however you normally manage Node versions
-on your machine is sufficient. Install Newman globally once Node is in place:
+recent LTS release (Node 22 or newer; the project's CI job uses Node 22 via
+`actions/setup-node@v4`) is sufficient — `sudo dnf install -y nodejs npm`
+on Fedora and RHEL. Install Newman globally once Node is in place:
 
 ```bash
 npm install -g newman
@@ -187,8 +198,9 @@ cp .env.example .env
 ```
 
 Open `.env` and skim it before moving on; it is short and every line is
-commented. It pins three image tags — the Grafana `otel-lgtm` bundle, the
-Postgres image, and the Apache Kafka image — along with the monolith's
+commented. It pins the image tags — the Grafana `otel-lgtm` bundle
+(`0.36.0`), Postgres (`18.6-alpine`), Apache Kafka (`4.3.1`), Debezium Connect
+(`3.7.0.Final`) and Apicurio Registry (`3.3.3`) — and the host ports, along with the monolith's
 database name, user, and password, and a fixed Kafka KRaft cluster identity.
 None of these values are secret (the password is literally
 `monolith_dev_only`), but pinning them in one tracked file rather than
@@ -214,21 +226,24 @@ Read what that script actually does rather than treating it as a black box,
 because the mechanics matter the first time something does not come up
 cleanly. It resolves its own location so it works regardless of your current
 directory, copies `.env.example` to `.env` for you if you skipped the step
-above, then runs `podman compose --env-file .env up -d` and polls
-`podman compose ps` in a loop until every service's healthcheck reports
+above, checks that `docker` and the `docker compose` plugin are present, then
+runs `docker compose --env-file .env up -d` and polls
+`docker compose ps` in a loop until every service's healthcheck reports
 `healthy` (or sixty retries elapse, in which case it prints whatever state it
 last saw and gets out of your way rather than hanging forever). Each of the
-three services carries its own healthcheck in `compose.yaml`: Postgres via
-`pg_isready`, Kafka via `kafka-broker-api-versions.sh` against its own
+three core services carries its own healthcheck in `compose.yaml`: Postgres via
+`pg_isready -h 127.0.0.1` (over TCP, because the image's first-boot init
+server answers on the Unix socket before the real server is listening), Kafka via `kafka-broker-api-versions.sh` against its own
 broker, and the LGTM bundle via a plain `curl` against Grafana's
 `/api/health` endpoint, because the upstream
 `otel-lgtm` image does not ship `wget`, and a healthcheck template that
 assumes it will silently fail with exit code 127 forever. When the script
-finishes, it prints the three addresses you'll use for the rest of this
+finishes, it prints the addresses you'll use for the rest of this
 chapter and every chapter after it:
 
 ```text
 Grafana:    http://localhost:3000
+Prometheus: http://localhost:19090 (host 19090; Cockpit owns 9090)
 Postgres:   localhost:5432 (see .env for db/user/password)
 Kafka:      localhost:9092 (host) / kafka:9094 (compose network)
 ```
@@ -383,7 +398,7 @@ from `compose.yaml` and each project's `application.properties` every time:
 | Monolith (Spring Boot) | 8080 | `examples/00-monolith/src/main/resources/application.yml` |
 | Review service (Quarkus) | 8081 | `examples/02-review-service` |
 | Strangler proxy (Camel on Quarkus) | 8888 | `examples/01-strangler-proxy`, `quarkus.http.port` |
-| Grafana (LGTM bundle) | 3000 | `compose.yaml`; OTLP on 4317/4318, Mimir on 9090, Loki on 3100, Tempo on 3200 |
+| Grafana (LGTM bundle) | 3000 | `compose.yaml`; OTLP on 4317/4318, Prometheus on host **19090** (container 9090 — Cockpit owns host 9090 on Fedora Server and RHEL), Loki on 3100, Tempo on 3200 |
 
 ## CI runs this same gate
 
@@ -409,10 +424,10 @@ different caller.
   install and a Maven on your `PATH`, or the per-project wrapper) and several
   scoped-later pieces (Quarkus CLI, Camel CLI, Ruby/Bundler) you can defer
   without losing anything today.
-- Podman, not Docker, is this project's fixed container toolchain
-  (`compose.yaml`'s own header enforces it) specifically to keep local
-  image tags in lockstep with what Quarkus Dev Services and Testcontainers
-  expect later in the book.
+- Docker Engine with the `docker compose` plugin is the one container engine
+  for the compose stack, the test containers, and the minikube cluster, on a
+  Fedora or RHEL host, so the image tags pinned in `.env` are the ones every
+  path actually runs.
 - `scripts/stack-up.sh` brings up Postgres, Kafka, and the Grafana LGTM
   bundle from one `compose.yaml`, gated by real healthchecks rather than a
   fixed sleep.
@@ -442,3 +457,7 @@ actually matches whatever you set `POSTGRES_PASSWORD` to in your own `.env`,
 and that `demos/demo-equivalence.sh http://localhost:8888` reports a fully
 green run against your own freshly built services before you continue to
 Chapter 2.*
+
+*2026-10-09 (DRQ-077): the container toolchain moved from Podman to Docker
+Engine and every image pin moved to its newest stable release; the commands
+above reflect that and are equally unverified until re-run.*

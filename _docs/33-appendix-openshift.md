@@ -381,7 +381,7 @@ re-running `helm upgrade --install` against a fresh `crc start`, then re-driving
 two Route `curl`s and re-reading the pod SCC annotations — the assigned UID will
 differ per cluster, but the SCC names and the 200s should not.*
 
-*2026-10-09 update (DRQ-085), **not yet re-verified live**: the commands above
+*2026-10-09 update (DRQ-077), **not yet re-verified live**: the commands above
 were changed after the run recorded here. The images are now built inside the
 cluster (`openshift/build-images.sh`) instead of with a host `podman build`/`push`
 loop, Postgres and Kafka are copied with `skopeo` (`openshift/mirror-infra-images.sh`)
