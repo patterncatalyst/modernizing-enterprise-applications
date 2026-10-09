@@ -1,0 +1,21 @@
+# peer-authentication-edge.yaml — DRQ-077 (2026-10-09)
+#
+# The strangler-proxy is the mesh edge: the host reaches it through NodePort
+# 30888 (published on 127.0.0.1), so its requests arrive as plaintext from
+# outside the mesh. Under the namespace-wide STRICT policy its sidecar reset
+# them (curl: empty reply). kubectl port-forward, which this path replaced,
+# entered the pod's network namespace directly and never met the sidecar's
+# inbound mTLS check. A workload-scoped PERMISSIVE policy lets the edge accept
+# that plaintext; every service behind it stays STRICT, and the edge still
+# talks mTLS to them.
+apiVersion: security.istio.io/v1
+kind: PeerAuthentication
+metadata:
+  name: strangler-proxy-edge
+  namespace: mea
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: strangler-proxy
+  mtls:
+    mode: PERMISSIVE

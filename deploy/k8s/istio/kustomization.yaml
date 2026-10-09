@@ -18,4 +18,5 @@ kind: Kustomization
 
 resources:
   - peer-authentication.yaml
+  - peer-authentication-edge.yaml
   - telemetry.yaml
