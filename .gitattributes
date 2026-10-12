@@ -1,15 +1,9 @@
-# GitHub Linguist overrides.
-#
-# The diagram-generator sources under assets/diagrams/ are authoring tooling
-# that emits the book's SVG/Excalidraw figures -- documentation art, not the
-# project's application code. Without these overrides Linguist counts ~420 KB
-# of diagram Python against the Java services and reports Python as the primary
-# language of what is a Java (Quarkus/Spring) modernization reference.
-assets/diagrams/*.py linguist-documentation
-scripts/generate_diagram.py linguist-documentation
-
-# Editable Excalidraw sources are generated diagram artifacts (JSON), not code.
-*.excalidraw linguist-generated
-
-# Rendered figures are vendored assets.
-assets/diagrams/*.svg linguist-vendored
+# GitHub Linguist overrides — make the repo language reflect the real source,
+# not the Jekyll site chrome, generated output, or slide-deck build tooling.
+_site/**        linguist-generated
+_layouts/**     linguist-documentation
+_includes/**    linguist-documentation
+assets/**       linguist-documentation
+*.html          linguist-documentation
+presentation/**  linguist-vendored
+presentations/** linguist-vendored
