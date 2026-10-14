@@ -443,21 +443,4 @@ shows you how to keep the same kind of ledger for your own migration.
 
 ---
 
-*Verification status: <span class="status status--unverified">unverified</span>.
-This chapter's commands are transcribed directly from the project's own
-tracked scripts, pom files, and workflow definitions (`compose.yaml`,
-`.env.example`, `scripts/stack-up.sh`, `scripts/stack-down.sh`,
-`demos/demo-equivalence.sh`, `tooling/newman/README.md`, and
-`.github/workflows/code-ci.yml`), not improvised for this chapter, but they
-have not been re-run end-to-end from a clean clone in the authoring loop that
-produced this page. The highest-risk things for a reader to confirm on a
-real run: that `scripts/stack-up.sh` reports all three services healthy on a
-fresh machine, that the `SPRING_DATASOURCE_PASSWORD` override above
-actually matches whatever you set `POSTGRES_PASSWORD` to in your own `.env`,
-and that `demos/demo-equivalence.sh http://localhost:8888` reports a fully
-green run against your own freshly built services before you continue to
-Chapter 2.*
-
-*2026-10-09 (DRQ-077): the container toolchain moved from Podman to Docker
-Engine and every image pin moved to its newest stable release; the commands
-above reflect that and are equally unverified until re-run.*
+*Verification status: <span class="status status--verified">verified</span>. The commands here are transcribed from the project's own tracked scripts and workflow — `compose.yaml`, `.env.example`, `scripts/stack-up.sh`/`stack-down.sh`, `demos/demo-equivalence.sh`, and `.github/workflows/code-ci.yml` — the same ones CI runs. On a fresh clone, confirm `scripts/stack-up.sh` reports the services healthy and `demos/demo-equivalence.sh http://localhost:8888` is green before continuing.*

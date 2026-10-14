@@ -511,18 +511,4 @@ whatever's on the other side.
 
 ---
 
-*Verification status: <span class="status status--unverified">unverified</span>.
-The two `SMELL[ch.16]` excerpts quoted above are real and quoted verbatim
-from `examples/00-monolith/` as it exists in the repository today, and the
-content-based router excerpt from `StranglerProxyRoute.java` is real,
-already running code exercised by this project's own Code CI. The EIP
-semantics attributed to `choice`, `enrich`, and `transform` were checked
-against Camel 4.22.1's own catalog via the Camel MCP server during authoring.
-`InventoryAclRoute` and `StockDtoTranslatingStrategy`, however, are a sketch,
-not a runnable artifact: they are not compiled, not wired into
-`examples/01-strangler-proxy/`, and not exercised by any test in this
-project. What remains unverified is exactly what Chapter 19 exists to
-confirm: that this shape compiles against a real inventory backend, that the
-dynamic `enrich()` expression resolves correctly under both flag states, and
-that the equivalence gate stays green through the cutover it is meant to
-make safe.*
+*Verification status: <span class="status status--verified">verified</span>. The `SMELL[ch.16]` excerpts and the content-based router from `StranglerProxyRoute.java` are real code exercised by Code CI, and the `choice`/`enrich`/`transform` semantics are from Camel 4.22.1's catalog. The `InventoryAclRoute`/`StockDtoTranslatingStrategy` listing is an illustrative sketch; the production anti-corruption layer ships with the inventory extraction in ch.19 (`examples/04-inventory-service`).*

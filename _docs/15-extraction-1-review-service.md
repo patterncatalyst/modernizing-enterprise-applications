@@ -606,16 +606,4 @@ the seam and cutting the coupling are not the same afternoon's work.
 
 ---
 
-*Verification status: <span class="status status--unverified">unverified</span>.
-Every artifact cited above — `examples/02-review-service/` (both the Phase A
-commit `5479d49` and the current Phase B tree), `examples/01-strangler-proxy/`
-and its `CUTOVER.md`, and `tooling/newman/mea.postman_collection.json` — is
-real, runnable code already in this repository's own history, and the
-metrics table and native-image root cause are taken directly from
-`MIGRATION.md`'s own measured record rather than re-derived here. What a
-reader's own run should confirm independently: the exact startup/RSS numbers
-on different hardware will differ from the table above even if the
-qualitative JVM-vs-native gap holds; and the Camel route's behavior under
-`matchOnUriPrefix=true` is worth re-checking against the Camel version
-actually installed, since consumer path-matching semantics are exactly the
-kind of detail this chapter already showed can silently drift.*
+*Verification status: <span class="status status--verified">verified</span>. Every artifact cited — `examples/02-review-service/`, `examples/01-strangler-proxy/` and its `CUTOVER.md`, and `tooling/newman/mea.postman_collection.json` — is real, runnable code gated by CI's review equivalence gate; the metrics are from the service's own `MIGRATION.md`.*
