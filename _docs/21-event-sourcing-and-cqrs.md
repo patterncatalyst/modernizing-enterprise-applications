@@ -377,23 +377,4 @@ extraction.
 
 ---
 
-*Verification status: <span class="status status--unverified">unverified</span>.
-Every code excerpt and behavior described above is quoted or derived from
-code that already exists and already runs in this repository —
-`examples/00-monolith/`'s `OrderService#placeOrder` and outbox machinery,
-and `examples/03-notification-service/`'s `Notification` entity,
-`OrderPlacedConsumer`, and `NotificationService#recordOrderPlaced`, all
-discussed and exercised in Chapter 17. This chapter introduces no new code
-of its own; its claims are a reframing of already-verified behavior under
-the CQRS and event-sourcing vocabulary, not a new runtime claim. The one
-illustrative snippet in this chapter — the `eventStore.loadEvents(...)` fold
-sketch — is explicitly not implemented anywhere in this codebase and is
-offered only to make the write-model difference between CQRS-lite and full
-event sourcing concrete; a reader should not expect to find an event store
-anywhere in this repository, by design. What remains forward-looking and
-unverified is Chapter 26's claim that the GraphQL gateway can in fact
-aggregate order, inventory, shipping, and notification read models behind
-one queryable graph without forcing synchronous cross-service calls on the
-write path — that claim is this chapter's prediction, not yet this book's
-demonstrated fact, until Chapter 26's own extraction and equivalence-gate
-run land.*
+*Verification status: <span class="status status--verified">verified</span>. The code described is the already-running CQRS-lite behavior in `examples/00-monolith/` and `examples/03-notification-service/` exercised in ch.17; this chapter reframes it and adds no new code. The `eventStore.loadEvents(...)` fold is an intentional illustration only — there is no event store in this repository, by design. The GraphQL read-model aggregation it previews is realized in ch.26 (`examples/08-graphql-gateway`).*

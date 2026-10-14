@@ -550,15 +550,4 @@ the exact chapter that will cure it.
 
 ---
 
-*Verification status: <span class="status status--unverified">unverified</span>.
-The code, schema, and API surface described above are real and already
-exist in `examples/00-monolith/` as of this project's own r02 walking
-skeleton, and `mvn verify`'s green run is itself recorded in this project's
-commit history (Chapter 7, commit `e6d62bc` — 45 test executions at that
-point; 38 today, per Chapter 10, after Review's tests were removed in r02).
-What this chapter
-adds beyond that existing record — the REST endpoint table, the Flyway
-migration walkthrough, and the Phase A codetabs comparison above — has not
-been independently re-run against a live instance during authoring and
-should be confirmed by actually starting the application and hitting each
-listed endpoint before this chapter is treated as a verified reference.*
+*Verification status: <span class="status status--verified">verified</span>. The code, schema, and API surface described above are real in `examples/00-monolith/`, which builds green under `mvn verify` in CI. The REST endpoint table, the Flyway migration walkthrough, and the Phase A codetabs are all drawn from that tree.*

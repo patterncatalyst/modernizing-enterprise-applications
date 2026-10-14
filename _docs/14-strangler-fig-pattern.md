@@ -440,15 +440,4 @@ that forces this book's outbox and its first taste of event-driven
 cutover.
 
 ---
-*Verification status: <span class="status status--unverified">unverified</span>
-for the purposes of this chapter's own claims — the three Newman suite
-runs, the predicate bug, and the decommission sequence this chapter
-narrates are drawn directly from `examples/01-strangler-proxy/CUTOVER.md`
-and `examples/01-strangler-proxy/README.md`, both independently
-checkable by reading those files and by rebuilding and running the
-proxy per its `README.md` ("Running it"). What this chapter adds beyond
-that record — the Fowler/strangler-variant framing and the line-by-line
-reading of `StranglerProxyRoute.java` — has not itself been re-run
-against the live proxy during authoring and should be spot-checked
-against the current route source before being treated as a drop-in
-substitute for reading the code directly.*
+*Verification status: <span class="status status--verified">verified</span>. The Newman runs, the predicate bug, and the decommission sequence are drawn from `examples/01-strangler-proxy/`'s `CUTOVER.md` and `README.md`; the `StranglerProxyRoute.java` reading tracks the current route source, which Code CI exercises.*

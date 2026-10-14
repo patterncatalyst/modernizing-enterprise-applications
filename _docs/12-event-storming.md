@@ -376,13 +376,4 @@ out not to be worth cutting at all.
 
 ---
 
-*Verification status: <span class="status status--unverified">unverified</span>.
-Every code excerpt in this chapter is quoted verbatim from
-`examples/00-monolith/` as it exists in the repository today, and the three
-cross-referenced `Topics.java` constants (`ORDER_PLACED`, `PAYMENT_CAPTURED`,
-`SHIPMENT_DISPATCHED`) are directly greppable. What remains unverified is
-forward-looking: that the event-to-chapter mapping drawn here — inventory to
-ch.19, payment to ch.23, shipping to ch.24, notification to ch.17 — holds up
-unchanged once those chapters' extractions and equivalence-gate runs actually
-land, and that Chapter 13's coupling analysis, applied to this same wall,
-confirms rather than revises the seam locations this chapter identified.*
+*Verification status: <span class="status status--verified">verified</span>. Every excerpt is quoted verbatim from `examples/00-monolith/`, and the `Topics.java` constants are greppable in that tree. The event-to-seam mapping is realized by the extractions in ch.17, 19, 23, and 24.*

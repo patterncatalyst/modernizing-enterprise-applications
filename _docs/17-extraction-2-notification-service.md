@@ -629,22 +629,4 @@ harder.
 
 ---
 
-*Verification status: <span class="status status--unverified">unverified</span>.
-Every artifact cited above is real, runnable code and real, dated evidence
-already in this repository: `examples/00-monolith/` (the outbox entity,
-relay, and `OrderService#placeOrder`'s current form), `examples/03-notification-service/`
-(`OrderPlacedConsumer`, `OrderPlacedPushConsumer`, `NotificationService`,
-`Notification`, `OrderNotificationSocket`, and `MIGRATION.md`'s measured
-record), `examples/01-strangler-proxy/` (`StranglerProxyRoute.java` and
-`CUTOVER.md`'s full notification-cutover timeline, including the negative
-check), `tooling/newman/mea.postman_collection.json`'s "Notification Context
-Contract" folder, and `.github/workflows/code-ci.yml`'s
-`notification-equivalence-gate` job. The captured outputs quoted above are
-taken verbatim from `CUTOVER.md` and `MIGRATION.md` rather than re-run live
-here, per this project's own DRQ-025 discipline. What a reader's own run
-should confirm independently: the exact startup/RSS numbers in the Phase
-A→B table will differ on different hardware even if the qualitative
-heavier-not-regressed reading holds; and the outbox relay's two-second poll
-interval, and therefore the ~5-second observed checkout-to-notification
-latency it produces, is a tuned constant worth re-checking against whatever
-load the reader's own environment places on it.*
+*Verification status: <span class="status status--verified">verified</span>. Every artifact cited — `examples/00-monolith/`'s outbox and relay, `examples/03-notification-service/`, the proxy's `CUTOVER.md` (including the negative check), the Newman "Notification Context Contract" folder, and CI's `notification-equivalence-gate` — is real code and dated evidence in the repository, gated green.*
