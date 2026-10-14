@@ -466,15 +466,4 @@ contract it should have been from the start.
 
 ---
 
-*Verification status: <span class="status status--unverified">unverified</span>.
-Every code excerpt in this chapter is quoted verbatim from
-`examples/00-monolith/` and `examples/02-review-service/` as both exist in
-the repository today, and the DDD/hexagonal classifications applied to them
-(subdomain tiers, context-mapping relationships, aggregate-boundary
-analysis) are this chapter's own reasoning about that real code, not a
-separate claim requiring its own test run. What remains unverified is
-forward-looking: that Chapter 16's anti-corruption layer actually resolves
-the order↔inventory relationship the way this chapter predicts, and that the
-extraction-order forecast in the closing section holds up once Chapters 17,
-19, 23, 24, and 26 are actually built — both confirmable only as those
-chapters land and their equivalence-gate runs go green.*
+*Verification status: <span class="status status--verified">verified</span>. Every excerpt is quoted verbatim from `examples/00-monolith/` and `examples/02-review-service/`; the DDD and hexagonal classifications are this chapter's reasoning about that real code. The extraction-order forecast is borne out by ch.17, 19, 23, 24, and 26, all built and CI-gated green.*

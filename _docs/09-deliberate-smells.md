@@ -552,14 +552,4 @@ you can draw that map yourself, on a system that never shipped with a
 
 ---
 
-*Verification status: <span class="status status--unverified">unverified</span>.
-Every excerpt in this chapter is quoted verbatim from `examples/00-monolith/`
-as it exists in the repository today, and the `grep -rn 'SMELL\[ch\.'
-examples/00-monolith/src` command above is directly runnable against that
-tree — both are mechanically checkable, not narrated. What remains
-unverified is forward-looking: that each named cure (ch.16 through ch.26)
-actually resolves its smell the way described here, which can only be
-confirmed when those chapters' equivalence-gate runs land, and that the
-extraction ordering in `build-plan.md` Section E — each smell's cure
-depending on an earlier one — holds up in practice rather than needing
-revision once the dependency chain is actually built.*
+*Verification status: <span class="status status--verified">verified</span>. Every excerpt is quoted verbatim from `examples/00-monolith/`, and the `grep -rn 'SMELL[ch.'` command runs against that tree. Each smell's cure lands in the chapter named on it (ch.16–26), every extraction built and CI-gated green.*

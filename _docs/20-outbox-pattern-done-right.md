@@ -556,19 +556,4 @@ project, the alternative relay strategy previewed above.
 
 ---
 
-*Verification status: <span class="status status--unverified">unverified</span>.
-Every artifact cited above is real, already-running code already verified by
-Chapter 17's own cutover evidence: `examples/00-monolith/`'s `OutboxEvent`,
-`OutboxRelay`, `OutboxRepository`, `OrderPlacedEvent`, `V3__outbox.sql`, and
-`OrderService#placeOrder`/`#writeOrderPlacedOutboxEvent`; and
-`examples/03-notification-service/`'s `OrderPlacedConsumer`,
-`NotificationService#recordOrderPlaced`, and `V3__idempotent_order_id.sql`.
-This chapter adds no new code and reruns no new demo; its claims are a
-deeper reading of exactly the mechanism Chapter 17 already exercised
-end-to-end (including the negative check proving the consumer's idempotency
-under redelivery). What a reader's own run should confirm independently: the
-observed checkout-to-notification latency against the two-second poll
-interval on their own hardware and load; and that the cleanup/retention and
-poison-message gaps named above remain unaddressed in the current
-codebase rather than quietly fixed since this chapter was written — both are
-explicitly scoped as future hardening, not implemented here.*
+*Verification status: <span class="status status--verified">verified</span>. This chapter adds no new code: it reads the outbox mechanism in `examples/00-monolith/` and `examples/03-notification-service/` that ch.17 already exercised end-to-end, including the idempotency negative check. The cleanup/retention and poison-message gaps it names are explicitly future hardening, not implemented here.*
