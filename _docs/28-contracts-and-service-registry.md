@@ -637,7 +637,7 @@ v2/v3 fixtures; `compose.yaml`'s `apicurio` service block;
 `.github/workflows/code-ci.yml`'s `schema-registry-gate` job
 (`mvn -f examples/09-schema-registry-demo/pom.xml verify`, no services
 block — the module provisions its own Kafka and Apicurio via Dev Services);
-`_plans/decisions.md` DRQ-038 and DRQ-076; and, for the drift this chapter
+and, for the drift this chapter
 opened with, `examples/07-order-service/.../OrderPlacedEvent.java` (seven
 fields), `examples/05-payment-service/.../OrderPlacedEvent.java` (seven
 fields, `paymentMethod` included), and

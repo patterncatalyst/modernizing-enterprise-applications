@@ -333,7 +333,6 @@ will drift — re-run `demo.sh` to refresh. Cited: `.github/workflows/code-ci.ym
 (the seven job names + path filters), `pages.yml`, `supply-chain.yml`;
 `examples/10-supply-chain/{demo.sh,policy.yaml,README.md}` and its `evidence/`;
 `examples/01-strangler-proxy/src/main/resources/application.properties` (the
-retired `strangler.*.enabled` flags); `_plans/decisions.md` (DRQ-020,
-DRQ-001).*
+retired `strangler.*.enabled` flags).*
 </content>
 </invoke>

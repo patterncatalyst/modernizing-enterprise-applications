@@ -90,9 +90,8 @@ long as it did.
 ## Plan: the first human gate
 
 Map produces understanding; Plan produces a commitment, and commitments are
-where the ADLC inserts its first stop sign. The step plan for Review — steps
-S6 through S10 — laid out the exact
-sequence this chapter narrates: build the equivalence suite against the
+where the ADLC inserts its first stop sign. The step plan for Review laid out
+the exact sequence this chapter narrates: build the equivalence suite against the
 running monolith, stand up a flag-gated strangler proxy defaulting every
 request to the monolith, lift Review onto Quarkus via the Spring-compatibility
 extensions, refactor it to idiomatic Quarkus with measured before/after

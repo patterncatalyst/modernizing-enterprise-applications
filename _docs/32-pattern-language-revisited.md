@@ -283,7 +283,7 @@ supply-chain + CI gates (ch.31, verified live). Deferred items (rewrite, full
 event sourcing, LRA/Narayana, GitOps operator + canary, Loki log shipping,
 Kafka-aware tracing, image signing) are each named as deferred in the chapter
 cited above, consistent with the no-speculative-infrastructure discipline
-(DRQ-001) and the security-by-design scope (DRQ-020). No claim in this chapter
+and the security-by-design scope. No claim in this chapter
 should be read as newly verified here; re-confirm any specific verdict against
 its source chapter's own verification footer.*
 </content>

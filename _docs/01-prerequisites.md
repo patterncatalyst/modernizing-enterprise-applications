@@ -329,7 +329,7 @@ The proxy listens on port **8888** and reverse-proxies every request under
 `/api/**` to one of the two backends above, chosen by the
 `strangler.review.enabled` property: `/api/reviews/**` goes to the Review
 service on 8081 when the flag is on (the committed default, as of this
-project's own r02 cutover) and everything else always goes to the monolith on
+project's own cutover) and everything else always goes to the monolith on
 8080. If you would rather explore either Quarkus project with live reload
 instead of a packaged jar while you are getting oriented, `./mvnw quarkus:dev`
 from inside either directory starts it in dev mode and recompiles changes on

@@ -621,10 +621,8 @@ timelines for both Notification and Inventory), `examples/03-notification-servic
 `OrderPlacedConsumerTest`, and `pom.xml`'s `quarkus-smallrye-health`
 dependency), `examples/04-inventory-service/` (`InventoryCdcConsumer`,
 `InventoryCdcConsumerTest`, and `pom.xml`'s `quarkus-smallrye-health`
-dependency), and `_plans/decisions.md` (DRQ-034, DRQ-037, DRQ-041,
-DRQ-042, DRQ-046). The captured outputs quoted above are taken verbatim from
-`CUTOVER.md` and `MIGRATION.md` rather than re-run live here, per this
-project's own DRQ-025 discipline. What a reader's own run should confirm
+dependency). The captured outputs quoted above are taken verbatim from
+`CUTOVER.md` and `MIGRATION.md` rather than re-run live here. What a reader's own run should confirm
 independently: that no fault-tolerance or circuit-breaker dependency has
 been added to any service's build since this chapter was written (the
 deferred-items list above is a snapshot, not a permanent ceiling); and that
