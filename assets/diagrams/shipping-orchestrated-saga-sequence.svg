@@ -218,5 +218,5 @@
 <text x="986.0" y="1489.0" font-size="11" fill="#555" text-anchor="middle">stock restored</text>
 <text x="1000.0" y="30" font-size="17" fill="#1d1d1d" text-anchor="middle" font-weight="700">ch.24 — the orchestrated saga: one Camel Saga EIP coordinator sequences fulfilment and owns the compensation decision</text>
 <text x="810" y="790" font-size="11" fill="#2f5f3d" text-anchor="middle" font-weight="700">ONE visible place owns the sequence AND the compensation decision</text>
-<text x="40" y="1672" font-size="10.5" fill="#555555" text-anchor="start">Sourced from examples/06-shipping-service/.../{ShipmentSagaRoute,ShipmentSagaSteps,ShippingService}.java, examples/00-monolith/.../order/OrderSagaListener.java, and _plans/iterations/shipping-plan.md (S5/S6).</text>
+<text x="40" y="1672" font-size="10.5" fill="#555555" text-anchor="start">Sourced from examples/06-shipping-service/.../{ShipmentSagaRoute,ShipmentSagaSteps,ShippingService}.java, examples/00-monolith/.../order/OrderSagaListener.java.</text>
 </svg>

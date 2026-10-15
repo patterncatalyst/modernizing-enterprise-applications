@@ -67,16 +67,16 @@ grpc_server = node(990, 160, 320, 90, ["InventoryGrpcServiceImpl", ":9004 gRPC s
                                        "Reserve / Release / CheckStock / GetStock"], style="accent")
 own_schema = node(990, 270, 320, 80, ["Own schema (PostgreSQL)", "inventory_items table",
                                       "sole writer post-cutover"], style="sub")
-cdc_consumer = node(990, 370, 320, 60, ["InventoryCdcConsumer", "RETIRED post-cutover (S11)"], style="ghost")
+cdc_consumer = node(990, 370, 320, 60, ["InventoryCdcConsumer", "RETIRED post-cutover"], style="ghost")
 
 # ---- CDC backfill band (bottom, RETIRED) ---------------------------------
 cdc_band = {"x": 40, "y": 480, "w": 1300, "h": 200,
-            "label": "Debezium CDC -- ONE-TIME BACKFILL during transition (S3-S10), RETIRED post-cutover (S11)",
+            "label": "Debezium CDC -- ONE-TIME BACKFILL during transition, RETIRED post-cutover",
             "fill": "#f4f4f4"}
 
 old_table = node(80, 530, 300, 100, ["public.inventory_items", "monolith's OLD local inventory table",
                                      "same Postgres instance as monolith_pg",
-                                     "REMOVED (SMELL #5 cured, S11)"], style="ghost")
+                                     "REMOVED (SMELL #5 cured)"], style="ghost")
 debezium = node(440, 530, 260, 100, ["Debezium Postgres connector", "Kafka Connect, pgoutput",
                                      "RETIRED -- scripts/retire-debezium.sh"], style="ghost")
 kafka_topic = node(760, 530, 240, 100, ["Kafka topic", "mea.public.inventory_items",
@@ -94,11 +94,11 @@ edges = [
     {"x1": 880, "y1": 205, "x2": 990, "y2": 205,
      "label": "gRPC Reserve / Release -- :9004", "amber": True, "bidir": True, "lx": -66, "ly": -72},
     {"x1": 1150, "y1": 250, "x2": 1150, "y2": 270, "label": "atomic conditional UPDATE (own schema)"},
-    {"x1": 1150, "y1": 370, "x2": 1150, "y2": 350, "label": "upsert (idempotent) -- historical S3-S10", "dashed": True},
+    {"x1": 1150, "y1": 370, "x2": 1150, "y2": 350, "label": "upsert (idempotent) -- historical", "dashed": True},
     {"x1": 750, "y1": 280, "x2": 750, "y2": 300, "label": "orders, customers (own schema)"},
     {"x1": 380, "y1": 580, "x2": 440, "y2": 580, "label": "WAL (pgoutput), replication slot", "dashed": True},
     {"x1": 700, "y1": 580, "x2": 760, "y2": 580, "label": "publish", "dashed": True},
-    {"x1": 1000, "y1": 530, "x2": 1150, "y2": 430, "label": "backfill + sync (S3-S10 only)", "dashed": True, "lx": 40},
+    {"x1": 1000, "y1": 530, "x2": 1150, "y2": 430, "label": "backfill + sync", "dashed": True, "lx": 40},
 ]
 
 notes = [
@@ -127,10 +127,7 @@ notes = [
      "text": "Sourced from examples/04-inventory-service (InventoryGrpcServiceImpl, InventoryCdcConsumer, inventory.proto), examples/00-monolith",
      "anchor": "start", "size": 10.5, "color": "#555555"},
     {"x": 40, "y": 726,
-     "text": "(RemoteInventoryClient, OrderService, SMELLS.md #5), examples/01-strangler-proxy (/api/inventory route), infra/debezium/README.md,",
-     "anchor": "start", "size": 10.5, "color": "#555555"},
-    {"x": 40, "y": 740,
-     "text": "and _plans/iterations/inventory-plan.md.",
+     "text": "(RemoteInventoryClient, OrderService, SMELLS.md #5), examples/01-strangler-proxy (/api/inventory route), infra/debezium/README.md.",
      "anchor": "start", "size": 10.5, "color": "#555555"},
 ]
 

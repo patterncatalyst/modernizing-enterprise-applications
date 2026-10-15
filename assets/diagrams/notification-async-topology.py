@@ -120,7 +120,7 @@ notes = [
      "anchor": "start", "bold": True, "size": 12, "color": "#1d1d1d"},
 
     {"x": 40, "y": 940,
-     "text": "CURED (r04/S8): SMELL #4's synchronous, in-transaction NotificationService call is gone —",
+     "text": "CURED: SMELL #4's synchronous, in-transaction NotificationService call is gone —",
      "anchor": "start", "size": 11, "color": "#555555"},
     {"x": 40, "y": 956,
      "text": "see transactional-outbox-sequence.svg for the old-vs-new contrast.",

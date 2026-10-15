@@ -86,7 +86,7 @@ cards_def = [
      "cures: ch.16 (content-based routing & ACL)", "sub"),
     ("#6 Review tangled in shared security — CURED",
      "security/SecurityConfig's one SecurityFilterChain once governed Review despite no runtime dependency",
-     "ch.15 — already cut (r02 walking skeleton)", "accent"),
+     "ch.15 — already cut", "accent"),
 ]
 
 cards = []

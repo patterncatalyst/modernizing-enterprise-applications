@@ -91,11 +91,8 @@ notes = [
      "text": "The planning model plans and, later, validates adversarially; the execution model builds in between — the tier that drafted the plan is the one that checks it was executed faithfully",
      "anchor": "middle", "size": 12, "color": "#555555"},
 
-    {"x": 40, "y": H - 46,
-     "text": "Sourced from _docs/06-agents-skills-mcp.md (\"Agents: a model in a loop with tools\" — the plan -> execute -> validate section).",
-     "anchor": "start", "size": 10.5, "color": "#555555"},
     {"x": 40, "y": H - 16,
-     "text": "Tier names from _plans/build-plan.md (line 229-230; ADLC phase table lines 610-612: Plan/Generate/Verify rows).",
+     "text": "Sourced from _docs/06-agents-skills-mcp.md (\"Agents: a model in a loop with tools\" — the plan -> execute -> validate section).",
      "anchor": "start", "size": 10.5, "color": "#555555"},
 ]
 
