@@ -79,8 +79,8 @@ phase_band = {"x": 20, "y": 68, "w": W - 40, "h": 112,
 LEDGER_Y, LEDGER_H = 235, 110
 LEDGER = [
     ("build_plan", 40, 288, ["_plans/build-plan.md", "chapters A-M, phase table,", "iteration backlog"], "box"),
-    ("r02_plan", 348, 288, ["_plans/iterations/r02-plan.md", "S1-S14, acceptance-gated,", "written before any step starts"], "box"),
-    ("r02_status", 656, 288, ["_plans/iterations/r02-status.md", "updated as each step completes --", "this project's own resume record"], "box"),
+    ("r02_plan", 348, 288, ["_plans/iterations/ plan file", "numbered, acceptance-gated steps,", "written before any step starts"], "box"),
+    ("r02_status", 656, 288, ["_plans/iterations/ status file", "updated as each step completes --", "the iteration's resume record"], "box"),
     ("decisions", 964, 288, ["_plans/decisions.md", "append decision outcomes --", "DRQ rows: fixed / accepted / proposed"], "box"),
     ("reconciliation", 1272, 288, ["_plans/reconciliation.md", "record drift vs. cited sources --", "scoped, not yet written (this chapter)"], "ghost"),
 ]
@@ -98,7 +98,7 @@ ledger_band = {"x": 20, "y": 186, "w": W - 40, "h": 174,
 edges = [
     connect(phase_nodes["plan"], ledger_nodes["build_plan"]),
     connect(phase_nodes["plan"], ledger_nodes["r02_plan"]),
-    connect(phase_nodes["generate"], ledger_nodes["r02_status"], label="steps S1-S14 executed", ly=-18),
+    connect(phase_nodes["generate"], ledger_nodes["r02_status"], label="steps executed", ly=-18),
     connect(phase_nodes["verify"], ledger_nodes["r02_status"], label="equivalence-gate result recorded", ly=14),
     connect(phase_nodes["reconcile"], ledger_nodes["decisions"], amber=True, label="append decision outcomes", ly=-16),
     connect(phase_nodes["reconcile"], ledger_nodes["reconciliation"], amber=True, dashed=True,
@@ -121,10 +121,10 @@ edges += [
 # ---- tier 3: the resume callout, fed by the one file that says so ---------
 RESUME_Y, RESUME_H = 430, 120
 resume = node(270, RESUME_Y, 1060, RESUME_H, [
-    "Resume mechanism: r02-status.md, read again",
+    "Resume mechanism: the status file, read again",
     "\"Saved before a user break/possible reboot.\"",
-    "\"Remaining in r02 (resume here)\" -- names S13, S14 by number",
-    "Next session reads this one file plus r02-plan.md's step definitions and continues",
+    "\"Remaining (resume here)\" -- names the next steps",
+    "Next session reads this one file plus the plan file's step definitions and continues",
 ], style="ink")
 nodes.append(resume)
 
@@ -148,7 +148,7 @@ notes = [
      "text": "Sourced from _docs/02-project-ledger.md (\"The build plan\", \"Per-iteration plans and resume records\", \"The ledger and the two human gates\").",
      "anchor": "start", "size": 10.5, "color": "#555555"},
     {"x": 40, "y": H - 16,
-     "text": "Reconcile row and resume-record quotes are the chapter's own quotes from build-plan.md's phase table and r02-status.md.",
+     "text": "Reconcile row and resume-record quotes are the chapter's own quotes from build-plan.md's phase table and the iteration status file.",
      "anchor": "start", "size": 10.5, "color": "#555555"},
 ]
 

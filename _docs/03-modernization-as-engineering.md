@@ -276,8 +276,8 @@ sentence for at least one completed step is not yet disciplined engineering,
 whatever its architecture diagrams look like.
 
 This book does not ask you to take that claim on faith, because it already
-has a completed example: the review service extraction this book's own r02
-iteration ran end to end, with every number below measured on a real build
+has a completed example: the review service extraction this book ran end to
+end, with every number below measured on a real build
 rather than estimated for the page (`examples/02-review-service/MIGRATION.md`
 has the full record). The extraction ran in two phases — Phase A lifts the
 Spring code onto Quarkus with minimal changes via the Quarkiverse

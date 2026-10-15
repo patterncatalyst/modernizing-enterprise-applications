@@ -32,7 +32,7 @@ covers what it does and how to drive it.
 
 Before adding anything, it's worth being precise about what this repository's
 CI already does, because the whole book has been leaning on it since the
-walking skeleton. Two workflow files live in `.github/workflows/`. `pages.yml`
+project began. Two workflow files live in `.github/workflows/`. `pages.yml`
 is the undramatic one: it checks out the repo, builds the Jekyll site, and
 deploys it to GitHub Pages — it's why the tutorial you're reading has a URL.
 `code-ci.yml` is the one that matters for the migration, and it is large on
@@ -110,10 +110,9 @@ cleaned up.
 
 ## The supply chain: the constraint that was always there
 
-Decision DRQ-020, recorded in `_plans/decisions.md` back when the plan was
-first written, states that *security-by-design is part of the ADLC Verify gate*
-— SBOM, CVE/dependency scan, secure-by-default, secrets hygiene — "+ in CI,"
-and "not a late audit." Every chapter since has carried that as a standing
+Security-by-design is part of the ADLC Verify gate — SBOM, CVE/dependency
+scan, secure-by-default, secrets hygiene — in CI, not a late audit. Every
+chapter since has carried that as a standing
 constraint without a chapter of its own. This is that chapter. The supply-chain
 question is simple to state and uncomfortable to answer: **do you actually know
 what is inside the thing you deploy, and whether any of it is known to be
@@ -334,7 +333,6 @@ will drift — re-run `demo.sh` to refresh. Cited: `.github/workflows/code-ci.ym
 (the seven job names + path filters), `pages.yml`, `supply-chain.yml`;
 `examples/10-supply-chain/{demo.sh,policy.yaml,README.md}` and its `evidence/`;
 `examples/01-strangler-proxy/src/main/resources/application.properties` (the
-retired `strangler.*.enabled` flags); `_plans/decisions.md` (DRQ-020,
-DRQ-001).*
+retired `strangler.*.enabled` flags).*
 </content>
 </invoke>

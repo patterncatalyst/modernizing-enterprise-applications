@@ -72,7 +72,7 @@ band_bottom = {"x": 20, "y": 390, "w": 1360, "h": 280,
                "fill": "#eaf4ec"}
 
 suite_check = node(60, 460, 400, 120,
-                    ["Newman equivalence suite +", "Opus adversarial follow-up",
+                    ["Newman equivalence suite +", "adversarial follow-up",
                      "exercises real requests, running service"], style="accent")
 catches2 = node(500, 460, 420, 120,
                 ["Catches", "a routing predicate matching the wrong",

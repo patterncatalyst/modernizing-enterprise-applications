@@ -5,7 +5,7 @@ part: "The Strangler Fig in Practice"
 description: "The Camel content-based router, message translator, and content enricher as the translation layer at the seam; the decorating-collaborator pattern."
 ---
 
-Chapter 15 extracted Review, the walking skeleton, by routing one path prefix
+Chapter 15 extracted Review by routing one path prefix
 through the Camel strangler proxy that already sits in front of the
 monolith — a flag, a content-based choice, and a backend that moved out from
 under the caller without the caller ever noticing. Chapter 11 diagnosed a
@@ -363,7 +363,7 @@ before inventory physically moves, as pure seam-hardening rather than as a
 change that has to be coordinated with a rewrite of the code it protects.
 Chapter 19 reuses this exact shape — a Camel route decorating a legacy call
 path with translation and routing — to retire the monolith's inventory calls
-for good, which is why the pattern-coverage ledger for this book credits
+for good, which is why this book credits the
 decorating collaborator to both this chapter (proxy-side, the pattern
 introduced) and Chapter 19 (inventory retired, the pattern's payoff).
 
@@ -465,7 +465,7 @@ evaluation order, `enrich`'s request-reply-plus-merge behavior and its
 default of replacing rather than merging the body unless an
 `AggregationStrategy` is supplied, and `transform`'s narrower scope next to
 a hand-written translator — were checked against Camel 4.22.1's own EIP
-catalog through the Camel MCP server during authoring, the same tool-
+catalog through the Camel MCP server, the same tool-
 grounded source this book's ADLC Map phase uses, rather than relied on from
 memory. That check confirms the *vocabulary* this chapter uses is accurate
 to the Camel version this project already runs (the same `camel-bom` version

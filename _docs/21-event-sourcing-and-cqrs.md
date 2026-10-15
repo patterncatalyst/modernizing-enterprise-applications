@@ -60,8 +60,7 @@ models** — purpose-shaped, independently stored, independently scaled views �
 fed from the write side by the thing this book has already spent two
 chapters building: published events.
 
-The deck's own framing of the trade-off, which this book's pattern-coverage
-matrix inherits almost unchanged, lists the benefits side first: loose
+The standard framing of the trade-off lists the benefits side first: loose
 coupling between the service that writes and the service that reads, the
 ability to scale each independently (notification's read traffic has nothing
 to do with checkout's write traffic, and should never have to share a
@@ -199,8 +198,7 @@ event-sourced system.
 
 ## Why this book builds CQRS-lite and not event sourcing — stated as a decision, not a shortcut
 
-This book's own pattern-coverage ledger states the choice: event
-sourcing is demoted to light and optional while CQRS is central,
+This book treats event sourcing as light and optional while CQRS is central,
 because the gateway chapter needs a read/write split and nothing
 in this house migration needs a fully event-sourced aggregate to prove its
 point. This is the right call rather than a concession, because event

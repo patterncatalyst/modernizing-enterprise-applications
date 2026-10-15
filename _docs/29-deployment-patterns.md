@@ -33,7 +33,7 @@ One scope note before any of that: everything claimed below about the
 manifests was checked **headlessly** — `kubectl kustomize` rendering both the
 base and the minikube overlay with no error, and a client-side dry-run
 reporting a clean, well-formed object count. No live minikube cluster was
-running while this chapter was written. `kubectl apply`, image builds loaded
+running for this chapter's verification. `kubectl apply`, image builds loaded
 into a real cluster, pods reaching Ready, and an end-to-end request through
 the edge router are Chapter 30's job, not this one's. Where this chapter
 states something as verified, it means verified against the rendered YAML —
@@ -528,8 +528,8 @@ topology — the six bounded-context services, the gateway, and the two
 infrastructure StatefulSets' headless Services — stays `ClusterIP`-only,
 reachable from inside the cluster and nowhere else. That split isn't an
 oversight limited to one overlay; it's the real topology this project has
-built since Chapter 1 named the strangler fig pattern and order-plan.md's S10
-confirmed it as the system's permanent edge router rather than a transitional
+built since Chapter 1 named the strangler fig pattern and established it as
+the system's permanent edge router rather than a transitional
 scaffold: every client request is supposed to enter through
 `StranglerProxyRoute`'s URI-prefix dispatch, never by dialing
 review-service or order-service directly. Making only that one Service
@@ -564,7 +564,7 @@ and its own `PersistentVolumeClaim` via `volumeClaimTemplates`, the two
 properties a StatefulSet gives a workload that a Deployment doesn't.
 
 Postgres mirrors compose.yaml's own `postgres` service closely: the same
-`postgres` alpine image (`18.6-alpine` since DRQ-077), the same `POSTGRES_DB=monolith` database
+`postgres` alpine image (`18.6-alpine`), the same `POSTGRES_DB=monolith` database
 (now sourced from the `mea-postgres-app` Secret rather than plain compose
 env, so there's one credential source for both the server and its six
 client Deployments), and the identical `wal_level=logical`,
@@ -576,7 +576,7 @@ owned-schema service (`notification`, `inventory`, `payment`, `shipping`,
 `order_service`) — a belt-and-suspenders bootstrap, not a replacement for
 each service's own Flyway migration, which would create its schema on first
 run regardless. Kafka is a single-broker KRaft deployment (no ZooKeeper),
-the same `apache/kafka` image (`4.3.1` since DRQ-077) and topic defaults
+the same `apache/kafka` image (`4.3.1`) and topic defaults
 (`KAFKA_AUTO_CREATE_TOPICS_ENABLE=true`, three partitions, replication
 factor 1 — a single broker can't replicate past one anyway) compose.yaml
 already runs, with its advertised listener pointed at the in-cluster DNS name

@@ -187,8 +187,8 @@ public static final String ORDER_PLACED = "order.placed";
 
 That line is the clearest evidence in this
 codebase that the event-storming questions this chapter is asking were
-already being asked by whoever wrote `Topics.java`, well before this chapter
-existed — the javadoc on that class says so directly: the names are reserved
+already being asked by whoever wrote `Topics.java` — the javadoc on that
+class says so directly: the names are reserved
 "for the future event-driven extractions," kept aligned with the sibling
 target services' Kafka topics, with zero messaging infrastructure wired up
 yet. An event-storming wall and a reserved-topic-names file are the same
@@ -291,8 +291,7 @@ reaction currently crosses into another context's service as a plain Java
 method call is a synchronous call today and a published event once that
 boundary is cut — which is exactly the shape `common/Topics.java` was
 already anticipating with zero infrastructure attached. The wall built in
-this chapter maps onto the decomposition roadmap (`build-plan.md` Section E)
-as follows: the `OrderPlaced` → `StockReserved` boundary is inventory's seam,
+this chapter maps onto the decomposition roadmap as follows: the `OrderPlaced` → `StockReserved` boundary is inventory's seam,
 cut with CDC backfill and a decomposed database in Chapter 19; the
 `StockReserved` → `PaymentCaptured`/`PaymentDeclined` boundary is payment's
 seam, cut as a choreographed saga in Chapter 23, where the lilac policy
@@ -328,7 +327,7 @@ from Chapter 15 onward is also gated the same way: an equivalence gate runs
 the behavior-equivalence suite against both the monolith and the newly
 extracted service before that service's old code is decommissioned, which is
 the same discipline Chapter 7 demonstrated on Review and Chapter 9 named as
-this project's existence proof.
+this method's existence proof.
 
 The god `OrderService` itself deserves one more look through the wall's lens,
 because it explains something Chapter 9 stated as a roadmap fact without

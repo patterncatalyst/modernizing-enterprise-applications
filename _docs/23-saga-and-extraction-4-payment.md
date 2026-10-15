@@ -58,7 +58,7 @@ Chapter 19 used to mark its own partial progress:
 ```
 Captured — examples/00-monolith/SMELLS.md, SMELL[ch.22] excerpt
 
-Realized for payment in r06/ch.23 S9 (DRQ-047/DRQ-049) -- SMELL[ch.22]'s
+Realized for payment in ch.23 -- SMELL[ch.22]'s
 ACID -> ACD story cashed in for this context. OrderService#placeOrder no
 longer calls payment at all ... What Postgres used to give "for free" --
 roll back the inventory decrement when payment declines, inside one local
@@ -173,7 +173,7 @@ settles has moved off the request thread.
 {% include codetabs.html langs="Before — synchronous checkout, payment in-line (removed)|After — PENDING + handoff, payment out-of-process (current)" %}
 
 ```java
-// order/OrderService.java#placeOrder — payment.mode=synchronous (removed at S9)
+// order/OrderService.java#placeOrder — payment.mode=synchronous (removed)
 // ... reserve each line via RemoteInventoryClient, track remoteReservations ...
 paymentService.charge(order, order.getTotalCents(), command.paymentMethod());
 order.confirm();
@@ -186,7 +186,7 @@ return toDto(order);
 // examples/00-monolith/.../order/OrderService.java#placeOrder — current
 // ... reserve each line via RemoteInventoryClient, track remoteReservations ...
 // The order is persisted PENDING; payment and shipping no longer run
-// in-line. order.placed (carrying paymentMethod, DRQ-048) is the handoff
+// in-line. order.placed (carrying paymentMethod) is the handoff
 // to the payment service, which reacts over Kafka and emits
 // payment.captured|declined. OrderSagaListener reacts to either outcome.
 writeOrderPlacedOutboxEvent(customer, order, command.paymentMethod());
@@ -205,8 +205,8 @@ happen until an event neither side of this method controls arrives back.
 
 ## The event topology: two outboxes, no coordinator
 
-DRQ-048 is the decision that fixes the choreography's vocabulary before a
-line of either side's code existed: `order.placed` (produced by the
+The choreography's event vocabulary is fixed before a line of either side's
+code exists: `order.placed` (produced by the
 monolith, carrying the order's line items and, now, its `paymentMethod`)
 reaches the payment service, which captures or declines and produces
 `payment.captured` or `payment.declined`; the monolith consumes whichever one
@@ -276,9 +276,8 @@ it stops being true.
 Chapter 19 left a documented gap in `RemoteInventoryClient#release`'s own
 javadoc: no idempotency key yet, a limitation "deliberately deferred to
 Chapter 23's full saga, not speculative compensation infrastructure this
-extraction does not need yet." This is that chapter, and DRQ-049 is the
-decision that spends it: the compensating `Release` for a payment decline
-moves from `OrderService#placeOrder`'s in-line `catch` block to
+extraction does not need yet." This is that chapter, and the compensating `Release` for a payment decline
+now moves from `OrderService#placeOrder`'s in-line `catch` block to
 `OrderSagaListener#onPaymentDeclined`'s reaction to the `payment.declined`
 event. The two compensation paths are not duplicated — they are made
 disjoint by construction, and `OrderService#placeOrder`'s own current javadoc
@@ -287,7 +286,7 @@ explains exactly why neither can double-fire:
 ```java
 // examples/00-monolith/.../order/OrderService.java — current catch
 } catch (RuntimeException ex) {
-    // r06/ch.23 S9 (DRQ-049): this compensates ONLY a pre-handoff failure
+    // this compensates ONLY a pre-handoff failure
     // now (a later line out of stock, or the save/outbox write itself
     // throwing) — never a payment decline, since payment is no longer
     // called from this method at all.
@@ -347,8 +346,8 @@ relay, then the payment service's own `payment.captured`/`payment.declined`
 relay — which means a single logical event can arrive at its consumer more
 than once for entirely mundane reasons (a crash between a broker ack and a
 `publishedAt` stamp, a consumer-group rebalance replaying an uncommitted
-offset). DRQ-051 is the decision that makes redelivery safe on both ends of
-the chain, by the same two-layer pattern Chapter 17 established for
+offset). Redelivery is made safe on both ends of
+the chain by the same two-layer pattern Chapter 17 established for
 notification's consumer: an application-level check first, a database
 constraint as the backstop.
 
@@ -387,8 +386,8 @@ how many times the event that triggers it arrives.
 
 ## Keeping the equivalence suite sound across a contract it can no longer observe synchronously
 
-DRQ-055 is the decision Chapter 17's bounded-wait idiom (DRQ-037) had to be
-extended to cover, and the stakes are higher here than they were for
+This is where Chapter 17's bounded-wait idiom had to be
+extended, and the stakes are higher here than they were for
 notification, because this suite's two critical payment assertions —
 Scenario 1's happy path, Scenario 3's decline — are exactly the reason this
 chapter exists. A suite that weakened either one to pass would make Scenario
@@ -410,7 +409,7 @@ and forcing the suite red. With the payment service's consumer stopped, a
 fresh checkout was placed and Scenario 1 re-run:
 
 ```
-Captured — examples/05-payment-service/CUTOVER.md, negative check (DRQ-055)
+Captured — examples/05-payment-service/CUTOVER.md, negative check
 
 1. AssertionError  Order reaches CONFIRMED within the bounded-wait budget (10 x 500ms)
                    order 177 status after 10 attempt(s): expected 'PENDING' to deeply equal 'CONFIRMED'
@@ -443,7 +442,7 @@ unedited collection every later run exercises.
 > **ADLC in Action** — This extraction ran the identical Frame → Map → Plan →
 > Generate → Verify → Operate → Reconcile loop Chapter 19 demonstrated for
 > Inventory, at its hardest rung yet. Frame fixed nine decisions up front in
-> `decisions.md` (DRQ-047 through DRQ-055 — the synchronous-to-asynchronous
+> `decisions.md` (the synchronous-to-asynchronous
 > checkout contract, the choreographed event topology, compensation re-plumbed
 > from a catch block to a `payment.declined` reaction, saga state on the order
 > aggregate, idempotency by `orderId`, the payment service's two-phase read
@@ -451,7 +450,7 @@ unedited collection every later run exercises.
 > transactional outbox, two-flag reversibility, and the bounded-wait
 > equivalence discipline extended to the checkout path). Plan laid out
 > fourteen steps across two parallel lanes — the event contract and the new
-> service's scaffold — with six Opus validation gates named before a line of
+> service's scaffold — with six reasoning-model validation gates named before a line of
 > consumer or outbox code existed, most pointedly at the cutover step where a
 > forced decline had to converge to net-zero stock across two asynchronous
 > hops with no request-thread catch to lean on. Generate produced the service,

@@ -346,19 +346,13 @@ the one who decides that "green" is sufficient evidence to retire the
 monolith module it just replaced — that is a sign-off, not a computation, and
 it stays with a person.
 
-Two further limits apply. First, every "ADLC in Action"
+One further limit is worth naming. Every "ADLC in Action"
 callout in this book's migration chapters shows **pre-captured, reproducible
 tool output** — narrated transcripts checked into the repository — rather
 than tool calls re-run live at build or read time. That trade favors
 determinism and reviewability over the marginal novelty of a live
-demonstration: a reader six months from now sees the exact loop that produced
-the chapter's code, unaffected by a tool's version drift between when the
-chapter was written and when it is read. Second, this book is not exempt from
-its own argument. The `_plans/` ledger behind it — `decisions.md`,
-`build-plan.md`, this project's own reconciliation record — is not a
-teaching prop; it is the actual record of frame statements, approved plans,
-and verify results that produced the chapter you are reading, gated by the
-same two checkpoints described above. The book is built the way it teaches.
+demonstration: a reader sees the exact loop that produced a chapter's code,
+unaffected by a tool's version drift over time.
 
 > **Further reading** — Two outside references deepen this chapter without
 > expanding its scope. Michael Albada's *Building Applications with AI
@@ -373,7 +367,7 @@ same two checkpoints described above. The book is built the way it teaches.
 > delegating to specialist sub-agents — is the direct analog of the
 > plan→execute→validate relay this book uses, covered in depth in the next
 > chapter; and its use of `AGENTS.md` to govern agent behavior is the
-> analog of this project's own `_plans/` ledger, covered in depth in
+> analog of the ADLC's decision-and-plan ledger, covered in depth in
 > Chapter 7.
 
 ## What's next
@@ -392,6 +386,4 @@ chapter from Chapter 15 onward will reuse at rising difficulty.
 *Verification status: not applicable — this is a conceptual chapter with no
 runnable example under `examples/`. The codetab above illustrates a Phase A
 lift pattern described in Part 5; it is not itself a standalone runnable
-artifact. The claims that are checkable are the ones in this book's own
-`_plans/` ledger, which Chapter 7 shows being produced live by the loop this
-chapter describes.*
+artifact.*

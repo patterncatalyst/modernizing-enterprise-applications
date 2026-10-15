@@ -2,7 +2,7 @@
 title: "The Project Ledger"
 order: 2
 part: "Setting Up"
-description: "The ADLC's ledger — the decision log, the build plan, the iteration records, and the reconciliation log it still owes — introduced as the reader's own migration memory."
+description: "The ADLC's ledger — the decision log, the build plan, the iteration records, and the reconciliation log that completes it — introduced as the reader's own migration memory."
 ---
 
 Chapter 1 got the toolchain running: SDKMAN, JDK 25, Maven, the Quarkus and
@@ -10,15 +10,13 @@ Camel CLIs, and a local Docker compose stack standing in for the services this b
 monolith will eventually depend on. Everything from here forward assumes that
 toolchain works. But before any of it touches the monolith this book builds in
 Part 3, there is one more piece of setup, and it is not a tool at all — it is
-a small set of plain-text files that this project keeps under `_plans/` and
-updates continuously, every time a decision gets made or a step of work
-finishes. This chapter introduces that **project ledger** using the actual one
-this repository keeps for itself: not a hypothetical example constructed for
-the page, but the real `_plans/decisions.md`, `_plans/build-plan.md`, and
-`_plans/iterations/` files sitting in this project right now, mid-build, as
-you read this. By the end of this chapter you will know what each file is
+a small set of plain-text files, kept under `_plans/` and updated
+continuously, every time a decision gets made or a step of work finishes.
+This chapter introduces that **project ledger**: the `decisions.md`,
+`build-plan.md`, and `iterations/` files that become your migration's durable
+memory. By the end of this chapter you will know what each file is
 for, why an agent-driven modernization effort cannot safely proceed without
-them, and where to look if you ever need to pick this project's own work back
+them, and where to look if you ever need to pick the work back
 up from wherever it was left off.
 
 ## Why a ledger, and why now
@@ -71,7 +69,7 @@ human or agent that has to trust it later."
 ## The decision log: `_plans/decisions.md`
 
 The first ledger artifact is an append-only decision log, one row per
-decision, each with an identifier of the form `DRQ-NNN` ("decision request").
+decision, each with a short numbered identifier.
 Every row names the decision, the reasoning behind it, and a status —
 `fixed` for something the user set and that nothing downstream is allowed to
 relitigate, `accepted` for a synthesis decision a later step could in
@@ -81,39 +79,38 @@ if a decision changes, a *new* row records the change and says what it
 supersedes, so the history of how the project arrived at its current state
 stays intact rather than being overwritten.
 
-Three real rows from this project's own `_plans/decisions.md` make the
+Three example rows make the
 pattern concrete. The first is about as small a decision as a project makes,
 and it is exactly the kind of thing that would otherwise get re-litigated by
 accident three weeks later:
 
 ```
-DRQ-001 | Podman is the default toolchain (lgtm-podman-stack); minikube
+001 | Podman is the default toolchain (lgtm-podman-stack); minikube
 (lgtm-minikube-stack) only for k8s-specific chapters (ch.29–31). No Docker
 inheritance from DataMesh. | User-fixed. Single compose source avoids Dev
 Services image-tag mismatch; one dev-loop/CI substrate. | fixed
 ```
 
 A fixed decision is not a permanent one; it is one that only the person who
-fixed it can reopen, on the record. DRQ-001 was reopened exactly that way:
-DRQ-077 (2026-10-09) moved every path to Docker Engine and the
-`docker compose` plugin, keeping DRQ-001's actual rationale (one engine, one
-set of image pins for the dev loop, the tests, and CI) and marking DRQ-001
-superseded rather than editing it.
+fixed it can reopen, on the record. This row was reopened exactly that way: a
+later row moved every path to Docker Engine and the `docker compose` plugin,
+keeping the original rationale (one engine, one set of image pins for the dev
+loop, the tests, and CI) and marking the first row superseded rather than
+editing it.
 
 Nothing about that row is dramatic, which is the point. Without it written
 down, a later contributor — human or agent — reaching for container tooling
 has no way to know that Docker was deliberately excluded rather than simply
-never considered, and the project's own risk register (`build-plan.md` §M,
-risk R5) names exactly this failure mode: "someone pulls `lgtm-docker-stack` /
-DataMesh compose; Dev Services tag mismatch." The decision log is what makes
-that risk detectable before it becomes a broken build instead of after.
+never considered. A risk register in the build plan can name exactly this
+failure mode — "someone pulls `lgtm-docker-stack` / DataMesh compose; Dev
+Services tag mismatch" — and the decision log is what makes that risk
+detectable before it becomes a broken build instead of after.
 
-The second row is a vocabulary correction, and it is worth including here
-precisely because this book's own prose follows it everywhere except in this
-one quoted row:
+The second row is a vocabulary correction, the kind that ripples out well
+beyond a glossary:
 
 ```
-DRQ-031 | Rename "equivalence oracle" → "behavior-equivalence suite" (the
+031 | Rename "equivalence oracle" → "behavior-equivalence suite" (the
 Newman collection) and "equivalence gate" (its CI check), dropping the word
 "oracle" to avoid confusion with Oracle Database (the stack uses
 PostgreSQL). | User-requested clarity. | accepted
@@ -129,14 +126,14 @@ a reader, so it was retired everywhere this book and its examples use it: the
 **behavior-equivalence suite** is the artifact, the **equivalence gate** is
 the CI check that runs it. The decision log is what makes a rename like this
 safe to execute consistently rather than half-finished — anyone touching a
-chapter, a test file, or a CI workflow after DRQ-031 lands can grep for the
+chapter, a test file, or a CI workflow after row 031 lands can grep for the
 retired word and know exactly which row explains why every hit needs fixing.
 
 The third row is a strategy decision, and it is the one that shapes
 every extraction chapter from Part 5 forward:
 
 ```
-DRQ-029 | Spring→Quarkus extractions use a two-phase strategy: Phase A lift
+029 | Spring→Quarkus extractions use a two-phase strategy: Phase A lift
 onto Quarkus via Quarkiverse Spring-compatibility extensions
 (spring-web/di/data-jpa/security/etc.), Phase B refactor to idiomatic
 Quarkus, measuring before/after. | User-provided; de-risks each extraction
@@ -150,12 +147,12 @@ record-keeping. It commits every future extraction to the same two-pass
 shape — a fast, low-risk lift first, an idiomatic refactor second, with
 measured numbers captured as the teaching payoff — before a single one of
 those extractions has been written. Chapter 7 shows exactly what that
-commitment bought on the walking-skeleton extraction: Phase A got Review
+commitment bought on the first extraction: Phase A got Review
 onto Quarkus and through the equivalence gate quickly using the
 Spring-compatibility extensions, and only after that was proven safe did
 Phase B remove the compatibility shim and capture the native-image numbers
 that make the "why Quarkus" case with evidence instead of assertion. Without
-DRQ-029 on record, a later contributor extracting, say, the payment service
+row 029 on record, a later contributor extracting, say, the payment service
 in Part 7 would have no obligation to follow the same shape — and the
 project's whole premise, that one repeatable template produces six
 comparable extractions, would quietly stop being true.
@@ -173,7 +170,7 @@ the ADLC's own phase table, the testing strategy, the CI/CD design, and an
 iteration-by-iteration release plan with explicit risks and how each is
 detected. It is the closest thing this project has to a single source of
 truth for "what are we building and why," and its own front matter is blunt
-about its authority: it is marked `status: "round-1 planning only — nothing
+about its authority: it is marked `status: "planning only — nothing
 built, scaffolded, or pushed until the user approves"`, which is itself a
 ledger entry — a plan does not get to silently promote itself into an
 in-progress build.
@@ -198,31 +195,28 @@ the artifact are the same thing, which is exactly why this chapter precedes
 Part 2 rather than following it: you need to recognize these three files on
 sight before you watch a chapter narrate the loop that writes to them.
 
-The build plan also keeps an iteration-by-iteration release table — this
-project's actual backlog, not a hypothetical one — that assigns each
-`rNN` iteration a theme, a concrete shippable deliverable, and the specific
-risks that iteration is designed to retire. The walking-skeleton iteration
-this project is mid-way through right now, `r02`, is defined there as
-proving "the four biggest risks at once": whether the monolith actually
-demonstrates a pattern worth curing, whether the strangler mechanism
-works end to end, whether the ADLC is a real practice and not a
-diagram, and whether a chapter can hit this book's two-thousand-word bar with
-running code behind it. That table is what keeps a thirty-three-chapter,
-nine-iteration project from turning into an unbounded wish list: the build
-plan is the only backlog, and anything not in it is explicitly out of scope
-for the iteration in flight.
+The build plan also keeps an iteration-by-iteration release table that
+assigns each iteration a theme, a concrete shippable deliverable, and the
+specific risks that iteration is designed to retire. An early proving
+iteration, for instance, is the one that establishes "the biggest risks at
+once": whether the monolith actually demonstrates a pattern worth curing,
+whether the strangler mechanism works end to end, whether the ADLC is a real
+practice and not a diagram, and whether a chapter can hit this book's
+two-thousand-word bar with running code behind it. That table is what keeps a
+large, multi-iteration project from turning into an unbounded wish list: the
+build plan is the only backlog, and anything not in it is explicitly out of
+scope for the iteration in flight.
 
 ## Per-iteration plans and resume records: `_plans/iterations/`
 
 The decision log and the build plan both operate at the scale of the whole
 project. Day to day, the unit of work is one iteration, and each iteration
-gets its own pair of files under `_plans/iterations/`: an `rNN-plan.md` that
+gets its own pair of files under `_plans/iterations/`: a plan file that
 breaks the iteration into numbered, acceptance-gated steps before any of them
-start, and an `rNN-status.md` that is updated as those steps complete —
+start, and a status file that is updated as those steps complete —
 including, critically, at the exact moment someone has to stop.
 
-`r02-plan.md`, this project's actual iteration plan for its walking-skeleton
-release, lays out fifteen steps (`S1` through `S14`, plus a CI step), each
+A plan file lays out the iteration as numbered steps, each
 with a stated goal, the files it touches, which other steps it depends on,
 an acceptance check, and — for the steps where getting it wrong matters most
 — an explicit note that the step additionally requires a second, more
@@ -234,31 +228,29 @@ collision a plan written down in advance prevents, and a collision a plan
 only discovered after the fact would not.
 
 The status file is where the ledger's "work survives interruption" promise
-becomes visible rather than theoretical. This project's own `r02-status.md`
-was written and committed specifically because work was about to pause —
-its very first line says so:
+becomes visible rather than theoretical. A status file is written and
+committed specifically when work is about to pause, and its very first lines
+say so:
 
 ```
-# r02 "Walking Skeleton" — status & resume record
+# Iteration status & resume record
 
-_Last updated: 2026-10-02. Saved before a user break/possible reboot._
+_Last updated: <date>. Saved before a break/possible reboot._
 
 ## Where we are
 
-Branch `r02-walking-skeleton`, merged to `main` at this checkpoint. The
-walking skeleton's code is complete and gated: the Spring monolith runs and
-is tested, the Review context is fully extracted to Quarkus (Phase A lift →
-Phase B idiomatic → flag cutover → monolith decommission), and the
-behavior-equivalence suite gates it both locally and in green GitHub
-Actions CI.
+The current branch is merged to `main` at this checkpoint. This iteration's
+code is complete and gated: the Spring monolith runs and is tested, the first
+context is fully extracted to Quarkus (Phase A lift → Phase B idiomatic →
+flag cutover → monolith decommission), and the behavior-equivalence suite
+gates it both locally and in green GitHub Actions CI.
 
-## Remaining in r02 (resume here)
+## Remaining (resume here)
 
-- S13 — author ch.15 "Extraction 1: the Review service" to the ≥2000-word
-  bar, embedding the two §15 figures (already committed) and the real Phase
-  A/B + cutover story.
-- S14 — reconcile: pin the version matrix in `_plans/decisions.md`; tick
-  the r02 EXIT CHECKLIST; set r02 status DONE.
+- Author the extraction's chapter to the ≥2000-word bar, embedding the
+  already-committed figures and the real Phase A/B + cutover story.
+- Reconcile: pin the version matrix in `decisions.md`; tick the iteration
+  exit checklist; set the iteration status to DONE.
 ```
 
 Read that excerpt as what it actually is: not documentation written
@@ -267,7 +259,7 @@ collaborator left for whoever — human or agent, possibly the same person a
 week later with no memory of the session — picks the project back up next.
 It names exactly which step is next, exactly which file that step touches,
 and exactly what "done" means for it, because that information was already
-sitting in the companion `r02-plan.md`. Nobody has to re-read the whole
+sitting in the companion plan file. Nobody has to re-read the whole
 project's history or re-derive the current state from the code alone; they
 read one status file and start at the line marked "resume here." That is the
 entire difference, in practice, between a project an interruption merely
@@ -282,7 +274,7 @@ authority. A ledger that only records successes is not a ledger a human can
 actually trust to stay in control with; this one writes down the loose ends
 too, by name, so they are a known, tracked gap rather than a silent one.
 
-{% include excalidraw.html file="ledger-files-to-adlc-phases" alt="The project's own _plans/ files mapped onto the ADLC's seven phases: build-plan.md and r02-plan.md are produced during Plan, r02-status.md is updated through Generate and Verify, and decisions.md plus the still-unwritten reconciliation.md are written during Reconcile, which also loops back to update build-plan.md's own status line. Below that mapping, the actual resume mechanism: r02-status.md's own line, 'Remaining in r02 (resume here),' read by the next session alongside r02-plan.md's step definitions." caption="Figure 2.1 — The ledger's files, mapped onto the ADLC's phases, and how an interrupted session resumes from them" %}
+{% include excalidraw.html file="ledger-files-to-adlc-phases" alt="The ledger's _plans/ files mapped onto the ADLC's seven phases: build-plan.md and the iteration plan file are produced during Plan, the iteration status file is updated through Generate and Verify, and decisions.md plus the still-unwritten reconciliation.md are written during Reconcile, which also loops back to update build-plan.md's own status line. Below that mapping, the resume mechanism: the status file's own 'Remaining (resume here)' line, read by the next session alongside the plan file's step definitions." caption="Figure 2.1 — The ledger's files, mapped onto the ADLC's phases, and how an interrupted session resumes from them" %}
 
 ## Governing the agents: `AGENTS.md` and `CLAUDE.md`
 
@@ -324,14 +316,14 @@ it, and signing off that a verification result is sufficient evidence to
 trust a change before it ships. Both gates are only meaningful if there is
 something concrete for a human to look at, and the ledger is that something.
 A plan-approval gate without a written plan is just a conversation nobody can
-audit afterward; this project's gate is a human reading `r02-plan.md`'s
+audit afterward; the gate is a human reading the plan file's
 numbered steps, with their stated acceptance criteria, before a single line
 of the monolith was written. A verify-sign-off gate without a recorded result
 is just trust on faith; this project's gate is a human reading a decision row
 or a status-file line that says, concretely, which suite ran and what it
 reported, not merely that an agent claims it passed.
 
-This is also why certain steps in `r02-plan.md` are marked as needing a
+This is also why certain steps in the plan file are marked as needing a
 second, more skeptical pass before their checkpoint commit lands — the steps
 where getting it wrong is expensive, like the behavior-equivalence suite
 itself, each phase of the Review extraction, and the flag-gated cutover that
@@ -370,30 +362,13 @@ status pair that sit alongside them. The third — a reconciliation record that
 tracks every reused or adapted artifact against the source it came from, so
 that drift from a cited reference is a tracked fact rather than a silent one
 — is not fabricated for this chapter, because it does not exist
-in this project yet. It is scoped as one of the walking skeleton's own
-remaining steps, visible in the resume excerpt above: closing out the current
-iteration is exactly the moment this project commits to writing it. That is
+in this project yet. It is scoped as one of the remaining
+steps, visible in the resume excerpt above: closing out the current
+iteration is exactly the moment a project commits to writing it. That is
 worth sitting with rather than glossing over, because it is itself a small,
 concrete demonstration of the discipline this chapter has been describing —
-the ledger does not pretend an artifact exists before it does, it names the
-step that will produce it and tracks that step like any other, and you are
-reading this chapter at the point in this project's own timeline where that
-step has not yet run.
-
-## This book's own proof
-
-Every claim in this chapter is checkable against a file sitting in this
-project's repository right now, not an illustration built to make a point.
-That is deliberate, and it is the same idea Part 2 returns to directly: the
-`_plans/` ledger behind this book is not a teaching prop constructed to
-demonstrate the ADLC after the fact — it is the actual record of frame
-statements, approved plans, and verification results that produced the very
-chapters you are reading, including this one. Chapter 7 goes further and
-narrates the loop that writes to this ledger in detail, on a real extraction,
-including two real defects the loop's safety net caught before either one
-reached a reader. This chapter's job was narrower: make sure you know what
-the ledger's pieces are called, what each one is for, and where to find them,
-before you watch them get used two parts from now.
+the ledger does not pretend an artifact exists before it does; it names the
+step that will produce it and tracks that step like any other.
 
 ## What's next
 
@@ -409,12 +384,9 @@ with the ledger as its running, working example rather than a diagram. Chapter
 3, "Modernization as Engineering, Not Fashion," is next.
 
 ---
-*Verification status: not applicable — this is a conceptual chapter about this
-project's own planning artifacts, not a runnable example under `examples/`.
-Every claim above is directly checkable against this repository's
-`_plans/decisions.md`, `_plans/build-plan.md`, `_plans/iterations/r02-plan.md`,
-and `_plans/iterations/r02-status.md` as they exist today. The one claim that
-is explicitly *not yet* true — a populated `reconciliation.md` — is named as
-such above rather than asserted; Chapter 7 shows the loop that produces
-ledger entries like these running live, and this project's own exit step for
-its current iteration is where that third artifact gets written.*
+*Verification status: not applicable — this is a conceptual chapter about the
+project ledger's planning artifacts, not a runnable example under `examples/`.
+The artifacts it describes live in this repository under `_plans/`
+(`decisions.md`, `build-plan.md`, and the per-iteration plan and status
+files). The one artifact it notes is *not yet* written — a populated
+`reconciliation.md` — is named as such above rather than asserted.*

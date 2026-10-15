@@ -32,13 +32,13 @@
 <text x="184.0" y="297.5" font-size="11.5" fill="#555555" text-anchor="middle">chapters A-M, phase table,</text>
 <text x="184.0" y="312.5" font-size="11.5" fill="#555555" text-anchor="middle">iteration backlog</text>
 <rect x="348" y="235" width="288" height="110" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
-<text x="492.0" y="280.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">_plans/iterations/r02-plan.md</text>
-<text x="492.0" y="297.5" font-size="11.5" fill="#555555" text-anchor="middle">S1-S14, acceptance-gated,</text>
+<text x="492.0" y="280.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">_plans/iterations/ plan file</text>
+<text x="492.0" y="297.5" font-size="11.5" fill="#555555" text-anchor="middle">numbered, acceptance-gated steps,</text>
 <text x="492.0" y="312.5" font-size="11.5" fill="#555555" text-anchor="middle">written before any step starts</text>
 <rect x="656" y="235" width="288" height="110" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
-<text x="800.0" y="280.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">_plans/iterations/r02-status.md</text>
+<text x="800.0" y="280.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">_plans/iterations/ status file</text>
 <text x="800.0" y="297.5" font-size="11.5" fill="#555555" text-anchor="middle">updated as each step completes --</text>
-<text x="800.0" y="312.5" font-size="11.5" fill="#555555" text-anchor="middle">this project&#x27;s own resume record</text>
+<text x="800.0" y="312.5" font-size="11.5" fill="#555555" text-anchor="middle">the iteration&#x27;s resume record</text>
 <rect x="964" y="235" width="288" height="110" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
 <text x="1108.0" y="280.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">_plans/decisions.md</text>
 <text x="1108.0" y="297.5" font-size="11.5" fill="#555555" text-anchor="middle">append decision outcomes --</text>
@@ -48,15 +48,15 @@
 <text x="1416.0" y="297.5" font-size="11.5" fill="#555555" text-anchor="middle">record drift vs. cited sources --</text>
 <text x="1416.0" y="312.5" font-size="11.5" fill="#555555" text-anchor="middle">scoped, not yet written (this chapter)</text>
 <rect x="270" y="430" width="1060" height="120" rx="9" fill="#111111" stroke="#111111" stroke-width="2"/>
-<text x="800.0" y="473.0" font-size="13.5" font-weight="700" fill="#ffffff" text-anchor="middle">Resume mechanism: r02-status.md, read again</text>
+<text x="800.0" y="473.0" font-size="13.5" font-weight="700" fill="#ffffff" text-anchor="middle">Resume mechanism: the status file, read again</text>
 <text x="800.0" y="490.0" font-size="11.5" fill="#dddddd" text-anchor="middle">&quot;Saved before a user break/possible reboot.&quot;</text>
-<text x="800.0" y="505.0" font-size="11.5" fill="#dddddd" text-anchor="middle">&quot;Remaining in r02 (resume here)&quot; -- names S13, S14 by number</text>
-<text x="800.0" y="520.0" font-size="11.5" fill="#dddddd" text-anchor="middle">Next session reads this one file plus r02-plan.md&#x27;s step definitions and continues</text>
+<text x="800.0" y="505.0" font-size="11.5" fill="#dddddd" text-anchor="middle">&quot;Remaining (resume here)&quot; -- names the next steps</text>
+<text x="800.0" y="520.0" font-size="11.5" fill="#dddddd" text-anchor="middle">Next session reads this one file plus the plan file&#x27;s step definitions and continues</text>
 <path d="M496.0,160.0 L316.0,235.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
 <path d="M561.3333333333334,160.0 L521.3333333333334,235.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
 <path d="M800.0,160.0 L800.0,235.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
-<text x="806.0" y="179.5" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">steps S1-S14 executed</text>
-<text x="806.0" y="179.5" font-size="11" fill="#555" text-anchor="middle">steps S1-S14 executed</text>
+<text x="806.0" y="179.5" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">steps executed</text>
+<text x="806.0" y="179.5" font-size="11" fill="#555" text-anchor="middle">steps executed</text>
 <path d="M973.3333333333334,160.0 L873.3333333333334,235.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
 <text x="929.3333333333334" y="211.5" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">equivalence-gate result recorded</text>
 <text x="929.3333333333334" y="211.5" font-size="11" fill="#555" text-anchor="middle">equivalence-gate result recorded</text>
@@ -77,5 +77,5 @@
 <text x="800.0" y="32" font-size="17" fill="#1d1d1d" text-anchor="middle" font-weight="700">ch.02 -- The ledger&#x27;s files, mapped onto the ADLC&#x27;s own phases</text>
 <text x="800.0" y="56" font-size="12" fill="#555555" text-anchor="middle">Plan and Verify (blue) are this chapter&#x27;s two human gates; Reconcile (green) is where the ledger actually gets written</text>
 <text x="40" y="634" font-size="10.5" fill="#555555" text-anchor="start">Sourced from _docs/02-project-ledger.md (&quot;The build plan&quot;, &quot;Per-iteration plans and resume records&quot;, &quot;The ledger and the two human gates&quot;).</text>
-<text x="40" y="664" font-size="10.5" fill="#555555" text-anchor="start">Reconcile row and resume-record quotes are the chapter&#x27;s own quotes from build-plan.md&#x27;s phase table and r02-status.md.</text>
+<text x="40" y="664" font-size="10.5" fill="#555555" text-anchor="start">Reconcile row and resume-record quotes are the chapter&#x27;s own quotes from build-plan.md&#x27;s phase table and the iteration status file.</text>
 </svg>

@@ -3,7 +3,7 @@
 <rect x="960" y="40" width="380" height="400" rx="12" fill="#eaf4ec" stroke="#ddd"/>
 <text x="972" y="60" font-size="12" font-weight="700" fill="#1d1d1d">Quarkus inventory service :8084</text>
 <rect x="40" y="480" width="1300" height="200" rx="12" fill="#f4f4f4" stroke="#ddd"/>
-<text x="52" y="500" font-size="12" font-weight="700" fill="#1d1d1d">Debezium CDC -- ONE-TIME BACKFILL during transition (S3-S10), RETIRED post-cutover (S11)</text>
+<text x="52" y="500" font-size="12" font-weight="700" fill="#1d1d1d">Debezium CDC -- ONE-TIME BACKFILL during transition, RETIRED post-cutover</text>
 <rect x="40" y="200" width="200" height="100" rx="9" fill="#eef4fb" stroke="#2f6db5" stroke-width="2"/>
 <text x="140.0" y="248.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Client</text>
 <text x="140.0" y="265.0" font-size="11.5" fill="#555555" text-anchor="middle">(browser / API caller)</text>
@@ -35,12 +35,12 @@
 <text x="1150.0" y="332.5" font-size="11.5" fill="#555555" text-anchor="middle">sole writer post-cutover</text>
 <rect x="990" y="370" width="320" height="60" rx="9" fill="#ffffff" stroke="#999999" stroke-width="1.5" stroke-dasharray="6 4"/>
 <text x="1150.0" y="398.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">InventoryCdcConsumer</text>
-<text x="1150.0" y="415.0" font-size="11.5" fill="#555555" text-anchor="middle">RETIRED post-cutover (S11)</text>
+<text x="1150.0" y="415.0" font-size="11.5" fill="#555555" text-anchor="middle">RETIRED post-cutover</text>
 <rect x="80" y="530" width="300" height="100" rx="9" fill="#ffffff" stroke="#999999" stroke-width="1.5" stroke-dasharray="6 4"/>
 <text x="230.0" y="563.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">public.inventory_items</text>
 <text x="230.0" y="580.0" font-size="11.5" fill="#555555" text-anchor="middle">monolith&#x27;s OLD local inventory table</text>
 <text x="230.0" y="595.0" font-size="11.5" fill="#555555" text-anchor="middle">same Postgres instance as monolith_pg</text>
-<text x="230.0" y="610.0" font-size="11.5" fill="#555555" text-anchor="middle">REMOVED (SMELL #5 cured, S11)</text>
+<text x="230.0" y="610.0" font-size="11.5" fill="#555555" text-anchor="middle">REMOVED (SMELL #5 cured)</text>
 <rect x="440" y="530" width="260" height="100" rx="9" fill="#ffffff" stroke="#999999" stroke-width="1.5" stroke-dasharray="6 4"/>
 <text x="570.0" y="570.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Debezium Postgres connector</text>
 <text x="570.0" y="587.5" font-size="11.5" fill="#555555" text-anchor="middle">Kafka Connect, pgoutput</text>
@@ -65,8 +65,8 @@
 <text x="1156.0" y="254.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">atomic conditional UPDATE (own schema)</text>
 <text x="1156.0" y="254.0" font-size="11" fill="#555" text-anchor="middle">atomic conditional UPDATE (own schema)</text>
 <path d="M1150,370 L1150,350" fill="none" stroke="#555" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#a)"/>
-<text x="1156.0" y="354.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">upsert (idempotent) -- historical S3-S10</text>
-<text x="1156.0" y="354.0" font-size="11" fill="#555" text-anchor="middle">upsert (idempotent) -- historical S3-S10</text>
+<text x="1156.0" y="354.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">upsert (idempotent) -- historical</text>
+<text x="1156.0" y="354.0" font-size="11" fill="#555" text-anchor="middle">upsert (idempotent) -- historical</text>
 <path d="M750,280 L750,300" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
 <text x="756.0" y="284.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">orders, customers (own schema)</text>
 <text x="756.0" y="284.0" font-size="11" fill="#555" text-anchor="middle">orders, customers (own schema)</text>
@@ -77,8 +77,8 @@
 <text x="736.0" y="574.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">publish</text>
 <text x="736.0" y="574.0" font-size="11" fill="#555" text-anchor="middle">publish</text>
 <path d="M1000,530 L1150,430" fill="none" stroke="#555" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#a)"/>
-<text x="1115.0" y="474.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">backfill + sync (S3-S10 only)</text>
-<text x="1115.0" y="474.0" font-size="11" fill="#555" text-anchor="middle">backfill + sync (S3-S10 only)</text>
+<text x="1115.0" y="474.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">backfill + sync</text>
+<text x="1115.0" y="474.0" font-size="11" fill="#555" text-anchor="middle">backfill + sync</text>
 <text x="700.0" y="30" font-size="17" fill="#1d1d1d" text-anchor="middle" font-weight="700">ch.19 -- Extracting Inventory: the synchronous gRPC seam (Reserve/Release) + a retired CDC backfill</text>
 <text x="300" y="414" font-size="11" fill="#555555" text-anchor="start">The checkout SEAM: gRPC Reserve atomically decrements stock in the inventory service&#x27;s OWN schema; a post-reserve failure</text>
 <text x="300" y="428" font-size="11" fill="#555555" text-anchor="start">(insufficient stock on a later line, a payment decline, a shipping failure) triggers the compensating gRPC Release.</text>
@@ -86,6 +86,5 @@
 <text x="40" y="458" font-size="11" fill="#555555" text-anchor="start">monolith&#x27;s internal StockDto (sku/priceCents/quantityOnHand) -- RemoteInventoryClient and InventoryGrpcServiceImpl are the ACL&#x27;s two sides.</text>
 <text x="50" y="660" font-size="11" fill="#1d1d1d" text-anchor="start" font-weight="700">CDC never sat in the checkout path -- it only ever moved data sideways to seed/sync the inventory service&#x27;s own copy while the monolith was still the writer.</text>
 <text x="40" y="712" font-size="10.5" fill="#555555" text-anchor="start">Sourced from examples/04-inventory-service (InventoryGrpcServiceImpl, InventoryCdcConsumer, inventory.proto), examples/00-monolith</text>
-<text x="40" y="726" font-size="10.5" fill="#555555" text-anchor="start">(RemoteInventoryClient, OrderService, SMELLS.md #5), examples/01-strangler-proxy (/api/inventory route), infra/debezium/README.md,</text>
-<text x="40" y="740" font-size="10.5" fill="#555555" text-anchor="start">and _plans/iterations/inventory-plan.md.</text>
+<text x="40" y="726" font-size="10.5" fill="#555555" text-anchor="start">(RemoteInventoryClient, OrderService, SMELLS.md #5), examples/01-strangler-proxy (/api/inventory route), infra/debezium/README.md.</text>
 </svg>

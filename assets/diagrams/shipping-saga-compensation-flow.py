@@ -109,7 +109,7 @@ onFailed3 = node(1190, 740, 250, 90, ["monolith: onShipmentFailed()", "delegated
                   style="box")
 
 release3 = node(930, 890, 260, 90,
-                 ["gRPC Release :9004", "delegated — order owns the", "reserved-line snapshot (DRQ-060)"],
+                 ["gRPC Release :9004", "delegated — order owns the", "reserved-line snapshot"],
                  style="accent")
 netzero3 = node(1230, 890, 210, 90, ["NET-ZERO", "stock restored"], style="ink")
 
@@ -131,7 +131,7 @@ notes = [
     {"x": 40, "y": 1062,
      "text": "Sourced from examples/00-monolith/.../order/{OrderService,OrderSagaListener}.java, "
              "examples/05-payment-service/.../PaymentService.java, "
-             "examples/06-shipping-service/.../{ShipmentSagaRoute,ShipmentSagaSteps}.java (DRQ-059/060).",
+             "examples/06-shipping-service/.../{ShipmentSagaRoute,ShipmentSagaSteps}.java.",
      "anchor": "start", "size": 10.5, "color": "#555555"},
 ]
 

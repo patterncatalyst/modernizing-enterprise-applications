@@ -76,6 +76,6 @@
 <path d="M1070.0,538.3035714285714 L1130.0,528.6607142857143" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
 <text x="1106.0" y="527.4821428571429" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">restored</text>
 <text x="1106.0" y="527.4821428571429" font-size="11" fill="#555" text-anchor="middle">restored</text>
-<text x="680.0" y="32" font-size="16" fill="#1d1d1d" text-anchor="middle" font-weight="700">ch.23 — compensation moves from an in-line catch to a choreographed event reaction (DRQ-049)</text>
-<text x="40" y="735" font-size="10.5" fill="#555555" text-anchor="start">Sourced from examples/00-monolith/.../order/{OrderService,OrderSagaListener}.java, examples/05-payment-service/.../PaymentService.java, and _plans/iterations/payment-plan.md (H3, DRQ-049/-051).</text>
+<text x="680.0" y="32" font-size="16" fill="#1d1d1d" text-anchor="middle" font-weight="700">ch.23 — compensation moves from an in-line catch to a choreographed event reaction</text>
+<text x="40" y="735" font-size="10.5" fill="#555555" text-anchor="start">Sourced from examples/00-monolith/.../order/{OrderService,OrderSagaListener}.java, examples/05-payment-service/.../PaymentService.java.</text>
 </svg>

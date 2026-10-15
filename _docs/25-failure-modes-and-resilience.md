@@ -307,8 +307,8 @@ demoted a chassis capability to a named, deferred gap rather than building it
 because a pattern catalog says a resilience chassis should have one. A
 circuit breaker is worth the added complexity when a dependency's *failure rate*, not
 merely its occasional slowness, is high enough that short-circuiting beats
-retrying — a threshold this project's own traffic, a demo-scale walking
-skeleton with one inventory service and no production load pattern behind
+retrying — a threshold this project's own traffic, a demo-scale system
+with one inventory service and no production load pattern behind
 it, has never been measured against. Adding one now would be
 exactly the speculative infrastructure Chapter 3's own standard argues
 against: a resilience pattern this book can show the reader on a diagram, not
@@ -343,7 +343,7 @@ try {
     paymentService.charge(order, order.getTotalCents(), command.paymentMethod());
     // ...
 } catch (RuntimeException ex) {
-    compensateRemoteReservations(remoteReservations); // DRQ-042
+    compensateRemoteReservations(remoteReservations);
     throw ex;
 }
 ```
@@ -621,10 +621,8 @@ timelines for both Notification and Inventory), `examples/03-notification-servic
 `OrderPlacedConsumerTest`, and `pom.xml`'s `quarkus-smallrye-health`
 dependency), `examples/04-inventory-service/` (`InventoryCdcConsumer`,
 `InventoryCdcConsumerTest`, and `pom.xml`'s `quarkus-smallrye-health`
-dependency), and `_plans/decisions.md` (DRQ-034, DRQ-037, DRQ-041,
-DRQ-042, DRQ-046). The captured outputs quoted above are taken verbatim from
-`CUTOVER.md` and `MIGRATION.md` rather than re-run live here, per this
-project's own DRQ-025 discipline. What a reader's own run should confirm
+dependency). The captured outputs quoted above are taken verbatim from
+`CUTOVER.md` and `MIGRATION.md` rather than re-run live here. What a reader's own run should confirm
 independently: that no fault-tolerance or circuit-breaker dependency has
 been added to any service's build since this chapter was written (the
 deferred-items list above is a snapshot, not a permanent ceiling); and that

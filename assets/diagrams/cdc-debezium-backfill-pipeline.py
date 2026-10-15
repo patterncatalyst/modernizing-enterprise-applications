@@ -58,7 +58,7 @@ W, H = 1600, 760
 # TOP band — the pipeline itself, active S3-S10
 # ============================================================================
 band_pipeline = {"x": 20, "y": 56, "w": 1560, "h": 300,
-                  "label": "The CDC backfill pipeline — active during the transition window (S3–S10)",
+                  "label": "The CDC backfill pipeline — active during the transition window",
                   "fill": "#eaf4ec"}
 
 wal = node(40, 140, 230, 120,
@@ -123,14 +123,14 @@ pipeline_subnotes = [
 # BOTTOM band — the slot/publication's retirement, S11
 # ============================================================================
 band_retire = {"x": 20, "y": 390, "w": 1560, "h": 300,
-               "label": "Retirement — scripts/retire-debezium.sh, run once at the S11 cutover",
+               "label": "Retirement — scripts/retire-debezium.sh, run once at cutover",
                "fill": "#f4f4f4"}
 
 ghost_slot = node(100, 480, 380, 120,
                   ["mea_inventory_slot +", "mea_inventory_publication",
                    "DROPPED"], style="ghost")
 retire_script = node(610, 480, 380, 120,
-                     ["scripts/retire-debezium.sh", "run once, at S11 cutover",
+                     ["scripts/retire-debezium.sh", "run once, at cutover",
                       "after gRPC Reserve/Release is sole writer"], style="ink")
 ghost_connector = node(1120, 480, 380, 120,
                        ["mea-inventory-connector", "Kafka Connect",

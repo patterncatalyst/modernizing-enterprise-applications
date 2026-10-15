@@ -78,7 +78,7 @@ after_edges = [
 ]
 
 # transformation arrow between the two panels, mirroring the sdlc-vs-adlc convention
-transform_edge = {"x1": 650, "y1": 160, "x2": 710, "y2": 160, "label": "DRQ-047", "amber": True}
+transform_edge = {"x1": 650, "y1": 160, "x2": 710, "y2": 160, "label": "", "amber": True}
 
 # the removed synchronous 402, called out explicitly as GONE in the AFTER panel
 removed_402 = node(410, 560, 240, 70,
@@ -86,7 +86,7 @@ removed_402 = node(410, 560, 240, 70,
 removed_edge = connect(declined_b, removed_402, dashed=True, label="removed")
 
 notes = [
-    {"x": W / 2, "y": 32, "text": "ch.23 — the sync->async checkout contract change (DRQ-047, H1)",
+    {"x": W / 2, "y": 32, "text": "ch.23 — the sync->async checkout contract change",
      "anchor": "middle", "bold": True, "size": 17},
 
     {"x": 50, "y": 208, "text": "the POST carries the FINAL answer", "anchor": "start", "size": 11,
@@ -96,7 +96,7 @@ notes = [
 
     {"x": 50, "y": 650,
      "text": "Sourced from examples/00-monolith/.../order/{OrderController,OrderService}.java "
-             "(the payment.mode flag) and _plans/iterations/payment-plan.md (DRQ-047).",
+             "(the payment.mode flag).",
      "anchor": "start", "size": 10.5, "color": "#555555"},
 ]
 

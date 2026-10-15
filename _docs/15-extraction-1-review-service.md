@@ -1,5 +1,5 @@
 ---
-title: "Extraction 1 — Review Service (the Walking Skeleton)"
+title: "Extraction 1 — Review Service"
 order: 15
 part: "The Strangler Fig in Practice"
 description: "REST-only, HTTP Basic auth, no sync dependency — proving the full loop: ACL, Quarkus scaffold, equivalence gate pass, flag-gated cutover, decommission."
@@ -10,7 +10,7 @@ net caught. This chapter is the other half of that story: not the ADLC's
 gate-by-gate narrative, but the actual mechanics of pulling one bounded
 context out of a running Spring Boot monolith and landing it on Quarkus
 without breaking a single client in between. Everything here is drawn from
-code that exists and ran in this project's own r02 iteration —
+code that exists and ran —
 `examples/02-review-service/` (the extracted service, both its Phase A and
 Phase B forms), `examples/01-strangler-proxy/` (the Camel seam that fronts
 the monolith), and `tooling/newman/` (the suite that gated every step). There
@@ -66,8 +66,8 @@ Before `examples/02-review-service` existed as a Maven module, before the
 Camel proxy existed, before a single line of Quarkus configuration was
 written, the Review Context Contract had to exist as a re-runnable artifact —
 because an extraction without a prior, independently-captured definition of
-"behaves the same" is not verifiable, it is only plausible. `decisions.md`
-DRQ-014 fixed this as policy project-wide: the monolith's own externally
+"behaves the same" is not verifiable, it is only plausible. The policy here
+is fixed project-wide: the monolith's own externally
 observable HTTP contract, captured once against the running monolith, is the
 behavior-equivalence suite, and it never gets edited to make a later service
 pass. `tooling/newman/mea.postman_collection.json` is that artifact, and its
@@ -221,9 +221,7 @@ stacking a plain `@ApplicationScoped` annotation alongside `@Service` fixed
 that without touching a single method body — a testability fix, not a
 behavior change.
 
-That short list is the entire Phase A diff beyond framework vocabulary, and
-the commit that produced it — `5479d49` in this project's history — carries
-a message that names its own proof: "equivalence 16/16 green." Phase A was
+That short list is the entire Phase A diff beyond framework vocabulary. Phase A was
 not trusted because it compiled; it was trusted because the exact same
 Review Context Contract that was captured against the monolith weeks earlier
 ran unmodified against the lifted Quarkus service and every assertion passed.

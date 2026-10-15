@@ -76,10 +76,10 @@ notes = [
     {"x": W / 2, "y": 32, "text": "ch.15 — Extracting Review: the strangler-fig seam (before -> after cutover)",
      "anchor": "middle", "bold": True, "size": 18},
 
-    {"x": 40, "y": 65, "text": "BEFORE — flag OFF (r02 S7–S9): Review still served by the monolith",
+    {"x": 40, "y": 65, "text": "BEFORE — flag OFF: Review still served by the monolith",
      "anchor": "start", "bold": True, "size": 14},
     {"x": 40, "y": 70 + PANEL_H + 48,
-     "text": "AFTER — flag ON, committed default (r02 S10): Review served by Quarkus; monolith decommissioned",
+     "text": "AFTER — flag ON, committed default: Review served by Quarkus; monolith decommissioned",
      "anchor": "start", "bold": True, "size": 14},
 
     {"x": 40, "y": 70 + PANEL_H + 60 + 420,

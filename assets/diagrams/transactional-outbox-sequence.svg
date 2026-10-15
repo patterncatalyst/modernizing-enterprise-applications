@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1880 980" font-family="'Red Hat Text', system-ui, sans-serif" role="img">
 <defs><marker id="a" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#555"/></marker><marker id="am" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2f5f3d"/></marker></defs>
 <rect x="20" y="60" width="1840" height="230" rx="12" fill="#fafafa" stroke="#ddd"/>
-<text x="32" y="80" font-size="12" font-weight="700" fill="#1d1d1d">OLD — cured in r04/S8: synchronous notification inside the checkout transaction (SMELL #4)</text>
+<text x="32" y="80" font-size="12" font-weight="700" fill="#1d1d1d">OLD — cured: synchronous notification inside the checkout transaction (SMELL #4)</text>
 <rect x="20" y="340" width="1840" height="500" rx="12" fill="#eaf4ec" stroke="#ddd"/>
 <text x="32" y="360" font-size="12" font-weight="700" fill="#1d1d1d">NEW (current) — transactional outbox + async event-driven consumer</text>
 <rect x="190" y="430" width="1320" height="150" rx="12" fill="#ffffff" stroke="#ddd"/>
@@ -63,8 +63,8 @@
 <path d="M610.0,180.0 L630.0,180.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
 <path d="M800.0,180.0 L820.0,180.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
 <path d="M990.0,180.0 L1010.0,180.0" fill="none" stroke="#2f5f3d" stroke-width="2" marker-end="url(#am)"/>
-<text x="1006.0" y="120.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">SMELL #4 (removed, r04/S8)</text>
-<text x="1006.0" y="120.0" font-size="11" fill="#2f5f3d" text-anchor="middle">SMELL #4 (removed, r04/S8)</text>
+<text x="1006.0" y="120.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">SMELL #4 (removed)</text>
+<text x="1006.0" y="120.0" font-size="11" fill="#2f5f3d" text-anchor="middle">SMELL #4 (removed)</text>
 <path d="M1260.0,180.0 L1280.0,180.0" fill="none" stroke="#2f5f3d" stroke-width="2" marker-end="url(#am)"/>
 <text x="1276.0" y="120.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">blocks checkout&#x27;s own commit</text>
 <text x="1276.0" y="120.0" font-size="11" fill="#2f5f3d" text-anchor="middle">blocks checkout&#x27;s own commit</text>
@@ -92,6 +92,6 @@
 <text x="1010" y="822" font-size="10" fill="#555555" text-anchor="start">AT-LEAST-ONCE: a crash between the Kafka ack and the published_at</text>
 <text x="1010" y="836" font-size="10" fill="#555555" text-anchor="start">stamp republishes the identical row on the next poll.</text>
 <text x="1580" y="822" font-size="10" fill="#555555" text-anchor="start">IDEMPOTENT by design: check-then-insert by orderId makes a</text>
-<text x="1580" y="836" font-size="10" fill="#555555" text-anchor="start">redelivered event a safe no-op (DRQ-034 / DRQ-037).</text>
+<text x="1580" y="836" font-size="10" fill="#555555" text-anchor="start">redelivered event a safe no-op.</text>
 <text x="40" y="955" font-size="11" fill="#555555" text-anchor="start">Same business steps, same transaction boundary for order + outbox — only the LAST write before commit changed (a call -&gt; a row).</text>
 </svg>

@@ -37,7 +37,7 @@ top_nodes = [node(x, TOP_Y, top_w, NH, lbl, style="accent") for x, lbl in zip(to
 bottom_phases = [
     ["Frame", "author intent"],
     ["Map", "reconnaissance"],
-    ["Plan", "DRQ-NNN"],
+    ["Plan", "decision record"],
     ["Generate", "scaffold + code + tests"],
     ["Verify", "tests + scan"],
     ["Operate", "flagged rollout + LGTM"],
@@ -77,7 +77,7 @@ gate_nodes = [
 
 bands = [
     {"x": 20, "y": 70, "w": 1630, "h": 130, "label": "Deck: agentic SDLC (8 steps)", "fill": "#eaf4ec"},
-    {"x": 20, "y": 290, "w": 1630, "h": 130, "label": "Book: ADLC (7 phases, _plans/build-plan.md §F)", "fill": "#fafafa"},
+    {"x": 20, "y": 290, "w": 1630, "h": 130, "label": "Book: ADLC (7 phases)", "fill": "#fafafa"},
 ]
 
 notes = [

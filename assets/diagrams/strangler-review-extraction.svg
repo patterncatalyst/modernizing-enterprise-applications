@@ -77,8 +77,8 @@
 <path d="M909.074074074074,670.0 L1000.0,706.6417910447761" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
 <path d="M900.5172413793103,850.0 L1000.0,806.9402985074627" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
 <text x="660.0" y="32" font-size="18" fill="#1d1d1d" text-anchor="middle" font-weight="700">ch.15 — Extracting Review: the strangler-fig seam (before -&gt; after cutover)</text>
-<text x="40" y="65" font-size="14" fill="#1d1d1d" text-anchor="start" font-weight="700">BEFORE — flag OFF (r02 S7–S9): Review still served by the monolith</text>
-<text x="40" y="538" font-size="14" fill="#1d1d1d" text-anchor="start" font-weight="700">AFTER — flag ON, committed default (r02 S10): Review served by Quarkus; monolith decommissioned</text>
+<text x="40" y="65" font-size="14" fill="#1d1d1d" text-anchor="start" font-weight="700">BEFORE — flag OFF: Review still served by the monolith</text>
+<text x="40" y="538" font-size="14" fill="#1d1d1d" text-anchor="start" font-weight="700">AFTER — flag ON, committed default: Review served by Quarkus; monolith decommissioned</text>
 <text x="40" y="970" font-size="11" fill="#555555" text-anchor="start">proxy predicate fixed post-S10: matches the FULL CamelHttpPath (startsWith &#x27;/api/reviews&#x27;), not a path relative to the /api consumer prefix</text>
 <text x="40" y="1026" font-size="11" fill="#555555" text-anchor="start">The flag is the whole cutover: a config change + restart, no route code change. Decommission (step 3, after routing was verified) is the one irreversible move.</text>
 </svg>

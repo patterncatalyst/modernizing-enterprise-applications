@@ -201,13 +201,11 @@ The Reconcile phase deserves its own closing note, because it is the least
 glamorous and the one most often skipped. Every chapter ended with a
 verification-status footer that said, specifically and often uncomfortably, what
 had actually been run and what had not — Chapter 30 naming its Loki gap and its
-untraced Kafka saga hops, Chapter 31 marking its CI incarnation unverified because
-nothing was pushed. That honesty is not a disclaimer; it is the Reconcile phase
+untraced Kafka saga hops. That honesty is not a disclaimer; it is the Reconcile phase
 doing its job, keeping the gap between what was claimed and what was verified
 visible rather than letting it rot into the quiet drift that turns documentation
 into fiction. A method that produces confident prose about code that was never run
-is worse than no method. This one produces footers that tell you exactly how far
-to trust each chapter.
+is worse than no method.
 
 ## Clearly-scoped further horizons
 
@@ -231,7 +229,7 @@ used, so "future work" is a scoped list and not a shrug:
   spans instead of vanishing at the L7 boundary Istio can see.
 - **Security past the supply-chain gate.** Chapter 31 proved the SBOM/scan/policy
   gate; a production push adds secrets management, image signing and provenance
-  attestation, and the secure-by-default hardening DRQ-020 scoped but this book
+  attestation, and the secure-by-default hardening this book scoped but
   showed only in part.
 
 None of these is a gap in the book's argument; each is a clearly-bounded next
@@ -285,7 +283,7 @@ supply-chain + CI gates (ch.31, verified live). Deferred items (rewrite, full
 event sourcing, LRA/Narayana, GitOps operator + canary, Loki log shipping,
 Kafka-aware tracing, image signing) are each named as deferred in the chapter
 cited above, consistent with the no-speculative-infrastructure discipline
-(DRQ-001) and the security-by-design scope (DRQ-020). No claim in this chapter
+and the security-by-design scope. No claim in this chapter
 should be read as newly verified here; re-confirm any specific verdict against
 its source chapter's own verification footer.*
 </content>

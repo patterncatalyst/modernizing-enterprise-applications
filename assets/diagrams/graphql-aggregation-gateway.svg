@@ -56,5 +56,5 @@
 <text x="825.0" y="32" font-size="17" fill="#1d1d1d" text-anchor="middle" font-weight="700">ch.26 — the GraphQL aggregation gateway: one order(id) query fans out to five owning services</text>
 <text x="1080" y="660" font-size="11" fill="#2f5f3d" text-anchor="middle" font-weight="700">four fields resolve over REST; stock is the ONE field resolved over gRPC — the gateway never mixes</text>
 <text x="1080" y="676" font-size="11" fill="#2f5f3d" text-anchor="middle" font-weight="700">protocols inside a single field, and never caches or denormalizes what it fetches</text>
-<text x="40" y="800" font-size="10.5" fill="#555555" text-anchor="start">Sourced from examples/08-graphql-gateway/.../{GatewayApi,OrderRestClient,PaymentRestClient,ShipmentRestClient,ReviewRestClient}.java and _plans/iterations/order-plan.md (S7, DRQ-069).</text>
+<text x="40" y="800" font-size="10.5" fill="#555555" text-anchor="start">Sourced from examples/08-graphql-gateway/.../{GatewayApi,OrderRestClient,PaymentRestClient,ShipmentRestClient,ReviewRestClient}.java.</text>
 </svg>

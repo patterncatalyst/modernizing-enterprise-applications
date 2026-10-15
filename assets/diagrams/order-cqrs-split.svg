@@ -108,5 +108,5 @@
 <text x="1306.0" y="639.0" font-size="11" fill="#2f5f3d" text-anchor="middle">reads EXCLUSIVELY — no aggregate fallback</text>
 <text x="725.0" y="32" font-size="17" fill="#1d1d1d" text-anchor="middle" font-weight="700">ch.26 — the CQRS write/read split: command path, projection bridge, read-only query path</text>
 <text x="725.0" y="378" font-size="11" fill="#2f5f3d" text-anchor="middle" font-weight="700">write model and read model are two DISTINCT tables in the SAME order-service PostgreSQL schema — never joined at read time</text>
-<text x="40" y="1060" font-size="10.5" fill="#555555" text-anchor="start">Sourced from examples/07-order-service/.../{OrderService,OrderViewProjector,OrderSagaListener,OrderResource}.java and _plans/iterations/order-plan.md (S5/S6, DRQ-067/073/074).</text>
+<text x="40" y="1060" font-size="10.5" fill="#555555" text-anchor="start">Sourced from examples/07-order-service/.../{OrderService,OrderViewProjector,OrderSagaListener,OrderResource}.java.</text>
 </svg>

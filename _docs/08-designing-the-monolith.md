@@ -11,7 +11,7 @@ this book strangling. Before anything can be modernized, it has to exist as
 something worth modernizing — a believable "before": a system a real team
 could have shipped, that does real work, that a customer would actually
 notice if it went down. That system is
-`examples/00-monolith/`, a plain Spring Boot application on JDK 25 (3.5 when it was built; the frozen shell is on 4.1.1 since DRQ-077), one
+`examples/00-monolith/`, a plain Spring Boot application on JDK 25, one
 deployable JAR, one PostgreSQL schema, one JVM, built around a shipping and
 e-commerce domain split into six bounded contexts. This chapter walks its
 design — the domain, the layering, the schema, the API surface — and makes
@@ -24,9 +24,8 @@ this chapter — it is an ordinary Maven project. `mvn spring-boot:run` starts
 it against the local Postgres coordinates in `src/main/resources/application.yml`;
 `mvn verify` runs the full three-tier JUnit suite (unit, slice, and
 Testcontainers-backed integration tests) this chapter and the next two build
-on, and already passes green — 38 test executions today (45 at the commit
-history Chapter 7 quoted, `e6d62bc`, before Review's tests were removed in
-r02).
+on, and already passes green — 38 test executions today (45 before Review's
+tests were removed when Review was extracted).
 
 {% include excalidraw.html file="monolith-architecture" alt="A layered Spring Boot monolith: six bounded-context packages (order, inventory, payment, shipping, notification, review) each with a controller, service, and repository layer, all built against one shared PostgreSQL schema populated by Flyway migrations V1 and V2, exposed as one REST API surface documented by springdoc OpenAPI." caption="Figure 8.1 — The reference monolith: six bounded contexts, one layered Spring Boot deployable, one shared schema" %}
 
@@ -53,14 +52,11 @@ being its own research project.
 Read `MonolithApplication.java`'s class-level Javadoc and you will notice
 something this chapter owes you a clear, accurate account of: it says the monolith
 "originally" held six contexts as sibling packages, and that `review` "has
-been extracted and decommissioned from this module" as of this project's own
-r02 walking skeleton — the very extraction Chapter 7 narrated commit by
-commit. That is not a mistake in the example; it is this book keeping its own
-promise from Chapter 5 that "the book is built the way it teaches." The
-chapters you are reading were produced by the same ADLC loop they describe,
-and that loop had already run the Review extraction — proxy, Phase A lift,
-Phase B refactor, cutover, decommission — by the time this chapter was
-written. So what you will find in `examples/00-monolith/src/main/java` today
+been extracted and decommissioned from this module" — the very extraction
+Chapter 7 walks through. That is not a mistake in the example: the Review
+extraction — proxy, Phase A lift, Phase B refactor, cutover, decommission —
+has already been run against this repository, so what you will find in
+`examples/00-monolith/src/main/java` today
 is five context packages (`order`, `inventory`, `payment`, `shipping`,
 `notification`); review's controller, entity, and service were deleted in
 that extraction, and `review` now lives on as `examples/02-review-service`,
@@ -77,7 +73,7 @@ migrations — that code is the five contexts still resident in the module
 today. Where it describes review's original shape, it draws on `SMELLS.md`'s
 historical record and the javadoc comments left behind specifically so that
 record would survive the deletion. Nothing here is invented; it is simply
-describing a system at the moment just before this book's own first cut,
+describing a system at the moment just before its first cut,
 using a repository that — truthfully — has already made that cut once.
 
 {% include excalidraw.html file="monolith-six-contexts" alt="The monolith as designed: six in-process bounded-context modules — order, inventory, payment, shipping, notification, review — inside one Spring Boot deployable, with no process boundary, no network hop, and no per-context database between any of them." caption="Figure 8.2 — Six bounded contexts, one deployable: modules, not services" %}
@@ -118,7 +114,7 @@ gap to fill rather than a strawman.
 
 The module has seven resident JPA entities: one shared-kernel class plus six
 context-owned ones — `InventoryItem`, `Order`, `OrderItem`, `Payment`,
-`Shipment`, `Notification`. Review's entity was the eighth, removed in r02
+`Shipment`, `Notification`. Review's entity was the eighth, removed
 when Review's code left the monolith. `Customer`, in the
 `common` package, is explicitly documented as "not one of the monolith's
 bounded contexts itself" — it exists because `order` and `notification` both
@@ -126,9 +122,9 @@ need to reference a customer, and in a single shared schema the cheapest way
 to do that is a direct `@ManyToOne` join rather than a context-local copy.
 Its Javadoc is unusually candid about why it still carries a foreign key from
 a table (`reviews`) whose owning Java code has already left the building:
-`examples/02-review-service` is still in its Phase A form (DRQ-029) and reads
+`examples/02-review-service` is still in its Phase A form and reads
 and writes that table directly against this same database, so dropping it
-here would break a service this book's own walking skeleton just cut over to.
+here would break a service this project just cut over to.
 That one comment is worth re-reading, because it is a live example of
 Chapter 7's "shared state masking a routing defect" lesson playing out in the
 schema itself, not just the proxy.
@@ -323,10 +319,9 @@ to `404`, `InsufficientStockException` to `409`, `PaymentDeclinedException`
 to `402`, and Bean Validation failures to `400`, each producing the same
 `ApiError` shape so a client never has to guess which context produced an
 error. `OpenApiConfig` registers a springdoc `OpenAPI` bean with a title and
-version; its description field is itself an artifact of this book's own
-accuracy discipline, because it states in plain text that the monolith "still
-owns" five contexts and that review was "extracted and decommissioned in
-r02/S10" — the generated OpenAPI spec a reader hits at `/v3/api-docs` tells
+version; its description field states in plain text that the monolith "still
+owns" five contexts and that review was "extracted and decommissioned" — the
+generated OpenAPI spec a reader hits at `/v3/api-docs` tells
 the same true story this chapter does. `SecurityConfig` configures exactly
 one `SecurityFilterChain` for the whole application: CSRF disabled, stateless
 sessions, HTTP Basic auth, and a single authorization rule
@@ -428,7 +423,7 @@ chapter can now state directly, because you have just seen the code that
 proves it: each one has a direct counterpart in the Quarkiverse
 Spring-compatibility bridge (`quarkus-spring-web`, `quarkus-spring-di`,
 `quarkus-spring-data-jpa`, `quarkus-spring-security`) that Part 5's
-extractions lean on for their first, fast pass onto Quarkus (DRQ-029). This
+extractions lean on for their first, fast pass onto Quarkus. This
 is not an incidental convenience; it is a design constraint this monolith
 was built under from the start. If `OrderRepository` had been written
 against some bespoke in-house persistence abstraction instead of a plain
@@ -466,7 +461,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 ```
 
 The two tabs are identical by design. That sameness is the entire point of
-DRQ-029's two-phase strategy: Phase A proves an extraction behaves correctly
+the two-phase strategy: Phase A proves an extraction behaves correctly
 against the equivalence suite *before* anyone spends effort making the code
 idiomatic, and it can prove that quickly precisely because nothing in the
 monolith's own code has to change to get there. A monolith built on exotic,
@@ -540,7 +535,7 @@ makes it a useful cross-check rather than a second copy of the same claim.
   what Chapter 18/19 later untangle.
 - Every framework choice here (Spring MVC, Spring Data JPA, Spring Security)
   was made because it bridges cleanly to Quarkus via the Quarkiverse
-  Spring-compatibility extensions (DRQ-029) — a design constraint on the
+  Spring-compatibility extensions — a design constraint on the
   "before" picture, not an afterthought discovered during extraction.
 
 Chapter 9, "The Deliberate Smells," takes the six `SMELL[ch.NN]` comments
