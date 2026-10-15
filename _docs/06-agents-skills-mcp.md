@@ -7,16 +7,13 @@ description: "The agent-tier relay (plan, execute, validate); the MCP surface (Q
 
 Chapter 5 named the seven phases of the ADLC and the two places a human has to
 stop the loop and decide. It also, in its closing section, named three real
-tools that fill those phases for this project's own build: the plan → execute
+tools that fill those phases: the plan → execute
 → validate relay, a Quarkus Agent MCP server, and a Camel MCP server. This
 chapter opens each of those up. Three building blocks compose into every
 ADLC phase: **agents** (a model in a loop with tools, deciding what to do
 next), **skills** (packaged, repeatable instructions an agent loads before it
 acts), and **MCP tools** (servers that hand an agent a real toolchain to act
-against, not just a prompt to reason from). None of this is abstract for this
-book — the chapter you are reading right now was produced by the exact
-machinery it describes, and the next section says so before it says
-anything else.
+against, not just a prompt to reason from).
 
 ## Agents: a model in a loop with tools
 
@@ -33,14 +30,14 @@ tools is what turns "the agent understood the request" into "the agent
 produced a passing diff."
 
 The simplest version of this is a single agent: one model, one loop, one set
-of tools, working a task start to finish. Most of the mechanical work in this
-project's build — scaffolding a Quarkus project, writing a Camel route,
+of tools, working a task start to finish. Much of the mechanical work in a
+build like this — scaffolding a Quarkus project, writing a Camel route,
 authoring a chapter's prose — runs as a single agent, because a single loop
 with the right tools is the cheapest way to get a bounded task done, and
 adding a second agent to a task that doesn't need one is pure coordination
 overhead with no offsetting benefit.
 
-The more interesting case, and the one that actually built this project, is
+The more interesting case is
 **multi-agent orchestration**: more than one agent, each with a distinct role
 and a distinct set of tools, coordinated so that one agent's output becomes
 another's input, and — critically — so that no single agent is trusted to
@@ -70,9 +67,8 @@ whether its own plan was executed faithfully — a different posture than
    caption="Figure 6.1 — The relay: the planning model drafts, the execution model builds, the same planning tier validates adversarially, with a human gate on either side of Generate" %}
 
 ```
-Captured -- the actual Review-extraction plan draft, DRQ-014/T1-adjacent
-step plan (the planning tier's output, before the first human gate;
-`_plans/build-plan.md`, steps S6-S10)
+A Review-extraction plan draft -- the planning tier's output, before the
+first human gate (steps S6-S10)
 
 S6  Build the behavior-equivalence suite against the running monolith
     (Newman collection; happy path + out-of-stock + payment-decline).
@@ -99,22 +95,21 @@ name: a coordinator agent delegating bounded subtasks to specialist sub-agents
 and deciding, from the outside, whether each subtask's output is acceptable
 before the next one starts. Chapter 5's "Further reading" sidebar already drew
 this line; it is worth restating here because this is the chapter where the
-analogy stops being a reference and starts being this project's actual
-execution model. The workshop's reference projects build that supervisor
-pattern as the product; this book's relay uses the identical pattern as its
-*means of production* — the coordinator-and-specialist shape is the same, only
+analogy stops being a reference and starts being a concrete execution model.
+The workshop's reference projects build that supervisor
+pattern as the product; the ADLC's relay puts the identical pattern to work as
+a *means of production* — the coordinator-and-specialist shape is the same, only
 the thing being coordinated differs; the walkthrough in Chapter 7 shows exactly
 what that relay caught, and failed to catch, on the Review extraction.
 
 One more distinction matters here: *orchestration* is not the same
 thing as *parallelism*. The plan → execute → validate relay is strictly
 sequential — each phase's output gates the next, and the whole point is that
-nothing in Generate starts before a human has approved Plan. Elsewhere in this
-project's build, independent agents *do* run in parallel — this project's own
-build plan lists chapter authoring across `_docs/NN-*.md` files and diagram
-generation as safe to parallelize because they touch disjoint files, while the
-Maven reactor root and the shared `_plans/` ledger are explicitly serialized
-to one writer at a time under its single-writer rule. Multi-agent orchestration, in
+nothing in Generate starts before a human has approved Plan. Elsewhere,
+independent agents *do* run in parallel — authoring separate chapter files or
+generating diagrams can be parallelized because they touch disjoint files,
+while a shared build artifact or ledger is serialized to one writer at a time
+under a single-writer rule. Multi-agent orchestration, in
 other words, is a design decision about *dependencies between tasks*, not a
 blanket instruction to "use more agents." A task that has no shared
 state and no approval gate between its pieces is a good candidate for
@@ -134,23 +129,22 @@ invocable unit with its own name, its own triggers, and its own worked
 conventions, so that the fifth time an agent scaffolds a Quarkus project it
 makes the same choices the first time did.
 
-This book's own build runs almost entirely on a family of skills with a
+This project runs on a family of skills with a
 shared naming convention, the **lgtm-\*** family, and naming them concretely
 is more useful than describing skills in the abstract:
 
-- **`lgtm-tutorial`** is the skill that wrote this chapter. It encodes the
+- **`lgtm-tutorial`** encodes the
   chapter skeleton, the depth standard, the runnable-example shape, the
-  `unverified` discipline, and the validation snippets this project runs
-  before every chapter ships — the house style a reader has been experiencing,
-  consistently, since Chapter 0, without ever seeing the skill itself.
+  `unverified` discipline, and the validation snippets a chapter runs
+  before it ships — a house style applied consistently, without a reader ever
+  seeing the skill itself.
 - **`lgtm-quarkus`** and **`lgtm-camel`** scaffold the dev toolchain for a new
   Quarkus or Camel project respectively — SDKMAN, the JDK, Maven, the MCP
   server wiring, the testing harness — so that every service extraction in
   this book starts from the same known-good baseline rather than a
   hand-assembled one that drifts service to service.
-- **`lgtm-diagram-generator`** produced every figure referenced in this Part,
-  including the tooling figure Chapter 5 showed, from a short Python spec of
-  boxes and arrows, so the diagrams across 33 chapters share one visual
+- **`lgtm-diagram-generator`** generates figures from a short Python spec of
+  boxes and arrows, so the diagrams across many chapters share one visual
   language instead of each chapter inventing its own.
 - **`lgtm-docker-stack`** stands up the local observability substrate —
   Postgres, Kafka, the LGTM stack — that every extraction's Dev Services and
@@ -163,11 +157,9 @@ A skill is not only a packaged *task*; it is also a packaged *boundary*. The
 second kind of skill this project leans on hardest is project governance
 through context files — `AGENTS.md` and `CLAUDE.md` — that live inside a
 generated project and constrain every agent that works on it afterward,
-whether or not that agent remembers how the project started. This book's own
-`examples/02-review-service/AGENTS.md` is not a teaching prop; it is the
-actual file the Quarkus-side execution agent read before touching a single
-line of the Review extraction, and its opening rule states the governance
-pattern directly:
+whether or not that agent remembers how the project started. The
+`examples/02-review-service/AGENTS.md` file in this project states the
+governance pattern directly in its opening rule:
 
 ```
 Condensed excerpt -- examples/02-review-service/AGENTS.md, lines 5-15
@@ -297,7 +289,7 @@ most of what it takes to trust a loop this fast.
 
 {% include excalidraw.html
    file="structural-vs-behavioral-gates"
-   alt="Two stacked panels. Top: the structural gate, camel_validate_route and camel_configuration_validate, run during Generate before deploy; it confirms the route compiles into a legal Camel graph, catching a malformed choice/when/otherwise block, an unresolved component reference, or a typo'd endpoint parameter — the class of defect that surfaces as a confusing runtime stack trace. It cannot catch whether a routing predicate matches the right requests once real traffic flows. Bottom: the behavioral gate, the Newman equivalence suite plus its Opus adversarial follow-up, run during Verify against a running service; it catches a routing predicate matching the wrong requests — the class of defect that surfaces as a misleadingly correct-looking response. A dashed line connects what the structural gate cannot catch to the behavioral gate that closes the gap."
+   alt="Two stacked panels. Top: the structural gate, camel_validate_route and camel_configuration_validate, run during Generate before deploy; it confirms the route compiles into a legal Camel graph, catching a malformed choice/when/otherwise block, an unresolved component reference, or a typo'd endpoint parameter — the class of defect that surfaces as a confusing runtime stack trace. It cannot catch whether a routing predicate matches the right requests once real traffic flows. Bottom: the behavioral gate, the Newman equivalence suite plus its adversarial follow-up, run during Verify against a running service; it catches a routing predicate matching the wrong requests — the class of defect that surfaces as a misleadingly correct-looking response. A dashed line connects what the structural gate cannot catch to the behavioral gate that closes the gap."
    caption="Figure 6.2 — The structural gate (camel-mcp route validation) and the behavioral gate (the equivalence suite) catch different classes of mistake; neither substitutes for the other" %}
 
 The underlying reason MCP matters is the same for both servers: an agent's training
@@ -344,16 +336,16 @@ by phase makes the composition concrete rather than aspirational:
   whether or not an agent was involved in writing the record down.
 
 One discipline threads through every one of those bullets and is worth
-restating by name, because it is the reason this chapter's own captured
-transcripts look the way they do: **DRQ-025**. Every piece of agent or MCP
+restating, because it is the reason this chapter's captured
+transcripts look the way they do: every piece of agent or MCP
 tool output quoted in this book — the plan draft above, the `quarkus_skills`
 discovery, the `camel_validate_route` check — is pre-captured and narrated,
 checked into the repository at the moment it happened, not re-run live at
 build time or read time. The reasoning is the same reasoning Chapter 5 gave
-for the ADLC's "ADLC in Action" callouts generally: a reader six months from
-now, opening this chapter on a Quarkus or Camel release this project was
-never tested against, sees the exact exchange that produced the code in front
-of them, immune to whatever drifted in the tools between then and now.
+for the "ADLC in Action" callouts generally: a reader
+opening this chapter on a Quarkus or Camel release this project was
+never tested against sees the exact exchange that produced the code in front
+of them, immune to whatever drifted in the tools in the meantime.
 Reproducibility, here, does not mean "run it again and get the same answer
 from a live service" — it means "read the same transcript and verify the same
 claim," which is a strictly stronger guarantee once tool versions are allowed
@@ -369,8 +361,8 @@ real pressure. That proof is Chapter 7's entire job: it runs this exact
 machinery once, end to end, on the Review extraction, and narrates two real
 defects the safety net caught before either reached a reader. If this chapter
 left you wanting to *build* an agent rather than *use* one — to write your
-own `@Agent`-annotated supervisor, not just read about the relay this book
-runs on — Daniel Oh's **Enterprise Agentic AI Workshop** is the hands-on
+own `@Agent`-annotated supervisor, not just read about the relay described
+here — Daniel Oh's **Enterprise Agentic AI Workshop** is the hands-on
 companion Chapter 5 pointed to and this chapter has now cashed in twice: it
 teaches the construction of exactly the patterns named here (supervisor
 orchestration, plan-and-execute re-planning, `AGENTS.md` governance) on a
@@ -381,12 +373,12 @@ system, and the next chapter is where you watch it do exactly that.
 
 ---
 *Verification status: not applicable — this is a conceptual chapter with no
-runnable example under `examples/`. Every captured transcript quoted above is
-drawn from this project's own build artifacts (`_plans/build-plan.md`,
-`examples/02-review-service/AGENTS.md`, `examples/01-strangler-proxy/`) or
-reconstructed in the same narrated-and-checked-in style per DRQ-025; the
+runnable example under `examples/`. The captured transcripts quoted above are
+drawn from this project's example artifacts
+(`examples/02-review-service/AGENTS.md`, `examples/01-strangler-proxy/`) or
+reconstructed in the same narrated-and-checked-in style; the
 underlying claims — the relay tiers, the `lgtm-*` skill names, the two MCP
-servers and their tool names — are checkable against this repository and
-against `_plans/decisions.md` directly. Chapter 7 is where this chapter's
+servers and their tool names — are checkable against this repository directly.
+Chapter 7 is where this chapter's
 claims about what the safety net actually catches get their full worked
 proof.*

@@ -65,7 +65,7 @@ no-speculative-infrastructure discipline this book has held since Chapter 3.
 
 The run recorded in this chapter used the toolchain of the day (podman driver,
 Kubernetes v1.33.3, Istio 1.29.2). The scripts in `deploy/k8s/scripts/` now
-reproduce it on the current pins (DRQ-077): Docker Engine on a Fedora or RHEL
+reproduce it on the current pins: Docker Engine on a Fedora or RHEL
 host, minikube 1.39 with `--driver=docker --container-runtime=containerd`,
 Kubernetes v1.36.5, Istio 1.31.1, `grafana/otel-lgtm:0.36.0`. Every call names
 the profile (`minikube -p mea`, `kubectl --context mea`), and the two

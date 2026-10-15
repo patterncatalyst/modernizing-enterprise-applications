@@ -162,7 +162,7 @@ two chapters from here.
 It's worth being exact about what was actually missing, because it is a
 specific, nameable thing and not a vague complaint about code quality:
 nobody ever decided what the order↔inventory relationship *should be*. No
-`DRQ`-style decision was made, no contract was drafted, no map was drawn —
+deliberate decision was made, no contract was drafted, no map was drawn —
 the relationship that exists today is simply whatever the cheapest
 implementation produced, which is a direct object reference, because that is
 always the cheapest thing a shared JVM and a shared schema can produce.
@@ -289,8 +289,8 @@ already made, not a substitute for making one.
 
 ## Why Review could leave first: ports, measured in a real diff
 
-This chapter doesn't have to argue hexagonal's payoff only in the abstract,
-because this book already produced the contrast. `examples/02-review-service`
+This chapter doesn't have to argue hexagonal's payoff only in the abstract;
+the contrast already exists in the examples. `examples/02-review-service`
 is the Review context after its full two-phase migration (Chapter 7, Chapter
 15): Phase A lifted it onto Quarkus nearly unchanged via the Quarkiverse
 Spring-compatibility extensions, and Phase B refactored it to idiomatic
@@ -389,7 +389,7 @@ edges reaching into contexts it doesn't own.
 
 Put strategic DDD's subdomain classification, context mapping's relationship
 audit, and hexagonal architecture's edge-counting together, and the
-extraction order in `build-plan.md` Section E stops looking like a
+extraction order stops looking like a
 pedagogical convenience and starts looking like something closer to a
 forecast. Review goes first because it is a generic subdomain with zero
 outbound edges — nothing to renegotiate, nothing to make asynchronous,

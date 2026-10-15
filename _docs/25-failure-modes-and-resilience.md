@@ -307,8 +307,8 @@ demoted a chassis capability to a named, deferred gap rather than building it
 because a pattern catalog says a resilience chassis should have one. A
 circuit breaker is worth the added complexity when a dependency's *failure rate*, not
 merely its occasional slowness, is high enough that short-circuiting beats
-retrying — a threshold this project's own traffic, a demo-scale walking
-skeleton with one inventory service and no production load pattern behind
+retrying — a threshold this project's own traffic, a demo-scale system
+with one inventory service and no production load pattern behind
 it, has never been measured against. Adding one now would be
 exactly the speculative infrastructure Chapter 3's own standard argues
 against: a resilience pattern this book can show the reader on a diagram, not
@@ -343,7 +343,7 @@ try {
     paymentService.charge(order, order.getTotalCents(), command.paymentMethod());
     // ...
 } catch (RuntimeException ex) {
-    compensateRemoteReservations(remoteReservations); // DRQ-042
+    compensateRemoteReservations(remoteReservations);
     throw ex;
 }
 ```

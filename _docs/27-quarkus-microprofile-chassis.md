@@ -73,8 +73,8 @@ Spring mechanisms doing the same job in the monolith.
 The clearest side-by-side is the inventory gRPC timeout, because this
 project has both versions of it on record. The monolith's own
 `RemoteInventoryClient` — gone from the working tree today, decommissioned
-along with the rest of the monolith's inventory module in order-plan S10,
-but preserved in this project's git history (commit `45618ca`) and already
+along with the rest of the monolith's inventory module,
+but preserved in this project's git history and already
 quoted once, in Chapter 25, as the resilience chapter's worked example —
 took its timeout as a constructor-injected `@Value`:
 
@@ -128,8 +128,8 @@ String notificationServiceBaseUrl;
 
 — each one a fixed, operator-set routing target the edge router's
 `configure()` method dispatches to by URI prefix. No flag selects between
-them anymore (order-plan S10 retired the six `strangler.*.enabled` cutover
-switches once the monolith had nothing left to route to), but the six
+them anymore (the six `strangler.*.enabled` cutover switches were retired
+once the monolith had nothing left to route to), but the six
 `base-url` properties themselves are exactly the kind of environment-shaped
 value `@ConfigProperty` exists for: the same route code reaches
 `http://localhost:8081` in a developer's local run and a different host
@@ -288,7 +288,7 @@ public OpenAPI monolithOpenApi() {
     return new OpenAPI()
             .info(new Info()
                     .title("Reference Monolith API")
-                    .version("0.1.0-r02")
+                    .version("0.1.0")
                     .description(/* ... */));
 }
 ```
@@ -517,7 +517,7 @@ error-body test passes. Under native, an unregistered DTO reachable only
 through a generic `Response` turns an intended 400 into a 500, and the fix
 — one annotation, on the one class actually missing from the reflection
 scan — is `@RegisterForReflection`, the idiomatic answer for exactly this
-reflection shape (DRQ-029).
+reflection shape.
 
 The payoff this buys is measured, not asserted, and Chapter 3's own
 numbers for the review-service extraction are the record:

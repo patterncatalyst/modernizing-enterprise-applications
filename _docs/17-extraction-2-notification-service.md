@@ -15,7 +15,7 @@ context's transaction, whose caller does not wait for an answer it actually
 needs, and whose extraction therefore cannot just move code from one runtime
 to another — it has to change *when* the work happens, not just *where*.
 Notification is this book's first event-driven extraction, and everything in
-it is running code from this project's own r04 iteration:
+it is running code:
 `examples/00-monolith/` (the transactional outbox and its polling relay),
 `examples/03-notification-service/` (the Quarkus consumer, its own schema,
 and its WebSocket push), `examples/01-strangler-proxy/` (the second cutover
@@ -124,8 +124,7 @@ SECONDS)` waits for the broker's acknowledgment *before* the code stamps
 line. If the process dies after the broker has acked the send but before the
 `save(event)` call commits the stamp, the row still reads as unpublished on
 the next poll, and the relay republishes the exact same payload. That is a
-duplicate delivery by design, not a bug — the tradeoff this project's
-decision log (DRQ-034) states explicitly: a polling relay is the simplest
+duplicate delivery by design, not a bug — a deliberate tradeoff: a polling relay is the simplest
 mechanism that teaches the outbox's real guarantee (atomic write,
 at-least-once publish) without pulling a CDC connector and a replication slot
 into the stack a chapter early. CDC — reading the Postgres write-ahead log
@@ -162,7 +161,7 @@ extraction removed it, next to the outbox write that replaced it:
 {% include codetabs.html langs="Before — synchronous, in-transaction (removed)|After — the outbox write (current)" %}
 
 ```java
-// order/OrderService.java — removed in r04/S8
+// order/OrderService.java — removed
 // SMELL[ch.17]: notification sent synchronously inside the checkout
 // transaction instead of via an outbox + async consumer.
 paymentService.charge(order, order.getTotalCents(), command.paymentMethod());
@@ -178,7 +177,7 @@ paymentService.charge(order, order.getTotalCents(), command.paymentMethod());
 order.confirm();
 shippingService.dispatch(order, order.getShippingAddress());
 
-// ch.17 cure (r04/S8): write the event to the outbox, atomically, in
+// ch.17 cure: write the event to the outbox, atomically, in
 // THIS transaction. No Kafka client is touched here — the @Scheduled
 // OutboxRelay is the only thing that talks to Kafka, on its own
 // schedule, after this transaction has committed (or not).
@@ -218,7 +217,7 @@ bound to the same `order.placed` topic the monolith's relay publishes to)
 lives entirely in `application.properties`, which is what makes this
 "idiomatic-from-the-start" rather than lifted: the monolith never consumed
 its own event in the first place, so there is no Spring original to carry
-across — this is net-new Quarkus code from the day it was written (DRQ-035).
+across — this is net-new Quarkus code from the day it was written.
 
 The at-least-once guarantee the outbox relay documented above is a promise,
 not a courtesy, and `NotificationService#recordOrderPlaced` is where that
@@ -297,7 +296,7 @@ discipline.
 
 Concretely, this service's `Notification` entity lives in its own
 `notification` Postgres schema (same shared instance, different namespace,
-migrated by its own Flyway history from day one — DRQ-035), and its
+migrated by its own Flyway history from day one), and its
 `customerId`/`orderId` fields are plain `Long` columns, not JPA
 `@ManyToOne` relations into the monolith's `customers`/`orders` tables,
 because those tables don't exist in a schema this service owns. That
@@ -471,8 +470,8 @@ coincidence, 49 green assertions prove nothing about which one actually
 answered. That lesson was discovered on Review by accident — a routing
 predicate bug that happened to be invisible because both backends shared one
 table. This chapter's job was to make sure the *same* trap, in its async
-form, couldn't repeat by accident a second time, and DRQ-037 is the decision
-that did it by design rather than waiting to get lucky again.
+form, couldn't repeat by accident a second time, and a deliberate decision is what
+did it by design rather than waiting to get lucky again.
 
 The async version of the trap is sharper than Review's. A synchronous
 assertion — "checkout returns 201, now immediately `GET
@@ -480,7 +479,7 @@ assertion — "checkout returns 201, now immediately `GET
 *flaky* against the new service, failing exactly often enough to look like a
 test-infrastructure problem rather than a design one, and a team under
 deadline pressure has every incentive to "fix" that flakiness by loosening
-the assertion rather than by understanding it. DRQ-037's answer is a
+the assertion rather than by understanding it. The answer is a
 bounded-wait eventual-consistency poll: on a decoupled retry delay (never
 delaying before the first attempt), it checks for the notification, and on a
 miss with budget remaining, it retries up to ten times at 500ms. Written
@@ -577,19 +576,16 @@ for and asserts eventual consistency rather than racing a hopeful green.
 > **ADLC in Action** — This extraction ran the identical Frame → Map → Plan →
 > Generate → Verify → Operate → Reconcile loop Chapter 7 demonstrated on
 > Review, at the next rung of difficulty. Frame fixed five decisions up front
-> in `decisions.md` (DRQ-034 through DRQ-038 — polling over CDC, the
-> two-phase-plus-net-new-consumer split, two-flag reversibility, the
-> bounded-wait-plus-negative-check testing discipline, and JSON deferred to
-> Avro at Chapter 28). Plan laid out thirteen steps with two explicit
-> parallel lanes (the monolith's outbox versus the new service's scaffold)
-> and named every Opus validation gate before a line of outbox or consumer
-> code existed. Generate produced the outbox, the relay, the two-phase
-> service, and the consumers under quarkus-agent and lgtm-quarkus tooling.
-> Verify is this chapter's negative-check story, executed, not narrated.
-> Operate is the two-flag cutover recorded in `CUTOVER.md`. Reconcile is
-> `SMELLS.md` marking Smell 4 cured, in the same ledger discipline Chapter 7
-> already showed you reading commit messages that name their own Verify
-> results.
+> — polling over CDC, the two-phase-plus-net-new-consumer split, two-flag
+> reversibility, the bounded-wait-plus-negative-check testing discipline, and
+> JSON deferred to Avro at Chapter 28. Plan laid out thirteen steps with two
+> explicit parallel lanes (the monolith's outbox versus the new service's
+> scaffold) and named every reasoning-model validation gate before a line of
+> outbox or consumer code existed. Generate produced the outbox, the relay,
+> the two-phase service, and the consumers under quarkus-agent and
+> lgtm-quarkus tooling. Verify is this chapter's negative-check story,
+> executed, not narrated. Operate is the two-flag cutover recorded in
+> `CUTOVER.md`. Reconcile marks Smell 4 cured.
 
 ## What you learned
 

@@ -26,7 +26,7 @@ service's own copy of the JSON payload shape written by the monolith's
 This is not a hypothetical drift invented to motivate a chapter. It is the
 state of the code in this repository right now, and it is the direct,
 named consequence of a decision this book made and chose to live with,
-not an accident. DRQ-038, back in Chapter 17's decision log, chose JSON-by-hand over
+not an accident. Back in Chapter 17, this book chose JSON-by-hand over
 a schema registry for exactly the reason good scope discipline usually gives:
 pulling Apicurio into the stack a chapter before the outbox pattern itself had
 even been proven would have been solving a problem the project hadn't earned
@@ -39,8 +39,8 @@ that bill, because the real answer is narrower than "adopt a schema
 registry." The live flows stay JSON. `examples/00-monolith` through
 `examples/07-order-service`, and every consumer of `order.placed` —
 notification, payment — are untouched by anything in this chapter. What
-changes is additive: a new, isolated module, `examples/09-schema-registry-demo`
-(DRQ-076), publishes a field-for-field Avro mirror of `OrderPlacedEvent` to
+changes is additive: a new, isolated module, `examples/09-schema-registry-demo`,
+publishes a field-for-field Avro mirror of `OrderPlacedEvent` to
 its own topic, fronted by a real Apicurio registry, so the two things a
 registry actually buys — a central contract of record, and compatibility
 enforcement strong enough to reject a breaking change before it ships — can
@@ -179,7 +179,7 @@ Apicurio arrives as one more service in `compose.yaml`, and the comment
 sitting above it is explicit about the blast radius: "it is used ONLY by
 `examples/09-schema-registry-demo` ... no other service in this stack
 (`examples/01` through `examples/08`) talks to it, and the real
-`order.placed` JSON event flows (DRQ-038) are unchanged."
+`order.placed` JSON event flows are unchanged."
 
 ```yaml
 # compose.yaml
@@ -213,11 +213,11 @@ healthcheck's `/apis/registry/v3/system/info` path, and the application's own
 `.../apis/registry/v3` registry URL all agree on that same major version,
 which matters because Apicurio's v2 and v3 REST APIs are not
 wire-compatible — a mismatch here wouldn't fail loudly, it would fail as
-confusing 404s the first time anything tried to register a schema. (Since
-DRQ-077 the server image is 3.3.3, still the v3 API the 3.1.7 client speaks;
+confusing 404s the first time anything tried to register a schema. (The
+server image is now 3.3.3, still the v3 API the 3.1.7 client speaks;
 3.3 moved the health endpoints to the management port, so the healthcheck
 now probes `:9000/health/ready` inside the container. The rest of this
-section describes the 3.1.7 bring-up as it happened.)
+section describes the 3.1.7 bring-up.)
 
 Second, the storage: `APICURIO_STORAGE_KIND=sql` with
 `APICURIO_STORAGE_SQL_KIND=h2`, an embedded, in-memory H2 database rather
@@ -504,10 +504,9 @@ given()
         .body("name", equalTo("RuleViolationException"));
 ```
 
-HTTP 400, `RuleViolationException`. (The chapter was written against
-Apicurio 3.1.7, which answered 409; 3.3 reports the same violation as a 400
-problem document with the same `name`, and the test and demo moved with it
-under DRQ-077.) This is the registration that never
+HTTP 400, `RuleViolationException`. (Apicurio 3.1.7 answered 409; 3.3 reports
+the same violation as a 400 problem document with the same `name`, and the
+test and demo moved with it.) This is the registration that never
 happens — the schema is rejected at the moment someone tries to publish it,
 not discovered as a deserialization failure in a consumer three services
 downstream, days or weeks later. `SchemaCompatibilityTest`'s own class
@@ -531,11 +530,12 @@ already proved under Dev Services.
 
 It would be easy to read §§3–7 and conclude the natural next step is cutting
 `order.placed` over to Avro wholesale. This chapter does not do that, and the
-reason is the same scope discipline DRQ-038 already modeled once: this
+reason is the same scope discipline the original JSON decision already
+modeled once: this
 project does not retrofit infrastructure into a system that currently works
 just because the infrastructure is now proven to work in isolation.
 
-The live flows stay JSON, permanently, as DRQ-038 already decided — this
+The live flows stay JSON, permanently, as Chapter 17 already decided — this
 chapter does not revisit that call. `examples/00-monolith` through
 `examples/07-order-service`'s outbox, and every real consumer of
 `order.placed` — notification, payment — are exactly the code they were

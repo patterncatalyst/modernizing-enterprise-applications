@@ -10,11 +10,11 @@ and tools that carry each phase out. Neither chapter proved the loop actually
 holds together under real work, with a real monolith and a real extraction on
 the other end of it. This chapter does. Every example in it is the Review
 extraction that produced `examples/00-monolith/`, `examples/01-strangler-proxy/`,
-and `examples/02-review-service/` in this project's own r02 walking skeleton —
-not a staged illustration, but the literal commits, files, and test runs that
-built the chapter you are about to read two chapters from now. And because the
-loop was run against the actual project rather than narrated in the abstract, it did what a
-process-under-construction does: it broke, twice, in instructive ways, and the safety net caught both breaks before either one reached a
+and `examples/02-review-service/` in this project —
+not a staged illustration, but real files and test runs from the loop itself.
+And because the
+loop was run against a real project rather than narrated in the abstract, it did what a
+process under real pressure does: it broke, twice, in instructive ways, and the safety net caught both breaks before either one reached a
 reader or a production system. That is the chapter's actual subject. The ADLC
 is not safe because an agent is careful. It is safe because the loop has a
 behavior-equivalence suite wired into it as an automated gate, two places
@@ -27,7 +27,7 @@ trail already exists. `examples/02-review-service/MIGRATION.md` and
 written at the moment the work happened rather than reconstructed after the
 fact, and `tooling/newman/` is the suite itself. What follows walks that
 evidence phase by phase against the Chapter 5 model, pulling in the actual
-captured output — never re-run live, per the project's own DRQ-025 — so you
+captured output — captured and narrated rather than re-run live — so you
 can check every claim against a file that is sitting in this repository right
 now.
 
@@ -41,7 +41,7 @@ already quoted in Chapter 5, that fixed the one fact everything downstream
 depends on: how "behaves the same" would be checked.
 
 ```
-Captured — decisions.md, DRQ-014
+From the decision log — the behavior-equivalence rule
 
 The monolith's Newman collection is the behavior-equivalence suite (the
 Newman collection captured against the monolith), run unchanged against
@@ -70,8 +70,8 @@ that way. The reconnaissance — reading the monolith's `review` package, its
 dependents, and its data shape — found that Review was REST-only, had no
 synchronous call into or out of it from any other context, and touched
 exactly one table (`reviews`) that nothing else in the schema joined against.
-That is what made Review the walking-skeleton slice rather than an arbitrary
-first pick (`_plans/decisions.md`, DRQ tension T1): it let the very first pass
+That is what made Review the right slice to cut first rather than an arbitrary
+first pick: it let the very first pass
 through the loop exercise the *entire* seam machinery — strangler proxy, ACL,
 Quarkus scaffold, equivalence gate, flag-gated cutover, monolith-module
 decommission — without a second bounded context's behavior confounding the
@@ -81,7 +81,7 @@ Map also surfaced a fact that matters for the rest of
 this chapter: Review's extracted form was scoped to arrive on Quarkus via the
 Spring-compatibility lift first (Phase A), and only move onto its own schema
 in a later chapter's data-ownership pass (shared data to owned data is Part
-6's subject, not Part 5's). For the duration of this walking skeleton, the
+6's subject, not Part 5's). While this extraction stayed in that form, the
 extracted service and the monolith it was being peeled away from would keep
 reading and writing the *same* `reviews` table. File that fact; it is the
 single biggest reason one of this chapter's two bugs went undetected for as
@@ -90,22 +90,22 @@ long as it did.
 ## Plan: the first human gate
 
 Map produces understanding; Plan produces a commitment, and commitments are
-where the ADLC inserts its first stop sign. The step plan for Review — what
-became steps S6 through S10 of the r02 iteration plan — laid out the exact
+where the ADLC inserts its first stop sign. The step plan for Review — steps
+S6 through S10 — laid out the exact
 sequence this chapter narrates: build the equivalence suite against the
 running monolith, stand up a flag-gated strangler proxy defaulting every
 request to the monolith, lift Review onto Quarkus via the Spring-compatibility
 extensions, refactor it to idiomatic Quarkus with measured before/after
 numbers, then flip the flag and decommission the monolith's copy. Every one of
-those five steps carries its own acceptance criterion in `build-plan.md` and
-its own checkpoint commit, and none of them began until a human read the plan
+those five steps carries its own acceptance criterion and
+its own checkpoint, and none of them began until a human read the plan
 and approved it — not a rubber stamp on a diff, because at this point there
 was no diff yet to stamp, only a sequence of intended diffs.
 
 This is the gate Chapter 5 called the cheapest point to catch a wrong
 assumption, and it is worth being concrete about why that is true here
 specifically. Had the plan instead said "extract Review and give it its own
-database from the start," the walking skeleton would have taken longer to
+database from the start," this first extraction would have taken longer to
 reach its first green equivalence-gate run, and — as the Verify section below
 will show — it would also have hidden the very bug the shared-table decision
 later exposed. The plan that was actually approved deferred schema ownership
@@ -116,7 +116,7 @@ trade-off before any code existed is exactly the kind of judgment call Chapter
 ## Generate: Phase A, then Phase B
 
 With the plan approved, Generate is the part of the loop that actually
-produces code, and the two-phase migration strategy from DRQ-029 turns it into
+produces code, and the two-phase migration strategy turns it into
 two separate Generate-then-Verify passes rather than one.
 
 **Phase A** lifted Review's Spring MVC controller, Spring Data repositories,
@@ -127,11 +127,9 @@ quarkus-agent MCP server's `migrate-spring-to-quarkus` process drove this
 pass rather than the agent improvising its own migration plan — exactly the
 Map-and-Generate tooling split Chapter 6 described, where version-matched,
 tool-grounded knowledge replaces a model's possibly-stale memory of a
-framework's migration path. The result is checked into this project's git
-history at commit `5479d49` (`feat(r02): extract Review to Quarkus — Phase A
-lift via Spring-compat (equivalence 16/16 green)`), and that commit message is
-not decoration: it names the exact Verify-phase result that let Phase A be
-trusted, which is the subject of the next section.
+framework's migration path. The Phase A lift was trusted only once its
+Verify-phase result was in hand — the equivalence suite 16/16 green — which is
+the subject of the next section.
 
 **Phase B** is the slower pass Chapter 5 promised: with Phase A already
 proven safe, Phase B removes the compatibility shim entirely and rewrites the
@@ -143,12 +141,11 @@ component — HTTP layer, data access, entities, service, exception mapping,
 DTOs, security, config, build, tests — and the headline fact in that table is
 how little had to change beyond framework vocabulary: the JPA entities needed
 zero edits, because Panache's repository pattern (as opposed to its
-active-record alternative) works against ordinary `@Entity` classes. Commit
-`ad5a1c1` (`refactor(r02): Review Phase B — idiomatic Quarkus (JAX-RS/Panache/
-CDI; native 0.048s startup; equivalence 16/16)`) is where this pass landed —
-and, again, the commit message names a Verify result, because in this
-project's convention a Generate-phase commit is never trusted on its own
-authority.
+active-record alternative) works against ordinary `@Entity` classes. Phase B
+landed with the same discipline — idiomatic Quarkus (JAX-RS/Panache/CDI),
+native startup of 0.048s, equivalence 16/16 — because in this
+project's convention a Generate-phase result is never trusted on its own
+authority without a recorded Verify result.
 
 ## Verify: the gate that caught bug #1 — native image's closed world
 
@@ -226,7 +223,7 @@ profile `prod`)
 
 | Build                                   | Startup | RSS     | Artifact size | Features |
 |------------------------------------------|--------:|--------:|---------------:|---------:|
-| Phase A — JVM, Spring-compat (5479d49)    | 1.492s  | ~316 MB | 46 MB          | 17       |
+| Phase A — JVM, Spring-compat             | 1.492s  | ~316 MB | 46 MB          | 17       |
 | Phase B — JVM, idiomatic                  | 1.431s  | ~304 MB | 45 MB          | 14       |
 | Phase B — native image                    | 0.048s  | ~73 MB  | 87 MB          | 14       |
 ```
@@ -311,8 +308,8 @@ writing the *exact same `reviews` rows in the exact same Postgres database*
 as the monolith it was supposed to be replacing. Checking the externally
 observable response — the only thing a black-box contract suite can ever
 check — could not distinguish "the correct service answered" from "the wrong
-service answered with identical data," because, for this one slice of the
-walking skeleton, both statements described the same rows.
+service answered with identical data," because, for this one slice of work,
+both statements described the same rows.
 
 This is the chapter's second and sharper lesson: a behavior-equivalence suite
 verifies the *response*, not the *route the request took to produce it*, and
@@ -386,7 +383,7 @@ reason: a green test run is evidence, not proof, and the discipline the ADLC
 asks for is to keep asking "what would make this pass by accident" until the
 answer is "nothing I can think of" — which is a question a scripted
 assertion cannot ask of itself, and exactly the kind of skepticism the
-second, human/Opus-tier gate exists to supply.
+second, human- and reasoning-model gate exists to supply.
 
 ## Reconcile: the ledger closes the loop
 
@@ -411,34 +408,21 @@ starting point instead of a surprise.
 
 The git history is the same ledger, one layer down. Reading it in order is
 reading the actual plan-execute-verify sequence this chapter just narrated,
-not a cleaned-up retelling of it:
+not a cleaned-up retelling of it: each checkpoint lands one
+phase of the loop — the reference Spring Boot monolith, its three-tier JUnit
+test layer, the behavior-equivalence suite, the flag-gated Camel strangler
+proxy, Review's Phase A lift, its Phase B refactor, and the
+cutover-and-decommission — and every commit message names the Verify-phase
+result that let that step be trusted (for the extraction steps, the
+equivalence suite green), not just the feature it added.
 
-```
-Captured — git -C modernizing-enterprise-applications log --oneline
-(the real r02 ledger, Frame through Operate for Review)
-
-ee54b1f chore(r01): add round-1 planning artifacts (build-plan, decisions, research)
-a668511 site(r02): scaffold Jekyll site (green #3d7a4e theme, 11 parts, 33 chapter stubs)
-c1cdf3b chore(r02): add local podman stack (Postgres, Kafka KRaft, LGTM/OTel)
-a0088a5 feat(r02): add reference Spring Boot monolith (6 contexts, 6 tagged smells, Testcontainers smoke test)
-e6d62bc chore(r02): add three-tier JUnit test layer to monolith (45 tests, mvn verify green)
-6cb113e feat(r02): add behavior-equivalence suite (Newman; 49 assertions green on monolith)
-4927e1b feat(r02): add Camel strangler proxy (flag-gated; equivalence suite green through proxy)
-5479d49 feat(r02): extract Review to Quarkus — Phase A lift via Spring-compat (equivalence 16/16 green)
-ad5a1c1 refactor(r02): Review Phase B — idiomatic Quarkus (JAX-RS/Panache/CDI; native 0.048s startup; equivalence 16/16)
-e11f53e feat(r02): strangler cutover + decommission monolith Review (routing bugfix; equivalence 49/49 via proxy)
-```
-
-Every commit message in that list names a Verify-phase result, not just a
-feature. That is not a style preference — it is the Reconcile phase done at
-the smallest possible grain, so that six months from now, nobody has to trust
+That convention is not a style preference — it is the Reconcile phase done at
+the smallest possible grain, so that later nobody has to trust
 a chapter's retelling of what happened; they can read the commit that did it
-and the file it changed. `_plans/build-plan.md` and `_plans/decisions.md`
+and the file it changed. The decision log and build plan
 carry the same discipline at a coarser grain — the step plan, the acceptance
-criteria, the DRQ-014 decision that made "equivalence" a checkable word in
-the first place. This project's own ledger is not a teaching prop built to
-illustrate the ADLC after the fact; it is the actual record this chapter has
-been quoting from the start.
+criteria, and the decision that made "equivalence" a checkable word in
+the first place.
 
 ## The lesson: necessary, not sufficient
 
@@ -466,7 +450,7 @@ report and saw no reason to doubt it.
 
 This is also the concrete answer to a question Chapter 5 left open: what,
 precisely, does "verify" mean once the suite has already run? It means a
-human or an Opus-tier validator asking whether the suite's specific coverage
+human or a reasoning-model validator asking whether the suite's specific coverage
 could be fooled by the specific shape of *this* change — here, two backends
 sharing one table — and, when the answer is yes, reaching for a check that
 does not share that blind spot. That is a skill, not a checklist item, and it
@@ -499,12 +483,10 @@ times.
 ---
 
 *Verification status: the two findings this chapter centers on are real,
-dated, and already recorded in the repository this book is built from —
+dated, and recorded in this project's example trees —
 `examples/02-review-service/MIGRATION.md` (the native-image
 `@RegisterForReflection` gap) and `examples/01-strangler-proxy/CUTOVER.md`
-(the routing predicate false positive) — and the commits cited above
-(`5479d49`, `ad5a1c1`, `e11f53e`) are the actual checkpoints that produced
-them. What remains unverified at the time of writing is only the claim that
+(the routing predicate false positive). What remains unverified is only the claim that
 the deferred per-context schema split (Part 6) will fully retire the
 shared-table blind spot this chapter documents; that claim is tracked, not
 assumed, and gets its own verification pass when ch.18/19 ship.*
