@@ -212,7 +212,7 @@ disabling filters here tests the controller in isolation from a security
 concern that belongs to Review, not Order — and Review's own write-path
 authentication *was* tested the same way, with filters left *on*, in its own
 controller test, before that test was deleted along with the rest of
-Review's code when it left the monolith in r02/S10. That contract didn't
+Review's code when it left the monolith. That contract didn't
 disappear with the test class: it now lives in the behavior-equivalence
 suite's "Review Context Contract" folder (unauthenticated `POST` returns
 `401`, authenticated `POST` returns `201`), run against
@@ -430,7 +430,7 @@ once it runs unattended in CI rather than once by hand.
 
 ## The equivalence gate: what "done" means from here forward
 
-This suite already has a track record in this project's own history.
+This suite already has a track record.
 Chapter 7 walked the full agentic development lifecycle run against
 Review's extraction, and the behavior-equivalence suite built in this chapter
 is the exact artifact it was gating against: sixteen assertions caught a
@@ -446,11 +446,11 @@ already sitting in the collection today; Notification, Inventory, Payment,
 Shipping, and finally Order with its own gateway follow in Part 6 and beyond,
 each one required to pass the same collection — extended with its own
 scenario folder when its turn comes, never rewritten for the services that
-came before it. The rule from `build-plan.md` Section G is blunt:
+came before it. The rule is blunt:
 an extracted service is "done" only when it passes the *same* collection the
 monolith passed, both as a per-chapter acceptance gate and as a check wired
 into CI. A green suite is necessary evidence for every one of those cutovers.
-Chapter 7 already showed, with real commits and a real routing bug, that it
+Chapter 7 already showed, with a real routing bug, that it
 is not sufficient evidence by itself — but that it is the thing that makes
 the search for what else might be wrong possible in the first place, because
 without it there would be nothing re-runnable to doubt.
@@ -487,7 +487,7 @@ every later extraction gets measured against.
 The listings in this chapter are the "before" monolith as it stood on the
 `reference/monolith-before` branch: Spring Boot 3.5, Testcontainers 1.x and
 `postgres:16-alpine`. The frozen shell on `main` has since moved to Spring Boot
-4.1.1 (DRQ-077), where the same test reads `new
+4.1.1, where the same test reads `new
 PostgreSQLContainer("postgres:18.6-alpine")` from Testcontainers 2's
 `org.testcontainers.postgresql` package and gets its `TestRestTemplate` from
 `spring-boot-resttestclient`; the shape of the pyramid is unchanged.
@@ -503,7 +503,7 @@ into the collection from the first run's checkout. Seeing both runs pass
 identically is a cheap, independent confirmation that the suite is safe to
 run repeatedly against a long-lived target, which is exactly the property the
 equivalence gate needs once it is running unattended in CI rather than once
-by hand during authoring.
+by hand.
 
 ## What you learned
 
@@ -541,15 +541,8 @@ go?
 ---
 
 *Verification status: the test and tooling code this chapter walks is real
-and already committed — `examples/00-monolith/src/test/` and
-`tooling/newman/` — and its green runs are recorded in this project's own
-commit ledger rather than re-executed for this chapter specifically: commit
-`e6d62bc` ("add three-tier JUnit test layer to monolith... `mvn verify`
-green") and commit `6cb113e` ("add behavior-equivalence suite (Newman);
-49 assertions green on monolith"), both cited in Chapter 7. The test-method
-and execution counts in this chapter (thirteen classes, forty-one `@Test`
-methods, forty-five executions once the one parameterized test expands)
-were counted directly against the files on disk during authoring, not copied
-from an earlier summary — worth a quick `mvn verify` re-run on a real machine
-before this count is treated as permanently fixed, since a future iteration
-could add or remove a test without this prose noticing.*
+and committed — `examples/00-monolith/src/test/` and `tooling/newman/` — and
+runs green under `mvn verify`. The counts quoted here (thirteen classes,
+forty-one `@Test` methods, forty-five executions once the one parameterized
+test expands) are taken directly from the files on disk; re-run `mvn verify`
+to confirm them, since adding or removing a test can change them.*

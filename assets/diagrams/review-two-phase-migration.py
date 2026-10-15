@@ -31,7 +31,7 @@ native = node(820, 130, 310, 120,
 
 nodes = [phase_a, phase_b, native]
 edges = [
-    connect(phase_a, phase_b, label="refactor off Spring-compat (DRQ-029)", lx=0, ly=-75),
+    connect(phase_a, phase_b, label="refactor off Spring-compat", lx=0, ly=-75),
     connect(phase_b, native, label="./mvnw package -Dnative (container build, ~75s)", amber=True, lx=0, ly=-75),
 ]
 

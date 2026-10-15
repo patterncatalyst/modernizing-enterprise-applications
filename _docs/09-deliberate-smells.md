@@ -14,7 +14,7 @@ structural engineer plants a known weak point in a demonstration beam, so
 that when the beam is later cut at exactly that point, the cut makes sense to
 everyone watching. One of the six — Review's entanglement in a shared
 security filter chain despite having no runtime dependency on anything else —
-has already been cured; r02 extracted it, and Chapter 7 walked that
+has already been cured; Chapter 7 walked that
 extraction end to end as the proof that the ADLC's loop actually holds up
 under real work. This chapter catalogues the five that remain, names exactly
 where each one lives in the real source tree, explains why each is a
@@ -514,8 +514,7 @@ cured smell is the existence proof for the five still standing in this
 chapter: the pattern — identify a conceptual seam, tag the mechanism
 welding it shut, name the chapter that will cut it, then actually cut it
 with an equivalence gate watching — is not a chapter-outline convenience.
-It already produced a real extraction, in this project's own git history,
-before this chapter was written.
+Chapter 7 produced a real extraction from exactly this pattern.
 
 ## What you learned
 
@@ -533,11 +532,10 @@ before this chapter was written.
   ch.26 for the god service, ch.22/23/24 for the transaction span, ch.17
   for synchronous notification, ch.16 for the missing ACL — and several
   smells depend on earlier ones being cured first, which is why the
-  extraction order in `build-plan.md` Section E is deliberate, not
-  arbitrary.
+  extraction order is deliberate, not arbitrary.
 - The sixth, already-cured smell (Review) is this method's existence proof:
   tag the seam, name the cure, cut it with an equivalence gate watching,
-  and it works — this project already did it once, in Chapter 7.
+  and it works — Chapter 7 walks that extraction end to end.
 
 Chapter 10 finishes Part 3 by building the test suite that proves all six
 smells actually behave the way this chapter claims — the JUnit layers, the

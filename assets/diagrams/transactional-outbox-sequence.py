@@ -44,7 +44,7 @@ W, H = 1880, 980
 # TOP band — OLD: synchronous notification inside the checkout transaction
 # ============================================================================
 band_old = {"x": 20, "y": 60, "w": 1840, "h": 230,
-            "label": "OLD — cured in r04/S8: synchronous notification inside the checkout transaction (SMELL #4)",
+            "label": "OLD — cured: synchronous notification inside the checkout transaction (SMELL #4)",
             "fill": "#fafafa"}
 
 client1 = node(40, 130, 150, 100, ["Client", "POST /api/orders"], style="sub")
@@ -64,7 +64,7 @@ old_edges = [
     connect(begin1, inv1),
     connect(inv1, pay1),
     connect(pay1, ship1),
-    connect(ship1, notifsync, label="SMELL #4 (removed, r04/S8)", amber=True, ly=-60),
+    connect(ship1, notifsync, label="SMELL #4 (removed)", amber=True, ly=-60),
     connect(notifsync, commit1, label="blocks checkout's own commit", amber=True, ly=-60),
 ]
 
@@ -134,7 +134,7 @@ notes = [
     {"x": 1580, "y": 822,
      "text": "IDEMPOTENT by design: check-then-insert by orderId makes a", "anchor": "start", "size": 10, "color": "#555555"},
     {"x": 1580, "y": 836,
-     "text": "redelivered event a safe no-op (DRQ-034 / DRQ-037).", "anchor": "start", "size": 10, "color": "#555555"},
+     "text": "redelivered event a safe no-op.", "anchor": "start", "size": 10, "color": "#555555"},
 
     {"x": 40, "y": 955,
      "text": "Same business steps, same transaction boundary for order + outbox — only the LAST write before commit changed (a call -> a row).",

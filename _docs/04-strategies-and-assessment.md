@@ -485,10 +485,9 @@ the ordering this chapter only argued for in outline.
 
 ---
 *Verification status: not applicable — this is a conceptual chapter with no
-runnable example under `examples/`. Its claims about this project's own
-extraction order are checkable against `_plans/build-plan.md` (Section E,
-the decomposition roadmap, and tension T1 in Section A.2) and
-`examples/00-monolith/SMELLS.md` (smells #2 and #6, which name the coupling
-this chapter's "order last, review first" argument depends on). The strategy
+runnable example under `examples/`. Its claims about the extraction order are
+checkable against `examples/00-monolith/SMELLS.md` (smells #2 and #6, which
+name the coupling this chapter's "order last, review first" argument depends
+on). The strategy
 and strangler-fig mechanics named here are built out, with running code, in
 Part 3 and Part 5.*

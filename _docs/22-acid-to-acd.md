@@ -44,9 +44,8 @@ not a borrowed call into another context's service, but the call that *used*
 to reach into notification's logic and block on it is gone. SMELL #3 is what
 is left after that first cure: four bounded contexts — order, inventory,
 payment, shipping — still committing or rolling back as one atomic unit,
-exactly where this book's build plan always said the ACID→ACD argument would
-be made (`build-plan.md` §E: "Choreographed **saga**; compensations;
-ACID→ACD realized").
+exactly where this book always said the ACID→ACD argument would
+be made.
 
 The method's own javadoc states the mechanism and its expiration date in the
 same breath:
@@ -213,10 +212,10 @@ recreate that illusion across process and ownership boundaries where it was
 never physically true to begin with, and the cost of maintaining the
 illusion — held locks, a fragile coordinator, and reduced availability for
 every participant on every request — is higher than the cost of admitting
-the illusion is gone and designing for its absence instead. That is why the
-build plan's own strategy document states it as a one-line verdict rather
-than a protocol to configure: "why 2PC is off the table" is the opening
-clause of Chapter 23's own description, not a footnote inside it.
+the illusion is gone and designing for its absence instead. That is why "2PC is
+off the table" is a one-line verdict here rather than a protocol to
+configure — the premise Chapter 23 builds its saga on, not a footnote inside
+it.
 
 ## ACD: what survives the cut, and what has to be rebuilt
 

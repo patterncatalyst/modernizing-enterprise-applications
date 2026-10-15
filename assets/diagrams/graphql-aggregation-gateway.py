@@ -72,7 +72,7 @@ notes = [
 
     {"x": 40, "y": 800,
      "text": "Sourced from examples/08-graphql-gateway/.../{GatewayApi,OrderRestClient,PaymentRestClient,"
-             "ShipmentRestClient,ReviewRestClient}.java and _plans/iterations/order-plan.md (S7, DRQ-069).",
+             "ShipmentRestClient,ReviewRestClient}.java.",
      "anchor": "start", "size": 10.5, "color": "#555555"},
 ]
 

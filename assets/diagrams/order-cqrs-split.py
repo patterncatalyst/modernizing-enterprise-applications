@@ -126,8 +126,7 @@ notes = [
      "anchor": "middle", "size": 11, "color": "#2f5f3d", "bold": True},
 
     {"x": 40, "y": 1060,
-     "text": "Sourced from examples/07-order-service/.../{OrderService,OrderViewProjector,OrderSagaListener,OrderResource}.java "
-             "and _plans/iterations/order-plan.md (S5/S6, DRQ-067/073/074).",
+     "text": "Sourced from examples/07-order-service/.../{OrderService,OrderViewProjector,OrderSagaListener,OrderResource}.java.",
      "anchor": "start", "size": 10.5, "color": "#555555"},
 ]
 

@@ -45,7 +45,7 @@ carries the extension of the same row:
 ```
 Captured — examples/00-monolith/SMELLS.md, SMELL[ch.22] excerpt (shipping clause)
 
-Realized for shipping too in r07/ch.24 S9 (DRQ-056/058/060/061) -- the same
+Realized for shipping too in ch.24 -- the same
 ACID -> ACD story cashed in for this context. The in-process shipping
 dispatch no longer rides any checkout/payment transaction at all ...
 Fulfilment is now owned end-to-end by the shipping service's Camel Saga EIP
@@ -71,23 +71,16 @@ Chapter 23 named the two control styles a saga can run under and picked
 choreography: no coordinator, every participant reacting only to
 the event it subscribes to and emitting the next one, the sequence existing
 only as the sum of three independent reactions. This chapter makes the
-opposite choice, and the decision was written down before a line of saga
-code existed:
-
-```
-Captured — _plans/iterations/shipping-plan.md, DRQ-056 (the load-bearing decision)
-
-DECISION: Shipping is extracted as a new, bounded ORCHESTRATED saga,
-triggered on payment.captured, whose COORDINATOR is a Camel Saga EIP route
+opposite choice: shipping is extracted as a new, bounded *orchestrated* saga,
+triggered on `payment.captured`, whose coordinator is a Camel Saga EIP route
 co-located in the new Quarkus shipping service. It sequences the fulfilment
 steps and registers the compensating action; on success it emits
-shipment.dispatched (-> order CONFIRMED), on abort/timeout it compensates
-(cancel shipment + emit shipment.failed -> order SHIPPING_FAILED + inventory
-Release).
-```
+`shipment.dispatched` (→ order `CONFIRMED`), on abort or timeout it compensates
+— cancel the shipment, emit `shipment.failed` (→ order `SHIPPING_FAILED`), and
+release inventory.
 
-Two alternatives were considered in the same planning pass and rejected in
-writing, not quietly dropped. Re-expressing the *whole* order→payment→
+Two alternatives were considered and rejected for stated reasons, not quietly
+dropped. Re-expressing the *whole* order→payment→
 shipping flow as one orchestrated saga was rejected because it would tear
 out the already-accepted choreographed payment saga from Chapter 23 and
 erase the very contrast this part of the book exists to teach — a
@@ -208,8 +201,8 @@ the same way the idempotency guard does, by `orderId` — the one value
 The hardest property this chapter's saga has to prove is not that it can
 retry a step — it is that a compensation decided inside one service can
 reliably undo a side effect that lives in a different one, without the
-coordinator reaching into data it does not own. DRQ-060 is the decision that
-answers this: the shipping service never calls inventory's gRPC `Release`
+coordinator reaching into data it does not own. The decision that answers this
+is deliberate: the shipping service never calls inventory's gRPC `Release`
 itself. It cancels its own `Shipment` row locally and emits
 `shipment.failed`; the order context — which already holds the reserved-line
 snapshot from checkout — is the one that issues the `Release`, reusing the
@@ -264,7 +257,7 @@ travels onward as `shipment.failed`.
 ## The new order lifecycle: `AWAITING_SHIPMENT`, and `CONFIRMED` one hop later
 
 Moving fulfilment out of `onPaymentCaptured` required a new intermediate
-state on the order aggregate — DRQ-061's `AWAITING_SHIPMENT` — because an
+state on the order aggregate — `AWAITING_SHIPMENT` — because an
 order that has been paid for but not yet shipped is now a real, observable
 state a client's poll can land on, where it used to be invisible because the
 same method confirmed and dispatched in one breath. `common.OrderStatus`
@@ -281,10 +274,10 @@ public enum OrderStatus {
 }
 ```
 
-{% include codetabs.html langs="Before — onPaymentCaptured confirms + dispatches in-process (removed at S9)|After — onPaymentCaptured only awaits shipment; the saga owns the rest (current)" %}
+{% include codetabs.html langs="Before — onPaymentCaptured confirms + dispatches in-process (removed)|After — onPaymentCaptured only awaits shipment; the saga owns the rest (current)" %}
 
 ```java
-// order/OrderSagaListener.java#onPaymentCaptured — shipping.mode=inprocess (removed at S9)
+// order/OrderSagaListener.java#onPaymentCaptured — shipping.mode=inprocess (removed)
 Order order = orderRepository.findById(event.orderId()).orElse(null);
 if (order.getStatus() != OrderStatus.PENDING) {
     return;
@@ -332,8 +325,7 @@ before, just with one more intermediate value it might catch mid-flight.
 Reaching that address required one small, additive change to the order
 read model, `OrderDto.shippingAddress`, so the saga's enrichment step could
 read a real address over `GET /api/orders/{id}` instead of a documented
-placeholder — a gap Chapter 24's own Generate step flagged explicitly in its
-own commit message for the monolith wiring to close, which it then did.
+placeholder — a gap the monolith wiring then closed.
 
 ## Idempotency and at-least-once, once more
 
@@ -403,7 +395,7 @@ Shipping-Failure" folder was added behind a `shippingSagaEnabled` flag,
 baselined green against the still-in-process monolith with the new folder
 explicitly reporting itself pending rather than passing on an unexercised
 path — **121 assertions, 0 failed, Scenario 4 correctly skipped** at
-baseline, before any saga code existed.
+baseline.
 
 Proving the scenario non-vacuous once the saga was real took more than a
 green run. Cutover first surfaced a tooling gap rather than a success:
@@ -465,10 +457,10 @@ terminal `CONFIRMED` assertion now depends on it.
 > **ADLC in Action** — This extraction ran the identical Frame → Map → Plan →
 > Generate → Verify → Operate → Reconcile loop Chapter 23 demonstrated for
 > Payment, at a different shape. Frame fixed the orchestration
-> decision (DRQ-056) before anything was built — a bounded saga on
+> decision before anything was built — a bounded saga on
 > `payment.captured`, coordinated by a Camel Saga EIP route, with a whole-flow
 > re-expression and a direct shipping-calls-inventory shortcut both considered
-> and rejected — plus nine more decisions (DRQ-057 through DRQ-065) covering
+> and rejected — plus nine more decisions covering
 > the coordinator choice (`InMemorySagaService`, no new infra container), the
 > event topology, the saga's step shape and compensation, delegated
 > cross-context compensation, two new order states, deterministic failure
@@ -477,15 +469,13 @@ terminal `CONFIRMED` assertion now depends on it.
 > coordinator now has to exist, its compensation is coordinator-initiated and
 > crosses service boundaries, the order's `CONFIRMED` moves one hop later, and
 > a new failure-bearing terminal outcome had to be proven net-zero. Plan laid
-> out fourteen steps across two parallel lanes with Opus gates at nearly every
-> rung, naming the orchestrated compensation silently failing or diverging as
+> out fourteen steps across two parallel lanes with reasoning-model gates at
+> nearly every rung, naming the orchestrated compensation silently failing or diverging as
 > the single biggest risk before a line of saga code existed. Generate
 > produced the Camel Saga EIP orchestrator (`.saga()/.compensation()/.option()/.timeout()`,
 > `InMemorySagaService`), the monolith's new order lifecycle
 > (`AWAITING_SHIPMENT`/`SHIPPING_FAILED`), and a proxy route that again did not
-> need the translator the plan had anticipated — under quarkus-agent,
-> lgtm-quarkus, lgtm-camel, and camel-mcp tooling, following
-> `migrate-spring-to-quarkus` for the lifted read surface. Verify is this
+> need the translator the plan had anticipated. Verify is this
 > chapter's sharpest negative checks and its real stock numbers —
 > 496→495→496, 478→477→478 — plus a CLI-limitation finding (newman's
 > `--env-var` cannot set a collection-scoped variable) found, diagnosed, and

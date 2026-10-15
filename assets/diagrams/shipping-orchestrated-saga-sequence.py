@@ -209,7 +209,7 @@ notes = [
 
     {"x": 40, "y": 1672,
      "text": "Sourced from examples/06-shipping-service/.../{ShipmentSagaRoute,ShipmentSagaSteps,ShippingService}.java, "
-             "examples/00-monolith/.../order/OrderSagaListener.java, and _plans/iterations/shipping-plan.md (S5/S6).",
+             "examples/00-monolith/.../order/OrderSagaListener.java.",
      "anchor": "start", "size": 10.5, "color": "#555555"},
 ]
 

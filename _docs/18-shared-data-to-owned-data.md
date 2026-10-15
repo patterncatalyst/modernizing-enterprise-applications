@@ -111,8 +111,8 @@ sale's read load does not have to compete with `orders`' write load on the
 same connection pool; and independent technology choice, because a context
 whose access pattern is fundamentally a key-value lookup is no longer forced
 onto the same relational engine a context doing multi-row transactional
-writes needs. Those benefits are real, and the decomposition roadmap in
-`build-plan.md` Section E is built to win them one context at a time.
+writes needs. Those benefits are real, and this book's decomposition roadmap
+is built to win them one context at a time.
 
 What that same sales pitch tends to leave out is the full size of what gets
 given up to get there. This chapter covers that cost before Chapter 19
@@ -244,7 +244,7 @@ to know, because it already captured the facts it actually cares about at the
 one moment they mattered. For the facts order does need live — can
 this SKU still be reserved, right now, at checkout time — the decomposition
 roadmap's answer is a synchronous call across the seam (`quarkus-grpc` for
-inventory, per `build-plan.md` Section E), not a stale local copy, because a
+inventory), not a stale local copy, because a
 stock check is exactly the case where a snapshot would be actively wrong.
 Both moves point at the same lesson from two directions: once a relationship
 crosses an owned-data boundary, you have to decide, explicitly, whether the
@@ -312,7 +312,7 @@ opposite choice under two different sets of constraints, and the difference
 between them is the clearest evidence available for everything above.
 
 `examples/02-review-service` is still, as of this writing, in its Phase A
-form (DRQ-029), and its own `README.md` states the deferral in plain terms:
+form, and its own `README.md` states the deferral in plain terms:
 it persists against "the SAME compose-stack Postgres the monolith uses...
 reading/writing the existing `reviews` table plus minimal read-only
 projections of the shared `customers`/`inventory_items` tables," and "owns
@@ -320,7 +320,7 @@ projections of the shared `customers`/`inventory_items` tables," and "owns
 data-across-the-seam chapters (ch.18/19), not this step." `Customer.java`'s
 own javadoc explains exactly why that deferral is safe rather than
 embarrassing: dropping the `reviews` table from the shared schema today
-"would break the very service r02/S10 just cut over to." The service boundary
+"would break the very service just cut over to." The service boundary
 and the data boundary are separable decisions. Review's extraction
 deliberately separated them, scoping the service cut now and leaving the
 schema split for Chapter 19 rather than leaving the deferral unexplained.
@@ -334,7 +334,7 @@ appreciate fully:
 -- Why own schema, not shared: ch.15's Review extraction (Phase A) could stay
 -- in the monolith's shared schema because Review only ever *reads* a
 -- synchronously-consistent REST contract. Notification is event-driven
--- (ch.17 S5 consumes `order.placed` off Kafka asynchronously) — an
+-- (ch.17 consumes `order.placed` off Kafka asynchronously) — an
 -- event-driven read model that shared the upstream aggregate's table would
 -- have two writers racing on the same rows (the monolith's now-decommissioned
 -- synchronous path, and this service's consumer) with no way to reconcile

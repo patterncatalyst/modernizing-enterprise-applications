@@ -160,9 +160,8 @@ actually run in production.
 The book runs in eleven parts, numbered 0 through 10, and the ordering is
 itself part of the argument: it follows the chronology of an actual
 migration, not the logical order a textbook might choose. You are reading
-**Part 0, Setting Up**, which handles the toolchain, this project's own
-`_plans/` ledger, and the mechanics of running every example before anything
-else is asked of you. **Part 1, Why Modernize**, steps back from code
+**Part 0, Setting Up**, which handles the toolchain, the project ledger, and the mechanics of running
+every example before anything else is asked of you. **Part 1, Why Modernize**, steps back from code
 entirely to make the business and engineering case for modernizing at all —
 including when microservices are the wrong answer —
 before committing a single line to a specific strategy. **Part 2, The ADLC**,
@@ -255,20 +254,6 @@ inventory client in Chapters 19 and 25 — you will find it on
 path is the directory the code lived in at the point the chapter describes;
 these branches and tags are how you check it out and run it as it was then.
 
-**This book's own production is an
-instance of the thing it teaches.** The `_plans/` directory in this
-repository — `build-plan.md`, `decisions.md`, and the per-iteration plan and
-status records under `_plans/iterations/` — is not a teaching prop built
-after the fact to illustrate the ADLC for your benefit. It is this project's
-actual frame statements, approved plans, and verification records, including
-the two real defects that first extraction
-surfaced and the exact commits that fixed them. When a later chapter cites a
-`DRQ-NNN` decision or a commit hash, that is not a dramatized example — it is
-a pointer into this project's real history, open for you to read. If you
-want to see the ADLC applied to a decision that has nothing to do with order
-or inventory, start there; it is the same lifecycle, exercised on the book
-itself before it is exercised on the system the book is about.
-
 ## What you will be able to do by the end
 
 Finishing this book should leave you able to do three concrete things you
@@ -309,18 +294,17 @@ demonstrates safe modernization better than a mistake-free story would have.
 JDK, Maven, the Quarkus and Camel CLIs, and the local observability stack —
 and ends with a gate you can run yourself to confirm the setup actually
 works before you depend on it for anything else. **Chapter 2, "The Project
-Ledger,"** introduces these `_plans/` artifacts in detail — and the
-reconciliation record the ADLC's final phase still owes — not as
-documentation about this project but as a template for the ledger you
-will want to keep on your own migration, starting with the first decision you
-make. From there, Part 1 makes the case for why any of this modernization
+Ledger,"** introduces the project ledger in detail — and the
+reconciliation record the ADLC's final phase still owes — as a template for
+the ledger you will want to keep on your own migration, starting with the
+first decision you make. From there, Part 1 makes the case for why any of this modernization
 work is worth doing in the first place — and when it is not.
 
 ---
 *Verification status: not applicable — this is a conceptual chapter with no
-runnable example under `examples/`. Its factual claims point at artifacts
-this project's own `_plans/` ledger and `examples/` directories make
-checkable elsewhere in this book: the six-context monolith and its deliberate
+runnable example under `examples/`. Its factual claims point at artifacts the
+`examples/` directories make checkable elsewhere in this book: the six-context
+monolith and its deliberate
 smells (Part 3), the behavior-equivalence suite and the equivalence gate
 (Chapter 10 and Chapter 7), and the two real defects the first extraction
 surfaced (Chapter 7, `examples/02-review-service/MIGRATION.md`,

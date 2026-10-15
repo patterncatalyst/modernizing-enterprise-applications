@@ -101,12 +101,12 @@ new_edges = [
 
 notes = [
     {"x": W / 2, "y": 32,
-     "text": "ch.23 — compensation moves from an in-line catch to a choreographed event reaction (DRQ-049)",
+     "text": "ch.23 — compensation moves from an in-line catch to a choreographed event reaction",
      "anchor": "middle", "bold": True, "size": 16},
 
     {"x": 40, "y": 735,
      "text": "Sourced from examples/00-monolith/.../order/{OrderService,OrderSagaListener}.java, "
-             "examples/05-payment-service/.../PaymentService.java, and _plans/iterations/payment-plan.md (H3, DRQ-049/-051).",
+             "examples/05-payment-service/.../PaymentService.java.",
      "anchor": "start", "size": 10.5, "color": "#555555"},
 ]
 

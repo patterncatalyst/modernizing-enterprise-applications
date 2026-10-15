@@ -12,8 +12,8 @@ map. Both chapters answer the question "where could this system be cut?" by
 pointing at behavior — the verbs on the sticky notes, the domain language
 that changes meaning as you cross a boundary. Neither chapter answers a
 second, equally important question: given several legitimate candidate
-seams, which one do you cut *first*, and — the question this book's own
-`build-plan.md` had to answer before a single extraction shipped — is
+seams, which one do you cut *first*, and — the question any decomposition
+plan has to answer before a single extraction ships — is
 cutting any of them, right now, actually the right call? This chapter
 supplies the metric that answers both: **coupling**, measured precisely
 enough to rank candidates rather than merely describe them, and precisely
@@ -23,7 +23,7 @@ one of them, a coupling problem wearing a different costume — a shared
 schema, a god service, a synchronous call, a leaky entity, a transaction
 that spans contexts it shouldn't. This chapter gives you the vocabulary to
 see that they are the same problem, scored on the same scale, and the scale
-is what turned Section E of `build-plan.md` into a defensible sequence
+is what turns an extraction order into a defensible sequence
 instead of an argument settled by whoever spoke last in the planning
 meeting.
 
@@ -248,8 +248,8 @@ context everyone calls into, that itself calls into everyone, cannot move
 until both directions of that traffic have been rerouted — which is exactly
 describing the god service from the opposite direction.
 
-Walk the six contexts with this lens and the extraction order in
-`build-plan.md` Section E stops looking like a narrative choice and starts
+Walk the six contexts with this lens and the extraction order stops looking
+like a narrative choice and starts
 looking like a sorted list:
 
 - **Review** has `Ca ≈ 0` (nothing in the monolith calls into review) and
@@ -461,8 +461,8 @@ boundary is a modular monolith rather than a network call.
 Put the three together and Part 4's output is a single artifact, not three
 separate ones: a list of bounded contexts (Chapter 11), each annotated with
 the behavioral evidence that the boundary is real (Chapter 12), each scored
-for coupling and ranked by blast radius (this chapter), which is exactly
-what `build-plan.md` Section E already is — review first because its score
+for coupling and ranked by blast radius (this chapter). The result is review
+first because its score
 is the floor, order last because its score is the ceiling, with
 notification, inventory, payment, and shipping sorted in between by exactly
 how much coupling each one's extraction has to sever. Every chapter from

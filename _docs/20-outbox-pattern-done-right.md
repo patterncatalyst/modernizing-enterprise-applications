@@ -494,8 +494,8 @@ own upgrade cadence, and its own connector-specific configuration surface —
 real, ongoing operational weight that a two-line `@Scheduled` method inside
 an existing Spring process does not carry.
 
-The decision this project made (DRQ-034, recorded in `decisions.md`) was
-deliberate about not paying that weight on the very first extraction to need
+The decision this project made was deliberate about not paying that weight
+on the very first extraction to need
 an outbox: Notification's event volume and latency tolerance don't demand
 sub-second delivery, so a polling relay teaches the outbox's real
 guarantee — atomic write, at-least-once publish — without pulling a

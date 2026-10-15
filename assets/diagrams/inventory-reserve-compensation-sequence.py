@@ -87,7 +87,7 @@ insufficient = node(470, 560, 250, 90, ["reservation_ok = false",
                                         "no decrement -> no Release needed"], style="ghost")
 release_rpc = node(750, 560, 250, 90, ["gRPC Release :9004",
                                        "compensating re-increment",
-                                       "DRQ-042 -- first taste of saga"], style="accent")
+                                       "first taste of saga"], style="accent")
 restored2 = node(1030, 560, 310, 90, ["DECLINE -- stock RESTORED",
                                       "best-effort, no idempotency key yet",
                                       "(full saga ledger deferred to ch.23)"], style="box")
@@ -116,7 +116,7 @@ notes = [
      "anchor": "start", "size": 11, "color": "#1d1d1d", "bold": True},
 
     {"x": 470, "y": 680,
-     "text": "DRQ-042 (honest limitation): Release is an UNCONDITIONAL increment with no dedupe key -- a retried Release after an",
+     "text": "Honest limitation: Release is an UNCONDITIONAL increment with no dedupe key -- a retried Release after an",
      "anchor": "start", "size": 10.5, "color": "#555555"},
     {"x": 470, "y": 694,
      "text": "at-least-once redelivery could over-restore stock; a full fix (idempotency key / saga ledger) is deferred to ch.23.",
@@ -126,7 +126,7 @@ notes = [
      "text": "Sourced from examples/00-monolith/.../order/OrderService.java, .../inventory/RemoteInventoryClient.java, SMELLS.md (smell #3),",
      "anchor": "start", "size": 10.5, "color": "#555555"},
     {"x": 40, "y": 882,
-     "text": "examples/04-inventory-service/.../InventoryGrpcServiceImpl.java, and _plans/iterations/inventory-plan.md (DRQ-041/DRQ-042).",
+     "text": "examples/04-inventory-service/.../InventoryGrpcServiceImpl.java.",
      "anchor": "start", "size": 10.5, "color": "#555555"},
 ]
 

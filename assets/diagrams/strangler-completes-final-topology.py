@@ -39,7 +39,7 @@ W, H = 1450, 950
 client = node(40, 430, 220, 100, ["Client", "REST + GraphQL"], style="user")
 router = node(300, 380, 280, 180,
               ["Camel edge router :8888", "flagless — permanent REST/GraphQL entry point",
-               "strangler .choice() collapsed; strangler.*.enabled retired (S10)"],
+               "strangler .choice() collapsed; strangler.*.enabled retired"],
               style="ink")
 
 # ---- the six extracted services + the GraphQL gateway ----------------------
@@ -71,7 +71,7 @@ edges = [
 
 # ---- the frozen monolith: standalone, no edges in or out --------------------
 monolith = node(40, 650, 460, 220,
-                 ["Spring monolith", ":8080 — FROZEN, kept in-repo (DRQ-024)",
+                 ["Spring monolith", ":8080 — FROZEN, kept in-repo",
                   "reference / monolith-before baseline for the contract suite",
                   "REMOVED from the running topology — no live traffic, no routes in"],
                  style="ghost")
@@ -88,8 +88,8 @@ notes = [
      "anchor": "middle", "size": 11, "color": "#555555"},
 
     {"x": 40, "y": 930,
-     "text": "Sourced from examples/01-strangler-proxy/.../StranglerProxyRoute.java (ch.26 S10), the six services' + "
-             "gateway's application.properties, and _plans/iterations/order-plan.md (S10, DRQ-024/070/075).",
+     "text": "Sourced from examples/01-strangler-proxy/.../StranglerProxyRoute.java (ch.26), the six services' + "
+             "gateway's application.properties.",
      "anchor": "start", "size": 10.5, "color": "#555555"},
 ]
 

@@ -3,7 +3,7 @@
 <rect x="20" y="70" width="1630" height="130" rx="12" fill="#eaf4ec" stroke="#ddd"/>
 <text x="32" y="90" font-size="12" font-weight="700" fill="#1d1d1d">Deck: agentic SDLC (8 steps)</text>
 <rect x="20" y="290" width="1630" height="130" rx="12" fill="#fafafa" stroke="#ddd"/>
-<text x="32" y="310" font-size="12" font-weight="700" fill="#1d1d1d">Book: ADLC (7 phases, _plans/build-plan.md §F)</text>
+<text x="32" y="310" font-size="12" font-weight="700" fill="#1d1d1d">Book: ADLC (7 phases)</text>
 <rect x="40" y="110" width="190" height="74" rx="9" fill="#eaf4ec" stroke="#3d7a4e" stroke-width="2"/>
 <text x="135.0" y="145.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">1. Express intent</text>
 <text x="135.0" y="162.0" font-size="11.5" fill="#555555" text-anchor="middle">(Minutes)</text>
@@ -36,7 +36,7 @@
 <text x="335.0" y="382.0" font-size="11.5" fill="#555555" text-anchor="middle">reconnaissance</text>
 <rect x="380" y="330" width="140" height="74" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
 <text x="450.0" y="365.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Plan</text>
-<text x="450.0" y="382.0" font-size="11.5" fill="#555555" text-anchor="middle">DRQ-NNN</text>
+<text x="450.0" y="382.0" font-size="11.5" fill="#555555" text-anchor="middle">decision record</text>
 <rect x="535" y="330" width="230" height="74" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
 <text x="650.0" y="365.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Generate</text>
 <text x="650.0" y="382.0" font-size="11.5" fill="#555555" text-anchor="middle">scaffold + code + tests</text>

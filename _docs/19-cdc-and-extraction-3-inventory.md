@@ -240,7 +240,7 @@ not 4, confirming the ON CONFLICT upsert is idempotent under at-least-once
 delivery.
 ```
 
-{% include excalidraw.html file="cdc-debezium-backfill-pipeline" alt="The CDC backfill pipeline's mechanism, left to right: the monolith's Postgres WAL (wal_level=logical, pgoutput, REPLICA IDENTITY FULL), the mea_inventory_slot replication slot and mea_inventory_publication publication registered on it, the mea-inventory-connector Debezium connector reading that feed (snapshot.mode=initial, emitting op=r backfill events once then streaming op=c/u/d), the mea.public.inventory_items Kafka topic, and InventoryCdcConsumer's idempotent ON CONFLICT upsert into the inventory service's own schema. A second band shows the slot and publication's retirement: scripts/retire-debezium.sh, run once at the S11 cutover, deletes the connector and drops both the slot and the publication." caption="Figure 19.3 — The CDC backfill pipeline's mechanism (WAL through the replication slot, the Debezium connector, and the Kafka topic, to InventoryCdcConsumer's idempotent upsert), and the slot/publication's one-time retirement at cutover" %}
+{% include excalidraw.html file="cdc-debezium-backfill-pipeline" alt="The CDC backfill pipeline's mechanism, left to right: the monolith's Postgres WAL (wal_level=logical, pgoutput, REPLICA IDENTITY FULL), the mea_inventory_slot replication slot and mea_inventory_publication publication registered on it, the mea-inventory-connector Debezium connector reading that feed (snapshot.mode=initial, emitting op=r backfill events once then streaming op=c/u/d), the mea.public.inventory_items Kafka topic, and InventoryCdcConsumer's idempotent ON CONFLICT upsert into the inventory service's own schema. A second band shows the slot and publication's retirement: scripts/retire-debezium.sh, run once at cutover, deletes the connector and drops both the slot and the publication." caption="Figure 19.3 — The CDC backfill pipeline's mechanism (WAL through the replication slot, the Debezium connector, and the Kafka topic, to InventoryCdcConsumer's idempotent upsert), and the slot/publication's one-time retirement at cutover" %}
 
 This is also where the deferred decision Chapter 17 named actually gets
 spent. Chapter 17 reached for a polling relay, not CDC, for
@@ -410,7 +410,7 @@ try {
     paymentService.charge(order, order.getTotalCents(), command.paymentMethod());
     // ...
 } catch (RuntimeException ex) {
-    compensateRemoteReservations(remoteReservations); // DRQ-042
+    compensateRemoteReservations(remoteReservations);
     throw ex;
 }
 ```
@@ -424,7 +424,7 @@ captured evidence proves it actually holds under real traffic, not just under
 a mocked unit test:
 
 ```
-CAPTURED EVIDENCE — inventory-plan.md S10, CUTOVER.md, Scenario 3
+CAPTURED EVIDENCE — CUTOVER.md, Scenario 3
 (payment-declined, THE crux case), both flags flipped to the cutover state:
 
 | Scenario                        | Before (service) | Checkout            | After (service) |
@@ -493,7 +493,7 @@ extend to a cross-database seam: with both flags in the cutover
 state, the inventory service's process was killed outright.
 
 ```
-CAPTURED EVIDENCE — inventory-plan.md S10, negative check (RED):
+CAPTURED EVIDENCE — negative check (RED):
 
 Result: RED — newman exit code 1, 34 of 56 assertions failed.
 - GET /api/inventory -> 500 (proxy's inventory target unreachable)
@@ -518,8 +518,8 @@ false-equivalence gap a shared-table coincidence opened for Review back in
 Chapter 7.
 
 The second claim is harder-won, and this project chose to publish it rather
-than quietly avoid it. Between cutover (S10) and the eventual decommission of
-the monolith's local inventory module (S11), an operator could, in principle,
+than quietly avoid it. Between cutover and the eventual decommission of
+the monolith's local inventory module, an operator could, in principle,
 flip only the proxy's read-side flag and leave the monolith's write-side flag
 at its own bare default (`local`). That combination was run as
 a documented finding rather than a defect:
@@ -537,14 +537,14 @@ immediate post-checkout read outran the CDC connector's replication of that
 same checkout's write.
 ```
 
-This is precisely the eventual-consistency risk the project's own decision
-log anticipated — CDC replication is asynchronous by construction — but it
+This is precisely the eventual-consistency risk inherent to CDC — CDC
+replication is asynchronous by construction — but it
 had been assumed to land only on the dedicated Inventory Context Contract
 read folder, which was written with a bounded-wait precisely for this reason,
 not on a checkout scenario's immediate read-after-write. No code was changed
 to paper over the finding: the Newman collection stayed unedited, and the
 monolith's `inventory.mode` default stayed `local`, because resolving it
-is S11's job, not S10's. The resolution is unglamorous and correct —
+is the decommission step's job, not cutover's. The resolution is unglamorous and correct —
 decommission the monolith's local inventory write path entirely, so
 `inventory.mode=remote` becomes the only path that exists, closing the
 CDC-replica/shared-table hybrid state by removing one of its two writers.
@@ -564,7 +564,7 @@ no replica identity tweaks — none of that is needed here), plus Kafka, started
 only so the monolith's outbox producer has a broker to boot cleanly against,
 not because this job asserts anything about the async notification path.
 There is no Kafka Connect service and no Debezium connector: CDC was retired
-at S11, so the job builds and starts the inventory service (REST `:8084` +
+at decommission, so the job builds and starts the inventory service (REST `:8084` +
 gRPC `:9004`) on its own, self-seeded via its committed `V2__seed_inventory.sql`
 Flyway migration, and the monolith as an unconditional gRPC client with no
 `inventory.mode` flag left to fall back on. With both services and the
@@ -583,14 +583,14 @@ reverted, is.
 > **ADLC in Action** — This extraction ran the identical Frame → Map → Plan →
 > Generate → Verify → Operate → Reconcile loop Chapter 17 demonstrated for
 > Notification, at its hardest rung yet. Frame fixed eight decisions up front
-> in `decisions.md` (DRQ-039 through DRQ-046 — gRPC for the synchronous hot
+> in `decisions.md` (gRPC for the synchronous hot
 > path, Debezium-on-Kafka-Connect over Embedded, the sync-reserve/async-replication
 > split, Reserve-plus-compensating-Release as a deliberate first taste of
 > saga, the foreign-key decomposition, two-phase-plus-idiomatic-gRPC, two-flag
 > reversibility, and the extended negative-check discipline). Plan laid out
 > sixteen steps across three parallel lanes — the CDC/Connect infrastructure,
-> the gRPC contract, and the new service's scaffold — with an Opus validation
-> gate named before a line of gRPC or CDC code existed, most pointedly at the
+> the gRPC contract, and the new service's scaffold — with a reasoning-model
+> validation gate named before a line of gRPC or CDC code existed, most pointedly at the
 > cutover step where out-of-stock and payment-decline-rollback had to be
 > proven across the real service boundary, not asserted against a mock.
 > Generate produced the proto, the gRPC server, the CDC consumer, and the

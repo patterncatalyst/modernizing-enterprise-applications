@@ -49,9 +49,9 @@ dependency — review's removal, then notification's, then inventory's, then
 payment's, then shipping's — until this chapter's entry was the only one left
 with something to cure.
 
-Five architectural decisions were confirmed before any of this chapter's code
-existed, because this is the one extraction whose planning questions do not
-have an obvious prior-chapter answer to reuse. The CQRS shape is a same-
+Five architectural decisions shape this extraction, because this is the one
+extraction whose questions do not have an obvious prior-chapter answer to
+reuse. The CQRS shape is a same-
 database, two-table split — a denormalized `order_view` projected from
 lifecycle events inside the order service's own Postgres schema — rejected in
 favor of a separate read datastore, which would have introduced
@@ -63,8 +63,7 @@ not deleted, so the book's "before" picture survives. The equivalence suite
 converts to a contract suite once there is no monolith left to be equivalent
 to. And reversibility is proven one last time before the one decommission
 step that cannot be undone. Each of those calls has a rejected alternative on
-record, confirmed the same sitting the questions were raised — the same
-discipline every earlier extraction's planning phase used, applied here to
+record — the same discipline every earlier extraction used, applied here to
 five decisions instead of one.
 
 ## The CQRS write model: `placeOrder` as the command handler
@@ -346,11 +345,11 @@ compare against, and after this chapter's decommission step there is no
 monolith left in the running topology to compare against — it still exists
 on `reference/monolith-before`, but a CI job cannot boot a second full
 instance of the system it is supposed to be replacing just to keep asserting
-"replacement matches original" forever. The plan's own answer is to freeze
+"replacement matches original" forever. The answer here is to freeze
 one last monolith-anchored run as the golden baseline, then re-designate the
 suite's own self-description from an equivalence check to a contract check —
-without touching a single assertion. The decommission commit states the
-result in one line that is the whole argument for why the conversion is not
+without touching a single assertion. The result is captured in one line that
+is the whole argument for why the conversion is not
 vacuous: "not one assertion or negative check changed." The strict terminal
 checks — `CONFIRMED`, `409`, `PAYMENT_DECLINED` plus net-zero stock,
 `SHIPPING_FAILED` plus net-zero stock, the read-model and GraphQL response
@@ -405,8 +404,8 @@ stale data. It never minted the order in the first place.
 
 Every cutover before this one could be undone by flipping a flag back to a
 live monolith. This chapter's cutover is the last point in the book where
-that is still true, and the plan's own risk analysis names exactly why
-proving it mattered here more than anywhere else: once the decommission step
+that is still true, and the reason proving it mattered here more than anywhere
+else is exact: once the decommission step
 runs, there is nothing left to revert to if the extracted order service
 turns out to be subtly wrong. So reversibility was proven exhaustively
 before that step, not assumed. With `strangler.order.enabled` flipped back
@@ -455,8 +454,8 @@ rollback a database used to provide as a side effect.
 
 > **ADLC in Action** — This is the sixth and final extraction, and it ran
 > the same Frame → Map → Plan → Generate → Verify → Operate → Reconcile loop
-> every prior chapter demonstrated, at its hardest shape yet. Frame brought
-> five architectural decisions to the user in one sitting — same-database
+> every prior chapter demonstrated, at its hardest shape yet. Frame settled
+> five architectural decisions — same-database
 > CQRS over a separate read datastore, an additive GraphQL gateway with its
 > own front door over a federation router, a frozen-not-deleted monolith
 > over deletion, an equivalence-to-contract conversion over a suite anchored

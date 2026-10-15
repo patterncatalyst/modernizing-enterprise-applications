@@ -41,7 +41,7 @@ retired:
 
 | # | Extraction | Seam / pattern | Service |
 |---|---|---|---|
-| 1 | Review | Strangler fig, first seam (walking skeleton) | `examples/02-review-service` |
+| 1 | Review | Strangler fig, first seam | `examples/02-review-service` |
 | 2 | Notification | Async, transactional outbox → Kafka | `examples/03-notification-service` |
 | 3 | Inventory | gRPC seam, CDC backfill (Debezium, transition-only) | `examples/04-inventory-service` |
 | 4 | Payment | Choreographed saga | `examples/05-payment-service` |
@@ -182,7 +182,7 @@ assets/diagrams/ — paired SVG + Excalidraw figures (one generator per figure)
 compose.yaml     — the single docker compose source (dev + CI substrate)
 _docs/           — the tutorial chapters (Jekyll docs collection)
 _parts/          — the eleven parts
-_plans/          — build plan, decisions log (DRQ-NNN), reconciliation log
+_plans/          — build plan, decisions log, reconciliation log
 ```
 
 ## License
