@@ -5,6 +5,20 @@ part: "The Strangler Fig in Practice"
 description: "Introduces the Kafka backbone, the outbox in the monolith for reliable publication, and content-based event routing — the first taste of eventual consistency."
 ---
 
+## Learning objectives
+
+By the end of this chapter you can:
+
+- Explain why Smell 4's synchronous, in-transaction notification call creates two distinct costs — latency coupling and failure-domain coupling — and why curing it means changing *when* work happens, not just where it runs.
+- Write a transactional outbox entry in the same `@Transactional` as the business change it describes, and state precisely where that atomicity guarantee stops (the separate, asynchronous hop from table to broker).
+- Build a SmallRye Reactive Messaging `@Incoming` consumer and give it two independent layers of idempotency: an application-level check-then-insert and a database partial unique index as the backstop for a race.
+- Justify why an event-driven read model must own its schema from day one, using the two-independent-writers/split-brain argument, and contrast it with Review's defensible shared-schema deferral.
+- Design a bounded-wait eventual-consistency poll assertion that passes unedited against both a synchronous and an asynchronous backend.
+- Construct a negative check — kill the consumer to force a hard RED, restart it to force GREEN — that proves an async assertion is testing the real pipeline rather than coincidentally agreeing with whatever answers first.
+- Wire an async-path equivalence gate into CI with disposable Postgres and Kafka containers, validated red-then-green before it is trusted.
+
+## Why this matters
+
 Chapter 15 proved the seam machinery on the easiest possible case: a context
 with zero synchronous collaborators, extracted behind a flag, verified by a
 suite that only ever had to check a status code and a response body. Chapter
@@ -622,6 +636,15 @@ compensating actions when one step fails partway through — this chapter's
 single at-least-once topic and its one idempotent consumer are the smallest
 possible instance of a coordination problem Part 7 makes considerably
 harder.
+
+## For deeper coverage
+
+- Chris Richardson, *Microservices Patterns* (Manning, 2018) — the transactional outbox pattern this chapter implements end to end, from the write through the relay to the idempotent consumer.
+- Martin Kleppmann, *Designing Data-Intensive Applications* (O'Reilly, 2017) — the at-least-once delivery and derived-data consistency reasoning behind why the consumer, not the relay, has to own idempotency.
+- Gregor Hohpe & Bobby Woolf, *Enterprise Integration Patterns* (Addison-Wesley, 2003) — the idempotent-receiver pattern the consumer's two-layer dedupe implements.
+- Michael Nygard, *Release It!*, 2nd ed. (Pragmatic Bookshelf, 2018) — the stability argument for decoupling a request path from a slower downstream concern, the exact failure-domain coupling this extraction cures.
+- [Quarkus — Using Apache Kafka with Reactive Messaging](https://quarkus.io/guides/kafka) — the canonical reference for the declarative `@Incoming` consumer model `OrderPlacedConsumer` uses.
+- Cloud Native Design Patterns, [Event-Driven](https://github.com/patterncatalyst/cloud-native-design-patterns/blob/main/_docs/05-event-driven.md) — the companion book's treatment of event-driven architecture this extraction's outbox-to-consumer pipeline is a worked instance of.
 
 ---
 

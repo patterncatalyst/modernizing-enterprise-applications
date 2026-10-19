@@ -5,6 +5,20 @@ part: "The Reference Monolith"
 description: "The coupling, god-service, shared-table, and transaction-scope smells planted in the reference monolith, each tagged to the pattern that will later cure it."
 ---
 
+## Learning objectives
+
+By the end of this chapter you can:
+
+- Locate every `SMELL[ch.NN]` tag with `grep -rn 'SMELL\[ch\.' examples/00-monolith/src` and map each one to the chapter that cures it.
+- Explain why a "seam" is a conceptual boundary the implementation currently welds shut, not an arbitrary place where code could be split.
+- Diagnose shared-schema cross-context foreign-key coupling and explain why it is invisible until a migration from another team breaks it.
+- Diagnose the god `OrderService` using constructor-dependency counting and the "describe it in one sentence without 'and'" heuristic.
+- Explain why one `@Transactional` boundary spanning five contexts is correct only because of co-location, and what has to replace it once those contexts get separate databases.
+- Diagnose the synchronous-notification and missing-anti-corruption-layer smells and name the pattern (transactional outbox, message translator) that cures each.
+- Use Review's already-cured sixth smell as the existence proof that "tag it, name the cure, cut it with an equivalence gate watching" survives contact with a real codebase.
+
+## Why this matters
+
 The previous chapter assembled `examples/00-monolith/` into one deployable,
 one database, one JVM, six bounded contexts living as six packages under a
 single Spring Boot application. That assembly was not an accident of
@@ -547,6 +561,14 @@ design, event storming, and coupling theory, so that by the time you reach
 Chapter 15 you are not just trusting this chapter's map of where to cut —
 you can draw that map yourself, on a system that never shipped with a
 `SMELLS.md` file at all.
+
+## For deeper coverage
+
+- Eric Evans, *Domain-Driven Design* (Addison-Wesley, 2003) — the anti-corruption-layer and bounded-context vocabulary this chapter's five smells are named with; see the [Reading List](/bibliography/).
+- Gregor Hohpe & Bobby Woolf, *Enterprise Integration Patterns* (Addison-Wesley, 2003) — the message translator and content enricher patterns Chapter 16 uses to cure Smell 5's missing ACL.
+- Chris Richardson, *Microservices Patterns* (Manning, 2018) — the saga and transactional-outbox patterns that replace Smell 3's single ACID transaction and Smell 4's synchronous call.
+- Martin Fowler, [*StranglerFigApplication*](https://martinfowler.com/bliki/StranglerFigApplication.html) — the incremental cut-and-prove method behind this chapter's "tag it, name the cure, cut it later" discipline.
+- Martin Kleppmann, *Designing Data-Intensive Applications* (O'Reilly, 2017) — why shared-schema coupling (Smell 1) turns dangerous the instant data ownership splits.
 
 ---
 

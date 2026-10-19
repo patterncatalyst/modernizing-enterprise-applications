@@ -5,6 +5,20 @@ part: "Data Across the Seam"
 description: "CQRS read/write split, central to the gateway read side; event sourcing covered but kept light and optional; the trade-offs of each."
 ---
 
+## Learning objectives
+
+By the end of this chapter you can:
+
+- Define CQRS and explain why splitting a write model from one or more read models pays off when commands and queries need different shapes, scaling, and consistency.
+- Identify `examples/03-notification-service` as an already-running CQRS read model and explain exactly why it qualifies — its own schema, no foreign key into the monolith, populated by idempotently folding `order.placed` events.
+- Distinguish a CQRS read model (Kleppmann's materialized view) from full event sourcing, where the event log itself is the system of record and current state is computed by replay.
+- Explain the real, ongoing costs of event sourcing — perpetual event schema evolution (upcasting), a snapshot strategy to bound replay cost, and tooling/team unfamiliarity — and why this book declines to pay them.
+- Name "CQRS-lite" (event-fed read models) as this book's deliberate choice, and explain why each read model owns its own storage instead of sharing the upstream aggregate's table.
+- Apply the bounded-wait-poll-plus-negative-check technique to verify a read model is current within a stated window rather than merely coincidentally correct.
+- Explain rebuild-from-events as a real but bounded property — valid only within Kafka's retention window, with the write side remaining the actual durable source of truth.
+
+## Why this matters
+
 Chapter 17 built a pipeline — an atomic outbox write, a polling relay, a
 Kafka topic, an idempotent consumer — and Chapter 20 pushed deeper on that
 same mechanism: what it costs to keep a dual-write from ever happening, how a
@@ -372,6 +386,14 @@ Chapter 22 names exactly what consistency this architecture has given up to
 get here. Chapter 26 is where CQRS stops being demonstrated on one small
 service and becomes the central shape of this book's last and hardest
 extraction.
+
+## For deeper coverage
+
+- Martin Kleppmann, *Designing Data-Intensive Applications* (O'Reilly, 2017) — the materialized-view and "turning the database inside out" framing this chapter builds its CQRS-vs-event-sourcing distinction on; see the [Reading List](/bibliography/).
+- Chris Richardson, *Microservices Patterns* (Manning, 2018) — the CQRS pattern catalog entry this chapter's event-fed read model is a deliberately lighter version of.
+- Martin Fowler, [*CQRS*](https://martinfowler.com/bliki/CQRS.html) — the short, canonical statement of the pattern's intent and its most common pitfall, overusing it where a single model would do.
+- Sam Newman, *Building Microservices* (2nd ed., O'Reilly, 2021) — service boundaries and independent scaling, the argument for why `notification-service`'s read model gets its own schema and deploy cycle.
+- Cloud Native Design Patterns, [Event-Driven](https://github.com/patterncatalyst/cloud-native-design-patterns/blob/main/_docs/05-event-driven.md) — the companion book's treatment of the event-driven plumbing that feeds a CQRS read model.
 
 ---
 

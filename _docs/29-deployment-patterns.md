@@ -5,6 +5,20 @@ part: "Operating the Modernized System"
 description: "Rolling, breaking-schema-change, and blue-green deployment, tied to the cutover; which fits synchronous vs. event-driven services."
 ---
 
+## Learning objectives
+
+By the end of this chapter you can:
+
+- Explain the two separate moves this chapter makes — containerizing eight processes that previously ran on the host, and relocating Postgres/Kafka from compose-reachable `localhost` ports into in-cluster StatefulSets — and why they carry different costs.
+- Read a kustomize `base`/`overlays` tree and explain why this project chose kustomize's patch-a-base model over Helm's templating for a single-target-environment deployment.
+- Distinguish MicroProfile Config's ordinal-override mechanism (`EnvConfigSource` at 300 outranking `PropertiesConfigSource` at 250) from `${VAR}` interpolation, and trace how a hardcoded `jdbc:postgresql://localhost:5432/...` property is overridden by a Deployment's `env` block with zero code change.
+- Map a service's `quarkus-smallrye-health` presence or absence to its probe shape — real `httpGet` checks against `/q/health/{started,ready,live}` versus a `tcpSocket` fallback that only proves a listener is up.
+- Configure a rolling-update strategy (`maxUnavailable: 0`/`maxSurge: 1`) alongside graceful Kafka-consumer shutdown (a `preStop` sleep plus an extended `terminationGracePeriodSeconds`) to avoid a full `session.timeout.ms` rebalance delay.
+- Explain why only the `strangler-proxy` Service is exposed as `NodePort` while every other Service stays `ClusterIP`-only, and how that enforces the strangler fig as the system's one edge router at the Kubernetes layer.
+- State precisely what `kubectl kustomize` plus `kubectl apply --dry-run=client` does and does not verify about a live cluster, and why that boundary is a stated scope limit rather than a gap in rigor.
+
+## Why this matters
+
 Every chapter since Part 5 has treated "running the system" as something that
 happens on a developer's own machine: `mvn quarkus:dev` for a service, `docker
 compose up -d` for the shared infrastructure that service talks to. That split
@@ -683,6 +697,14 @@ Chapter 30 is where the gap this chapter named gets closed: a real minikube
 cluster, images built and loaded, `kubectl apply` run against a live API
 server, and the first end-to-end request traced through the strangler proxy
 and out the other side.
+
+## For deeper coverage
+
+- [Kubernetes documentation — Kustomize](https://kubernetes.io/docs/tasks/manage-kubernetes-objects/kustomization/) — the patch-a-base model this chapter's `base`/`overlays/minikube` tree is built on.
+- [Kubernetes documentation — Configure Liveness, Readiness and Startup Probes](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/) — the `httpGet`/`tcpSocket` probe split this chapter maps directly to ch.27's six-of-eight health-dependency finding.
+- [Quarkus — Container Image guide](https://quarkus.io/guides/container-image) — the `Dockerfile.jvm`/`Dockerfile.native` pair every one of this project's eight services ships.
+- Michael Nygard, *Release It!* (2nd ed., Pragmatic Bookshelf, 2018) — the operational discipline behind graceful shutdown and bounded rollout risk this chapter's `preStop`/`terminationGracePeriodSeconds` pairing and `maxUnavailable: 0` strategy both apply; see the [Reading List](/bibliography/).
+- Martin Fowler, [*StranglerFigApplication*](https://martinfowler.com/bliki/StranglerFigApplication.html) — the single-edge-router discipline this chapter enforces at the Kubernetes layer by exposing exactly one `NodePort` Service.
 
 ---
 

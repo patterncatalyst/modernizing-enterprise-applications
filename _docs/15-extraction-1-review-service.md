@@ -5,6 +5,19 @@ part: "The Strangler Fig in Practice"
 description: "REST-only, HTTP Basic auth, no sync dependency — proving the full loop: ACL, Quarkus scaffold, equivalence gate pass, flag-gated cutover, decommission."
 ---
 
+## Learning objectives
+
+By the end of this chapter you can:
+
+- Explain why Review is the right first bounded context to extract — REST-only, HTTP Basic auth, no synchronous dependency — and how that ordering de-risks every extraction after it.
+- Capture a behavior-equivalence suite *before* any code moves, and use it as the gate that turns "this is done" into a checkable claim rather than a judgment call.
+- Stand up a Camel content-based-routing strangler proxy in front of the monolith so a cutover becomes a configuration change instead of a redeploy.
+- Run the two-phase migration template: lift onto Quarkus with the Spring-compatibility extensions first, then rewrite to idiomatic Quarkus (Panache, `@ServerExceptionMapper`) second — measuring both.
+- Recognize the GraalVM closed-world native-image reflection defect class, and why only a suite that exercises the compiled native artifact ever catches it.
+- Perform a flag-gated, reversible cutover and decommission the old backend as the one deliberately irreversible step in the sequence.
+
+## Why this matters
+
 Chapter 7 already told you that this extraction happened, and what its safety
 net caught. This chapter is the other half of that story: not the ADLC's
 gate-by-gate narrative, but the actual mechanics of pulling one bounded
@@ -601,6 +614,14 @@ Chapter 17 then spends that machinery on notification, the first context
 whose one inbound edge is a synchronous call sitting inside the monolith's
 single ACID transaction — the first extraction in this book where cutting
 the seam and cutting the coupling are not the same afternoon's work.
+
+## For deeper coverage
+
+- Sam Newman, *Monolith to Microservices* (O'Reilly, 2019) — the incremental, strangler-first migration playbook this extraction follows end to end; see the [Reading List](/bibliography/).
+- Martin Fowler, [*StranglerFigApplication*](https://martinfowler.com/bliki/StranglerFigApplication.html) — the canonical write-up of the pattern the Camel proxy implements.
+- Gregor Hohpe & Bobby Woolf, *Enterprise Integration Patterns* (Addison-Wesley, 2003) — the content-based router, message translator, and content enricher the strangler seam is built from.
+- [Quarkus — Native reference guide](https://quarkus.io/guides/native-reference) — the closed-world reflection model and `@RegisterForReflection` behind the native-image defect the equivalence gate caught.
+- Cloud Native Design Patterns, [Communications](https://github.com/patterncatalyst/cloud-native-design-patterns/blob/main/_docs/02-communications.md) — the companion book's treatment of the inter-service communication styles the proxy mediates.
 
 ---
 

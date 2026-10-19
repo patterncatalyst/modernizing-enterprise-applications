@@ -6,6 +6,20 @@ description: "Shipping becomes a bounded, orchestrated saga: a single Camel Saga
 duration: 40 minutes
 ---
 
+## Learning objectives
+
+By the end of this chapter you can:
+
+- Explain how shipping's extraction cashes in the second clause of SMELL[ch.22] — in-process dispatch no longer rides any checkout/payment transaction at all.
+- Contrast orchestration (a single Camel Saga EIP coordinator that sequences steps and owns the compensation decision) with Chapter 23's choreography, and state why re-expressing the whole flow as one orchestrated saga, or letting shipping call inventory's `Release` directly, were both considered and rejected.
+- Walk the Camel Saga EIP's `.saga()` clauses — `sagaService`, `propagation`, `completionMode`, `timeout`, `compensation`, `option` — and explain what each one contributes to the "compensated or completed, never both, at most once" guarantee.
+- Explain why cross-context compensation is delegated rather than performed directly: the shipping service emits `shipment.failed`, and the order context, which owns the reserved-line snapshot, issues the actual gRPC `Release`.
+- Trace the new order lifecycle states `AWAITING_SHIPMENT` and `SHIPPING_FAILED`, and explain how they make a previously invisible window observable without changing the external `202`/pollable contract.
+- Identify the named limits of an in-memory saga coordinator (`InMemorySagaService`) — lost bookkeeping on a crash mid-saga, and a captured payment that is never refunded on a shipping failure — and why `LRASagaService` is deferred rather than built.
+- Use the suite's negative checks (disabled compensation, a killed consumer) and a widened bounded-wait budget to prove the orchestrated compensation fires exactly once rather than merely appearing to.
+
+## Why this matters
+
 Chapter 23 took the request thread out of payment's compensation entirely —
 once `OrderService#placeOrder` stopped calling payment at all, there was no
 `catch` block left to put an undo in, so the decline had to travel as an
@@ -528,6 +542,14 @@ order itself last, inherits both saga styles this book now has running
 side by side: it is the aggregate choreography's reactions and
 orchestration's delegated compensations both already answer to, and the
 context whose own extraction finally empties the monolith out.
+
+## For deeper coverage
+
+- Chris Richardson, *Microservices Patterns* (Manning, 2018) — the orchestration-based saga style this chapter builds, in direct contrast to Chapter 23's choreography; see the [Reading List](/bibliography/).
+- Gregor Hohpe & Bobby Woolf, *Enterprise Integration Patterns* (Addison-Wesley, 2003) — the process-manager coordination role the Camel Saga EIP route plays explicitly in one file.
+- Michael Nygard, *Release It!* (2nd ed., Pragmatic Bookshelf, 2018) — stability under partial failure, relevant to the in-memory coordinator's crash-window limitation this chapter names rather than hides.
+- [Apache Camel — Saga EIP](https://camel.apache.org/components/next/eips/saga-eip.html) — the official documentation for the `.saga()`/`.compensation()`/`.option()` clauses this chapter's coordinator is built from.
+- Cloud Native Design Patterns, [Appendix D — Sagas](https://github.com/patterncatalyst/cloud-native-design-patterns/blob/main/_docs/17-appendix-d-sagas.md) — the companion book's saga appendix, this time read against an orchestrated implementation.
 
 ---
 

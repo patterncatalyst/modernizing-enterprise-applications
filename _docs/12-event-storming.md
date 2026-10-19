@@ -5,6 +5,20 @@ part: "Finding the Seams"
 description: "Discovering seams from behavior, not schema; the decomposition backlog this produces, run as an ADLC reconnaissance step."
 ---
 
+## Learning objectives
+
+By the end of this chapter you can:
+
+- Explain why event storming finds seams from behavior — a timeline of past-tense domain events — rather than from schema, and what schema hides that behavior reveals.
+- Name and apply the event-storming color grammar (domain event, command, actor, aggregate, policy/reaction, read model, external system) in the order a real session introduces each one.
+- Distinguish the three storming altitudes (big-picture, process-level, design-level) and explain why conflating them produces a wall that's either too shallow or too narrow to act on.
+- Run a process-level storm of the checkout flow and produce its six-event timeline: `OrderPlaced`, `StockReserved`, `PaymentCaptured`/`PaymentDeclined`, `ShipmentDispatched`, `OrderConfirmed`, `NotificationSent`.
+- Explain how storming catches a conceptual-versus-technical ordering gap that a straight code read misses — checkout's business order ("place, then reserve") versus the code's execution order ("reserve, then place").
+- Map each event-boundary gap on the wall to the specific extraction chapter and mechanism that cuts it (CDC backfill, choreographed saga, orchestrated saga, transactional outbox).
+- Explain why a finished wall only answers *where* a seam is, not *in what order* to cut it, setting up Chapter 13's coupling analysis.
+
+## Why this matters
+
 Chapter 11 gave you the vocabulary — subdomain, bounded context, aggregate,
 ubiquitous language — and the promise that goes with it: if you can name the
 boundaries correctly, extraction becomes mechanical instead of archaeological.
@@ -372,6 +386,14 @@ given five seams, which one is safest to cut first, measured by how strongly
 coupled it is to everything around it — the modular-monolith and
 decomposed-database-monolith alternatives included, for the seams that turn
 out not to be worth cutting at all.
+
+## For deeper coverage
+
+- Alberto Brandolini, [EventStorming](https://www.eventstorming.com/) — the canonical reference for the facilitation technique and the color grammar this chapter applies directly to checkout.
+- Eric Evans, *Domain-Driven Design* (Addison-Wesley, 2003) — domain events and aggregates, the tactical vocabulary this chapter's wall produces independently and cross-checks against; see the [Reading List](/bibliography/).
+- Gregor Hohpe & Bobby Woolf, *Enterprise Integration Patterns* (Addison-Wesley, 2003) — the message-based choreography this chapter's "whenever X then issue Y" policy stickies anticipate.
+- Chris Richardson, *Microservices Patterns* (Manning, 2018) — the saga patterns the wall's policy stickies become once payment's and shipping's seams are actually cut.
+- Cloud Native Design Patterns, [Event-Driven](https://github.com/patterncatalyst/cloud-native-design-patterns/blob/main/_docs/05-event-driven.md) — the companion book's treatment of event-driven architecture, the target shape this storm's policies move toward.
 
 ---
 

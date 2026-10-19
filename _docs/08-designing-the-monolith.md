@@ -5,6 +5,20 @@ part: "The Reference Monolith"
 description: "The six bounded contexts as one Spring Boot deployable: domain model, layered modules, single shared schema, REST API, and seed data."
 ---
 
+## Learning objectives
+
+By the end of this chapter you can:
+
+- Explain why the monolith's six bounded contexts (order, inventory, payment, shipping, notification, review) are split along package lines, and name the conceptual boundary each one models.
+- Read the controller-service-repository layering shared across all five resident contexts and explain why it has no hexagonal ports yet.
+- Trace `OrderService#placeOrder` call by call and explain how the pessimistic write lock in `InventoryService#reserve` prevents two concurrent checkouts from overselling the same SKU.
+- Identify where cents-as-`long` currency representation, `@Enumerated(EnumType.STRING)`, and a cascading `@OneToMany` with `orphanRemoval` are used, and state the bug each one avoids.
+- Explain why `ddl-auto: validate` plus Flyway, not Hibernate, owning the schema is a deliberate choice that recurs throughout the book.
+- Recognize which Spring framework choices (Spring MVC, Spring Data JPA, Spring Security) were made specifically because of the Quarkiverse Spring-compatibility bridge, and what that buys a future Phase A lift.
+- Read the shared-schema ER diagram and name the cross-context foreign keys that Chapter 9 tags as smells and Chapters 18/19 later cut.
+
+## Why this matters
+
 Chapter 7 proved the loop by running it once, end to end, on a real
 extraction. This chapter builds the system that loop will spend the rest of
 this book strangling. Before anything can be modernized, it has to exist as
@@ -542,6 +556,13 @@ Chapter 9, "The Deliberate Smells," takes the six `SMELL[ch.NN]` comments
 scattered through this code and turns them into a deliberate catalogue —
 naming each one precisely and pointing, for the first time in this book, at
 the exact chapter that will cure it.
+
+## For deeper coverage
+
+- Sam Newman, *Monolith to Microservices* (O'Reilly, 2019) — why a believable "before" system, not a strawman, is the right starting point for any extraction; see the [Reading List](/bibliography/).
+- Eric Evans, *Domain-Driven Design* (Addison-Wesley, 2003) — the bounded-context vocabulary this chapter's six packages anticipate, named explicitly once Chapter 11 arrives.
+- [Quarkus — Spring Data JPA compatibility guide](https://quarkus.io/guides/spring-data-jpa) — the mechanics behind the Phase A lift codetabs example this chapter closes with.
+- Martin Kleppmann, *Designing Data-Intensive Applications* (O'Reilly, 2017) — the shared-schema tradeoffs this chapter's ER diagram makes concrete, the starting point Chapters 18 and 19 unwind.
 
 ---
 
