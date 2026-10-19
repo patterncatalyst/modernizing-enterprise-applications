@@ -5,6 +5,20 @@ part: "The Reference Monolith"
 description: "Unit and Testcontainers integration tests plus the Newman contract collection that becomes the behavior-equivalence suite for every later extraction."
 ---
 
+## Learning objectives
+
+By the end of this chapter you can:
+
+- Explain the three-tier test pyramid — Mockito unit, `@WebMvcTest` slice, Testcontainers-backed `@DataJpaTest`/`@SpringBootTest` integration — and state the one question each tier answers that the others structurally can't.
+- Explain how Surefire and Failsafe split fast and slow tests by filename convention alone (`*Test` vs `*IT`), and name the one documented place that convention is fragile (`SixContextsSmokeTest`).
+- Read a Mockito unit test that proves call ordering and collaboration with every dependency mocked, and state precisely what it does not prove.
+- Define characterization (golden-master) testing and explain why a behavior-equivalence suite has to be captured against the unmodified monolith before any extraction begins.
+- Explain why the Newman collection's `baseUrl` variable and captured "before" values, rather than hardcoded numbers, let the same unedited collection run safely against both the monolith and a freshly extracted Quarkus service.
+- Explain how Testcontainers locates a Docker Engine runtime with zero project configuration, and the Ryuk resource-reaper gotcha that can make a test run hang.
+- State the equivalence gate's track record from Chapter 7 (the native-image defect, the routing-predicate bug) and explain why a green suite is necessary evidence but not sufficient evidence.
+
+## Why this matters
+
 Chapter 9 catalogued the smells planted in `examples/00-monolith/` —
 the god service, the shared schema, the one sprawling transaction. Planting a
 smell only has value if you can prove, later, that curing it didn't
@@ -537,6 +551,14 @@ Hexagonal,"** turns to the harder question this chapter's tests can verify
 but can't answer on their own: given everything the smells and the
 behavior-equivalence suite now make visible, where exactly does the first cut
 go?
+
+## For deeper coverage
+
+- Sam Newman, *Monolith to Microservices* (O'Reilly, 2019) — the discipline of capturing a system's actual behavior before any code moves, exactly what the Newman collection records against the unmodified monolith; see the [Reading List](/bibliography/).
+- [Testcontainers — Java documentation](https://java.testcontainers.org/) — the container-runtime discovery and Ryuk resource-reaper behavior this chapter's Tier 3 tests depend on.
+- [Newman — command-line collection runner](https://github.com/postmanlabs/newman) — the tool that runs the behavior-equivalence suite this chapter builds.
+- Chris Richardson, *Microservices Patterns* (Manning, 2018) — the bar an extracted service has to clear, measured the same black-box way this chapter's equivalence gate measures it.
+- Martin Kleppmann, *Designing Data-Intensive Applications* (O'Reilly, 2017) — the durability guarantees this chapter's Tier 3 tests pin down before Chapter 22's ACID-to-ACD shift removes them.
 
 ---
 

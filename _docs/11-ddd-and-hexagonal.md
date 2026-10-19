@@ -5,6 +5,20 @@ part: "Finding the Seams"
 description: "Subdomains, bounded contexts, context mapping, aggregates, and domain events — keeping protocols out of the domain core so extraction is mechanical."
 ---
 
+## Learning objectives
+
+By the end of this chapter you can:
+
+- Classify a subdomain as core, supporting, or generic and explain why that classification predicts this book's own extraction order before the roadmap ever states it.
+- Explain why the monolith's shared `common` package and single Postgres schema violate a bounded context's defining property: a private model and a public contract.
+- Use context-mapping vocabulary (shared kernel, customer/supplier, conformist, anti-corruption layer) to diagnose the order-to-inventory relationship as an undecided conformist coupling rather than a deliberate choice.
+- Distinguish a value-object snapshot from a live entity reference inside an aggregate, using `OrderItem`'s correct `priceCents` field and its incorrect `inventoryItem` reference.
+- Explain hexagonal architecture's ports-and-adapters discipline, and why it makes an already-decided boundary cheap to cut rather than substituting for the decision of where the boundary goes.
+- Read Review's Phase A/B diff and explain why zero outbound edges to sibling contexts, not a textbook port interface, is what actually made its extraction cheap.
+- Reconstruct the book's extraction order (review, notification, inventory, payment/shipping, order) from subdomain classification, context mapping, and outbound-edge counting alone.
+
+## Why this matters
+
 Chapter 9 catalogued five smells still standing in `examples/00-monolith/` and
 named, for each one, the chapter that will cut it. Chapter 10 built the
 behavior-equivalence suite that will prove each cut preserved behavior. Both
@@ -463,6 +477,13 @@ then builds the concrete fix this chapter only named: a Camel message
 translator and content enricher sitting at exactly the order↔inventory seam,
 turning the conformist relationship diagnosed here into the customer/supplier
 contract it should have been from the start.
+
+## For deeper coverage
+
+- Eric Evans, *Domain-Driven Design* (Addison-Wesley, 2003) — subdomains, bounded contexts, context mapping, and the anti-corruption layer this entire chapter is built on; see the [Reading List](/bibliography/).
+- Sam Newman, *Building Microservices* (2nd ed., O'Reilly, 2021) — service boundaries and integration styles, the operational counterpart to DDD's conceptual boundaries.
+- Cloud Native Design Patterns, [Appendix F: DDD & Hexagonal Architecture](https://github.com/patterncatalyst/cloud-native-design-patterns/blob/main/_docs/19-appendix-f-ddd-hexagonal.md) — the companion book's treatment of ports and adapters, applied here to the monolith's own code.
+- Gregor Hohpe & Bobby Woolf, *Enterprise Integration Patterns* (Addison-Wesley, 2003) — the message translator and content enricher, the concrete mechanism Chapter 16 uses to build the missing anti-corruption layer.
 
 ---
 

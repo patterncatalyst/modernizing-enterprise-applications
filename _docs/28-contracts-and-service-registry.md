@@ -5,6 +5,19 @@ part: "Communication & Contracts"
 description: "Schema/API/shared-data-type registry use cases and enterprise requirements; Apicurio with Avro/Protobuf/JSONSchema/OpenAPI/AsyncAPI."
 ---
 
+## Learning objectives
+
+By the end of this chapter you can:
+
+- Explain what problem a schema registry solves that a hand-maintained JSON contract cannot — centralized governance and compatibility enforcement with teeth — and why `paymentMethod` silently drifted out of notification-service's copy of `OrderPlacedEvent`.
+- Author an Avro `.avsc` schema that is a field-for-field mirror of an existing Java record, including a logical type (`timestamp-millis`) that documents a field's meaning the Java record only carried in a comment.
+- Wire `quarkus-avro` and `quarkus-apicurio-registry-avro` entirely through `application.properties` — connector-level registry URL, `auto-register`, `use-specific-avro-reader` — with no custom serializer class.
+- Trace the register/serialize/deserialize flow: auto-registration on first publish, a global schema id prefixed onto the wire format, and a consumer-side lookup of that id against the registry.
+- Configure an Apicurio compatibility rule (BACKWARD, FORWARD, FULL) and predict whether a given schema evolution — a new field with a default versus a retyped existing field — will be accepted or rejected at registration time.
+- Justify why this chapter proves the registry as an isolated, parallel demonstrator rather than retrofitting the live `order.placed` topic, and name what a real cutover would additionally require.
+
+## Why this matters
+
 Chapter 17 introduced `order.placed` as a JSON Kafka event and, in the same
 breath, introduced a cost this book has been carrying ever since: there is no
 shared module between any two Maven reactors in this project, so a wire
@@ -615,6 +628,14 @@ that service — and the seven others this project now runs, counting this
 chapter's own demonstrator and the strangler proxy — actually gets deployed:
 containers, image builds, and the first steps toward the Kubernetes substrate
 Part 9 stands this whole system on.
+
+## For deeper coverage
+
+- Martin Kleppmann, *Designing Data-Intensive Applications* (O'Reilly, 2017) — the encoding-and-evolution treatment this chapter's BACKWARD-compatibility test case is a direct worked example of; see the [Reading List](/bibliography/).
+- Gregor Hohpe & Bobby Woolf, *Enterprise Integration Patterns* (Addison-Wesley, 2003) — the shared-contract thinking behind treating a message's schema as a first-class, governed artifact rather than three authors' private understanding.
+- [Apache Avro — Specification](https://avro.apache.org/docs/current/specification/) — the logical types and schema-resolution/type-promotion rules this chapter's `timestamp-millis` field and `totalCents` retype test both depend on.
+- [Quarkus — Using Apache Kafka with Schema Registry and Avro](https://quarkus.io/guides/kafka-schema-registry-avro) — the `quarkus-avro`/`quarkus-apicurio-registry-avro` wiring this chapter's `application.properties` block follows.
+- Cloud Native Design Patterns, [API Registry](https://github.com/patterncatalyst/cloud-native-design-patterns/blob/main/_docs/09-api-registry.md) — the companion book's treatment of registry-governed contracts, format-agnostic across Avro, Protobuf, and OpenAPI/AsyncAPI.
 
 ---
 

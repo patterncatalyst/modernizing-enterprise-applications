@@ -5,6 +5,20 @@ part: "Communication & Contracts"
 description: "Config, Fault Tolerance, Health, Metrics, OpenAPI, REST Client, JWT; build-time optimization, native image, and the dev-mode inner loop."
 ---
 
+## Learning objectives
+
+By the end of this chapter you can:
+
+- Audit which MicroProfile capabilities (Config, Fault Tolerance, Health, Metrics, OpenAPI, REST Client, Security) a service actually wires in versus which ones Quarkus merely makes available through a dependency sitting in `pom.xml`.
+- Explain SmallRye Config's `@ConfigProperty` mechanism and profile-aware (`%dev`/`%prod`/`%test`) properties, and how they replace Spring's `@Value`-based configuration without changing the underlying key or default.
+- Identify why this project uses manual `withDeadlineAfter` gRPC deadlines and REST client connect/read timeouts instead of MicroProfile Fault Tolerance annotations, and what adding `@CircuitBreaker` would require once traffic justified it.
+- Explain the MicroProfile Health surface (`/q/health/live`, `/q/health/ready`, `/q/health/started`) and how SmallRye Reactive Messaging's own broker-connectivity check rolls into readiness automatically.
+- Recognize the GraalVM native-image closed-world reflection gap and why `@RegisterForReflection` is the fix for a DTO reachable only through a generic `Response` return type.
+- Distinguish HTTP Basic plus `@RolesAllowed` from JWT/OIDC token-based identity, and state why securing one route is not the same claim as securing a system.
+- Read a capability-by-capability "chassis scorecard" that separates used, partially used, and deferred, and explain why deferred is a stated choice rather than an oversight.
+
+## Why this matters
+
 This chapter introduces no new extraction and no new runnable example. It
 names the chassis every service from Chapter 15 on was built on top of, and
 it audits — capability by capability, against this frontmatter's own menu —
@@ -634,6 +648,14 @@ service registry a system this size eventually needs once "whichever base
 URL is in `application.properties` today" stops being a sufficient answer
 for who's allowed to call whom, and with what guarantee the shape won't
 change underneath them.
+
+## For deeper coverage
+
+- [Quarkus — Configuration guide](https://quarkus.io/guides/config) — the `@ConfigProperty`/profile mechanism (`%dev`/`%prod`/`%test`) this chapter's Config section shows in six services.
+- [MicroProfile](https://microprofile.io/) — the spec family (Config, Fault Tolerance, Health, Metrics, OpenAPI, REST Client, JWT) this chapter audits capability by capability.
+- Michael Nygard, *Release It!* (2nd ed., Pragmatic Bookshelf, 2018) — the stability patterns (timeouts, circuit breakers, bulkheads) this chapter names as available and deliberately not yet adopted; see the [Reading List](/bibliography/).
+- [Quarkus — Native reference guide](https://quarkus.io/guides/native-reference) — the closed-world reflection model behind the `@RegisterForReflection` fix on six services' `ApiError`.
+- Cloud Native Design Patterns, [Security](https://github.com/patterncatalyst/cloud-native-design-patterns/blob/main/_docs/12-security.md) — the companion book's treatment of token-based identity, the JWT/OIDC capability this chapter leaves deferred.
 
 ---
 

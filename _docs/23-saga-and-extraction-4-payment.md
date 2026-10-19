@@ -6,6 +6,20 @@ description: "ACID gives way to ACD; checkout's synchronous 201/402 contract bec
 duration: 35 minutes
 ---
 
+## Learning objectives
+
+By the end of this chapter you can:
+
+- Explain how payment's extraction retires the last request-thread crutch from SMELL[ch.22] — `OrderService#placeOrder` stops calling payment at all, so there is no `catch` block left to compensate from.
+- Define choreography versus orchestration as two saga control styles, and explain why this chapter picks choreography — no coordinator, every participant reacting to an event and emitting the next one.
+- Explain why the checkout contract changes from `201 Created` with a terminal status to `202 Accepted` with a pollable `Location`, and why `202` is the accurate status code for a decision not yet known at response time.
+- Trace the two-outbox event topology (`order.placed` to `payment.captured`/`payment.declined`) and identify `OrderSagaListener` as the monolith's first Kafka consumer.
+- Explain how compensation moves from an in-line `catch` to `OrderSagaListener#onPaymentDeclined`, and why the pre-handoff and post-handoff compensation paths are disjoint by construction, not convention.
+- Apply the two-layer idempotency pattern (application check plus a database unique constraint) at both hops of the chain, and explain how it bounds the compensating `Release` to firing at most once per order.
+- Use a negative check — killing the payment consumer, disabling the compensation loop — to prove a bounded-wait assertion is testing the real pipeline rather than passing by coincidence.
+
+## Why this matters
+
 Chapter 19 took the smallest possible bite out of saga compensation: one
 reservation, one compensating `Release`, fired from an in-line `catch` block
 on the same request thread that discovered the failure. That was a narrow
@@ -504,6 +518,14 @@ order itself last, inherits both patterns at once — it is the aggregate this
 chapter's saga state already lives on, and the context every remaining
 reaction-and-compensation machinery in this part of the book ultimately
 answers to.
+
+## For deeper coverage
+
+- Chris Richardson, *Microservices Patterns* (Manning, 2018) — the saga pattern and its choreography-based coordination style, which this chapter implements end to end; see the [Reading List](/bibliography/).
+- Gregor Hohpe & Bobby Woolf, *Enterprise Integration Patterns* (Addison-Wesley, 2003) — the publish-subscribe and event-message vocabulary the Kafka choreography is built from.
+- Sam Newman, *Monolith to Microservices* (O'Reilly, 2019) — the incremental extraction playbook, including the synchronous-to-asynchronous contract shift this chapter makes.
+- [RFC 9110 — HTTP Semantics, §15.3.3, 202 Accepted](https://www.rfc-editor.org/rfc/rfc9110.html#name-202-accepted) — the canonical definition of the status code this chapter's checkout contract change relies on.
+- Cloud Native Design Patterns, [Appendix D — Sagas](https://github.com/patterncatalyst/cloud-native-design-patterns/blob/main/_docs/17-appendix-d-sagas.md) — the companion book's saga appendix, matched directly to this chapter's choreographed implementation.
 
 ---
 

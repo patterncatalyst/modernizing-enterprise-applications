@@ -5,6 +5,20 @@ part: "Data Across the Seam"
 description: "The consistency just given up — dirty reads, lost updates, non-repeatable reads — where it bites and how to bound it."
 ---
 
+## Learning objectives
+
+By the end of this chapter you can:
+
+- State SMELL #3 precisely — one in-process `@Transactional` in `OrderService#placeOrder` spanning order, inventory, payment, and shipping — and explain why it "works" today only because Postgres gives atomic rollback for free.
+- Distinguish the two tiers of evidence this project uses to prove a rollback actually happens: a mocked unit test showing *orchestration order* versus the Newman "Payment-Declined" scenario showing a *real, observed* Postgres rollback.
+- Explain why two-phase commit is rejected as the fix for cross-service atomicity — a blocking coordinator, locks held across two network round-trips, and a recentralization of operational ownership.
+- Define ACD (Atomic locally, Consistent eventually, Durable, isolation dropped) and its sibling term BASE, and state precisely what survives decomposition and what has to be rebuilt by hand.
+- Explain a compensating action as a new, hand-written, forward-moving transaction — not a database rollback — and why nothing makes it fire automatically once a saga spans services.
+- Connect CAP and PACELC to a saga's compensating-action model, and explain why "correctness" under ACD means bounded convergence rather than instantaneous, globally agreed state.
+- Identify the classic isolation anomalies (dirty read, lost update, non-repeatable read) that reappear once services commit independently, and explain why inventory's stock reservation stays synchronous while payment and shipping get the full saga treatment.
+
+## Why this matters
+
 Chapter 21 gave the gateway's read side a model that tolerates staleness —
 CQRS accepts that a read model can lag its write model by a bounded
 window, because the alternative (reading and writing the same normalized
@@ -442,6 +456,13 @@ this chapter just took away. Chapter 24 builds the same guarantee again, for
 Shipping, through a central orchestrator instead of peer-to-peer events —
 the same ACD outcome, reached by the opposite control style, on the same
 codebase.
+
+## For deeper coverage
+
+- Martin Kleppmann, *Designing Data-Intensive Applications* (O'Reilly, 2017) — two-phase commit's named failure modes and the CAP/PACELC framing this chapter leans on directly; see the [Reading List](/bibliography/).
+- Chris Richardson, *Microservices Patterns* (Manning, 2018) — the saga pattern and compensating-transaction vocabulary this chapter's ACD argument sets up for Chapters 23 and 24.
+- Sam Newman, *Monolith to Microservices* (O'Reilly, 2019) — the "what you give up" framing for splitting a shared database, including the loss of cross-service transactions.
+- Cloud Native Design Patterns, [Appendix D — Sagas](https://github.com/patterncatalyst/cloud-native-design-patterns/blob/main/_docs/17-appendix-d-sagas.md) — the companion book's own treatment of compensating-action saga design.
 
 ---
 *Verification status: not applicable — this is a conceptual chapter with no

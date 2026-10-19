@@ -5,6 +5,19 @@ part: "Data Across the Seam"
 description: "Transactional outbox vs. dual-write; idempotent consumers; ordering and deduplication."
 ---
 
+## Learning objectives
+
+By the end of this chapter you can:
+
+- Explain the dual-write problem structurally — two independent writes to two independent systems, with no sequencing that closes the gap between them — and why "exactly-once" is marketing language for at-least-once delivery paired with idempotent processing.
+- Trace all four pieces of an outbox pipeline (the row, the transactional write, the polling relay, and the idempotent consumer) and explain why `published_at` must be stamped only after the broker acknowledges the send, never before.
+- Implement two independent layers of consumer idempotency — an application-level check-then-insert and a database partial unique index — and justify why neither layer alone is sufficient.
+- Key outbox events by aggregate id to get in-order delivery within one aggregate without sacrificing a broker's ability to parallelize across aggregates.
+- Tune a relay's poll interval as an explicit latency-versus-read-load trade-off, and name the retention and poison-message gaps this project leaves open as future hardening rather than solved problems.
+- Decide between a polling relay and a log-based CDC relay based on a specific, named latency or read-load requirement, rather than defaulting to the more sophisticated-looking mechanism.
+
+## Why this matters
+
 Chapter 17 introduced the transactional outbox at the exact moment the
 monolith needed it: the Notification extraction had to stop running a
 third-party-adjacent side effect inside checkout's own `@Transactional`, and
@@ -553,6 +566,14 @@ kept current — which is precisely the CQRS read side that chapter
 constructs. *Transaction Log Tailing, CDC & Extraction 3 — Inventory*
 is the chapter that actually puts log-based CDC into production in this
 project, the alternative relay strategy previewed above.
+
+## For deeper coverage
+
+- Martin Kleppmann, *Designing Data-Intensive Applications* (O'Reilly, 2017) — the dual-write problem and the effectively-once (at-least-once plus idempotent) framing this entire chapter is built on.
+- Chris Richardson, *Microservices Patterns* (Manning, 2018) — the transactional outbox pattern this chapter hardens past Chapter 17's introduction into a production-grade treatment.
+- Gregor Hohpe & Bobby Woolf, *Enterprise Integration Patterns* (Addison-Wesley, 2003) — the idempotent-receiver pattern and the message-key-driven ordering discipline behind this chapter's two-layer dedupe and aggregate-id keying.
+- [Debezium — Connector documentation](https://debezium.io/documentation/) — the canonical reference for the log-based CDC relay this chapter compares against the polling relay it implements.
+- [Apache Kafka — Message Delivery Semantics](https://kafka.apache.org/documentation/#semantics) — the canonical definition of at-least-once and exactly-once delivery this chapter's "effectively-once" framing refines.
 
 ---
 
