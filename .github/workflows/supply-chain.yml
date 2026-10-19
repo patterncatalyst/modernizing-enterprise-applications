@@ -15,7 +15,7 @@ name: Supply-chain gate
 
 on:
   push:
-    branches: ["**"]
+    branches: [main]
     paths:
       - "examples/07-order-service/**"
       - "examples/10-supply-chain/**"
