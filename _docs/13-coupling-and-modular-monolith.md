@@ -5,6 +5,20 @@ part: "Finding the Seams"
 description: "Khononov's three dimensions of coupling; the modular monolith and decomposed-DB monolith as legitimate destinations; the distributed-monolith trap."
 ---
 
+## Learning objectives
+
+By the end of this chapter you can:
+
+- State Constantine's cohesion/coupling pairing and explain why coupling, not cohesion, is the dimension this book builds a sequencing strategy on.
+- Place each of Chapter 9's five remaining smells on the Constantine coupling ladder (content, common, control, stamp, data) with its concrete code example.
+- Compute afferent (Ca) and efferent (Ce) coupling for a context from its dependency graph and explain why low-Ca, low-Ce contexts should extract first.
+- Reconstruct the six-context extraction ranking (review, notification, inventory, payment/shipping, order) purely from Ca/Ce scores, independent of narrative preference.
+- Explain Khononov's strength/distance/volatility balancing-coupling model and why splitting strong, volatile coupling across a network produces a distributed monolith instead of a fix.
+- Describe the three disciplines of a modular monolith (package/build-module isolation, no cross-module entity references, module-owned schemas) and when that destination is preferable to further distribution.
+- Recognize the distributed-monolith trap and state the precondition — an ACL, an outbox, a CDC pipeline, or a saga already in place — every extraction in this book satisfies before cutting a seam.
+
+## Why this matters
+
 Chapter 11 gave you bounded contexts and aggregates as the *conceptual*
 vocabulary for a seam, and Chapter 12 gave you event storming as a *process*
 for discovering where those seams sit in a system that never shipped with a
@@ -512,6 +526,14 @@ chapter with the mechanism — Fowler's strangler fig, the proxy, and the
 feature-flagged cutover — that turns this ranked extraction plan into six
 real, individually reversible migrations, starting with the context this
 chapter's own scoring already named as the obvious first cut.
+
+## For deeper coverage
+
+- Sam Newman, *Building Microservices* (2nd ed., O'Reilly, 2021) — service boundaries and the distributed-monolith failure mode this chapter names precisely; see the [Reading List](/bibliography/).
+- Martin Kleppmann, *Designing Data-Intensive Applications* (O'Reilly, 2017) — the data-ownership tradeoffs behind module-owned schemas, this chapter's lightest-weight version of "own your data."
+- Eric Evans, *Domain-Driven Design* (Addison-Wesley, 2003) — bounded contexts as the conceptual boundaries this chapter's coupling metric scores.
+- Cloud Native Design Patterns, [Anti-Patterns](https://github.com/patterncatalyst/cloud-native-design-patterns/blob/main/_docs/13-anti-patterns.md) — the companion book's catalogue of the distributed-monolith failure mode this chapter warns against by name.
+- Chris Richardson, *Microservices Patterns* (Manning, 2018) — the saga and API-composition patterns that have to exist before any of this chapter's ranked extractions can safely distribute.
 
 ---
 *Verification status: not applicable — this is a conceptual chapter with no

@@ -5,6 +5,20 @@ part: "Coordinating Across Services"
 description: "Partial-failure taxonomy; timeouts, retry + jitter, circuit breaker, bulkhead, load shedding; SmallRye Fault Tolerance as the Quarkus chassis."
 ---
 
+## Learning objectives
+
+By the end of this chapter you can:
+
+- State Kleppmann's partial-failure taxonomy — a network call can return, throw, or never return at all — and explain why a bare gRPC call inherits an ambiguity an in-process method call never had.
+- Explain what `RemoteInventoryClient`'s `withDeadlineAfter` deadline buys (a bounded wait, a fast and loud failure) and why a `DEADLINE_EXCEEDED` must map to a `500`, never to `InsufficientStockException`'s `409`.
+- State the rule "a retry is only as safe as the idempotency behind it," and trace it through the outbox relay's retry-by-omission paired with two-layer idempotent consumers (check-then-insert plus a unique index; the CDC consumer's `ON CONFLICT` upsert).
+- Explain what a circuit breaker and a bulkhead would add beyond a deadline, where each would wrap in this codebase, and why this project deliberately defers both rather than adding them speculatively.
+- Distinguish a compensating action from a database rollback, and explain why `compensateRemoteReservations` is the saga-lite seed that Chapters 23 and 24 scale up to full sagas.
+- Explain the deliberate rejection of graceful degradation at the strangler proxy (`throwExceptionOnFailure=false`), and the calibration between failures that tolerate staleness and failures — like overselling stock — that must fail hard.
+- Explain why a negative check (kill the dependency, confirm RED, restart, confirm GREEN) is the only evidence in this book's toolkit that converts a resilience claim from asserted to demonstrated.
+
+## Why this matters
+
 Chapter 22 named the guarantee decomposition takes away — one process, one
 write-ahead log, one atomic commit spanning four bounded contexts — and
 Chapter 19 already showed you the first piece of machinery built to live
@@ -605,6 +619,14 @@ EIP. Both inherit the deadline discipline, the idempotency discipline, and
 the negative-check discipline this chapter named — and both have to decide,
 for themselves, exactly where their own circuit breakers and dead-letter
 paths would go, and exactly how long they can defer building them.
+
+## For deeper coverage
+
+- Michael Nygard, *Release It!* (2nd ed., Pragmatic Bookshelf, 2018) — the circuit breaker, bulkhead, and cascading-failure vocabulary this chapter's taxonomy is built from; see the [Reading List](/bibliography/).
+- Martin Kleppmann, *Designing Data-Intensive Applications* (O'Reilly, 2017) — "The Trouble with Distributed Systems," this chapter's explicit source for the partial-failure taxonomy.
+- Sam Newman, *Building Microservices* (2nd ed., O'Reilly, 2021) — the risk of an unbounded synchronous call at a service boundary, the argument behind the deadline on `RemoteInventoryClient`.
+- [Quarkus — SmallRye Fault Tolerance](https://quarkus.io/guides/smallrye-fault-tolerance) — the official guide to `@Timeout`, `@CircuitBreaker`, and `@Bulkhead`, the chassis named here and deliberately not yet wired in.
+- Cloud Native Design Patterns, [Observability](https://github.com/patterncatalyst/cloud-native-design-patterns/blob/main/_docs/11-observability.md) — the companion book's treatment of health checks and the readiness surface `quarkus-smallrye-health` already provides.
 
 ---
 

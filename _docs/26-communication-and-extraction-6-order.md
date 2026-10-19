@@ -6,6 +6,20 @@ description: "REST, gRPC, async sagas, and GraphQL aggregation side by side; the
 duration: 45 minutes
 ---
 
+## Learning objectives
+
+By the end of this chapter you can:
+
+- Explain why order had to be extracted last — it is both the god service reaching into every other context and the last context still inside SMELL[ch.22]'s shared transaction — and name the five architectural decisions that shape this extraction.
+- Trace what disappeared from `placeOrder`'s body (direct calls to payment, shipping, notification) versus what remains (gRPC reservation, persist, outbox write), and explain why what remains is the CQRS write model.
+- Explain the same-schema `order_view` projection, how `OrderViewProjector` keeps it inside the same transaction as every write, and precisely what read-after-write consistency it does and does not buy.
+- Use a negative check (`OrderViewProjectionDisabledTest` and its live cutover repeat) to prove reads come only from the projection and never silently fall back to the write model.
+- Compare the four communication styles now standing side by side in one system — REST, gRPC, asynchronous choreographed sagas, and GraphQL aggregation — and state the distinct problem each one solves.
+- Explain how `examples/08-graphql-gateway` aggregates five services through lazy `@Source` resolvers while owning no data itself, and why bounding query depth/complexity and fixing downstream targets in configuration matter for an aggregation layer's attack surface.
+- Explain how freezing, rather than deleting, the decommissioned monolith lets the equivalence suite convert into a contract suite with zero assertions changed, and why reversibility is proven exhaustively right before the one irreversible decommission step.
+
+## Why this matters
+
 Every extraction before this one carved a single slice off `OrderService` and
 left the rest of it standing. Chapter 15 removed review. Chapter 17 removed
 notification. Chapter 19 removed inventory behind a gRPC seam. Chapter 23
@@ -530,6 +544,14 @@ blocks (configuration, fault tolerance, health, metrics, the REST client)
 that every one of these six services has been using since the moment each
 one was scaffolded, named and explained in their own right for the first
 time.
+
+## For deeper coverage
+
+- Chris Richardson, *Microservices Patterns* (Manning, 2018) — the CQRS and API composition patterns both central to this chapter's order extraction and gateway; see the [Reading List](/bibliography/).
+- Martin Kleppmann, *Designing Data-Intensive Applications* (O'Reilly, 2017) — the derived-data and materialized-view framing underpinning the same-transaction `order_view` projection.
+- Martin Fowler, [*StranglerFigApplication*](https://martinfowler.com/bliki/StranglerFigApplication.html) — the pattern this chapter's cutover completes, once the edge router has nowhere left to be conditional.
+- Sam Newman, *Monolith to Microservices* (O'Reilly, 2019) — the overall migration playbook's guidance on a final extraction and a decommissioned system worth preserving, not deleting.
+- Cloud Native Design Patterns, [Communications](https://github.com/patterncatalyst/cloud-native-design-patterns/blob/main/_docs/02-communications.md) — the companion book's treatment of the REST, gRPC, event-driven, and aggregation styles this chapter puts side by side.
 
 ---
 

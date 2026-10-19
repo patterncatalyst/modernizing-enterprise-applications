@@ -5,6 +5,20 @@ part: "Operating the Modernized System"
 description: "Istio (mesh/mTLS/canary), Kiali, OpenTelemetry + the LGTM stack, spans/causality/context propagation, and cross-context debugging — on minikube."
 ---
 
+## Learning objectives
+
+By the end of this chapter you can:
+
+- Explain the sidecar mechanism a service mesh uses to add mTLS and observability to every request with zero application-code changes, and why Istio's injection webhook matches a Deployment's pod-template **label**, not an annotation.
+- Configure a namespace-wide Istio `PeerAuthentication` policy, roll it out `PERMISSIVE` before `STRICT`, and verify the live enforcement with `istioctl x describe pod` rather than trusting the committed YAML.
+- Distinguish the class of bugs a headless `kubectl kustomize`/`dry-run` pass cannot catch (an entrypoint bypassed by `command:`, a uid mismatch, a DNS bootstrap deadlock, a probe timeout too short for the command it runs) from what a live `kubectl apply` reveals.
+- Explain why Envoy produces a trace span for every meshed hop regardless of whether the application inside it is instrumented, and why mesh tracing alone can amplify a trace but never start one or carry its business-level context.
+- Instrument a Quarkus service for distributed tracing by adding `quarkus-opentelemetry` and three properties, with no manual span-creation code anywhere in the service's business logic.
+- Read a captured, causally connected distributed trace spanning REST, gRPC, and Envoy sidecar hops, and distinguish application-level spans from Envoy-only spans produced by an uninstrumented service.
+- Identify what this chapter's observability setup does not cover — Loki log shipping and Kafka saga-hop tracing — and explain why those gaps are named in the verification footer rather than quietly omitted.
+
+## Why this matters
+
 Chapter 29 closed with a specific, named gap: every manifest under
 `deploy/k8s/` had been verified **headlessly** — `kubectl kustomize` rendered
 clean, `kubectl apply --dry-run=client` validated 24 objects — and nothing
@@ -591,6 +605,14 @@ Chapter 31 is where this cluster's manifests stop being something applied
 by hand from a laptop: the GitHub Actions workflows that build these eight
 images, push them somewhere real, and roll a change through this same `mea`
 namespace without a person running `kubectl apply -k` themselves.
+
+## For deeper coverage
+
+- [Istio documentation — Mutual TLS Migration](https://istio.io/latest/docs/tasks/security/authentication/mtls-migration/) — the `PERMISSIVE`-before-`STRICT` rollout sequence this chapter's `PeerAuthentication` policy follows.
+- [Istio documentation — Observability](https://istio.io/latest/docs/concepts/observability/) — the sidecar-produced access logs, metrics, and trace spans this chapter reads off `istio-proxy` without any application involvement.
+- [OpenTelemetry documentation — Context Propagation](https://opentelemetry.io/docs/concepts/context-propagation/) — why a mesh can amplify a trace already underway but cannot start one or carry business-level context on its own.
+- [Quarkus — OpenTelemetry guide](https://quarkus.io/guides/opentelemetry) — the `quarkus-opentelemetry` extension and the three properties this chapter uses to instrument three services with no manual span code.
+- Cloud Native Design Patterns, [Observability](https://github.com/patterncatalyst/cloud-native-design-patterns/blob/main/_docs/11-observability.md) — the companion book's treatment of the trace/metric/log pipeline this chapter builds on minikube.
 
 ---
 

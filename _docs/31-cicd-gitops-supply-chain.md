@@ -6,6 +6,19 @@ description: "The GitHub Actions workflows this repo actually ships (the equival
 duration: 35 minutes
 ---
 
+## Learning objectives
+
+By the end of this chapter you can:
+
+- Enumerate the seven behavior gates in `code-ci.yml` and explain why each is path-filtered against a specific seam's `examples/` directory rather than running on every push regardless of what changed.
+- Explain why this project's six flag-gated strangler cutovers constitute progressive delivery, and how an all-or-nothing reversible flag differs from a weighted-canary traffic split.
+- Build a CycloneDX software bill of materials with `syft`, and explain why a scanner should run against the SBOM rather than the artifact a second time.
+- Configure a policy-as-code gate (`policy.yaml`'s `fail-on` threshold) that turns a Critical or High CVE finding into a non-zero exit, and read a `grype` scan's severity tally for two differently-packaged artifacts.
+- Explain why a CVE scan is a point-in-time claim against a moving vulnerability database, and why that argues for running the supply-chain gate on every push rather than once at release.
+- Name the GitOps components this project deliberately does not run — an image-registry push, an Argo CD/Flux reconciliation loop, and Istio weighted canary — and the scope-discipline reason each is a named next step rather than a half-wired demo.
+
+## Why this matters
+
 Chapter 30 ended on a promise with a person still in the loop: every manifest
 under `deploy/k8s/` had been applied to minikube *by hand*, and the closing
 teaser pointed at "the GitHub Actions workflows that build these eight images,
@@ -303,6 +316,14 @@ nowhere else.
 Chapter 32 closes the book by re-walking the pattern map against the completed
 migration — which patterns earned their place, which were deliberately left on
 the shelf, and where the sensible horizons are.
+
+## For deeper coverage
+
+- [SLSA — Supply-chain Levels for Software Artifacts](https://slsa.dev/) — the provenance framework this chapter's SBOM-plus-scan-plus-policy gate is a concrete, if partial, instance of.
+- [CycloneDX](https://cyclonedx.org/) — the SBOM standard `syft` emits and `grype` scans in this chapter's `demo.sh` and CI workflow.
+- [Argo CD documentation](https://argo-cd.readthedocs.io/) — the pull-based GitOps operator this chapter names as a deferred next step rather than stands up.
+- Martin Fowler, [*StranglerFigApplication*](https://martinfowler.com/bliki/StranglerFigApplication.html) — the flag-gated, reversible cutover mechanism this chapter reframes directly as the book's actual progressive-delivery pattern.
+- Chris Richardson, *Microservices Patterns* (Manning, 2018) — independent deployability and per-service delivery pipelines, the broader pattern this chapter's seven path-filtered CI gates are one project's concrete answer to; see the [Reading List](/bibliography/).
 
 ---
 

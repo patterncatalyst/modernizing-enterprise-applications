@@ -5,6 +5,20 @@ part: "Data Across the Seam"
 description: "Debezium-style CDC/log-tailing to bridge the monolith's tables during transition; gRPC-first Inventory with a decomposed DB and CDC backfill."
 ---
 
+## Learning objectives
+
+By the end of this chapter you can:
+
+- Explain why a synchronous, mutating collaborator is harder to extract than a read-only leaf or an asynchronous consumer, and what breaks the instant the shared transaction no longer spans both sides of the write.
+- Design a gRPC contract with a deliberately divergent wire vocabulary (`stock_keeping_unit`/`on_hand_qty` versus `sku`/`quantityOnHand`) as a structural anti-corruption layer, not an incidental naming difference.
+- Configure Postgres logical replication for Debezium — `wal_level=logical`, the `pgoutput` plugin, and `REPLICA IDENTITY FULL` — and explain why each setting is required for change data capture to work at all.
+- Build an idempotent CDC consumer that upserts on the source's own primary key, absorbing Kafka's at-least-once redelivery of insert, update, and delete events without double-applying a change.
+- Replace a pessimistic-lock reservation with an atomic conditional `UPDATE` (`Reserve`) and its unconditional mirror (`Release`), and explain why the database's own row lock, not application code, is what serializes concurrent reservations.
+- Replace the free rollback a shared ACID transaction used to provide with an explicit compensating action on checkout failure, and verify the replacement with net-zero evidence captured across two genuinely independent databases.
+- Run a negative check across a cross-database seam and interpret a documented hybrid-state finding (CDC replication lag) as evidence to publish, not a defect to quietly paper over.
+
+## Why this matters
+
 Review left the monolith as a REST leaf with no synchronous collaborator and
 no mutation to protect. Notification left as an asynchronous consumer the
 checkout transaction never waited on, so turning it into an eventual-consistency
@@ -648,6 +662,15 @@ project's CQRS read side is finally built from the event stream these
 extractions have been feeding since Chapter 17 — and where the gRPC seam and
 the CDC-backfilled, now self-sufficient inventory database this chapter built
 become one of several services that read side has to federate.
+
+## For deeper coverage
+
+- [Debezium — Connector documentation](https://debezium.io/documentation/) — the canonical reference for the Postgres connector, snapshot modes, and WAL requirements this chapter configures directly.
+- [PostgreSQL — Logical Replication](https://www.postgresql.org/docs/current/logical-replication.html) — the canonical reference for `wal_level=logical`, the `pgoutput` plugin, and `REPLICA IDENTITY FULL`, the three settings this chapter's CDC pipeline depends on.
+- Martin Kleppmann, *Designing Data-Intensive Applications* (O'Reilly, 2017) — change data capture and log-based replication as a structural alternative to dual writes, the mechanism underlying this chapter's backfill.
+- Chris Richardson, *Microservices Patterns* (Manning, 2018) — saga-style compensation, the pattern this chapter's Reserve/Release pair is a first, minimal taste of before Part 7's full sagas.
+- Eric Evans, *Domain-Driven Design* (Addison-Wesley, 2003) — the anti-corruption layer this chapter's deliberately divergent gRPC wire vocabulary implements.
+- Cloud Native Design Patterns, [Stream Processing](https://github.com/patterncatalyst/cloud-native-design-patterns/blob/main/_docs/06-stream-processing.md) — the companion book's treatment of log-based stream processing underlying this chapter's Debezium pipeline.
 
 ---
 

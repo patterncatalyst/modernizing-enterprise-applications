@@ -5,6 +5,20 @@ part: "The Strangler Fig in Practice"
 description: "Fowler's pattern, the three steps, the proxy/redirection/shared-database variants, and the Camel strangler proxy used for cutover in this book."
 ---
 
+## Learning objectives
+
+By the end of this chapter you can:
+
+- Explain Fowler's strangler fig pattern as four ordered moves — intercept, route, incrementally replace, retire — and why retiring the old code before a cutover is proven is the single most common way an incremental migration loses its safety property.
+- Distinguish the Proxy, Redirection, and Shared-Database variants and name which question each one answers: how the routing decision gets made, versus whether data ownership has to move in the same step as code ownership.
+- Read the Camel content-based router in `StranglerProxyRoute.java` end to end — the `platform-http` consumer, the `choice()`/`when()`/`otherwise()` decision, and the `bridgeEndpoint=true`/`throwExceptionOnFailure=false` forwarding semantics that make it a transparent reverse proxy.
+- Explain why the cutover flag is read from configuration rather than baked into route code, and why that single design choice is what makes a cutover — and its reversal — a restart instead of a redeploy.
+- Diagnose the `startsWith '/reviews'` predicate bug and explain why a fully green, 49-of-49 behavior-equivalence suite could not catch it when both backends shared one table.
+- Design a stop-the-backend negative check that proves a routing decision is correct independent of whether two backends happen to produce identical responses.
+- Sequence a safe decommission: delete only the files the extraction actually owns, leave non-conflicting legacy pieces alone, defer the data cut, and flip the committed default only after every other check is green.
+
+## Why this matters
+
 Chapter 13 closed Part 4 with a ranked list, not a plan: six bounded
 contexts, scored by afferent and efferent coupling, from review's
 near-zero score to order's maximal one. A ranked list tells you which
@@ -438,6 +452,14 @@ meets its first real complication: an event consumer that cannot simply
 be reached by routing an inbound HTTP path, which is exactly the seam
 that forces this book's outbox and its first taste of event-driven
 cutover.
+
+## For deeper coverage
+
+- Sam Newman, *Monolith to Microservices* (O'Reilly, 2019) — the incremental, strangler-first migration playbook this whole book follows.
+- Martin Fowler, [*StranglerFigApplication*](https://martinfowler.com/bliki/StranglerFigApplication.html) — the canonical write-up of the pattern this chapter names and implements in Camel.
+- Gregor Hohpe & Bobby Woolf, *Enterprise Integration Patterns* (Addison-Wesley, 2003) — the content-based router the strangler proxy's `choice()`/`when()`/`otherwise()` route is built from.
+- Chris Richardson, [microservices.io — Strangler Application](https://microservices.io/patterns/refactoring/strangler-application.html) — a second, independent catalog entry for the same pattern, useful for cross-checking Fowler's narrative against a pattern-language framing.
+- Cloud Native Design Patterns, [Composition](https://github.com/patterncatalyst/cloud-native-design-patterns/blob/main/_docs/03-composition.md) — the companion book's treatment of fronting a system under migration with a composition layer, the same role this chapter's proxy plays.
 
 ---
 *Verification status: <span class="status status--verified">verified</span>. The Newman runs, the predicate bug, and the decommission sequence are drawn from `examples/01-strangler-proxy/`'s `CUTOVER.md` and `README.md`; the `StranglerProxyRoute.java` reading tracks the current route source, which Code CI exercises.*

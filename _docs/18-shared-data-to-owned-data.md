@@ -5,6 +5,19 @@ part: "Data Across the Seam"
 description: "The shared-data pattern and its limits; the cost of the shared schema; planning the split that the Inventory extraction will carry out."
 ---
 
+## Learning objectives
+
+By the end of this chapter you can:
+
+- Explain why shared-database coupling is harder to detect and break than any code-level smell, because a foreign key is a dependency the database enforces silently rather than one application code declares.
+- Weigh what database-per-service buys (independent deployability, scaling, and technology choice) against what it costs (live joins become network calls or event-fed read models; cross-service referential integrity disappears, replaced by eventual consistency the system must tolerate).
+- Apply the core denormalization move — replace a live foreign-key join with a point-in-time snapshot of the fields a context actually needs, or an explicit live call when the data must be current — and decide which fits a given relationship.
+- Reframe data duplication as a deliberate design choice rather than a normalization lapse, using Kleppmann's point that a cache, an index, a materialized view, and a denormalized copy are the same idea, and name what keeps each copy's staleness bounded.
+- Compare Review's deferred shared-schema choice against Notification's own-schema-from-day-one choice and state the two-writer/split-brain argument that decides correctly between them.
+- Describe a CDC-based backfill as an alternative to a big-bang schema cutover, and explain how an equivalence gate has to change once it must prove a new database is "the one really answering" rather than merely agreeing with a shared table.
+
+## Why this matters
+
 Chapter 13 scored the monolith's five remaining smells on the Constantine
 taxonomy and on afferent/efferent coupling, and it named shared-database
 coupling (`SMELL[ch.18]`) as the single worst offender in the system — common
@@ -432,6 +445,15 @@ decomposed data tier rather than merely optimistic about it.
   are the same decision made correctly under two different constraints — the
   clearest evidence in this repository for when deferring data ownership is
   defensible and when it isn't.
+
+## For deeper coverage
+
+- Martin Kleppmann, *Designing Data-Intensive Applications* (O'Reilly, 2017) — the derived-data framing ("a cache, an index, a materialized view, and a denormalized copy are the same idea") this chapter's duplication-as-deliberate-choice argument is built on.
+- Chris Richardson, *Microservices Patterns* (Manning, 2018) — the database-per-service pattern this chapter makes the case for before Chapter 19 implements it.
+- Sam Newman, *Building Microservices*, 2nd ed. (O'Reilly, 2021) — service boundaries and data ownership, the argument for why a split database is far harder to undo than a split deployable.
+- Eric Evans, *Domain-Driven Design* (Addison-Wesley, 2003) — the shared-kernel concept this chapter uses to describe `Customer`'s cross-context reach, and the bounded-context ownership this chapter argues every table should eventually have.
+- [Debezium — Connector documentation](https://debezium.io/documentation/) — the canonical reference for the change-data-capture mechanism this chapter previews and Chapter 19 implements.
+- Cloud Native Design Patterns, [Data](https://github.com/patterncatalyst/cloud-native-design-patterns/blob/main/_docs/04-data.md) — the companion book's treatment of data ownership and replication underlying this chapter's database-per-service argument.
 
 Chapter 19 picks this plan up and runs it against Inventory: a CDC
 connector tailing the monolith's write-ahead log, a backfill into a database

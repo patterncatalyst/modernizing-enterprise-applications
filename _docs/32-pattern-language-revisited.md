@@ -6,6 +6,19 @@ description: "The microservices pattern catalog re-walked against the completed 
 duration: 25 minutes
 ---
 
+## Learning objectives
+
+By the end of this chapter you can:
+
+- Re-evaluate each pattern this migration adopted — strangler fig, bounded contexts/anti-corruption layer, database-per-service, transactional outbox, CDC, CQRS, choreographed and orchestrated saga, GraphQL composition, schema registry, the chassis — against the specific pain it solved, and state why it earned its place.
+- Explain why a big-bang rewrite, full event sourcing, LRA/Narayana, and a GitOps operator were deliberately deferred, and name the pain each would address if this system ever had it.
+- Recognize the over-decomposition anti-pattern — nanoservice sprawl collapsing into a distributed monolith — and apply the rule that a context splits further only when a real seam demands it, never to hit a service count.
+- Trace the ADLC's Frame/Plan/Generate/Verify/Reconcile cycle across the whole migration and explain why the behavior-equivalence suite was the load-bearing Verify-phase artifact that made agent-driven change safe to merge.
+- Read the completed system's pattern scorecard by concern (decomposition, data, communication, reliability/chassis) and distinguish "used," "used with a scoping note," and "deferred with a stated reason."
+- Name the book's remaining clearly-scoped horizons — closing the delivery loop, durable sagas, observability's remaining corners, security past the supply-chain gate — as a bounded list rather than an open-ended todo.
+
+## Why this matters
+
 The monolith is gone. Not deleted — Chapter 26 froze it in-repo as a reference —
 but decommissioned: no request reaches it, every one of the six bounded contexts
 owns its own data and its own deployable, and the strangler proxy that once
@@ -265,6 +278,15 @@ Quarkus services that own their data, coordinate without a conductor, run on a
 chassis they opted into, and prove on every push that they still behave — built
 by a method that is safe precisely because it verifies everything it claims, and
 honest about everything it hasn't.
+
+## For deeper coverage
+
+- Sam Newman, *Monolith to Microservices* (O'Reilly, 2019) — the incremental, strangler-first playbook this whole book followed, revisited directly in this chapter's decomposition section; see the [Reading List](/bibliography/).
+- Chris Richardson, *Microservices Patterns* (Manning, 2018) — the fuller pattern catalog (saga, CQRS, API composition, outbox) this chapter re-walks by concern against the finished system.
+- Eric Evans, *Domain-Driven Design* (Addison-Wesley, 2003) — bounded contexts and the anti-corruption layer, re-evaluated here as the decomposition patterns that set the shape of every later seam.
+- Martin Fowler, [*StranglerFigApplication*](https://martinfowler.com/bliki/StranglerFigApplication.html) — the pattern this chapter re-affirms as what made the risk of a live migration payable, six cutovers in a row.
+- Sam Newman, *Building Microservices* (2nd ed., O'Reilly, 2021) — service boundaries and independent deployability, the standard this chapter's over-decomposition/distributed-monolith discussion measures the system's six-service stopping point against.
+- Michael Nygard, *Release It!* (2nd ed., Pragmatic Bookshelf, 2018) — the reliability-pattern restraint (circuit breaker deferred, no traffic-shaping Istio policy) this chapter re-evaluates in its operations column.
 
 ---
 

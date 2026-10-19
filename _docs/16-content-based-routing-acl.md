@@ -5,6 +5,20 @@ part: "The Strangler Fig in Practice"
 description: "The Camel content-based router, message translator, and content enricher as the translation layer at the seam; the decorating-collaborator pattern."
 ---
 
+## Learning objectives
+
+By the end of this chapter you can:
+
+- Distinguish what a content-based router decides (which backend answers a request) from what an anti-corruption layer decides (what is safe to carry back once it does), even though both sit at the same physical seam.
+- Generalize Camel's `choice()`/`when()`/`otherwise()` past a URL-path decision into a decision keyed on arbitrary message content, such as a SKU with no URL of its own.
+- Explain how Camel's `enrich()` paired with a custom `AggregationStrategy` implements a content enricher and a message translator together as one atomic fetch-and-convert step.
+- Identify Smell 5 — `InventoryService#findBySkuOrThrow` returning a raw JPA entity to `OrderService` — and explain why a perfectly correct routing decision does nothing to fix it.
+- Apply the decorating-collaborator pattern to build an anti-corruption layer ahead of a physical extraction, touching zero lines of the code it protects.
+- Explain why a contract with a deliberately divergent wire vocabulary (`stock_keeping_unit` versus `sku`) is stronger evidence of real translation than one whose field names already happen to agree.
+- Verify a conceptual chapter's claims without running new code, using a targeted `grep` for smell markers and catalog-sourced EIP semantics instead of guessing from memory.
+
+## Why this matters
+
 Chapter 15 extracted Review by routing one path prefix
 through the Camel strangler proxy that already sits in front of the
 monolith — a flag, a content-based choice, and a backend that moved out from
@@ -508,6 +522,14 @@ Smell 4's in-transaction notification call — and it needs exactly the habit
 this chapter just established: never let a persistence entity travel across
 a seam, synchronous or not, without a translator standing between it and
 whatever's on the other side.
+
+## For deeper coverage
+
+- Gregor Hohpe & Bobby Woolf, *Enterprise Integration Patterns* (Addison-Wesley, 2003) — the content-based router, content enricher, and message translator this chapter builds the anti-corruption layer from.
+- Eric Evans, *Domain-Driven Design* (Addison-Wesley, 2003) — the anti-corruption layer concept this chapter implements as two Camel patterns working together.
+- Sam Newman, *Monolith to Microservices* (O'Reilly, 2019) — the decorating-collaborator pattern this chapter names and uses to harden a seam before the physical extraction behind it exists.
+- Cloud Native Design Patterns, [DDD & Hexagonal Architecture](https://github.com/patterncatalyst/cloud-native-design-patterns/blob/main/_docs/19-appendix-f-ddd-hexagonal.md) — the companion book's treatment of bounded contexts and the ports/adapters shape this chapter's ACL protects.
+- Chris Richardson, *Microservices Patterns* (Manning, 2018) — the anti-corruption layer and API composition patterns underlying the seam-hardening this chapter performs ahead of Chapter 19's extraction; see the [Reading List](/bibliography/).
 
 ---
 
