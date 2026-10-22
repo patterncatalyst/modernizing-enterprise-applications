@@ -191,7 +191,7 @@ just not a goal.
 ## The method: an ADLC retrospective
 
 There is a second pattern language running underneath this book, and it is the one
-the title has been pointing at since Part 2: the **AI Development Lifecycle**.
+the title has been pointing at since Part 2: the **Agentic Development Lifecycle**.
 Every migration chapter carried an "ADLC in Action" trace — Frame, Plan, Generate,
 Verify, Reconcile — and the completed migration is the evidence for a claim the
 book made early and has now earned the right to assert plainly: *agent-driven
