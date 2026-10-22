@@ -1,6 +1,6 @@
 ---
 title: "Plan Candidate — User-Outcome-First"
-description: "Round-1 planning candidate for Modernizing Enterprise Applications: a Spring monolith strangled to Quarkus + Camel microservices, driven by an AI Development Lifecycle (ADLC), with testing throughout."
+description: "Round-1 planning candidate for Modernizing Enterprise Applications: a Spring monolith strangled to Quarkus + Camel microservices, driven by an Agentic Development Lifecycle (ADLC), with testing throughout."
 status: "round-1 planning only — nothing built or pushed until user approves"
 candidate_lens: "user-outcome-first (design the learning arc, then fit everything to serve it)"
 ---
@@ -27,7 +27,7 @@ through six emotional/competence beats:
    real smells they have in their own code. (Running code, day one.)
 2. **"I know when *not* to do this."** Strategy and assessment — modernization as
    a disciplined, reversible, business-justified exercise, not résumé-driven design.
-3. **"I have a new way to work."** The ADLC — an AI Development Lifecycle the reader
+3. **"I have a new way to work."** The ADLC — an Agentic Development Lifecycle the reader
    is taught to *operate* (plan/generate/verify with human gates), which will drive
    every subsequent migration step. This is the book's differentiator and its
    "aha": modernization is not a heroic manual slog; it is a repeatable,
@@ -148,7 +148,7 @@ carries a runnable example and a verification-status footer.
 |---|---|---|
 | 0 | Setting Up | Orientation, prerequisites, podman/minikube toolchain, how to run the examples, the ADLC ledger artifacts. |
 | 1 | The Case for Modernization | Why modernize, strategies, when microservices are a bad idea, assessing migration complexity. |
-| 2 | The ADLC — An AI Development Lifecycle | The agentic workflow the reader will operate; how it replaces the SDLC; agents, MCP tools, skills, human gates. |
+| 2 | The ADLC — An Agentic Development Lifecycle | The agentic workflow the reader will operate; how it replaces the SDLC; agents, MCP tools, skills, human gates. |
 | 3 | Meet the Monolith | The reference Spring Boot shipping monolith: domain, modules, persistence, API, seed data, deliberate smells, its tests. |
 | 4 | Finding the Seams | DDD (strategic + tactical), event storming, coupling analysis, modular monolith, decomposed databases. |
 | 5 | The Strangler Fig in Practice | The strangler family and the first extractions, each a real migration step with an anti-corruption layer and test equivalence. |

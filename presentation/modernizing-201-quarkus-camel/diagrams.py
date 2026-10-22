@@ -45,7 +45,7 @@ def r01_modernization_2x2():
 # ---------------------------------------------------------------------------
 def r02_adlc_loop():
     s = Scene("r02-adlc-loop", 1240, 620,
-              title="The AI Development Lifecycle (ADLC)",
+              title="The Agentic Development Lifecycle (ADLC)",
               subtitle="Five phases per increment; the behavior-equivalence suite is the gate that makes agent-driven change safe")
     y = 170
     w, h, gap = 200, 86, 32
