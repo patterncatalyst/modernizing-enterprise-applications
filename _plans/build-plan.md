@@ -1,6 +1,6 @@
 ---
 title: "Build Plan — Modernizing Enterprise Applications (Canonical, Synthesized)"
-description: "The canonical round-1 plan: a Spring monolith strangled to Quarkus + Camel microservices, driven by an AI Development Lifecycle (ADLC), testing woven throughout. Synthesized from three competing Opus candidates."
+description: "The canonical round-1 plan: a Spring monolith strangled to Quarkus + Camel microservices, driven by an Agentic Development Lifecycle (ADLC), testing woven throughout. Synthesized from three competing Opus candidates."
 status: "round-1 planning only — nothing built, scaffolded, or pushed until the user approves"
 synthesis_of: [plan-candidate-risk, plan-candidate-simple, plan-candidate-outcome]
 ---
@@ -183,7 +183,7 @@ chapter ships a runnable example and a verification-status footer.
 |---|---|---|
 | 0 | Setting Up | Toolchain (SDKMAN/JDK 25/Maven/Quarkus+Camel CLI), the podman observability stack, the repo, the ADLC ledger, how to run every example. |
 | 1 | Why Modernize | Modernization as disciplined engineering; when microservices are a bad idea; strategies; the assessment rubric and evolution arc reframed for 2026. |
-| 2 | The AI Development Lifecycle (ADLC) | What replaces the SDLC: phases, agent roles, MCP tools, human gates, the safety net, and a full worked loop on a trivial change. |
+| 2 | The Agentic Development Lifecycle (ADLC) | What replaces the SDLC: phases, agent roles, MCP tools, human gates, the safety net, and a full worked loop on a trivial change. |
 | 3 | The Reference Monolith | Build the Spring Boot "before" picture: domain, modules, persistence, API, seed data, deliberate smells, and the test suite that becomes the equivalence suite. |
 | 4 | Finding the Seams | Strategic + tactical DDD, hexagonal, event storming, coupling theory, modular monolith / decomposed DBs — deciding *where* to cut. |
 | 5 | The Strangler Fig in Practice | The strangler family and the first two extractions (review, notification); ACL/content-based routing; going event-driven. |

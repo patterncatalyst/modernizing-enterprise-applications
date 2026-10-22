@@ -28,7 +28,7 @@ anything.*
 ### Decisions required by the brief
 
 1. **Is ADLC a cross-cutting thread, a dedicated Part, or both? → BOTH.**
-   A dedicated Part ("The AI Development Lifecycle") defines the ADLC
+   A dedicated Part ("The Agentic Development Lifecycle") defines the ADLC
    concretely (phases, agent roles, MCP tool fit, SDLC replacement mapping)
    AND *every* decomposition chapter carries a short, mandatory **"Built with
    the ADLC"** panel showing the actual plan→execute→validate trace, prompts,
@@ -96,7 +96,7 @@ is an open question for the user. `brand_emoji` proposal: "🏗️".
 |---|---|---|
 | 0 | Setting Up | Toolchain (SDKMAN/JDK 25/Maven/Quarkus CLI/Camel CLI), the podman observability stack, the repo, and how to run every example. |
 | 1 | Why Modernize | Modernization as disciplined engineering; strategies; when microservices are a bad idea; assessment rubric. |
-| 2 | The AI Development Lifecycle (ADLC) | What replaces the SDLC: phases, agent roles, MCP tools, gates, and the planning artifacts that *are* the ADLC. |
+| 2 | The Agentic Development Lifecycle (ADLC) | What replaces the SDLC: phases, agent roles, MCP tools, gates, and the planning artifacts that *are* the ADLC. |
 | 3 | The Reference Monolith | Build the Spring Boot monolith "before" picture — domain, modules, persistence, API, seed data, deliberate smells, and its test suite. |
 | 4 | Finding the Seams | Strategic + tactical DDD, event storming, coupling theory, and the decomposition-pattern family — how you decide *where* to cut. |
 | 5 | The Strangler Fig in Practice | The core: strangle the monolith seam by seam into Quarkus+Camel services, one pattern per chapter, code + tests throughout. |
@@ -365,7 +365,7 @@ slice.
 
 ## F. ADLC / agentic-workflow design
 
-**The ADLC (AI Development Lifecycle)** reframes the SDLC around an agent
+**The ADLC (Agentic Development Lifecycle)** reframes the SDLC around an agent
 relay with human gates. Concretely:
 
 | ADLC phase | What happens | Agents / tools | Replaces SDLC step |

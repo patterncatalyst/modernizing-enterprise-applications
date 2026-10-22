@@ -124,7 +124,7 @@ leadSlide("WHY MODERNIZE · THE TARGET", "What a modern shape buys you in 2026",
   "What modernization delivers, concretely. Independent deployability and data ownership are the structural wins; the chassis and the Kubernetes-native baseline are what make running many services tractable in 2026. The operational answers have moved: a decade ago teams built service discovery, client-side load balancing, and circuit breaking into the application with the Netflix-OSS stack — Eureka, Ribbon, Hystrix, Zuul. Today the platform and the mesh provide identity, traffic management, and discovery, and OpenTelemetry provides the signals. You adopt those capabilities rather than build them, which is the chassis idea that section eight develops.");
 
 // ===== 02 · THE ADLC ========================================================
-divider("02", "The ADLC", "The AI Development Lifecycle — the method that makes agent-driven change safe.",
+divider("02", "The ADLC", "The Agentic Development Lifecycle — the method that makes agent-driven change safe.",
   "This section is the one the original deck never had. The migration was driven by AI agents, and what makes that safe rather than reckless is a specific discipline built around an automated behavioural gate.");
 
 leadSlide("THE ADLC · FROM SDLC", "From SDLC to ADLC: the human moves up a level",
