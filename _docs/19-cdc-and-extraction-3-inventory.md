@@ -671,7 +671,3 @@ become one of several services that read side has to federate.
 - Chris Richardson, *Microservices Patterns* (Manning, 2018) — saga-style compensation, the pattern this chapter's Reserve/Release pair is a first, minimal taste of before Part 7's full sagas.
 - Eric Evans, *Domain-Driven Design* (Addison-Wesley, 2003) — the anti-corruption layer this chapter's deliberately divergent gRPC wire vocabulary implements.
 - Cloud Native Design Patterns, [Stream Processing](https://github.com/patterncatalyst/cloud-native-design-patterns/blob/main/_docs/06-stream-processing.md) — the companion book's treatment of log-based stream processing underlying this chapter's Debezium pipeline.
-
----
-
-*Verification status: <span class="status status--verified">verified</span>. Every artifact cited — `examples/04-inventory-service/` (proto, gRPC impl, CDC consumer and its test, Flyway migrations), the monolith's `RemoteInventoryClient` and compensation, `infra/debezium/`'s connector and retirement record, the proxy's `CUTOVER.md` (negative check and hybrid-state finding), the Newman Inventory Context Contract folder, and CI's inventory equivalence gate — is real code and dated evidence, gated green.*

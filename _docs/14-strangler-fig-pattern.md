@@ -460,6 +460,3 @@ cutover.
 - Gregor Hohpe & Bobby Woolf, *Enterprise Integration Patterns* (Addison-Wesley, 2003) — the content-based router the strangler proxy's `choice()`/`when()`/`otherwise()` route is built from.
 - Chris Richardson, [microservices.io — Strangler Application](https://microservices.io/patterns/refactoring/strangler-application.html) — a second, independent catalog entry for the same pattern, useful for cross-checking Fowler's narrative against a pattern-language framing.
 - Cloud Native Design Patterns, [Composition](https://github.com/patterncatalyst/cloud-native-design-patterns/blob/main/_docs/03-composition.md) — the companion book's treatment of fronting a system under migration with a composition layer, the same role this chapter's proxy plays.
-
----
-*Verification status: <span class="status status--verified">verified</span>. The Newman runs, the predicate bug, and the decommission sequence are drawn from `examples/01-strangler-proxy/`'s `CUTOVER.md` and `README.md`; the `StranglerProxyRoute.java` reading tracks the current route source, which Code CI exercises.*

@@ -569,7 +569,3 @@ you can draw that map yourself, on a system that never shipped with a
 - Chris Richardson, *Microservices Patterns* (Manning, 2018) — the saga and transactional-outbox patterns that replace Smell 3's single ACID transaction and Smell 4's synchronous call.
 - Martin Fowler, [*StranglerFigApplication*](https://martinfowler.com/bliki/StranglerFigApplication.html) — the incremental cut-and-prove method behind this chapter's "tag it, name the cure, cut it later" discipline.
 - Martin Kleppmann, *Designing Data-Intensive Applications* (O'Reilly, 2017) — why shared-schema coupling (Smell 1) turns dangerous the instant data ownership splits.
-
----
-
-*Verification status: <span class="status status--verified">verified</span>. Every excerpt is quoted verbatim from `examples/00-monolith/`, and the `grep -rn 'SMELL[ch.'` command runs against that tree. Each smell's cure lands in the chapter named on it (ch.16–26), every extraction built and CI-gated green.*

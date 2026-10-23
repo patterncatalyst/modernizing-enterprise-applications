@@ -440,7 +440,3 @@ The next chapter, **"The Project Ledger,"** introduces the three documents
 this project uses as its own memory across the chapters you are about to
 read — `decisions.md`, `build-plan.md`, and its reconciliation record — and
 shows you how to keep the same kind of ledger for your own migration.
-
----
-
-*Verification status: <span class="status status--verified">verified</span>. The commands here are transcribed from the project's own tracked scripts and workflow — `compose.yaml`, `.env.example`, `scripts/stack-up.sh`/`stack-down.sh`, `demos/demo-equivalence.sh`, and `.github/workflows/code-ci.yml` — the same ones CI runs. On a fresh clone, confirm `scripts/stack-up.sh` reports the services healthy and `demos/demo-equivalence.sh http://localhost:8888` is green before continuing.*

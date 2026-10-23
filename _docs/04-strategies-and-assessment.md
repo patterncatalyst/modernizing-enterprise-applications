@@ -482,12 +482,3 @@ the Seams,"** returns to the assessment questions raised here — coupling,
 cohesion, domain boundaries — with the full apparatus of domain-driven
 design, event storming, and coupling theory, and shows the mechanics behind
 the ordering this chapter only argued for in outline.
-
----
-*Verification status: not applicable — this is a conceptual chapter with no
-runnable example under `examples/`. Its claims about the extraction order are
-checkable against `examples/00-monolith/SMELLS.md` (smells #2 and #6, which
-name the coupling this chapter's "order last, review first" argument depends
-on). The strategy
-and strangler-fig mechanics named here are built out, with running code, in
-Part 3 and Part 5.*

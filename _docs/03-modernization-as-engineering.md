@@ -394,12 +394,3 @@ builds the monolith, Chapter 9 catalogues its five remaining deliberate
 smells in the actual source tree, and Chapter 10 captures the
 behavior-equivalence suite that makes every later chapter's "measure what
 changed, prove what didn't" promise checkable rather than rhetorical.
-
----
-*Verification status: not applicable — this is a conceptual chapter with no
-runnable example under `examples/`. Its factual claims point at artifacts
-this book makes checkable elsewhere: the measured Phase A/B/native numbers
-and the 16/16 equivalence-suite results cited above are recorded in full in
-`examples/02-review-service/MIGRATION.md`; the five remaining deliberate
-smells are catalogued with in-code tags in Chapter 9; and the coupling
-vocabulary used to reason about them is developed in full in Chapter 13.*

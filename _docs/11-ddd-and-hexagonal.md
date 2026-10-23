@@ -484,7 +484,3 @@ contract it should have been from the start.
 - Sam Newman, *Building Microservices* (2nd ed., O'Reilly, 2021) — service boundaries and integration styles, the operational counterpart to DDD's conceptual boundaries.
 - Cloud Native Design Patterns, [Appendix F: DDD & Hexagonal Architecture](https://github.com/patterncatalyst/cloud-native-design-patterns/blob/main/_docs/19-appendix-f-ddd-hexagonal.md) — the companion book's treatment of ports and adapters, applied here to the monolith's own code.
 - Gregor Hohpe & Bobby Woolf, *Enterprise Integration Patterns* (Addison-Wesley, 2003) — the message translator and content enricher, the concrete mechanism Chapter 16 uses to build the missing anti-corruption layer.
-
----
-
-*Verification status: <span class="status status--verified">verified</span>. Every excerpt is quoted verbatim from `examples/00-monolith/` and `examples/02-review-service/`; the DDD and hexagonal classifications are this chapter's reasoning about that real code. The extraction-order forecast is borne out by ch.17, 19, 23, 24, and 26, all built and CI-gated green.*

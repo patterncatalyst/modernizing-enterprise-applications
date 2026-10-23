@@ -622,7 +622,3 @@ the seam and cutting the coupling are not the same afternoon's work.
 - Gregor Hohpe & Bobby Woolf, *Enterprise Integration Patterns* (Addison-Wesley, 2003) — the content-based router, message translator, and content enricher the strangler seam is built from.
 - [Quarkus — Native reference guide](https://quarkus.io/guides/native-reference) — the closed-world reflection model and `@RegisterForReflection` behind the native-image defect the equivalence gate caught.
 - Cloud Native Design Patterns, [Communications](https://github.com/patterncatalyst/cloud-native-design-patterns/blob/main/_docs/02-communications.md) — the companion book's treatment of the inter-service communication styles the proxy mediates.
-
----
-
-*Verification status: <span class="status status--verified">verified</span>. Every artifact cited — `examples/02-review-service/`, `examples/01-strangler-proxy/` and its `CUTOVER.md`, and `tooling/newman/mea.postman_collection.json` — is real, runnable code gated by CI's review equivalence gate; the metrics are from the service's own `MIGRATION.md`.*
