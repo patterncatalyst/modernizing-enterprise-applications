@@ -4,11 +4,11 @@
   "source": "dgen.py",
   "elements": [
     {
-      "id": "f7e38b42-41dd-4c57-a9b8-25a38a5dfd1c",
+      "id": "49576711-5c6e-4db2-874f-2873678ab7cd",
       "type": "text",
-      "x": 296.5,
+      "x": 303.0,
       "y": 14,
-      "width": 607,
+      "width": 594,
       "height": 26,
       "angle": 0,
       "strokeColor": "#4A4A4A",
@@ -29,16 +29,16 @@
       "locked": false,
       "fontSize": 22,
       "fontFamily": 1,
-      "text": "The chassis scorecard \u2014 capabilities by status",
+      "text": "The chassis scorecard: capabilities by status",
       "textAlign": "center",
       "verticalAlign": "top",
       "containerId": null,
-      "originalText": "The chassis scorecard \u2014 capabilities by status",
+      "originalText": "The chassis scorecard: capabilities by status",
       "lineHeight": 1.25,
       "baseline": 22
     },
     {
-      "id": "36bbc3fb-bc67-49c4-9863-76a8a0088cd4",
+      "id": "262d58c6-239d-43b9-8a25-1d53364b8fbc",
       "type": "text",
       "x": 209.5,
       "y": 50,
@@ -72,7 +72,7 @@
       "baseline": 14
     },
     {
-      "id": "a6bffc12-e5c7-4de4-ac63-c0641eede209",
+      "id": "a681d4c1-e378-4dff-be20-0a88672b25a4",
       "type": "rectangle",
       "x": 70,
       "y": 110,
@@ -100,11 +100,11 @@
       "locked": false
     },
     {
-      "id": "c8f3146f-f783-4787-90b7-f1082a9e1674",
+      "id": "4e7e869a-4031-4c98-8fe8-b5629f99a176",
       "type": "text",
-      "x": 523.5,
+      "x": 528.0,
       "y": 134,
-      "width": 153,
+      "width": 144,
       "height": 20,
       "angle": 0,
       "strokeColor": "#343a40",
@@ -125,16 +125,16 @@
       "locked": false,
       "fontSize": 16,
       "fontFamily": 1,
-      "text": "1. Config \u2014 USED",
+      "text": "1. Config: USED",
       "textAlign": "center",
       "verticalAlign": "top",
       "containerId": null,
-      "originalText": "1. Config \u2014 USED",
+      "originalText": "1. Config: USED",
       "lineHeight": 1.25,
       "baseline": 16
     },
     {
-      "id": "48aee5ca-02e0-4fa5-ad4b-97462c86f920",
+      "id": "5a52ad22-03bf-4c03-85a9-aa4091900b38",
       "type": "text",
       "x": 445.5,
       "y": 154,
@@ -168,7 +168,7 @@
       "baseline": 12
     },
     {
-      "id": "3d68daf0-bc22-4304-9c78-f447affc807f",
+      "id": "978f3f93-f16e-4e19-a353-5e72207b5013",
       "type": "rectangle",
       "x": 70,
       "y": 190,
@@ -196,11 +196,11 @@
       "locked": false
     },
     {
-      "id": "ae715953-5344-490a-9571-872a2e459284",
+      "id": "674ac5d8-2143-4cdf-9a13-798dcf2d12d3",
       "type": "text",
-      "x": 461.0,
+      "x": 466.0,
       "y": 214,
-      "width": 278,
+      "width": 268,
       "height": 20,
       "angle": 0,
       "strokeColor": "#343a40",
@@ -221,20 +221,20 @@
       "locked": false,
       "fontSize": 16,
       "fontFamily": 1,
-      "text": "2. Fault Tolerance \u2014 DEFERRED",
+      "text": "2. Fault Tolerance: DEFERRED",
       "textAlign": "center",
       "verticalAlign": "top",
       "containerId": null,
-      "originalText": "2. Fault Tolerance \u2014 DEFERRED",
+      "originalText": "2. Fault Tolerance: DEFERRED",
       "lineHeight": 1.25,
       "baseline": 16
     },
     {
-      "id": "f2c91c28-9b40-4567-bf62-2b90c7a21ac7",
+      "id": "64c9b510-32e9-4947-93d7-ab43fae193e3",
       "type": "text",
-      "x": 377.0,
+      "x": 380.5,
       "y": 234,
-      "width": 446,
+      "width": 439,
       "height": 16,
       "angle": 0,
       "strokeColor": "#495057",
@@ -255,16 +255,16 @@
       "locked": false,
       "fontSize": 12,
       "fontFamily": 1,
-      "text": "no @Retry/@Timeout/@CircuitBreaker \u2014 manual deadlines stand in",
+      "text": "no @Retry/@Timeout/@CircuitBreaker; manual deadlines stand in",
       "textAlign": "center",
       "verticalAlign": "top",
       "containerId": null,
-      "originalText": "no @Retry/@Timeout/@CircuitBreaker \u2014 manual deadlines stand in",
+      "originalText": "no @Retry/@Timeout/@CircuitBreaker; manual deadlines stand in",
       "lineHeight": 1.25,
       "baseline": 12
     },
     {
-      "id": "b4aaeda4-0428-4c88-802f-9d77b5b3f5c8",
+      "id": "e1d2dcd0-97b6-4ea9-84b7-2c59ee8319c7",
       "type": "rectangle",
       "x": 70,
       "y": 270,
@@ -292,11 +292,11 @@
       "locked": false
     },
     {
-      "id": "61920365-f1df-407c-82ff-e4b24efce52b",
+      "id": "c38905da-6a87-4733-a012-b1952a9fd2c4",
       "type": "text",
-      "x": 509.0,
+      "x": 514.0,
       "y": 294,
-      "width": 182,
+      "width": 172,
       "height": 20,
       "angle": 0,
       "strokeColor": "#343a40",
@@ -317,16 +317,16 @@
       "locked": false,
       "fontSize": 16,
       "fontFamily": 1,
-      "text": "3. Health \u2014 PARTIAL",
+      "text": "3. Health: PARTIAL",
       "textAlign": "center",
       "verticalAlign": "top",
       "containerId": null,
-      "originalText": "3. Health \u2014 PARTIAL",
+      "originalText": "3. Health: PARTIAL",
       "lineHeight": 1.25,
       "baseline": 16
     },
     {
-      "id": "b1a2a0c9-3882-4ef7-a0b6-4a53670ca566",
+      "id": "95a50441-3c56-43b9-a8bc-b349a00a62ff",
       "type": "text",
       "x": 384.5,
       "y": 314,
@@ -360,7 +360,7 @@
       "baseline": 12
     },
     {
-      "id": "4c06cc16-41af-4136-9a05-fdabc13f72d1",
+      "id": "2acc6f8a-64e6-4958-85de-6b9083a71732",
       "type": "rectangle",
       "x": 70,
       "y": 350,
@@ -388,11 +388,11 @@
       "locked": false
     },
     {
-      "id": "fb05c846-b770-46ad-90ee-8c251a49c842",
+      "id": "52f1d0df-3e8e-4d9f-97ed-e95197353084",
       "type": "text",
-      "x": 499.5,
+      "x": 504.0,
       "y": 374,
-      "width": 201,
+      "width": 192,
       "height": 20,
       "angle": 0,
       "strokeColor": "#343a40",
@@ -413,16 +413,16 @@
       "locked": false,
       "fontSize": 16,
       "fontFamily": 1,
-      "text": "4. Metrics \u2014 DEFERRED",
+      "text": "4. Metrics: DEFERRED",
       "textAlign": "center",
       "verticalAlign": "top",
       "containerId": null,
-      "originalText": "4. Metrics \u2014 DEFERRED",
+      "originalText": "4. Metrics: DEFERRED",
       "lineHeight": 1.25,
       "baseline": 16
     },
     {
-      "id": "a44963f2-3322-412e-aceb-20cdc2b6337a",
+      "id": "de511ff0-a5ae-4f93-8678-0e8f40b769bc",
       "type": "text",
       "x": 499.5,
       "y": 394,
@@ -456,7 +456,7 @@
       "baseline": 12
     },
     {
-      "id": "8533c869-c8fd-4646-b973-79498145afd9",
+      "id": "7cc82823-d312-46b8-9ff6-5427e67c6cca",
       "type": "rectangle",
       "x": 70,
       "y": 430,
@@ -484,11 +484,11 @@
       "locked": false
     },
     {
-      "id": "b2fcc2d9-fd4e-4ddc-9bd5-ac91ec825286",
+      "id": "55c5039a-9727-4834-9d35-70ae05559879",
       "type": "text",
-      "x": 499.5,
+      "x": 504.0,
       "y": 454,
-      "width": 201,
+      "width": 192,
       "height": 20,
       "angle": 0,
       "strokeColor": "#343a40",
@@ -509,16 +509,16 @@
       "locked": false,
       "fontSize": 16,
       "fontFamily": 1,
-      "text": "5. OpenAPI \u2014 DEFERRED",
+      "text": "5. OpenAPI: DEFERRED",
       "textAlign": "center",
       "verticalAlign": "top",
       "containerId": null,
-      "originalText": "5. OpenAPI \u2014 DEFERRED",
+      "originalText": "5. OpenAPI: DEFERRED",
       "lineHeight": 1.25,
       "baseline": 16
     },
     {
-      "id": "f5941263-1fff-499c-a5a5-6f0bbc3aae6d",
+      "id": "ac79bdca-176b-4112-8536-26790fe75ac1",
       "type": "text",
       "x": 380.5,
       "y": 474,
@@ -552,7 +552,7 @@
       "baseline": 12
     },
     {
-      "id": "575a6461-c554-4eec-8062-caf42adb5e94",
+      "id": "c6069ed3-8bc6-49b3-95c4-306bd23a3740",
       "type": "rectangle",
       "x": 70,
       "y": 510,
@@ -580,11 +580,11 @@
       "locked": false
     },
     {
-      "id": "ccdcee78-5397-4344-a629-bdede5fee6b3",
+      "id": "243a801a-fa67-4cd4-8bbb-b86448512cc8",
       "type": "text",
-      "x": 499.5,
+      "x": 504.0,
       "y": 534,
-      "width": 201,
+      "width": 192,
       "height": 20,
       "angle": 0,
       "strokeColor": "#343a40",
@@ -605,16 +605,16 @@
       "locked": false,
       "fontSize": 16,
       "fontFamily": 1,
-      "text": "6. REST Client \u2014 USED",
+      "text": "6. REST Client: USED",
       "textAlign": "center",
       "verticalAlign": "top",
       "containerId": null,
-      "originalText": "6. REST Client \u2014 USED",
+      "originalText": "6. REST Client: USED",
       "lineHeight": 1.25,
       "baseline": 16
     },
     {
-      "id": "f112be32-2b08-45f1-b1a0-319c7b7fcb25",
+      "id": "b144a951-dc97-4f94-889e-ae8aefdfa3bf",
       "type": "text",
       "x": 362.5,
       "y": 554,
@@ -648,7 +648,7 @@
       "baseline": 12
     },
     {
-      "id": "5d802b2e-4c15-497a-949e-d4a4f4bef741",
+      "id": "e6a94407-f0b0-4e0b-8412-79e4157e4206",
       "type": "rectangle",
       "x": 70,
       "y": 590,
@@ -676,11 +676,11 @@
       "locked": false
     },
     {
-      "id": "cc2de4d0-6ec7-449c-8ff2-c09cc3557575",
+      "id": "ee759000-8cb5-4597-ab1e-c2d05196b09b",
       "type": "text",
-      "x": 470.5,
+      "x": 475.5,
       "y": 614,
-      "width": 259,
+      "width": 249,
       "height": 20,
       "angle": 0,
       "strokeColor": "#343a40",
@@ -701,16 +701,16 @@
       "locked": false,
       "fontSize": 16,
       "fontFamily": 1,
-      "text": "7. Security / JWT \u2014 PARTIAL",
+      "text": "7. Security / JWT: PARTIAL",
       "textAlign": "center",
       "verticalAlign": "top",
       "containerId": null,
-      "originalText": "7. Security / JWT \u2014 PARTIAL",
+      "originalText": "7. Security / JWT: PARTIAL",
       "lineHeight": 1.25,
       "baseline": 16
     },
     {
-      "id": "42e16db8-f39a-4916-a21d-ca62e4d8ced9",
+      "id": "c72cd755-d2d5-4f10-9e5c-1fcfc1283094",
       "type": "text",
       "x": 416.5,
       "y": 634,
@@ -744,7 +744,7 @@
       "baseline": 12
     },
     {
-      "id": "d62d90be-5c0a-41ed-9fa6-db3aec58c8df",
+      "id": "7a67ed2e-6dca-4671-b4b8-4886dcc16855",
       "type": "rectangle",
       "x": 70,
       "y": 670,
@@ -772,11 +772,11 @@
       "locked": false
     },
     {
-      "id": "0470bd90-fda4-4fc0-950a-a7bf9195f794",
+      "id": "9e0168af-fadf-496e-b791-9cf53a7d3f4c",
       "type": "text",
-      "x": 461.0,
+      "x": 466.0,
       "y": 694,
-      "width": 278,
+      "width": 268,
       "height": 20,
       "angle": 0,
       "strokeColor": "#343a40",
@@ -797,20 +797,20 @@
       "locked": false,
       "fontSize": 16,
       "fontFamily": 1,
-      "text": "8. Native / build-time \u2014 USED",
+      "text": "8. Native / build-time: USED",
       "textAlign": "center",
       "verticalAlign": "top",
       "containerId": null,
-      "originalText": "8. Native / build-time \u2014 USED",
+      "originalText": "8. Native / build-time: USED",
       "lineHeight": 1.25,
       "baseline": 16
     },
     {
-      "id": "4a706e7e-40c2-4846-9c16-8f4e960ea3ef",
+      "id": "1b5a7a6e-3f12-498b-ab1d-da93244aad65",
       "type": "text",
-      "x": 398.5,
+      "x": 402.5,
       "y": 714,
-      "width": 403,
+      "width": 395,
       "height": 16,
       "angle": 0,
       "strokeColor": "#495057",
@@ -831,16 +831,16 @@
       "locked": false,
       "fontSize": 12,
       "fontFamily": 1,
-      "text": "native profile in all 8 poms \u2014 ~31x startup / ~4x memory",
+      "text": "native profile in all 8 poms, ~31x startup / ~4x memory",
       "textAlign": "center",
       "verticalAlign": "top",
       "containerId": null,
-      "originalText": "native profile in all 8 poms \u2014 ~31x startup / ~4x memory",
+      "originalText": "native profile in all 8 poms, ~31x startup / ~4x memory",
       "lineHeight": 1.25,
       "baseline": 12
     },
     {
-      "id": "a290c189-1cbc-46a3-a167-a45c26382176",
+      "id": "8d7fce93-ae06-43f3-963c-9b8e25feef51",
       "type": "rectangle",
       "x": 70,
       "y": 750,
@@ -868,11 +868,11 @@
       "locked": false
     },
     {
-      "id": "c78d19c3-ac95-479d-9c62-1191488cbee1",
+      "id": "d95813da-d279-4c89-9b93-6813dd251b68",
       "type": "text",
-      "x": 514.0,
+      "x": 518.5,
       "y": 774,
-      "width": 172,
+      "width": 163,
       "height": 20,
       "angle": 0,
       "strokeColor": "#343a40",
@@ -893,16 +893,16 @@
       "locked": false,
       "fontSize": 16,
       "fontFamily": 1,
-      "text": "9. Dev-mode \u2014 USED",
+      "text": "9. Dev-mode: USED",
       "textAlign": "center",
       "verticalAlign": "top",
       "containerId": null,
-      "originalText": "9. Dev-mode \u2014 USED",
+      "originalText": "9. Dev-mode: USED",
       "lineHeight": 1.25,
       "baseline": 16
     },
     {
-      "id": "98278651-ae4c-41c7-af46-3683fbf00784",
+      "id": "7af4c09b-19c4-47ab-8e65-cafb3605e0f4",
       "type": "text",
       "x": 388.0,
       "y": 794,
@@ -936,7 +936,7 @@
       "baseline": 12
     },
     {
-      "id": "cb73612d-61a7-4cdb-926f-cff1b89c695f",
+      "id": "78c0c88a-9769-4535-9f8c-6bf313938f7f",
       "type": "rectangle",
       "x": 70,
       "y": 840,
@@ -964,7 +964,7 @@
       "locked": false
     },
     {
-      "id": "18d56878-9e26-48a5-9fd0-abd21c02e440",
+      "id": "da90d39c-96c8-4ae5-a2ca-d478bbe99f4d",
       "type": "text",
       "x": 216.0,
       "y": 857.0,
@@ -998,7 +998,7 @@
       "baseline": 16
     },
     {
-      "id": "4445cf5e-19c9-4ed8-8db2-32dd9160d77d",
+      "id": "cdc37383-7d97-445c-a398-7e6e2a7b7c9c",
       "type": "rectangle",
       "x": 430,
       "y": 840,
@@ -1026,7 +1026,7 @@
       "locked": false
     },
     {
-      "id": "2cb001b4-8acd-44ad-b0e2-4688b4e72c41",
+      "id": "63b944c4-82aa-4846-8a85-a553436de45c",
       "type": "text",
       "x": 561.5,
       "y": 857.0,
@@ -1060,7 +1060,7 @@
       "baseline": 16
     },
     {
-      "id": "c3510410-a534-49e9-9eda-9c77abd0241e",
+      "id": "1a5e608b-9028-461c-a76b-cba6a29c08c8",
       "type": "rectangle",
       "x": 790,
       "y": 840,
@@ -1088,7 +1088,7 @@
       "locked": false
     },
     {
-      "id": "92e71ea7-c2bb-4e13-bfd9-420db508387d",
+      "id": "61c73fd9-f4f2-4f71-846c-736b20337543",
       "type": "text",
       "x": 917.0,
       "y": 857.0,
