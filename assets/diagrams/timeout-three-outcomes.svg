@@ -1,9 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 880" font-family="'Red Hat Text', system-ui, sans-serif" role="img">
 <defs><marker id="a" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#555"/></marker><marker id="am" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2f5f3d"/></marker></defs>
 <rect x="60" y="60" width="320" height="110" rx="9" fill="#ffffff" stroke="#999999" stroke-width="1.5"/>
-<text x="220.0" y="105.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">In-JVM call — the old baseline</text>
+<text x="220.0" y="105.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">In-JVM call: the old baseline</text>
 <text x="220.0" y="122.5" font-size="11.5" fill="#555555" text-anchor="middle">one process, one call stack</text>
-<text x="220.0" y="137.5" font-size="11.5" fill="#555555" text-anchor="middle">returns or throws, in microseconds — no third outcome</text>
+<text x="220.0" y="137.5" font-size="11.5" fill="#555555" text-anchor="middle">returns or throws, in microseconds: no third outcome</text>
 <rect x="60" y="300" width="220" height="110" rx="9" fill="#eef4fb" stroke="#2f6db5" stroke-width="2"/>
 <text x="170.0" y="353.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Checkout thread</text>
 <text x="170.0" y="370.0" font-size="11.5" fill="#555555" text-anchor="middle">inventoryService.reserve(sku, qty)</text>
@@ -12,15 +12,15 @@
 <text x="480.0" y="362.5" font-size="11.5" fill="#555555" text-anchor="middle">RemoteInventoryClient#reserve</text>
 <text x="480.0" y="377.5" font-size="11.5" fill="#555555" text-anchor="middle">withDeadlineAfter(timeoutMs)</text>
 <rect x="700" y="140" width="300" height="110" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
-<text x="850.0" y="185.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Outcome 1 — returns</text>
+<text x="850.0" y="185.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Outcome 1: returns</text>
 <text x="850.0" y="202.5" font-size="11.5" fill="#555555" text-anchor="middle">ReserveReply</text>
 <text x="850.0" y="217.5" font-size="11.5" fill="#555555" text-anchor="middle">reservation result known, checkout proceeds</text>
 <rect x="700" y="300" width="300" height="110" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
-<text x="850.0" y="345.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Outcome 2 — throws</text>
+<text x="850.0" y="345.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Outcome 2: throws</text>
 <text x="850.0" y="362.5" font-size="11.5" fill="#555555" text-anchor="middle">StatusRuntimeException</text>
 <text x="850.0" y="377.5" font-size="11.5" fill="#555555" text-anchor="middle">DEADLINE_EXCEEDED / UNAVAILABLE, unmapped -&gt; 500</text>
 <rect x="700" y="460" width="300" height="110" rx="9" fill="#111111" stroke="#111111" stroke-width="2"/>
-<text x="850.0" y="505.5" font-size="13.5" font-weight="700" fill="#ffffff" text-anchor="middle">Outcome 3 — never returns</text>
+<text x="850.0" y="505.5" font-size="13.5" font-weight="700" fill="#ffffff" text-anchor="middle">Outcome 3: never returns</text>
 <text x="850.0" y="522.5" font-size="11.5" fill="#dddddd" text-anchor="middle">the outcome only a network call adds</text>
 <text x="850.0" y="537.5" font-size="11.5" fill="#dddddd" text-anchor="middle">nothing tells the caller which case this is</text>
 <rect x="1080" y="300" width="360" height="110" rx="9" fill="#eaf4ec" stroke="#3d7a4e" stroke-width="2"/>
@@ -53,8 +53,8 @@
 <path d="M1000.0,670.0 L1110.0,670.0" fill="none" stroke="#2f5f3d" stroke-width="2" marker-end="url(#am)"/>
 <text x="1061.0" y="656.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">repeats under load</text>
 <text x="1061.0" y="656.0" font-size="11" fill="#2f5f3d" text-anchor="middle">repeats under load</text>
-<text x="750.0" y="32" font-size="16" fill="#1d1d1d" text-anchor="middle" font-weight="700">ch.25 — a call across the gRPC boundary has a third outcome an in-JVM call never had</text>
-<text x="750.0" y="56" font-size="12" fill="#555555" text-anchor="middle">returns, throws, or never comes back — and the third outcome is where cascading failure starts</text>
-<text x="60" y="840" font-size="10.5" fill="#555555" text-anchor="start">This project&#x27;s deadline already closes off the cascade below, live on both gRPC callers — the chain is the risk a bare gRPC call carries, not an incident this book observed.</text>
+<text x="750.0" y="32" font-size="16" fill="#1d1d1d" text-anchor="middle" font-weight="700">ch.25: a call across the gRPC boundary has a third outcome an in-JVM call never had</text>
+<text x="750.0" y="56" font-size="12" fill="#555555" text-anchor="middle">returns, throws, or never comes back: and the third outcome is where cascading failure starts</text>
+<text x="60" y="840" font-size="10.5" fill="#555555" text-anchor="start">This project&#x27;s deadline already closes off the cascade below, live on both gRPC callers: the chain is the risk a bare gRPC call carries, not an incident this book observed.</text>
 <text x="60" y="864" font-size="10" fill="#777777" text-anchor="start">Sourced from _docs/25-failure-modes-and-resilience.md (&quot;Timeouts and deadlines&quot;) and both RemoteInventoryClients&#x27; deadline and javadoc (examples/00-monolith/, examples/07-order-service/).</text>
 </svg>

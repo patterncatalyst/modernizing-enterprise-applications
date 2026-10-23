@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""ch.25 figure: circuit-breaker-states — Michael Nygard's circuit breaker
+"""ch.25 figure: circuit-breaker-states: Michael Nygard's circuit breaker
 state machine as `_docs/25-failure-modes-and-resilience.md` describes it in
-"Where a circuit breaker and a bulkhead would go — and why they aren't here
-yet": "a small state machine — closed (calls flow through normally), open
+"Where a circuit breaker and a bulkhead would go: and why they aren't here
+yet": "a small state machine: closed (calls flow through normally), open
 (calls fail immediately, without even attempting the network round-trip,
 once a failure threshold trips), and half-open (a trial call periodically
 checks whether the dependency has recovered before the breaker closes
@@ -13,15 +13,15 @@ half-open isn't the pattern Nygard or MicroProfile Fault Tolerance describe.
 
 This is a named, not-yet-built pattern: the chapter is explicit that "None of
 those three annotations [@Timeout, @CircuitBreaker, @Bulkhead] exist anywhere
-in this codebase today," and names exactly where one would wrap —
-`RemoteInventoryClient`'s `reserve` and `release` calls — and exactly which
+in this codebase today," and names exactly where one would wrap
+`RemoteInventoryClient`'s `reserve` and `release` calls: and exactly which
 chassis would supply it (SmallRye Fault Tolerance, Quarkus-side; the call
 site itself still lives in the Spring monolith today). The ghost-styled
 callout and dashed edge make that deferred status visible rather than
 implying this diagram is live code.
 
 Sourced from `_docs/25-failure-modes-and-resilience.md` ("Where a circuit
-breaker and a bulkhead would go — and why they aren't here yet"). No
+breaker and a bulkhead would go: and why they aren't here yet"). No
 codenames; generic/public names only.
 """
 import sys, os
@@ -62,7 +62,7 @@ nodes = [wrap, closed, open_, half]
 
 edges = [
     connect(wrap, closed, dashed=True,
-            label="SmallRye Fault Tolerance @CircuitBreaker — named, not added"),
+            label="SmallRye Fault Tolerance @CircuitBreaker: named, not added"),
 
     connect(closed, open_, amber=True,
             label="failure threshold trips"),
@@ -82,7 +82,7 @@ edges = [
 
 notes = [
     {"x": W / 2, "y": 32,
-     "text": "ch.25 — the circuit breaker's state machine: named here, not yet built",
+     "text": "ch.25: the circuit breaker's state machine: named here, not yet built",
      "anchor": "middle", "bold": True, "size": 16},
     {"x": W / 2, "y": 56,
      "text": "closed -> open on a failure threshold; open -> half-open on cool-down; half-open resolves either way",
@@ -92,7 +92,7 @@ notes = [
      "text": "Deferred by design: no measured failure rate yet justifies short-circuiting over retrying, and the call site is in the Spring monolith, not a Quarkus chassis.",
      "anchor": "start", "size": 10.5, "color": "#555555"},
     {"x": 60, "y": H - 16,
-     "text": "Sourced from _docs/25-failure-modes-and-resilience.md (\"Where a circuit breaker and a bulkhead would go — and why they aren't here yet\").",
+     "text": "Sourced from _docs/25-failure-modes-and-resilience.md (\"Where a circuit breaker and a bulkhead would go: and why they aren't here yet\").",
      "anchor": "start", "size": 10, "color": "#777777"},
 ]
 

@@ -10,7 +10,7 @@ quietly becomes a big-bang rewrite with extra ceremony.
 
 This is a companion to Figure 14.1 (strangler-review-extraction, the
 before/after proxy topology for the Review cutover specifically). This
-figure is deliberately topology-free: it is the four-move lifecycle in the
+figure is topology-free: it is the four-move lifecycle in the
 abstract, not a rendering of any one cutover's wiring.
 
 Sourced from _docs/14-strangler-fig-pattern.md:

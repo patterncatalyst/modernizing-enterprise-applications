@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""ch.08 figure: monolith-shared-schema-er — the shared-database ER that
+"""ch.08 figure: monolith-shared-schema-er: the shared-database ER that
 makes SMELL #1 (SMELLS.md: "shared schema and cross-context foreign-key
 joins") visceral: eight tables, one Postgres schema, nine foreign keys
-crossing bounded-context ownership lines freely. Deliberately drawn clean and
+crossing bounded-context ownership lines freely. Drawn clean and
 general (table name + key columns only, no controller/service framing) so it
 can be re-embedded unchanged in ch.18 ("From Shared Data to Owned Data") and
 referenced again from ch.09, ch.11, and ch.13.
@@ -78,7 +78,7 @@ for src in ["payments", "shipments", "notifications"]:
     edges += dip_down(src, "orders")
 
 # bottom-row -> top-row: route through the clear lane between the two rows
-# (top row ends at TOP_Y+TOP_H; bottom row starts at BOT_Y — the gap between
+# (top row ends at TOP_Y+TOP_H; bottom row starts at BOT_Y: the gap between
 # them has no boxes in it).
 LANE_Y = TOP_Y + TOP_H + (BOT_Y - (TOP_Y + TOP_H)) / 2
 
@@ -104,11 +104,11 @@ edges += dip_up("reviews", "inventory_items")
 
 bands = [
     {"x": 20, "y": 70, "w": W - 40, "h": H - 100,
-     "label": "PostgreSQL — one shared schema (V1__init_schema.sql, Flyway)", "fill": "#fafafa"},
+     "label": "PostgreSQL: one shared schema (V1__init_schema.sql, Flyway)", "fill": "#fafafa"},
 ]
 
 notes = [
-    {"x": W / 2, "y": 32, "text": "ch.08 — Shared schema: eight tables, one Postgres schema, nine cross-context foreign keys",
+    {"x": W / 2, "y": 32, "text": "ch.08: Shared schema: eight tables, one Postgres schema, nine cross-context foreign keys",
      "anchor": "middle", "bold": True, "size": 17},
     {"x": W / 2, "y": 56,
      "text": "SMELL[ch.18] (SMELLS.md #1): every FK below crosses a bounded-context ownership boundary, enforced only because everything shares one database",

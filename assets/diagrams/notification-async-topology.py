@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""ch.17 figure: notification-async-topology — the end-to-end async pipeline
+"""ch.17 figure: notification-async-topology: the end-to-end async pipeline
 for the Notification extraction (cures SMELL #4).
 
 Write side: Client -> Camel strangler proxy (:8888) -> Spring monolith
@@ -11,13 +11,13 @@ and publishes unpublished rows to the Kafka topic `order.placed`
 `@Incoming` consumers off that one topic: `OrderPlacedConsumer` (shared
 consumer group) persists idempotently (dedupe by orderId) into its OWN
 schema; `OrderPlacedPushConsumer` (unique group per replica) fans the same
-event out over a WebSocket (`/ws/notifications`) — a second, direct client
+event out over a WebSocket (`/ws/notifications`): a second, direct client
 touchpoint that is NOT proxied (it isn't under the `/api` prefix the proxy
 matches on).
 
 Read side: the proxy's `/api/notifications` route (flag
 `strangler.notification.enabled`) forwards straight to the notification
-service's own schema + REST resource — never to the monolith.
+service's own schema + REST resource: never to the monolith.
 
 The behavior-equivalence suite's "Notification Context Contract" folder
 exercises the read route through the proxy with a bounded-wait
@@ -65,7 +65,7 @@ monolith = node(650, 70, 280, 120,
                   "one @Transactional checkout"], style="box")
 pg = node(1000, 70, 260, 120,
           ["PostgreSQL (shared instance)", "orders table",
-           "outbox table", "— written in the SAME txn —"], style="sub")
+           "outbox table", "written in the SAME txn"], style="sub")
 relay = node(1000, 230, 260, 90,
              ["OutboxRelay", "@Scheduled poller (2000ms)",
               "publishes unpublished rows"], style="box")
@@ -82,14 +82,14 @@ ownschema = node(650, 530, 260, 140,
                    "separate from the monolith's DB"], style="sub")
 consumer1 = node(950, 530, 260, 110,
                   ["OrderPlacedConsumer", "@Incoming(\"order-placed\")",
-                   "shared group — persist, idempotent (dedupe orderId)"], style="box")
+                   "shared group: persist, idempotent (dedupe orderId)"], style="box")
 consumer2 = node(1240, 530, 260, 110,
                   ["OrderPlacedPushConsumer", "@Incoming(\"order-placed-push\")",
-                   "unique group/replica — WebSocket fan-out"], style="box")
+                   "unique group/replica: WebSocket fan-out"], style="box")
 
 wsclient = node(1240, 750, 260, 100,
                 ["Client", "WebSocket /ws/notifications",
-                 "direct — NOT proxied (outside /api)"], style="user")
+                 "direct: NOT proxied (outside /api)"], style="user")
 
 nodes = [suite, client, proxy, monolith, pg, relay, kafka,
          ownschema, consumer1, consumer2, wsclient]
@@ -109,18 +109,18 @@ edges = [
 ]
 
 notes = [
-    {"x": W / 2, "y": 30, "text": "ch.17 — Extracting Notification: the transactional-outbox + async event-driven pipeline",
+    {"x": W / 2, "y": 30, "text": "ch.17: Extracting Notification: the transactional-outbox + async event-driven pipeline",
      "anchor": "middle", "bold": True, "size": 18},
 
     {"x": 650, "y": 215,
      "text": "Write side: checkout writes order + outbox atomically; a scheduled relay is the only thing that talks to Kafka",
      "anchor": "start", "bold": True, "size": 12.5, "color": "#1d1d1d"},
     {"x": 630, "y": 478,
-     "text": "Read + consume side: two independent consumers off the SAME topic — persistence (shared group) and WebSocket push (unique group)",
+     "text": "Read + consume side: two independent consumers off the SAME topic: persistence (shared group) and WebSocket push (unique group)",
      "anchor": "start", "bold": True, "size": 12, "color": "#1d1d1d"},
 
     {"x": 40, "y": 940,
-     "text": "CURED: SMELL #4's synchronous, in-transaction NotificationService call is gone —",
+     "text": "CURED: SMELL #4's synchronous, in-transaction NotificationService call is gone",
      "anchor": "start", "size": 11, "color": "#555555"},
     {"x": 40, "y": 956,
      "text": "see transactional-outbox-sequence.svg for the old-vs-new contrast.",

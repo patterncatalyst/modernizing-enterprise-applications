@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
-"""ch.25 figure: resilience-scorecard — the two-column scorecard
+"""ch.25 figure: resilience-scorecard: the two-column scorecard
 `_docs/25-failure-modes-and-resilience.md` closes on in its own
 "## The resilience scorecard" section: "here is exactly what this project
 has built against the canonical resilience chassis, and exactly what it has
 left for a reader's own production traffic to justify." Every row quotes
 that section's two paragraphs directly; nothing here is inferred.
 
-LEFT column — "Implemented, real, and proven by a negative check": the gRPC
+LEFT column: "Implemented, real, and proven by a negative check": the gRPC
 deadline, at-least-once delivery paired with two-layer idempotent
 consumption, the explicit compensating action, transparent failure
 propagation at the proxy, and MicroProfile Health on both Quarkus services.
 
-RIGHT column — "Deferred by design, with a stated reason": the circuit
+RIGHT column: "Deferred by design, with a stated reason": the circuit
 breaker, the bulkhead, retry backoff/jitter/cap on the outbox relay, the
 dead-letter path, platform-level health consumption, and an idempotency key
 on the compensating `Release` call.
@@ -89,10 +89,10 @@ for i, lines in enumerate(DEFERRED):
 
 notes = [
     {"x": W / 2, "y": 32,
-     "text": "ch.25 — the resilience scorecard: what this project built, and what it left for measured traffic to justify",
+     "text": "ch.25: the resilience scorecard: what this project built, and what it left for measured traffic to justify",
      "anchor": "middle", "bold": True, "size": 16},
     {"x": W / 2, "y": 56,
-     "text": "every implemented row was proven by a negative check (kill it, watch RED, restart it, watch GREEN) — every deferred row has a stated reason, not a silent gap",
+     "text": "every implemented row was proven by a negative check (kill it, watch RED, restart it, watch GREEN): every deferred row has a stated reason, not a silent gap",
      "anchor": "middle", "size": 11.5, "color": "#555555"},
 
     {"x": 50, "y": H - 40,

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""ch.03 figure: migration-metrics-review — the Review-extraction measurement
+"""ch.03 figure: migration-metrics-review: the Review-extraction measurement
 table turned into a comparison figure: three builds (Phase A JVM Spring-compat,
 Phase B JVM idiomatic Quarkus, Phase B native image) across two metrics
 (startup time, resident memory), bars sized to the measured values so the
@@ -7,20 +7,20 @@ native column's startup and memory wins are visible at a glance rather than
 only readable from a table.
 
 This is a box/band/edge generator, not a charting library (project decision
-D3) — the "bars" below are plain node() rectangles whose WIDTH is scaled to
+D3): the "bars" below are plain node() rectangles whose WIDTH is scaled to
 the measured value; the number itself is drawn as a separate text label next
 to the bar rather than inside it, because the native-image startup bar is
-intentionally too narrow to hold text (that narrowness IS the point: it is
+too narrow to hold text (that narrowness is the point: it is
 ~31x shorter than Phase A's bar). Each band uses its own width scale (anchored
 so Phase A's bar is the longest in that band); the two bands are not on a
-shared scale with each other — seconds and megabytes are not comparable
+shared scale with each other: seconds and megabytes are not comparable
 quantities, only the three bars within one band are.
 
 Exact numbers are the ones in the chapter's own measured table in
 _docs/03-modernization-as-engineering.md (sourced from
 examples/02-review-service/MIGRATION.md): Phase A 1.492 s / ~316 MB; Phase B
 JVM 1.431–1.437 s / ~304 MB; Phase B native 0.048–0.049 s / ~73 MB. All three
-builds pass the same 16/16-assertion equivalence suite unchanged — the point
+builds pass the same 16/16-assertion equivalence suite unchanged: the point
 of the whole exercise is that the suite is what makes the speed/memory
 comparison trustworthy in the first place, not just a chart someone drew.
 """
@@ -44,9 +44,9 @@ EQUIV_X = 1280
 
 builds = [
     # (label, style)
-    ("Phase A — JVM, Spring-compat", "box"),
-    ("Phase B — JVM, idiomatic Quarkus", "accent"),
-    ("Phase B — native image", "ink"),
+    ("Phase A: JVM, Spring-compat", "box"),
+    ("Phase B: JVM, idiomatic Quarkus", "accent"),
+    ("Phase B: native image", "ink"),
 ]
 
 startup_vals = [1.492, 1.434, 0.0485]          # midpoints used only to size bars
@@ -78,10 +78,10 @@ band2_y = band1_y + band1_h + 40
 band2_h = 250
 
 band_startup = {"x": 20, "y": band1_y, "w": 1460, "h": band1_h,
-                "label": "Startup time — lower is better (own scale; Phase A's bar is the longest in this band)",
+                "label": "Startup time: lower is better (own scale; Phase A's bar is the longest in this band)",
                 "fill": "#fafafa"}
 band_memory = {"x": 20, "y": band2_y, "w": 1460, "h": band2_h,
-               "label": "Resident memory — lower is better (own scale; Phase A's bar is the longest in this band)",
+               "label": "Resident memory: lower is better (own scale; Phase A's bar is the longest in this band)",
                "fill": "#eaf4ec"}
 
 nodes1, notes1, bottom1 = bars_for_band(band1_y, startup_vals, startup_labels)
@@ -94,7 +94,7 @@ callout2 = {"x": LABEL_X, "y": bottom2 + 30, "text": "~4x smaller: ~316 MB -> ~7
 
 notes = [
     {"x": W / 2, "y": 32,
-     "text": "ch.03 — the Review-extraction measurement: Phase A -> Phase B JVM -> Phase B native",
+     "text": "ch.03: the Review-extraction measurement: Phase A -> Phase B JVM -> Phase B native",
      "anchor": "middle", "bold": True, "size": 16},
     {"x": W / 2, "y": 56,
      "text": "the same 16/16-assertion equivalence suite passed, unchanged, on all three builds",
@@ -107,7 +107,7 @@ notes.append({
     "x": LABEL_X, "y": H - 28,
     "text": "Sourced from _docs/03-modernization-as-engineering.md's measured metrics table and "
             "examples/02-review-service/MIGRATION.md. Bar length is proportional to the value within "
-            "its own band only — seconds and megabytes are not on a shared scale across the two bands.",
+            "its own band only: seconds and megabytes are not on a shared scale across the two bands.",
     "anchor": "start", "size": 10, "color": "#777777",
 })
 

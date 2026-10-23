@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""ch.19 figure: inventory-reserve-compensation-sequence — the cross-seam
+"""ch.19 figure: inventory-reserve-compensation-sequence: the cross-seam
 saga-lite, contrasted with the smell it replaces.
 
-TOP band: the OLD flow (SMELL #3, SMELLS.md row 3 — "one in-process ACID
+TOP band: the OLD flow (SMELL #3, SMELLS.md row 3: "one in-process ACID
 transaction spanning contexts"). `OrderService#placeOrder` reserved stock
 in-JVM, under a pessimistic lock, inside the SAME `@Transactional` as order
 persistence and payment charge. A payment decline rolled the inventory
-decrement back automatically — Postgres gave checkout a "free rollback"
+decrement back automatically: Postgres gave checkout a "free rollback"
 because everything lived in one database, one transaction.
 
 BOTTOM band: the NEW flow (current, r05/ch.19 S7/S11, DRQ-041/DRQ-042). Once
@@ -17,7 +17,7 @@ the inventory service's OWN transaction, outside the monolith's. If
 `reservation_ok=false`, nothing was decremented and no compensation is
 needed (maps to `InsufficientStockException`, 409). If `Reserve` succeeds but
 checkout later fails (notably a payment decline), `OrderService`'s catch
-block issues the compensating gRPC `Release` — explicit, best-effort
+block issues the compensating gRPC `Release`: explicit, best-effort
 compensation (no idempotency key / saga ledger yet; a documented limitation
 deferred to ch.23's choreographed saga) standing in for the automatic
 rollback that disappeared when the schema split.
@@ -40,10 +40,10 @@ g.OUT = os.path.dirname(__file__)
 W, H = 1400, 920
 
 # ============================================================================
-# TOP band — OLD: in-process ACID transaction (SMELL #3, the "free rollback")
+# TOP band: OLD: in-process ACID transaction (SMELL #3, the "free rollback")
 # ============================================================================
 band_old = {"x": 20, "y": 60, "w": 1360, "h": 230,
-            "label": "OLD — one in-process ACID transaction spanning contexts (SMELL #3): the \"free rollback\"",
+            "label": "OLD: one in-process ACID transaction spanning contexts (SMELL #3): the \"free rollback\"",
             "fill": "#fafafa"}
 
 client1 = node(40, 130, 150, 100, ["Client", "checkout request"], style="sub")
@@ -64,7 +64,7 @@ old_edges = [
 ]
 
 # ============================================================================
-# BOTTOM band — NEW: cross-seam saga-lite, explicit compensation
+# BOTTOM band: NEW: cross-seam saga-lite, explicit compensation
 # ============================================================================
 band_new = {"x": 20, "y": 340, "w": 1360, "h": 500,
             "label": "NEW (ch.19, current) -- cross-seam saga-lite: explicit compensation replaces the free rollback",
@@ -108,7 +108,7 @@ notes = [
      "anchor": "middle", "bold": True, "size": 17},
 
     {"x": 40, "y": 272,
-     "text": "One shared database, one transaction: a payment decline unwound the inventory decrement for free, with no application code written for it.",
+     "text": "One shared database, one transaction: a payment decline unwound the inventory decrement automatically, with no application code written for it.",
      "anchor": "start", "size": 11, "color": "#555555"},
 
     {"x": 40, "y": 400 - 10,
@@ -116,7 +116,7 @@ notes = [
      "anchor": "start", "size": 11, "color": "#1d1d1d", "bold": True},
 
     {"x": 470, "y": 680,
-     "text": "Honest limitation: Release is an UNCONDITIONAL increment with no dedupe key -- a retried Release after an",
+     "text": "Limitation: Release is an UNCONDITIONAL increment with no dedupe key -- a retried Release after an",
      "anchor": "start", "size": 10.5, "color": "#555555"},
     {"x": 470, "y": 694,
      "text": "at-least-once redelivery could over-restore stock; a full fix (idempotency key / saga ledger) is deferred to ch.23.",

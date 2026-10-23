@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""ch.23 figure: payment-compensation-choreography — compensation moves from
+"""ch.23 figure: payment-compensation-choreography: compensation moves from
 an in-line `catch` (ch.19) to a choreographed event reaction (ch.23,
 DRQ-049), ending net-zero either way.
 
@@ -7,11 +7,11 @@ TOP band: the ch.19 shape (still true for the synchronous baseline,
 `payment.mode=synchronous`, and for a reserve failure in BOTH modes).
 `OrderService.placeOrder()`'s own try/catch calls the compensating gRPC
 `Release` directly, on the SAME request thread, the instant the in-process
-payment charge throws/declines — see
+payment charge throws/declines: see
 inventory-reserve-compensation-sequence.svg for the full ch.19 picture.
 
 BOTTOM band: the ch.23 shape (`payment.mode=choreographed`). There is no
-request-thread `catch` to lean on for a payment decline anymore — the
+request-thread `catch` to lean on for a payment decline anymore: the
 decline is discovered by a DIFFERENT process (the payment service) after the
 checkout request has already returned `202 Accepted`. Compensation is
 triggered by REACTING to the `payment.declined` EVENT, across TWO async
@@ -22,11 +22,11 @@ idempotency guard (status == PENDING) makes this fire at most once per
 order (DRQ-051). Either path ends the same way: stock restored, NET-ZERO.
 
 Sourced from: examples/00-monolith/.../order/OrderService.java
-(placeOrder's catch, compensateRemoteReservations — ch.19, DRQ-042),
-examples/00-monolith/.../order/OrderSagaListener.java (onPaymentDeclined —
+(placeOrder's catch, compensateRemoteReservations: ch.19, DRQ-042),
+examples/00-monolith/.../order/OrderSagaListener.java (onPaymentDeclined
 ch.23, DRQ-049/-051), examples/05-payment-service/.../PaymentService.java
 (processOrderPlaced emits payment.declined via its own outbox, DRQ-053),
-and _plans/iterations/payment-plan.md (H3 — "Scenario 3 compensation via
+and _plans/iterations/payment-plan.md (H3: "Scenario 3 compensation via
 choreography"). No codenames; generic/public names only.
 """
 import sys, os
@@ -40,10 +40,10 @@ g.OUT = os.path.dirname(__file__)
 W, H = 1360, 760
 
 # ============================================================================
-# TOP band — ch.19: compensation from an in-line catch, same request thread
+# TOP band: ch.19: compensation from an in-line catch, same request thread
 # ============================================================================
 band_old = {"x": 20, "y": 60, "w": 1320, "h": 260,
-            "label": "ch.19 — compensation from an in-line catch (same request thread; synchronous mode, and any reserve failure)",
+            "label": "ch.19: compensation from an in-line catch (same request thread; synchronous mode, and any reserve failure)",
             "fill": "#fafafa"}
 
 checkout1 = node(40, 130, 260, 90,
@@ -64,10 +64,10 @@ old_edges = [
 ]
 
 # ============================================================================
-# BOTTOM band — ch.23: compensation via choreography, two async hops
+# BOTTOM band: ch.23: compensation via choreography, two async hops
 # ============================================================================
 band_new = {"x": 20, "y": 360, "w": 1320, "h": 360,
-            "label": "ch.23 — compensation via choreography (choreographed mode): no catch to lean on — two async hops",
+            "label": "ch.23: compensation via choreography (choreographed mode): no catch to lean on: two async hops",
             "fill": "#eaf4ec"}
 
 checkout2 = node(40, 420, 230, 80,
@@ -81,7 +81,7 @@ outbox2 = node(340, 520, 250, 70, ["payment.declined", "payment service's OWN ou
 hop1 = node(650, 470, 90, 50, ["HOP 1", "emit"], style="ghost")
 
 listener2 = node(800, 420, 270, 80,
-                  ["OrderSagaListener.onPaymentDeclined()", "idempotent — status == PENDING"], style="accent")
+                  ["OrderSagaListener.onPaymentDeclined()", "idempotent: status == PENDING"], style="accent")
 
 hop2 = node(650, 560, 90, 50, ["HOP 2", "react"], style="ghost")
 
@@ -101,7 +101,7 @@ new_edges = [
 
 notes = [
     {"x": W / 2, "y": 32,
-     "text": "ch.23 — compensation moves from an in-line catch to a choreographed event reaction",
+     "text": "ch.23: compensation moves from an in-line catch to a choreographed event reaction",
      "anchor": "middle", "bold": True, "size": 16},
 
     {"x": 40, "y": 735,

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""ch.15 figure: review-two-phase-migration — Phase A -> Phase B -> native.
+"""ch.15 figure: review-two-phase-migration: Phase A -> Phase B -> native.
 
 Compact flow of the repeatable per-service migration template (build-plan.md
 SS E, DRQ-029) as taught on the Review service: Phase A lifts the Spring-API
@@ -20,13 +20,13 @@ g.OUT = os.path.dirname(__file__)
 W, H = 1180, 560
 
 phase_a = node(40, 130, 310, 120,
-                ["Phase A — lift onto Quarkus", "Spring-compat extensions",
+                ["Phase A: lift onto Quarkus", "Spring-compat extensions",
                  "quarkus-spring-web / -di / -data-jpa"], style="box")
 phase_b = node(430, 130, 310, 120,
-                ["Phase B — idiomatic Quarkus", "Quarkus REST + Panache + CDI",
+                ["Phase B: idiomatic Quarkus", "Quarkus REST + Panache + CDI",
                  "compat shim removed"], style="accent")
 native = node(820, 130, 310, 120,
-              ["Phase B — native image", "GraalVM Mandrel builder image",
+              ["Phase B: native image", "GraalVM Mandrel builder image",
                "same idiomatic code, no rewrite"], style="ink")
 
 nodes = [phase_a, phase_b, native]
@@ -44,13 +44,13 @@ row0, row_gap = 345, 32
 
 rows = [
     ("Build", "Startup", "RSS", True),
-    ("Phase A — JVM (spring-compat)", "1.492 s", "~316 MB", False),
-    ("Phase B — JVM (idiomatic)", "1.431–1.437 s", "~304 MB", False),
-    ("Phase B — native image", "0.048–0.049 s", "~73 MB", False),
+    ("Phase A: JVM (spring-compat)", "1.492 s", "~316 MB", False),
+    ("Phase B: JVM (idiomatic)", "1.431–1.437 s", "~304 MB", False),
+    ("Phase B: native image", "0.048–0.049 s", "~73 MB", False),
 ]
 
 notes = [
-    {"x": W / 2, "y": 32, "text": "ch.15 — Review service: the two-phase migration template",
+    {"x": W / 2, "y": 32, "text": "ch.15: Review service: the two-phase migration template",
      "anchor": "middle", "bold": True, "size": 18},
     {"x": W / 2, "y": 60,
      "text": "Phase A de-risks the extraction fast; Phase B is where the \"why Quarkus\" case gets made with numbers.",

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""ch.03 figure: microservice-traits — the ten traits the chapter says the
+"""ch.03 figure: microservice-traits: the ten traits the chapter says the
 word "microservices" is actually promising, laid out as a labelled grid
 instead of the wall of prose in "The ten microservice traits" section.
 

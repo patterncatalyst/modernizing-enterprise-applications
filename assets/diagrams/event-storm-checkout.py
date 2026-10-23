@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-"""ch.12 figure: event-storm-checkout — two readings of one call chain.
+"""ch.12 figure: event-storm-checkout: two readings of one call chain.
 
-TOP band: today's `OrderService#placeOrder` as it actually executes — one
+TOP band: today's `OrderService#placeOrder` as it actually executes: one
 synchronous call chain, one `@Transactional` (SMELL[ch.22], SMELL[ch.26]).
 BOTTOM band: the same business process re-read with the event-storming
-grammar — actor, command, aggregate, domain events, policies/reactions, an
+grammar: actor, command, aggregate, domain events, policies/reactions, an
 external system, and a read model. The domain-event names in the bottom band
 are exactly the constants already reserved (unused) in `common/Topics.java`
 plus the two this chapter adds to that set (StockReserved, PaymentDeclined,
-OrderConfirmed, NotificationSent) — see SMELLS.md smell #4.
+OrderConfirmed, NotificationSent): see SMELLS.md smell #4.
 
 Node-style reuse note: this project's generate_diagram.py palette has seven
 styles (box/sub/accent/user/kernel/ghost/ink), not the six sticky-note colors
@@ -33,7 +33,7 @@ invT = node(370, 130, 190, 90, ["InventoryService.reserve()", "direct in-process
 orderT = node(590, 130, 160, 90, ["Order", "persisted"], style="box")
 payT = node(780, 130, 190, 90, ["PaymentService.charge()", "direct in-process call"], style="ink")
 shipT = node(1000, 130, 190, 90, ["ShippingService.dispatch()", "direct in-process call"], style="ink")
-notifT = node(1220, 130, 230, 90, ["NotificationService", "sendOrderConfirmation() — direct call"], style="ink")
+notifT = node(1220, 130, 230, 90, ["NotificationService", "sendOrderConfirmation(): direct call"], style="ink")
 
 top_nodes = [customerT, commandT, invT, orderT, payT, shipT, notifT]
 top_edges = [
@@ -96,12 +96,12 @@ bottom_edges = [
 ]
 
 notes = [
-    {"x": W / 2, "y": 30, "text": "ch.12 — Event-storming the checkout flow: two readings of one call chain",
+    {"x": W / 2, "y": 30, "text": "ch.12: Event-storming the checkout flow: two readings of one call chain",
      "anchor": "middle", "bold": True, "size": 18},
 
-    {"x": 40, "y": 65, "text": "TOP — today: OrderService#placeOrder, one @Transactional, five contexts, synchronous calls",
+    {"x": 40, "y": 65, "text": "TOP: today: OrderService#placeOrder, one @Transactional, five contexts, synchronous calls",
      "anchor": "start", "bold": True, "size": 14},
-    {"x": 40, "y": 345, "text": "BOTTOM — the same process, event-stormed: actor -> command -> aggregate -> domain events, "
+    {"x": 40, "y": 345, "text": "BOTTOM: the same process, event-stormed: actor -> command -> aggregate -> domain events, "
                                 "policies/reactions, an external system, a read model",
      "anchor": "start", "bold": True, "size": 14},
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""ch.19 figure: cdc-debezium-backfill-pipeline — the CDC backfill MECHANISM
+"""ch.19 figure: cdc-debezium-backfill-pipeline: the CDC backfill MECHANISM
 itself: Postgres WAL -> Debezium connector -> Kafka topic -> InventoryCdcConsumer,
 plus the replication-slot/publication lifecycle this one connector owned from
 registration through retirement. Distinct from Figure 19.1
@@ -7,7 +7,7 @@ registration through retirement. Distinct from Figure 19.1
 with CDC as one retired corner of a bigger picture; this figure is the pipeline
 on its own, end to end.
 
-TOP band — the pipeline, active during the transition window (S3-S10):
+TOP band: the pipeline, active during the transition window (S3-S10):
 `wal_level=logical` + the `pgoutput` plugin give the monolith's Postgres write-
 ahead log enough decoding detail for Debezium to read; `REPLICA IDENTITY FULL`
 on `inventory_items` is what makes the "before" image on update/delete
@@ -27,15 +27,15 @@ assigned `id`, so Kafka's at-least-once redelivery never double-applies a
 change. That upsert is what backfills, then keeps current, the inventory
 service's own schema while the monolith is still the writer of record.
 
-BOTTOM band — the slot/publication's retirement: once the gRPC `Reserve`/
+BOTTOM band: the slot/publication's retirement: once the gRPC `Reserve`/
 `Release` seam (Figure 19.1) makes the inventory service the sole writer of
 its own data, the connector has nothing left to replicate.
 `scripts/retire-debezium.sh`, run once at the S11 cutover, deletes the
 `mea-inventory-connector` and drops both `mea_inventory_slot` and
-`mea_inventory_publication` — an un-drained slot would otherwise retain WAL on
+`mea_inventory_publication`: an un-drained slot would otherwise retain WAL on
 the monolith's Postgres indefinitely, a disk-fill risk with no offsetting
 benefit once CDC's job is done. This pipeline ran once, for one backfill
-window, and was deliberately torn down rather than left running.
+window, and was torn down rather than left running.
 
 Sourced from `_docs/19-cdc-and-extraction-3-inventory.md` ("Transaction log
 tailing: Debezium reads the write-ahead log" and "Owned data, then own-seed"
@@ -55,10 +55,10 @@ g.OUT = os.path.dirname(__file__)
 W, H = 1600, 760
 
 # ============================================================================
-# TOP band — the pipeline itself, active S3-S10
+# TOP band: the pipeline itself, active S3-S10
 # ============================================================================
 band_pipeline = {"x": 20, "y": 56, "w": 1560, "h": 300,
-                  "label": "The CDC backfill pipeline — active during the transition window",
+                  "label": "The CDC backfill pipeline: active during the transition window",
                   "fill": "#eaf4ec"}
 
 wal = node(40, 140, 230, 120,
@@ -115,15 +115,15 @@ pipeline_subnotes = [
     {"x": 1290, "y": 301, "text": "kept current until retired.",
      "anchor": "start", "size": 10.5, "color": "#555555"},
     {"x": 40, "y": 338,
-     "text": "CDC never sat in the checkout path — it only ever moved data sideways to seed, then keep current, a database the inventory service owns outright.",
+     "text": "CDC never sat in the checkout path: it only ever moved data sideways to seed, then keep current, a database the inventory service owns outright.",
      "anchor": "start", "size": 11, "color": "#1d1d1d", "bold": True},
 ]
 
 # ============================================================================
-# BOTTOM band — the slot/publication's retirement, S11
+# BOTTOM band: the slot/publication's retirement, S11
 # ============================================================================
 band_retire = {"x": 20, "y": 390, "w": 1560, "h": 300,
-               "label": "Retirement — scripts/retire-debezium.sh, run once at cutover",
+               "label": "Retirement: scripts/retire-debezium.sh, run once at cutover",
                "fill": "#f4f4f4"}
 
 ghost_slot = node(100, 480, 380, 120,
@@ -145,7 +145,7 @@ retire_edges = [
 retire_subnotes = [
     {"x": 100, "y": 625, "text": "An un-drained slot would otherwise retain",
      "anchor": "start", "size": 10.5, "color": "#555555"},
-    {"x": 100, "y": 638, "text": "WAL on the monolith's Postgres indefinitely —",
+    {"x": 100, "y": 638, "text": "WAL on the monolith's Postgres indefinitely",
      "anchor": "start", "size": 10.5, "color": "#555555"},
     {"x": 100, "y": 651, "text": "a disk-fill risk with no offsetting benefit.",
      "anchor": "start", "size": 10.5, "color": "#555555"},
@@ -159,7 +159,7 @@ retire_subnotes = [
 
 notes = [
     {"x": W / 2, "y": 32,
-     "text": "ch.19 — The CDC backfill pipeline: WAL to Debezium to Kafka to InventoryCdcConsumer, then the slot's retirement",
+     "text": "ch.19: The CDC backfill pipeline: WAL to Debezium to Kafka to InventoryCdcConsumer, then the slot's retirement",
      "anchor": "middle", "bold": True, "size": 17},
 ] + pipeline_subnotes + retire_subnotes + [
     {"x": 40, "y": 740,

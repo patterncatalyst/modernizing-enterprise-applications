@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""ch.02 figure: ledger-files-to-adlc-phases — maps the four ledger files
+"""ch.02 figure: ledger-files-to-adlc-phases: maps the four ledger files
 `_docs/02-project-ledger.md` walks through (`_plans/build-plan.md`,
 `_plans/iterations/r02-plan.md`, `_plans/iterations/r02-status.md`,
 `_plans/decisions.md`, and the still-unwritten `_plans/reconciliation.md`)

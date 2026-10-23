@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""ch.18 figure: shared-db-to-database-per-service — the chapter's core
+"""ch.18 figure: shared-db-to-database-per-service: the chapter's core
 before/after, grounded in the one relationship ch.18 and ch.19 both use as
 their running example: `OrderItem`'s FK into `InventoryItem`.
 
 LEFT: today's shared schema. `order_items.inventory_item_id` is a live
 `@ManyToOne` FK straight into `inventory_items`, enforced by Postgres inside
 one database (`V1__init_schema.sql`). `order_items.unit_price_cents` is
-already a captured snapshot, but `sku` and the product name are not — they
+already a captured snapshot, but `sku` and the product name are not: they
 are read live off whatever `inventory_items` currently holds, which is the
 exact mechanism behind the chapter's SKU-rename bug: rename a SKU next
 quarter and every historical order's display silently relabels itself, with
@@ -16,7 +16,7 @@ RIGHT: the ch.19 target. Inventory owns its own database; the FK is dropped
 (`ALTER TABLE order_items DROP CONSTRAINT order_items_inventory_item_id_fkey`)
 and `order_items` gains `inventory_item_sku` / `product_name_snapshot`
 columns, written once at order-placement time the same way
-`unit_price_cents` already is — so the SKU-rename bug becomes impossible by
+`unit_price_cents` already is: so the SKU-rename bug becomes impossible by
 construction, not merely fixed. Inventory's own data moves to its new owned
 database the way ch.19's "Planning the split" section describes: a CDC
 connector tails the shared schema's write-ahead log and backfills the new
@@ -43,15 +43,15 @@ g.OUT = os.path.dirname(__file__)
 W, H = 1600, 820
 
 band_left = {"x": 20, "y": 60, "w": 760, "h": 700,
-             "label": "SHARED DATABASE — live FK join (today)", "fill": "#fafafa"}
+             "label": "SHARED DATABASE: live FK join (today)", "fill": "#fafafa"}
 band_right = {"x": 820, "y": 60, "w": 760, "h": 700,
-              "label": "DATABASE PER SERVICE — snapshot + event feed (ch.19 target)", "fill": "#eaf4ec"}
+              "label": "DATABASE PER SERVICE: snapshot + event feed (ch.19 target)", "fill": "#eaf4ec"}
 
 # ============================================================================
-# LEFT — one shared schema, order_items' live FK into inventory_items
+# LEFT: one shared schema, order_items' live FK into inventory_items
 # ============================================================================
 schemaL = node(100, 110, 600, 70,
-               ["PostgreSQL — one shared schema", "V1__init_schema.sql"], style="ink")
+               ["PostgreSQL: one shared schema", "V1__init_schema.sql"], style="ink")
 orderItemsL = node(60, 230, 320, 130,
                     ["order_items", "id PK", "order_id FK -> orders",
                      "inventory_item_id FK -> inventory_items",
@@ -62,7 +62,7 @@ inventoryItemsL = node(420, 230, 320, 110,
 bugL = node(100, 410, 600, 110, style="ghost", lines=[
     "Live join reads inventory's CURRENT row",
     "Rename a SKU next quarter and every past order's display",
-    "silently relabels itself — no record anything changed",
+    "silently relabels itself: no record anything changed",
 ])
 
 left_nodes = [schemaL, orderItemsL, inventoryItemsL, bugL]
@@ -72,7 +72,7 @@ left_edges = [
 ]
 
 # ============================================================================
-# RIGHT — two owned databases: snapshot columns + a CDC event feed
+# RIGHT: two owned databases: snapshot columns + a CDC event feed
 # ============================================================================
 orderDbR = node(860, 110, 320, 150, style="accent", lines=[
     "Order database (owned)", "order_items",

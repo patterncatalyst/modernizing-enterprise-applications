@@ -1,9 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 680" font-family="'Red Hat Text', system-ui, sans-serif" role="img">
 <defs><marker id="a" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#555"/></marker><marker id="am" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2f5f3d"/></marker></defs>
 <rect x="20" y="60" width="630" height="560" rx="12" fill="#fafafa" stroke="#ddd"/>
-<text x="32" y="80" font-size="12" font-weight="700" fill="#1d1d1d">BEFORE — payment.mode=synchronous (default baseline)</text>
+<text x="32" y="80" font-size="12" font-weight="700" fill="#1d1d1d">BEFORE: payment.mode=synchronous (default baseline)</text>
 <rect x="710" y="60" width="670" height="560" rx="12" fill="#eaf4ec" stroke="#ddd"/>
-<text x="722" y="80" font-size="12" font-weight="700" fill="#1d1d1d">AFTER — payment.mode=choreographed (current)</text>
+<text x="722" y="80" font-size="12" font-weight="700" fill="#1d1d1d">AFTER: payment.mode=choreographed (current)</text>
 <rect x="50" y="110" width="240" height="80" rx="9" fill="#ffffff" stroke="#999999" stroke-width="1.5"/>
 <text x="170.0" y="148.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Client</text>
 <text x="170.0" y="165.0" font-size="11.5" fill="#555555" text-anchor="middle">POST /api/orders</text>
@@ -18,7 +18,7 @@
 <text x="170.0" y="505.0" font-size="11.5" fill="#dddddd" text-anchor="middle">order CONFIRMED</text>
 <rect x="330" y="450" width="240" height="80" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
 <text x="450.0" y="488.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">402 Payment Required</text>
-<text x="450.0" y="505.0" font-size="11.5" fill="#555555" text-anchor="middle">charge declined — nothing persisted</text>
+<text x="450.0" y="505.0" font-size="11.5" fill="#555555" text-anchor="middle">charge declined: nothing persisted</text>
 <rect x="730" y="110" width="240" height="80" rx="9" fill="#ffffff" stroke="#999999" stroke-width="1.5"/>
 <text x="850.0" y="148.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Client</text>
 <text x="850.0" y="165.0" font-size="11.5" fill="#555555" text-anchor="middle">POST /api/orders</text>
@@ -30,7 +30,7 @@
 <text x="850.0" y="380.0" font-size="11.5" fill="#555555" text-anchor="middle">no in-line charge; outbox row in same txn</text>
 <rect x="730" y="450" width="240" height="80" rx="9" fill="#111111" stroke="#111111" stroke-width="2"/>
 <text x="850.0" y="488.0" font-size="13.5" font-weight="700" fill="#ffffff" text-anchor="middle">202 Accepted</text>
-<text x="850.0" y="505.0" font-size="11.5" fill="#dddddd" text-anchor="middle">+ Location — IMMEDIATELY</text>
+<text x="850.0" y="505.0" font-size="11.5" fill="#dddddd" text-anchor="middle">+ Location: IMMEDIATELY</text>
 <rect x="1010" y="450" width="320" height="80" rx="9" fill="#ffffff" stroke="#999999" stroke-width="1.5"/>
 <text x="1170.0" y="488.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Client polls</text>
 <text x="1170.0" y="505.0" font-size="11.5" fill="#555555" text-anchor="middle">GET /api/orders/{id}</text>
@@ -41,7 +41,7 @@
 <text x="1265.0" y="583.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">PAYMENT_DECLINED</text>
 <text x="1265.0" y="600.0" font-size="11.5" fill="#555555" text-anchor="middle">(eventually)</text>
 <rect x="410" y="560" width="240" height="70" rx="9" fill="#ffffff" stroke="#999999" stroke-width="1.5" stroke-dasharray="6 4"/>
-<text x="530.0" y="593.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">synchronous 402 — GONE</text>
+<text x="530.0" y="593.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">synchronous 402: GONE</text>
 <text x="530.0" y="610.0" font-size="11.5" fill="#555555" text-anchor="middle">replaced by an eventual PAYMENT_DECLINED</text>
 <path d="M170.0,190.0 L170.0,220.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
 <text x="176.0" y="199.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">POST</text>
@@ -77,7 +77,7 @@
 <path d="M480.4761904761905,530.0 L503.3333333333333,560.0" fill="none" stroke="#555" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#a)"/>
 <text x="497.9047619047619" y="539.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">removed</text>
 <text x="497.9047619047619" y="539.0" font-size="11" fill="#555" text-anchor="middle">removed</text>
-<text x="700.0" y="32" font-size="17" fill="#1d1d1d" text-anchor="middle" font-weight="700">ch.23 — the sync-&gt;async checkout contract change</text>
+<text x="700.0" y="32" font-size="17" fill="#1d1d1d" text-anchor="middle" font-weight="700">ch.23: the sync-&gt;async checkout contract change</text>
 <text x="50" y="208" font-size="11" fill="#555555" text-anchor="start">the POST carries the FINAL answer</text>
 <text x="730" y="208" font-size="11" fill="#555555" text-anchor="start">the POST carries only an ACCEPTANCE; the terminal status arrives later</text>
 <text x="50" y="650" font-size="10.5" fill="#555555" text-anchor="start">Sourced from examples/00-monolith/.../order/{OrderController,OrderService}.java (the payment.mode flag).</text>
