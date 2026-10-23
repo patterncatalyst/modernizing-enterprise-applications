@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""ch.08 figure: place-order-transaction-sequence — the structural heart of
+"""ch.08 figure: place-order-transaction-sequence: the structural heart of
 the book's "before" picture: OrderService#placeOrder as ONE Spring
 @Transactional spanning five bounded contexts, in-process, one database,
-atomic rollback for free. Reused conceptually by ch.09 (Smells 2/3/4/5),
+atomic rollback automatically. Reused conceptually by ch.09 (Smells 2/3/4/5),
 ch.12 (event storming), ch.22 (ACID -> ACD), and ch.23/24 (sagas rebuild
-explicitly what Postgres gave away here for free).
+explicitly what Postgres gave away here automatically).
 
 Call order and exception semantics sourced verbatim from
 examples/00-monolith/src/main/java/dev/patterncatalyst/monolith/order/
@@ -25,14 +25,14 @@ W, H = 1680, 700
 client = node(30, 270, 150, 80, ["Client", "POST /api/orders"], style="sub")
 
 band = {"x": 200, "y": 170, "w": 1310, "h": 300,
-        "label": "ONE @Transactional — OrderService#placeOrder (order/OrderService.java)",
+        "label": "ONE @Transactional: OrderService#placeOrder (order/OrderService.java)",
         "fill": "#eaf4ec"}
 
 STEP_Y, STEP_H, STEP_W, GUTTER = 240, 120, 145, 12
 STEP_X0 = 220
 steps = [
     ("validate", ["Validate customer", "customerRepository.findById", "404 if missing"]),
-    ("reserve", ["Reserve stock (loop)", "InventoryService: find + reserve()", "pessimistic lock — SMELL[ch.16] no ACL"]),
+    ("reserve", ["Reserve stock (loop)", "InventoryService: find + reserve()", "pessimistic lock: SMELL[ch.16] no ACL"]),
     ("persist", ["Persist order", "orderRepository.save", "cascades order_items"]),
     ("charge", ["Charge payment", "PaymentService.charge", "decline -> rolls back all above"]),
     ("confirm", ["Confirm order", "order.confirm()", "status -> CONFIRMED"]),
@@ -59,16 +59,16 @@ for a, b in zip(order_keys, order_keys[1:]):
     edges.append(connect(step_nodes[a], step_nodes[b]))
 edges.append(connect(step_nodes["commit"], response, amber=True, label="txn commits"))
 
-# ---- failure branch 1: insufficient stock — exits before any write --------
+# ---- failure branch 1: insufficient stock: exits before any write --------
 insufficient = node(step_nodes["reserve"]["x"] - 10, 480, 260, 90,
-                     ["409 Insufficient Stock", "InsufficientStockException", "no writes yet — exits before persist"],
+                     ["409 Insufficient Stock", "InsufficientStockException", "no writes yet: exits before persist"],
                      style="ghost")
 nodes.append(insufficient)
 edges.append(connect(step_nodes["reserve"], insufficient, dashed=True, label="quantity exceeds on-hand"))
 
-# ---- failure branch 2: payment decline — rolls back everything written ----
+# ---- failure branch 2: payment decline: rolls back everything written ----
 rollback = node(step_nodes["charge"]["x"] - 40, 480, 300, 100,
-                ["402 Payment Required", "PaymentDeclinedException", "ROLLBACK ALL — reserve + persist undone"],
+                ["402 Payment Required", "PaymentDeclinedException", "ROLLBACK ALL: reserve + persist undone"],
                 style="ink")
 nodes.append(rollback)
 edges.append(connect(step_nodes["charge"], rollback, dashed=True, label="method contains DECLINE"))
@@ -78,10 +78,10 @@ edges.append({"x1": rollback["x"] + 20, "y1": rollback["y"], "x2": step_nodes["p
 edges.append({"x1": rollback["x"] + 60, "y1": rollback["y"], "x2": step_nodes["reserve"]["x"] + 160,
               "y2": step_nodes["reserve"]["y"] + step_nodes["reserve"]["h"],
               "dashed": True, "amber": True,
-              "label": "one shared Postgres transaction — undone automatically, free", "ly": -8})
+              "label": "one shared Postgres transaction: undone automatically, free", "ly": -8})
 
 notes = [
-    {"x": W / 2, "y": 32, "text": "ch.08 — OrderService#placeOrder: one @Transactional spans five bounded contexts",
+    {"x": W / 2, "y": 32, "text": "ch.08: OrderService#placeOrder: one @Transactional spans five bounded contexts",
      "anchor": "middle", "bold": True, "size": 17},
     {"x": W / 2, "y": 56,
      "text": "validate -> reserve -> persist -> charge -> confirm -> dispatch -> notify -> commit, in-process, one database",

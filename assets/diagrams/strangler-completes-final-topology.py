@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""ch.26 figure: strangler-completes-final-topology — the capstone end-state
+"""ch.26 figure: strangler-completes-final-topology: the final end-state
 topology once the sixth and last extraction (order + the GraphQL gateway)
 lands and the monolith is decommissioned (ch.26 S10, DRQ-070/075).
 
@@ -16,7 +16,7 @@ layer over five of those six -- see the graphql-aggregation-gateway figure).
 The Spring monolith (:8080) is REMOVED from the running topology -- no edge
 routes to it, no live traffic reaches it -- but kept FROZEN in-repo (DRQ-024)
 as the "before" picture and the golden-baseline referent the (now converted)
-contract suite was built from. It stands alone in this figure, deliberately
+contract suite was built from. It stands alone in this figure, unwired
 unwired, to make that removal visually literal.
 
 Sourced from: examples/01-strangler-proxy/.../StranglerProxyRoute.java
@@ -38,7 +38,7 @@ W, H = 1450, 950
 # ---- client + edge router ---------------------------------------------------
 client = node(40, 430, 220, 100, ["Client", "REST + GraphQL"], style="user")
 router = node(300, 380, 280, 180,
-              ["Camel edge router :8888", "flagless — permanent REST/GraphQL entry point",
+              ["Camel edge router :8888", "flagless: permanent REST/GraphQL entry point",
                "strangler .choice() collapsed; strangler.*.enabled retired"],
               style="ink")
 
@@ -46,14 +46,14 @@ router = node(300, 380, 280, 180,
 services_band = {"x": 970, "y": 20, "w": 440, "h": 800,
                   "label": "Six extracted Quarkus services + the GraphQL gateway", "fill": "#eaf4ec"}
 
-review = node(1000, 40, 380, 90, ["Review service", ":8081 — REST (ch.15)"], style="box")
-notification = node(1000, 150, 380, 90, ["Notification service", ":8083 — REST + WebSocket (ch.17)"], style="box")
+review = node(1000, 40, 380, 90, ["Review service", ":8081: REST (ch.15)"], style="box")
+notification = node(1000, 150, 380, 90, ["Notification service", ":8083: REST + WebSocket (ch.17)"], style="box")
 inventory = node(1000, 260, 380, 90, ["Inventory service", ":8084 REST / :9004 gRPC (ch.19)"], style="accent")
-payment = node(1000, 370, 380, 90, ["Payment service", ":8085 — REST (ch.23)"], style="box")
-shipping = node(1000, 480, 380, 90, ["Shipping service", ":8088 — REST (ch.24)"], style="box")
-order = node(1000, 590, 380, 90, ["Order service", ":8087 — REST, CQRS write+read split (ch.26, fig. 1)"],
+payment = node(1000, 370, 380, 90, ["Payment service", ":8085: REST (ch.23)"], style="box")
+shipping = node(1000, 480, 380, 90, ["Shipping service", ":8088: REST (ch.24)"], style="box")
+order = node(1000, 590, 380, 90, ["Order service", ":8087: REST, CQRS write+read split (ch.26, fig. 1)"],
              style="accent")
-gateway = node(1000, 700, 380, 90, ["GraphQL gateway", ":8090 — aggregation, owns no data (ch.26, fig. 2)"],
+gateway = node(1000, 700, 380, 90, ["GraphQL gateway", ":8090: aggregation, owns no data (ch.26, fig. 2)"],
                style="accent")
 
 service_nodes = [review, notification, inventory, payment, shipping, order, gateway]
@@ -71,20 +71,20 @@ edges = [
 
 # ---- the frozen monolith: standalone, no edges in or out --------------------
 monolith = node(40, 650, 460, 220,
-                 ["Spring monolith", ":8080 — FROZEN, kept in-repo",
+                 ["Spring monolith", ":8080: FROZEN, kept in-repo",
                   "reference / monolith-before baseline for the contract suite",
-                  "REMOVED from the running topology — no live traffic, no routes in"],
+                  "REMOVED from the running topology: no live traffic, no routes in"],
                  style="ghost")
 
 nodes = [client, router] + service_nodes + [monolith]
 
 notes = [
     {"x": W / 2, "y": 32,
-     "text": "ch.26 — the strangler completes: final topology (six services + the GraphQL gateway behind one flagless edge router)",
+     "text": "ch.26: the strangler completes: final topology (six services + the GraphQL gateway behind one flagless edge router)",
      "anchor": "middle", "bold": True, "size": 17},
 
     {"x": 270, "y": 598,
-     "text": "the monolith is a historical artifact only — nothing in the running topology calls it",
+     "text": "the monolith is a historical artifact only: nothing in the running topology calls it",
      "anchor": "middle", "size": 11, "color": "#555555"},
 
     {"x": 40, "y": 930,

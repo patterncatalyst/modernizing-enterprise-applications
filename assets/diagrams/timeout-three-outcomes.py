@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""ch.25 figure: timeout-three-outcomes — the structural claim
+"""ch.25 figure: timeout-three-outcomes: the structural claim
 _docs/25-failure-modes-and-resilience.md opens its "Timeouts and deadlines"
-section with: "A method call inside one JVM either returns or throws — there
+section with: "A method call inside one JVM either returns or throws: there
 is no third outcome. A gRPC call across a network can return, throw, or
 simply never come back at all." The chapter ties that third outcome directly
 to Chapter 19's extraction: "The moment Chapter 19 moved that call behind a
@@ -18,7 +18,7 @@ followed to Sam Newman's and Michael Nygard's named consequence the chapter
 quotes: a blocked thread holds its pool slot for as long as the far side
 takes, and "enough of them, blocking long enough, exhausts the monolith's
 own thread pool and turns one slow downstream dependency into a total
-outage" — cascading failure. The mitigation box is drawn as a REAL, live
+outage": cascading failure. The mitigation box is drawn as a live
 box (solid accent fill, not the dashed "ghost" style this figure used
 before the order-service extraction carried the deadline forward): both the
 monolith's `RemoteInventoryClient` (ch.19/ch.25) and
@@ -48,8 +48,8 @@ g.OUT = os.path.dirname(__file__)
 W, H = 1500, 880
 
 injvm = node(60, 60, 320, 110,
-             ["In-JVM call — the old baseline", "one process, one call stack",
-              "returns or throws, in microseconds — no third outcome"],
+             ["In-JVM call: the old baseline", "one process, one call stack",
+              "returns or throws, in microseconds: no third outcome"],
              style="sub")
 
 caller = node(60, 300, 220, 110,
@@ -64,19 +64,19 @@ grpc = node(340, 300, 280, 110,
             style="accent")
 
 outcome1 = node(700, 140, 300, 110,
-                ["Outcome 1 — returns",
+                ["Outcome 1: returns",
                  "ReserveReply",
                  "reservation result known, checkout proceeds"],
                 style="box")
 
 outcome2 = node(700, 300, 300, 110,
-                ["Outcome 2 — throws",
+                ["Outcome 2: throws",
                  "StatusRuntimeException",
                  "DEADLINE_EXCEEDED / UNAVAILABLE, unmapped -> 500"],
                 style="box")
 
 outcome3 = node(700, 460, 300, 110,
-                ["Outcome 3 — never returns",
+                ["Outcome 3: never returns",
                  "the outcome only a network call adds",
                  "nothing tells the caller which case this is"],
                 style="ink")
@@ -119,14 +119,14 @@ edges = [
 
 notes = [
     {"x": W / 2, "y": 32,
-     "text": "ch.25 — a call across the gRPC boundary has a third outcome an in-JVM call never had",
+     "text": "ch.25: a call across the gRPC boundary has a third outcome an in-JVM call never had",
      "anchor": "middle", "bold": True, "size": 16},
     {"x": W / 2, "y": 56,
-     "text": "returns, throws, or never comes back — and the third outcome is where cascading failure starts",
+     "text": "returns, throws, or never comes back: and the third outcome is where cascading failure starts",
      "anchor": "middle", "size": 12, "color": "#555555"},
 
     {"x": 60, "y": H - 40,
-     "text": "This project's deadline already closes off the cascade below, live on both gRPC callers — the chain is the risk a bare gRPC call carries, not an incident this book observed.",
+     "text": "This project's deadline already closes off the cascade below, live on both gRPC callers: the chain is the risk a bare gRPC call carries, not an incident this book observed.",
      "anchor": "start", "size": 10.5, "color": "#555555"},
     {"x": 60, "y": H - 16,
      "text": "Sourced from _docs/25-failure-modes-and-resilience.md (\"Timeouts and deadlines\") and both RemoteInventoryClients' deadline and javadoc (examples/00-monolith/, examples/07-order-service/).",

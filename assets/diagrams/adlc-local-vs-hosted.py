@@ -3,7 +3,7 @@
 
 The agentic loop split into a "local" execution path (local coding agent +
 Docker Engine + cloud dev environment) and a "hosted" path (hosted AI platform),
-side by side — generalized from the deck's slide 6. Steps 1, 6, 7, 8 are
+side by side: generalized from the deck's slide 6. Steps 1, 6, 7, 8 are
 shared/common; steps 2-5 branch into the two paths and converge again.
 """
 import sys, os
