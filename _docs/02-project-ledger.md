@@ -2,14 +2,14 @@
 title: "The Project Ledger"
 order: 2
 part: "Setting Up"
-description: "The ADLC's ledger — the decision log, the build plan, the iteration records, and the reconciliation log that completes it — introduced as the reader's own migration memory."
+description: "The ADLC's ledger: the decision log, the build plan, the iteration records, and the reconciliation log that completes it, introduced as the reader's own migration memory."
 ---
 
 Chapter 1 got the toolchain running: SDKMAN, JDK 25, Maven, the Quarkus and
 Camel CLIs, and a local Docker compose stack standing in for the services this book's
 monolith will eventually depend on. Everything from here forward assumes that
 toolchain works. But before any of it touches the monolith this book builds in
-Part 3, there is one more piece of setup, and it is not a tool at all — it is
+Part 3, there is one more piece of setup, and it is not a tool at all; it is
 a small set of plain-text files, kept under `_plans/` and updated
 continuously, every time a decision gets made or a step of work finishes.
 This chapter introduces that **project ledger**: the `decisions.md`,
@@ -24,9 +24,9 @@ up from wherever it was left off.
 Every chapter from Part 5 onward in this book narrates the same basic shape of
 work: a human states what should happen, an agent does reconnaissance,
 produces a plan, writes code against that plan, verifies the result, rolls it
-out, and records the outcome. Part 2 names that shape precisely — the
+out, and records the outcome. Part 2 names that shape precisely: the
 **Frame → Map → Plan → Generate → Verify → Operate → Reconcile** cycle this
-book calls the ADLC, the Agentic Development Lifecycle — and Part 2 is where you
+book calls the ADLC, the Agentic Development Lifecycle. Part 2 is where you
 will see it defined phase by phase. This chapter is not that explanation. It
 exists because the ADLC's last phase, Reconcile, is not an abstraction; it is
 three concrete files that a human can open, read, and trust, and you need to
@@ -44,7 +44,7 @@ not just what the code currently looks like, but what was *already decided*
 and must not be silently re-decided differently this time. Without a durable,
 external record, every one of those gaps becomes an opportunity for drift: a
 decision quietly gets reversed because nobody remembered it was made, a step
-gets redone because nobody could tell it was already done, or — worse — a step
+gets redone because nobody could tell it was already done, or, worse, a step
 gets skipped because nobody could tell it was *not* done. A ledger is simply
 the answer to "where does the context live when no single conversation is
 long enough to hold it."
@@ -54,7 +54,7 @@ software work, for a reason Part 1 develops in full: a modernization effort is
 refactoring under the hardest possible constraint, that the system must keep
 behaving the way it already behaves, applied to code someone else wrote, for
 reasons nobody fully remembers, that real customers depend on today. An agent
-can retry a risky change as many times as it likes with no human watching —
+can retry a risky change as many times as it likes with no human watching;
 that is exactly what makes agent-assisted work fast. But an agent cannot be
 trusted to also decide, on its own authority, that one of those retries is
 safe to ship against a production system. That is the job of the two human
@@ -70,7 +70,7 @@ human or agent that has to trust it later."
 
 The first ledger artifact is an append-only decision log, one row per
 decision, each with a short numbered identifier.
-Every row names the decision, the reasoning behind it, and a status —
+Every row names the decision, the reasoning behind it, and a status:
 `fixed` for something the user set and that nothing downstream is allowed to
 relitigate, `accepted` for a synthesis decision a later step could in
 principle revisit but hasn't, and `proposed` for a recommended default still
@@ -99,11 +99,11 @@ loop, the tests, and CI) and marking the first row superseded rather than
 editing it.
 
 Nothing about that row is dramatic, which is the point. Without it written
-down, a later contributor — human or agent — reaching for container tooling
-has no way to know that Docker was deliberately excluded rather than simply
-never considered. A risk register in the build plan can name exactly this
-failure mode — "someone pulls `lgtm-docker-stack` / DataMesh compose; Dev
-Services tag mismatch" — and the decision log is what makes that risk
+down, a later contributor (human or agent) reaching for container tooling
+has no way to know that the project excluded Docker by decision, not by
+oversight. A risk register in the build plan can name exactly this
+failure mode: "someone pulls `lgtm-docker-stack` / DataMesh compose; Dev
+Services tag mismatch." The decision log is what makes that risk
 detectable before it becomes a broken build instead of after.
 
 The second row is a vocabulary correction, the kind that ripples out well
@@ -119,13 +119,13 @@ PostgreSQL). | User-requested clarity. | accepted
 That rename touched more than a glossary entry. The retired term had already
 been used in earlier planning language for the Newman collection that gets
 replayed, unchanged, against every extracted service to prove it behaves the
-same as the monolith it replaced — the mechanism Part 3 builds and Part 5
+same as the monolith it replaced: the mechanism Part 3 builds and Part 5
 onward enforces as a gate on every extraction. Once the project's database is
 PostgreSQL, the old term read as a product-name collision waiting to confuse
 a reader, so it was retired everywhere this book and its examples use it: the
 **behavior-equivalence suite** is the artifact, the **equivalence gate** is
 the CI check that runs it. The decision log is what makes a rename like this
-safe to execute consistently rather than half-finished — anyone touching a
+safe to execute consistently rather than half-finished: anyone touching a
 chapter, a test file, or a CI workflow after row 031 lands can grep for the
 retired word and know exactly which row explains why every hit needs fixing.
 
@@ -144,8 +144,8 @@ accepted
 
 This is a case where a decision row does real design work, not just
 record-keeping. It commits every future extraction to the same two-pass
-shape — a fast, low-risk lift first, an idiomatic refactor second, with
-measured numbers captured as the teaching payoff — before a single one of
+shape: a fast, low-risk lift first, an idiomatic refactor second, with
+measured numbers captured as the teaching payoff, before a single one of
 those extractions has been written. Chapter 7 shows exactly what that
 commitment bought on the first extraction: Phase A got Review
 onto Quarkus and through the equivalence gate quickly using the
@@ -153,7 +153,7 @@ Spring-compatibility extensions, and only after that was proven safe did
 Phase B remove the compatibility shim and capture the native-image numbers
 that make the "why Quarkus" case with evidence instead of assertion. Without
 row 029 on record, a later contributor extracting, say, the payment service
-in Part 7 would have no obligation to follow the same shape — and the
+in Part 7 would have no obligation to follow the same shape, and the
 project's whole premise, that one repeatable template produces six
 comparable extractions, would quietly stop being true.
 
@@ -161,8 +161,8 @@ comparable extractions, would quietly stop being true.
 
 If the decision log is the project's memory of *what was decided*, the build
 plan is its memory of *what is being built and in what order*. This
-project's `build-plan.md` is a single long document — sections labeled A
-through M — that covers the chosen approach and the alternatives it rejected,
+project's `build-plan.md` is a single long document (sections labeled A
+through M) that covers the chosen approach and the alternatives it rejected,
 the full chapter-by-chapter site architecture, the reference monolith's
 design (including every deliberate flaw planted in it and which later chapter
 cures each one), the strangler-fig decomposition sequence service by service,
@@ -172,12 +172,12 @@ detected. It is the closest thing this project has to a single source of
 truth for "what are we building and why," and its own front matter is blunt
 about its authority: it is marked `status: "planning only — nothing
 built, scaffolded, or pushed until the user approves"`, which is itself a
-ledger entry — a plan does not get to silently promote itself into an
+ledger entry: a plan does not get to silently promote itself into an
 in-progress build.
 
 The section of the build plan most directly relevant to this chapter's
-argument is its phase table, because it is where the ADLC's seventh phase —
-Reconcile — gets tied explicitly to the ledger you are reading about right
+argument is its phase table, because it is where the ADLC's seventh phase,
+Reconcile, gets tied explicitly to the ledger you are reading about right
 now:
 
 ```
@@ -188,7 +188,7 @@ drift | — | the three ledger artifacts | change log / traceability |
 Part 2 will unpack what "Reconcile" means as a phase in the loop a human and
 an agent run together. What matters here is narrower and more concrete: the
 table names its mechanism, and the mechanism is these files. Reconcile is not
-a separate ceremony bolted onto the end of a step — it *is* the act of
+a separate ceremony bolted onto the end of a step; it *is* the act of
 writing an outcome into `decisions.md`, updating a status row in
 `build-plan.md`, and noting any drift from what was planned. The phase and
 the artifact are the same thing, which is exactly why this chapter precedes
@@ -213,13 +213,13 @@ The decision log and the build plan both operate at the scale of the whole
 project. Day to day, the unit of work is one iteration, and each iteration
 gets its own pair of files under `_plans/iterations/`: a plan file that
 breaks the iteration into numbered, acceptance-gated steps before any of them
-start, and a status file that is updated as those steps complete —
+start, and a status file that is updated as those steps complete,
 including, critically, at the exact moment someone has to stop.
 
 A plan file lays out the iteration as numbered steps, each
 with a stated goal, the files it touches, which other steps it depends on,
-an acceptance check, and — for the steps where getting it wrong matters most
-— an explicit note that the step additionally requires a second, more
+an acceptance check, and, for the steps where getting it wrong matters most,
+an explicit note that the step additionally requires a second, more
 skeptical model pass before its work is trusted. Steps are also marked for
 which ones can run in parallel and which ones must serialize because they
 touch a shared file, which is its own small but real control: two agents
@@ -255,8 +255,8 @@ gates it both locally and in green GitHub Actions CI.
 
 Read that excerpt as what it actually is: not documentation written
 after the fact to describe a finished piece of work, but a note one
-collaborator left for whoever — human or agent, possibly the same person a
-week later with no memory of the session — picks the project back up next.
+collaborator left for whoever picks the project back up next, human or
+agent, possibly the same person a week later with no memory of the session.
 It names exactly which step is next, exactly which file that step touches,
 and exactly what "done" means for it, because that information was already
 sitting in the companion plan file. Nobody has to re-read the whole
@@ -274,16 +274,16 @@ authority. A ledger that only records successes is not a ledger a human can
 actually trust to stay in control with; this one writes down the loose ends
 too, by name, so they are a known, tracked gap rather than a silent one.
 
-{% include excalidraw.html file="ledger-files-to-adlc-phases" alt="The ledger's _plans/ files mapped onto the ADLC's seven phases: build-plan.md and the iteration plan file are produced during Plan, the iteration status file is updated through Generate and Verify, and decisions.md plus the still-unwritten reconciliation.md are written during Reconcile, which also loops back to update build-plan.md's own status line. Below that mapping, the resume mechanism: the status file's own 'Remaining (resume here)' line, read by the next session alongside the plan file's step definitions." caption="Figure 2.1 — The ledger's files, mapped onto the ADLC's phases, and how an interrupted session resumes from them" %}
+{% include excalidraw.html file="ledger-files-to-adlc-phases" alt="The ledger's _plans/ files mapped onto the ADLC's seven phases: build-plan.md and the iteration plan file are produced during Plan, the iteration status file is updated through Generate and Verify, and decisions.md plus the still-unwritten reconciliation.md are written during Reconcile, which also loops back to update build-plan.md's own status line. Below that mapping, the resume mechanism: the status file's own 'Remaining (resume here)' line, read by the next session alongside the plan file's step definitions." caption="Figure 2.1: The ledger's files, mapped onto the ADLC's phases, and how an interrupted session resumes from them" %}
 
 ## Governing the agents: `AGENTS.md` and `CLAUDE.md`
 
-The three files above govern the *project* — what was decided, what is being
+The three files above govern the *project*: what was decided, what is being
 built, where to resume. A fourth kind of file in this project's example
 directories governs something narrower and more immediate: how an agent is
 supposed to behave while it is actually working inside a given piece of
-code. `examples/02-review-service/` — the extracted Quarkus service this
-book's Part 5 narrates in depth — carries its own `AGENTS.md`, and a
+code. `examples/02-review-service/` (the extracted Quarkus service this
+book's Part 5 narrates in depth) carries its own `AGENTS.md`, and a
 one-line `CLAUDE.md` that exists purely to point Claude Code at it:
 
 ```
@@ -296,7 +296,7 @@ present every matching extension to a human rather than silently picking
 one, load the extension's usage patterns before writing code against it,
 drive tests and reloads through the project's own tooling rather than
 invoking a build tool by hand, and summarize what changed at the end of every
-piece of work. None of that is decision history — it is standing operating
+piece of work. None of that is decision history; it is standing operating
 procedure, scoped to this one codebase, that every agent session working in
 that directory inherits automatically rather than having to be re-explained
 each time. It is a narrower kind of ledger than `decisions.md` or
@@ -304,7 +304,7 @@ each time. It is a narrower kind of ledger than `decisions.md` or
 once, durably, so it does not have to live only in one person's memory or one
 session's context window. Chapter 7 draws this parallel explicitly when it
 compares this project's ledger to a closely related workshop's use of
-`AGENTS.md` to govern agent behavior across an entire codebase — two
+`AGENTS.md` to govern agent behavior across an entire codebase: two
 different granularities of the same discipline, project-wide decisions in one
 place and per-codebase operating rules in another.
 
@@ -324,25 +324,25 @@ or a status-file line that says, concretely, which suite ran and what it
 reported, not merely that an agent claims it passed.
 
 This is also why certain steps in the plan file are marked as needing a
-second, more skeptical pass before their checkpoint commit lands — the steps
+second, more skeptical pass before their checkpoint commit lands: the steps
 where getting it wrong is expensive, like the behavior-equivalence suite
 itself, each phase of the Review extraction, and the flag-gated cutover that
 retires a piece of the monolith. That marking is not decoration either; it is
 part of the plan, written down in advance, specifying exactly which steps
-carry enough risk to need a second opinion before they are trusted — which
+carry enough risk to need a second opinion before they are trusted, which
 means the question "did this step get properly checked" has a yes-or-no
 answer sitting in a file, instead of depending on someone's memory of whether
 they meant to double-check it.
 
 ## Decisions that don't get silently reversed
 
-An append-only log has one more property worth naming directly, because it
-is easy to undervalue until the alternative actually happens: a decision,
+An append-only log has one more property, easy to undervalue until the
+alternative actually happens: a decision,
 once recorded, cannot be quietly un-made. If `build-plan.md`'s own account of
 how this project's overall approach was chosen is read carefully, it records
 not just the decisions that were made but the specific alternatives that were
-considered and rejected at each branch point — which first service to extract,
-how many chapters the book should have, how deep each migration should go —
+considered and rejected at each branch point (which first service to extract,
+how many chapters the book should have, how deep each migration should go),
 each resolved with a stated reason, not just a stated outcome. A later
 contributor tempted to revisit one of those choices does not have to
 re-litigate it from nothing; they read the row, see the reasoning that was
@@ -350,23 +350,23 @@ already weighed, and either find it still holds or write a *new* row
 explaining specifically what changed and why. Nothing gets overwritten in
 place. That is a small discipline with an outsized effect on a long-running,
 multi-session, multi-agent effort: it converts "I think we decided this
-already, but I'm not sure" — the exact uncertainty that lets a bad decision
-sneak back in unchallenged — into "here is the row, here is why, here is
+already, but I'm not sure," the exact uncertainty that lets a bad decision
+sneak back in unchallenged, into "here is the row, here is why, here is
 whether anything has changed since."
 
 ## Reconcile, and the third artifact still to come
 
 Part 2's phase table names three ledger artifacts, and this chapter has so
 far walked through two of them in detail plus the per-iteration plan and
-status pair that sit alongside them. The third — a reconciliation record that
+status pair that sit alongside them. The third, a reconciliation record that
 tracks every reused or adapted artifact against the source it came from, so
-that drift from a cited reference is a tracked fact rather than a silent one
-— is not fabricated for this chapter, because it does not exist
+that drift from a cited reference is a tracked fact rather than a silent one,
+is not fabricated for this chapter, because it does not exist
 in this project yet. It is scoped as one of the remaining
 steps, visible in the resume excerpt above: closing out the current
 iteration is exactly the moment a project commits to writing it. That is
 worth sitting with rather than glossing over, because it is itself a small,
-concrete demonstration of the discipline this chapter has been describing —
+concrete demonstration of the discipline this chapter has been describing:
 the ledger does not pretend an artifact exists before it does; it names the
 step that will produce it and tracks that step like any other.
 
@@ -374,11 +374,11 @@ step that will produce it and tracks that step like any other.
 
 Part 1, "Why Modernize," picks up a different question before any ledger
 entry gets written against this project's own monolith: not how the work
-gets recorded, but why a modernization effort — strangling a monolith into
-services one seam at a time — is worth doing as disciplined engineering
-rather than following fashion, and when it is not. Part 2, "The AI
+gets recorded, but why a modernization effort (strangling a monolith into
+services one seam at a time) counts as disciplined engineering
+rather than following fashion, and when it does not. Part 2, "The Agentic
 Development Lifecycle (ADLC)," is where the phase model this chapter has only
-gestured at — Frame, Map, Plan, Generate, Verify, Operate, and the Reconcile
-phase that writes to the files you just read about — gets defined properly,
+gestured at (Frame, Map, Plan, Generate, Verify, Operate, and the Reconcile
+phase that writes to the files you just read about) gets defined properly,
 with the ledger as its running, working example rather than a diagram. Chapter
 3, "Modernization as Engineering, Not Fashion," is next.

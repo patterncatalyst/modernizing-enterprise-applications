@@ -12,32 +12,32 @@ By the end of this chapter you can:
 - Distinguish what a content-based router decides (which backend answers a request) from what an anti-corruption layer decides (what is safe to carry back once it does), even though both sit at the same physical seam.
 - Generalize Camel's `choice()`/`when()`/`otherwise()` past a URL-path decision into a decision keyed on arbitrary message content, such as a SKU with no URL of its own.
 - Explain how Camel's `enrich()` paired with a custom `AggregationStrategy` implements a content enricher and a message translator together as one atomic fetch-and-convert step.
-- Identify Smell 5 — `InventoryService#findBySkuOrThrow` returning a raw JPA entity to `OrderService` — and explain why a perfectly correct routing decision does nothing to fix it.
+- Identify Smell 5: `InventoryService#findBySkuOrThrow` returning a raw JPA entity to `OrderService`, and explain why a perfectly correct routing decision does nothing to fix it.
 - Apply the decorating-collaborator pattern to build an anti-corruption layer ahead of a physical extraction, touching zero lines of the code it protects.
-- Explain why a contract with a deliberately divergent wire vocabulary (`stock_keeping_unit` versus `sku`) is stronger evidence of real translation than one whose field names already happen to agree.
+- Explain why a contract with a divergent wire vocabulary (`stock_keeping_unit` versus `sku`) is stronger evidence of real translation than one whose field names already happen to agree.
 - Verify a conceptual chapter's claims without running new code, using a targeted `grep` for smell markers and catalog-sourced EIP semantics instead of guessing from memory.
 
 ## Why this matters
 
 Chapter 15 extracted Review by routing one path prefix
 through the Camel strangler proxy that already sits in front of the
-monolith — a flag, a content-based choice, and a backend that moved out from
+monolith: a flag, a content-based choice, and a backend that moved out from
 under the caller without the caller ever noticing. Chapter 11 diagnosed a
 second, harder problem sitting one seam over, and this chapter's job is to
 fix it. `order.OrderService` does not call `inventory.InventoryService` over
-a path the proxy can route at all — it calls it as an ordinary Java method,
+a path the proxy can route at all. It calls it as an ordinary Java method,
 inside the same JVM, and gets back a raw JPA entity that inventory never
 intended any context outside itself to hold. That is Smell 5 from Chapter 9,
 and Chapter 11 named the relationship precisely: a conformist dependency
 where a negotiated customer/supplier contract should exist, with the
-contract itself — `StockDto` — already built and sitting unused three lines
+contract itself, `StockDto`, already built and sitting unused three lines
 above the leak. Fixing it needs two Camel ideas working together, not one.
 **Content-based routing** is the pattern the strangler proxy already uses to
 decide which backend answers a request; this chapter generalizes it past
 "which URL path prefix" into "which seam a single piece of data should
 travel across." The **anti-corruption layer (ACL)** is the translation
 discipline Chapter 11 named but did not build; this chapter builds it as two
-further Camel patterns working in concert — a **content enricher** that
+further Camel patterns working in concert: a **content enricher** that
 performs the actual cross-seam fetch, and a **message translator** that
 converts whatever comes back into the one contract type the calling side is
 allowed to depend on. Together, the three patterns are the seam-hardening
@@ -57,8 +57,8 @@ chapter adds is the shape that call takes the moment a seam does.
 ## Content-based routing, generalized past a URL path
 
 A **content-based router** inspects something about an incoming message and
-sends it down one of several possible paths based on what it finds — Hohpe
-and Woolf's original formulation, and the same idea Camel's own catalog
+sends it down one of several possible paths based on what it finds. That is
+Hohpe and Woolf's original formulation, and the same idea Camel's own catalog
 describes as "routes messages to different steps based on a series of
 conditions, similar to if-elseif-else," filed under the aliases `router` and
 `dispatch`. Camel's Java DSL realizes it with `choice()` / `when()` /
@@ -80,13 +80,13 @@ Review seam:
 Read this with Chapter 11's context-mapping vocabulary in hand and it is
 doing something more specific than "proxy traffic": it is deciding, per
 request, which side of a still-forming context boundary actually owns the
-answer right now. The predicate itself is two conditions `and`-ed together —
+answer right now. The predicate itself is two conditions `and`-ed together:
 a path match (*is this request even in Review's territory?*) and a flag read
-(*has Review's territory actually moved yet?*) — and the branch taken sets an
+(*has Review's territory actually moved yet?*). The branch taken sets an
 exchange property that a second `.choice()` block, lower in the same route,
 uses to pick a concrete backend URL. Nothing about this mechanism is specific
 to HTTP paths. The "content" a content-based router inspects can be a URI, a
-header, a flag, a combination of all three, or — as this chapter needs next —
+header, a flag, a combination of all three, or, as this chapter needs next,
 a SKU string that has nothing to do with any URL at all. What makes a router
 "content-based" is that the decision is made by looking *at the message*,
 rather than being hardcoded to always go one place.
@@ -99,10 +99,10 @@ front of every stock lookup, correctly deciding "the monolith still owns SKU
 data" or "inventory's own service owns SKU data now" on a per-request basis.
 That router would solve exactly one problem: *which door to knock on*. It
 says nothing whatsoever about *what you're handed once the door opens*. If
-the backend behind that door hands back its own internal persistence entity —
-complete with its lazy-loading behavior, its column names doing double duty
+the backend behind that door hands back its own internal persistence entity
+(complete with its lazy-loading behavior, its column names doing double duty
 as field names, its own migrations now silently becoming the caller's
-problem — a perfectly-routed request still corrupts the caller's model on
+problem), a perfectly-routed request still corrupts the caller's model on
 arrival. Content-based routing picks the path a message travels; it has no
 opinion on whether the thing traveling down that path is safe for the
 receiving side to hold onto. That second, narrower problem is exactly Smell
@@ -134,7 +134,7 @@ for (OrderCreate.Line line : command.items()) {
 }
 ```
 
-There is no routing failure here at all — `order` and `inventory` are
+There is no routing failure here at all: `order` and `inventory` are
 correctly reaching each other, in the same process, every single time. The
 failure is in what crosses once they do: `InventoryItem`, an `@Entity`
 managed by inventory's own `EntityManager`, mapped directly onto inventory's
@@ -148,21 +148,21 @@ Evans named it thirty years ago.
 Eric Evans' **anti-corruption layer** is the translation discipline a
 downstream bounded context builds specifically to protect its own model from
 an upstream context's internal representation, so that an internal change on
-one side never silently becomes a breaking change on the other. It is not,
-itself, a single mechanism — it is a responsibility, and Camel gives that
+one side never silently becomes a breaking change on the other. It names a
+responsibility rather than a single mechanism, and Camel gives that
 responsibility to two concrete, well-named patterns working together.
 
-{% include excalidraw.html file="cbr-vs-acl-seam" alt="A cross-shaped diagram centered on InventoryAclRoute's enrich() step. The horizontal axis is content-based routing: .choice() on strangler.inventory.enabled selects the monolith's /api/inventory/{sku} endpoint on :8080 today, or inventory's own gRPC service on :9004 from chapter 19 onward. The vertical axis is the anti-corruption layer: the raw reply from whichever backend answered feeds into a StockDtoTranslatingStrategy that always produces StockDto. The two axes cross at one physical seam but answer independent questions." caption="Figure 16.1 — One seam, two orthogonal questions: which backend answers, and what is safe to carry back" %}
+{% include excalidraw.html file="cbr-vs-acl-seam" alt="A cross-shaped diagram centered on InventoryAclRoute's enrich() step. The horizontal axis is content-based routing: .choice() on strangler.inventory.enabled selects the monolith's /api/inventory/{sku} endpoint on :8080 today, or inventory's own gRPC service on :9004 from chapter 19 onward. The vertical axis is the anti-corruption layer: the raw reply from whichever backend answered feeds into a StockDtoTranslatingStrategy that always produces StockDto. The two axes cross at one physical seam but answer independent questions." caption="Figure 16.1: One seam, two orthogonal questions: which backend answers, and what is safe to carry back" %}
 
 The **content enricher** is the half that performs the actual cross-seam
 fetch. Camel's own catalog describes `enrich` as a step that "enriches the
 message with additional data obtained by sending to another endpoint using
 request-reply," with the reply "merged into the original message using an
-aggregation strategy" — and its aliases, `hydrate` and `augment`, are exactly
+aggregation strategy." Its aliases, `hydrate` and `augment`, are exactly
 the right words for what Smell 5's fix needs: the exchange arrives knowing
 only a SKU, and leaves knowing the stock fact that SKU corresponds to. Left
-at its default, `enrich()` simply replaces the original message body with
-whatever the resource endpoint returned — which, applied naively here, would
+at its default, `enrich()` replaces the original message body with
+whatever the resource endpoint returned, which, applied naively here, would
 just relocate the leak rather than fix it. The fix is supplying a custom
 `AggregationStrategy` that does the second half of the job.
 
@@ -170,7 +170,7 @@ The **message translator** is that second half: whatever shape the resource
 endpoint actually hands back gets converted, inside the aggregation step,
 into the one contract type the calling side is allowed to depend on. Camel
 does not reserve one dedicated DSL keyword exclusively for this role the way
-it does for `enrich` — the translator is realized by whichever code actually
+it does for `enrich`. The translator is realized by whichever code actually
 performs the conversion: an expression-based `transform()` step for simple
 cases (the catalog describes it as a step that "sets the message
 body using an expression," distinguishing it from `setBody` only by also
@@ -186,7 +186,7 @@ reorder.
 Here is the shape both patterns take together, written the way it would live
 in `examples/01-strangler-proxy/` once Chapter 19 gives it a real second
 backend to enrich from. It is not wired into that project
-today — no caller invokes `direct:stockFor` yet, because `OrderService`
+today: no caller invokes `direct:stockFor` yet, because `OrderService`
 still reaches `InventoryService` directly, in-process, as quoted above.
 
 ```java
@@ -288,7 +288,7 @@ public class InventoryAclRoute extends RouteBuilder {
 ## How the route works
 
 `direct:stockFor` is the only thing a caller ever needs to know about this
-route — a seam address, not a backend address, which is the whole point.
+route: a seam address, not a backend address, which is the whole point.
 Whatever eventually calls it (a Camel `ProducerTemplate` from inside the
 strangler-proxy project today; a Quarkus REST client or a gRPC stub in
 `order`'s own extracted service after Chapter 26) sets one header, `sku`, and
@@ -296,37 +296,37 @@ asks for a body back. It never names `localhost:8080` or inventory's gRPC
 channel directly, which is exactly the indirection a seam is supposed to
 buy.
 
-The first `.choice()` block is the content-based router, and it is worth
-noticing it does *less* work than `StranglerProxyRoute`'s version, not more.
+The first `.choice()` block is the content-based router, and it does *less*
+work than `StranglerProxyRoute`'s version, not more.
 The review router's predicate combines a path match and a flag read because
 it has to decide, per inbound HTTP request, whether this request is even in
-Review's territory at all. This router only ever has one kind of request —
-"what does SKU `X` cost and how many are on hand" — so the predicate
+Review's territory at all. This router only ever has one kind of request
+("what does SKU `X` cost and how many are on hand"), so the predicate
 collapses to the flag alone: `inventoryEnabled`. `setProperty` then stashes a
-*complete resource URI string* — not just a label like `TARGET_REVIEW` — on
+*complete resource URI string*, not just a label like `TARGET_REVIEW`, on
 the exchange, because the thing the next step needs is a concrete address to
 enrich from, built by interpolating `${header.sku}` into whichever base URL
 the flag selected.
 
 The second step is one call, `.enrich(...)`, but it is doing two jobs at
 once, kept in one place rather than split into a fetch step and
-a separate translate step. `enrich`'s first argument — an `Expression`, not a
-hardcoded string — is what makes this a *dynamic* enrichment: Camel resolves
+a separate translate step. `enrich`'s first argument, an `Expression` rather
+than a hardcoded string, is what makes this a *dynamic* enrichment: Camel resolves
 `${exchangeProperty.stockLookupTarget}` at runtime and performs a real
 request-reply call against whatever URI that resolves to, which is precisely
 what lets the same route serve both the monolith-backed lookup today and
 inventory's own service after Chapter 19 without a second route or a second
 deploy. The second argument, `StockDtoTranslatingStrategy`, is where the
-translator lives: Camel hands it two exchanges — `original`, the one that
+translator lives: Camel hands it two exchanges, `original`, the one that
 entered this route carrying only a SKU, and `resource`, the one holding
-whatever the enrichment call returned — and whatever the strategy returns
+whatever the enrichment call returned. Whatever the strategy returns
 becomes the exchange that continues past `.enrich()`. Returning `original`
 with its body replaced, rather than returning `resource` untouched, is what
 keeps this a *merge* rather than a *replacement*: any header or property the
 original exchange was already carrying survives, and only the body changes.
 
 Inside the strategy, `StockDtoTranslator.translate(reply)` is named but not
-shown in full here — it is exactly the kind of small, overloaded
+shown in full here. It is exactly the kind of small, overloaded
 conversion method a reader should expect to write for themselves once the
 shapes on each side are known, and showing a fabricated gRPC-generated class
 in full here would claim more certainty about Chapter 19's actual `.proto`
@@ -334,49 +334,49 @@ than this chapter has any business claiming. What matters is the shape of
 the decision it makes, documented in the comment above it: against
 today's monolith REST endpoint, the translation is nearly a no-op, because
 `InventoryController#getBySku` already builds `StockDto` for its own
-consumers — the same `StockDto` Chapter 11 pointed at as "already there, just
+consumers, the same `StockDto` Chapter 11 pointed at as "already there, just
 never handed to `OrderService`." Against inventory's eventual gRPC service,
 the translation does real work, remapping a different wire vocabulary
 (`stock_keeping_unit`, `unit_price_cents`, `on_hand_qty`) into the field
 names `order` already understands (`sku`, `priceCents`, `quantityOnHand`).
-That asymmetry is not a flaw in the sketch — it is the accurate shape of what
-an ACL actually buys you: protection against a *future* change, paid for
+That asymmetry is the accurate shape of what an ACL actually buys you, not a
+flaw in the sketch: protection against a *future* change, paid for
 with a small amount of code that looks almost unnecessary on the day you
 write it, because the side it's protecting against hasn't diverged yet.
 
-Two fragile bits are worth naming rather than leaving a reader to
-discover them. First, `strangler.inventory.enabled` and
+Two fragile points deserve flagging here rather than left for a reader to
+discover. First, `strangler.inventory.enabled` and
 `strangler.inventory.base-url` are not read from any `application.properties`
-file in this project today — there is no running instance of this route yet,
+file in this project today, there is no running instance of this route yet,
 and naming the properties here is only establishing the convention Chapter
 19 will actually configure. Second, the `otherwise` branch's URL
 (`monolithBaseUrl + "/api/inventory/${header.sku}"`) assumes the monolith
-exposes a per-SKU `GET` endpoint — it does, per Chapter 8's endpoint table —
+exposes a per-SKU `GET` endpoint (it does, per Chapter 8's endpoint table),
 but nothing in this sketch has actually issued that HTTP call and confirmed
 the response shape matches what `StockDtoTranslator` expects; that
 confirmation is exactly the kind of claim this book's verification footer
 below refuses to mark checked until a real run proves it.
 
-{% include excalidraw.html file="acl-enricher-translator-flow" alt="A left-to-right pipeline through InventoryAclRoute: an exchange arrives on direct:stockFor knowing only a SKU; .choice() on strangler.inventory.enabled resolves a backend URI, either the monolith's REST endpoint or, from chapter 19 on, inventory's own gRPC service; .enrich() performs a request-reply fetch against that URI; StockDtoTranslatingStrategy.aggregate() converts the reply via StockDtoTranslator.translate() and merges StockDto onto the original exchange; the exchange leaves the route knowing the stock fact." caption="Figure 16.2 — The ACL pipeline: a SKU goes in, StockDto comes out, regardless of which backend answered" %}
+{% include excalidraw.html file="acl-enricher-translator-flow" alt="A left-to-right pipeline through InventoryAclRoute: an exchange arrives on direct:stockFor knowing only a SKU; .choice() on strangler.inventory.enabled resolves a backend URI, either the monolith's REST endpoint or, from chapter 19 on, inventory's own gRPC service; .enrich() performs a request-reply fetch against that URI; StockDtoTranslatingStrategy.aggregate() converts the reply via StockDtoTranslator.translate() and merges StockDto onto the original exchange; the exchange leaves the route knowing the stock fact." caption="Figure 16.2: The ACL pipeline: a SKU goes in, StockDto comes out, regardless of which backend answered" %}
 
 ## The decorating collaborator, named
 
 This route is also this book's first worked instance of a fourth pattern
-worth naming on sight, because the next six chapters lean on it repeatedly:
-the **decorating collaborator**. The idea, used throughout monolith-to-
+the next six chapters lean on repeatedly: the **decorating collaborator**.
+The idea, used throughout monolith-to-
 microservices migration literature for exactly this situation, is to wrap a
 call to a system you cannot or should not modify with a new collaborator
-that adds behavior at the edges — logging, caching, translation, routing —
+that adds behavior at the edges (logging, caching, translation, routing)
 without changing a single line inside the thing being wrapped. `InventoryAclRoute`
 is precisely that: it decorates the existing stock-lookup call path with
 translation (and, from Chapter 19 onward, with routing to a new backend)
 entirely from the Camel layer, sitting alongside the monolith rather than
 inside it. Nothing in `InventoryService` or `OrderService` has to change for
-this decoration to exist — which is the entire reason it can be built now,
+this decoration to exist, which is the entire reason it can be built now,
 before inventory physically moves, as pure seam-hardening rather than as a
 change that has to be coordinated with a rewrite of the code it protects.
-Chapter 19 reuses this exact shape — a Camel route decorating a legacy call
-path with translation and routing — to retire the monolith's inventory calls
+Chapter 19 reuses this exact shape, a Camel route decorating a legacy call
+path with translation and routing, to retire the monolith's inventory calls
 for good, which is why this book credits the
 decorating collaborator to both this chapter (proxy-side, the pattern
 introduced) and Chapter 19 (inventory retired, the pattern's payoff).
@@ -384,12 +384,12 @@ introduced) and Chapter 19 (inventory retired, the pattern's payoff).
 ## Before and after: what crosses the seam
 
 The clearest way to see what this buys is to put the two states of the world
-side by side — not as two versions of running code (`OrderItem`'s own shift
+side by side, not as two versions of running code (`OrderItem`'s own shift
 from a live entity reference to a value snapshot is Chapter 18's cut, not
 this chapter's), but as two answers to one question: what type does the
 calling side actually hold after a stock lookup?
 
-{% include codetabs.html langs="Today — the leaked entity (order/OrderService.java)|Through the ACL — the translated contract (illustrative)" %}
+{% include codetabs.html langs="Today: the leaked entity (order/OrderService.java)|Through the ACL: the translated contract (illustrative)" %}
 
 ```java
 // Today: order.OrderService#placeOrder calls InventoryService directly, in
@@ -414,12 +414,12 @@ for (OrderCreate.Line line : command.items()) {
 ```
 
 The difference is not cosmetic. In the "today" column, `OrderService` has a
-compile-time dependency on `inventory.InventoryItem` — a class annotated
+compile-time dependency on `inventory.InventoryItem`, a class annotated
 `@Entity`, owned by inventory's `EntityManager`, whose shape inventory is
 free to assume nobody outside its own package depends on, except that
 something outside its own package now quietly does. In the "through the ACL"
 column, `OrderService` depends on nothing inventory-shaped at all beyond the
-`StockDto` record — a plain, versioned contract that can be shared across a
+`StockDto` record: a plain, versioned contract that can be shared across a
 process boundary precisely because it carries no persistence framework
 annotations, no lazy-loading behavior, and no column-name coupling. Inventory
 could rename every column in `inventory_items`, swap Hibernate for a hand-
@@ -427,25 +427,25 @@ rolled JDBC mapper, or move the whole table to a different database engine,
 and nothing in the right-hand column would need to change, because nothing
 in the right-hand column ever saw the thing that changed.
 
-{% include excalidraw.html file="leaked-entity-vs-stockdto" alt="A two-panel comparison. Left, today: order.OrderService#placeOrder calls inventoryService.findBySkuOrThrow(sku) as an ordinary in-process Java call and holds InventoryItem, a JPA @Entity owned by inventory's own EntityManager — a compile-time import of inventory's persistence class. Right, through the ACL: the same call goes through producerTemplate.requestBodyAndHeader against direct:stockFor and returns StockDto, a plain record with no persistence annotations and no compile-time dependency on InventoryItem at all." caption="Figure 16.3 — What crosses the seam: a raw @Entity import versus a plain-record contract" %}
+{% include excalidraw.html file="leaked-entity-vs-stockdto" alt="A two-panel comparison. Left, today: order.OrderService#placeOrder calls inventoryService.findBySkuOrThrow(sku) as an ordinary in-process Java call and holds InventoryItem, a JPA @Entity owned by inventory's own EntityManager, a compile-time import of inventory's persistence class. Right, through the ACL: the same call goes through producerTemplate.requestBodyAndHeader against direct:stockFor and returns StockDto, a plain record with no persistence annotations and no compile-time dependency on InventoryItem at all." caption="Figure 16.3: What crosses the seam: a raw @Entity import versus a plain-record contract" %}
 
 ## What this buys Chapter 19
 
-Seam-hardening is the right word for what this chapter does, and it is worth
-being precise about why the word matters more than "adding a translation
+Seam-hardening is the right word for what this chapter does; the word
+carries more precision than "adding a translation
 layer" would suggest. Chapter 19 has three jobs when it actually extracts
 inventory: stand up the new Quarkus gRPC service, prove it behaves like the
 monolith's inventory module did, and make sure nothing that depends on stock
 data breaks during the cutover. Without this chapter's work, all three jobs
 would have to happen at once, because the calling side would still be
 holding a raw `InventoryItem` reference that only compiles against a
-same-JVM Spring bean — extracting inventory would force rewriting every
+same-JVM Spring bean. Extracting inventory would force rewriting every
 caller in the same breath as standing up the new service, with no way to
 prove the rewrite was safe independently of the extraction itself. With this
 chapter's ACL and router in place, Chapter 19 only has one real job left: make
 the `when` branch's URL resolve to something real, flip
 `strangler.inventory.enabled`, and let the equivalence gate confirm nothing
-observable changed — precisely the cutover shape Chapter 15 already proved
+observable changed, precisely the cutover shape Chapter 15 already proved
 out on Review. The translation work is done ahead of the extraction it
 protects, which is exactly what "hardening a seam" should mean: not waiting
 for the cut to discover what needs protecting, but building the protection
@@ -457,9 +457,9 @@ lookup is not a one-seam trick. Chapter 17's transactional outbox needs the
 identical habit applied to an asynchronous payload instead of a synchronous
 reply: the row `NotificationService` writes into its outbox must carry a
 translated event contract, never a serialized `Order` or `Customer` entity,
-for exactly the reason this chapter just walked through for `StockDto` — an
+for exactly the reason this chapter just walked through for `StockDto`: an
 entity serialized into a durable queue is a corruption that outlives the
-request that caused it, which is a strictly worse version of the same
+request that caused it, a strictly worse version of the same
 mistake. The message translator this chapter introduces as "the thing inside
 an enricher's aggregation strategy" is the same pattern Chapter 17 reaches
 for as "the thing that builds an outbox row," just pointed at a different
@@ -470,22 +470,22 @@ kind of message.
 Two things here are independently checkable without running anything.
 First, `grep -rn 'SMELL\[ch\.16\]' examples/00-monolith/src` returns five
 matching lines across three files; the two code sites quoted above are among
-them, unmodified from Chapter 9 and Chapter 11 — this chapter has not
+them, unmodified from Chapter 9 and Chapter 11. This chapter has not
 altered a single line of the monolith to make its argument, which matters
 because the whole point of the ACL sketched here is that it fixes the seam
 *without* touching the code on either side of it.
-Second, the EIP semantics this chapter leans on — `choice`'s predicate
+Second, the EIP semantics this chapter leans on (`choice`'s predicate
 evaluation order, `enrich`'s request-reply-plus-merge behavior and its
 default of replacing rather than merging the body unless an
 `AggregationStrategy` is supplied, and `transform`'s narrower scope next to
-a hand-written translator — were checked against Camel 4.22.1's own EIP
+a hand-written translator) were checked against Camel 4.22.1's own EIP
 catalog through the Camel MCP server, the same tool-
 grounded source this book's ADLC Map phase uses, rather than relied on from
 memory. That check confirms the *vocabulary* this chapter uses is accurate
 to the Camel version this project already runs (the same `camel-bom` version
 `examples/01-strangler-proxy/pom.xml` pulls in); it does not and cannot
-confirm that `InventoryAclRoute` compiles or behaves as sketched, because — as
-stated throughout this chapter — it has not been built as a runnable
+confirm that `InventoryAclRoute` compiles or behaves as sketched, because, as
+noted throughout this chapter, it has not been built as a runnable
 artifact yet.
 
 ## What you learned
@@ -499,9 +499,9 @@ artifact yet.
   decision sitting right next to it.
 - Camel realizes an ACL as two patterns working together: a **content
   enricher** (`enrich()`, with a custom `AggregationStrategy`) that performs
-  the cross-seam request-reply fetch, and a **message translator** — whether
+  the cross-seam request-reply fetch, and a **message translator** (whether
   a `transform()` expression or, as sketched here, logic living inside the
-  aggregation strategy itself — that converts whatever comes back into one
+  aggregation strategy itself) that converts whatever comes back into one
   stable contract type, regardless of which backend answered.
 - The **decorating collaborator** pattern is what makes building this ACL
   *before* the physical extraction possible at all: it wraps the existing
@@ -511,22 +511,22 @@ artifact yet.
   will cut.
 - This is seam-hardening, not decoration for its own sake: once the ACL and
   router exist, extracting inventory becomes a configuration flip and an
-  equivalence-gate run — the same cutover shape Chapter 15 already proved on
-  Review — instead of a rewrite that has to happen in the same breath as the
+  equivalence-gate run, the same cutover shape Chapter 15 already proved on
+  Review, instead of a rewrite that has to happen in the same breath as the
   extraction itself.
 
-Chapter 17, "Extraction 2 — Notification Service," puts the same
+Chapter 17, "Extraction 2: Notification Service," puts the same
 message-translator discipline to work on an asynchronous payload instead of
 a synchronous reply, building the transactional outbox that replaces
-Smell 4's in-transaction notification call — and it needs exactly the habit
+Smell 4's in-transaction notification call, and it needs exactly the habit
 this chapter just established: never let a persistence entity travel across
 a seam, synchronous or not, without a translator standing between it and
 whatever's on the other side.
 
 ## For deeper coverage
 
-- Gregor Hohpe & Bobby Woolf, *Enterprise Integration Patterns* (Addison-Wesley, 2003) — the content-based router, content enricher, and message translator this chapter builds the anti-corruption layer from.
-- Eric Evans, *Domain-Driven Design* (Addison-Wesley, 2003) — the anti-corruption layer concept this chapter implements as two Camel patterns working together.
-- Sam Newman, *Monolith to Microservices* (O'Reilly, 2019) — the decorating-collaborator pattern this chapter names and uses to harden a seam before the physical extraction behind it exists.
-- Cloud Native Design Patterns, [DDD & Hexagonal Architecture](https://github.com/patterncatalyst/cloud-native-design-patterns/blob/main/_docs/19-appendix-f-ddd-hexagonal.md) — the companion book's treatment of bounded contexts and the ports/adapters shape this chapter's ACL protects.
-- Chris Richardson, *Microservices Patterns* (Manning, 2018) — the anti-corruption layer and API composition patterns underlying the seam-hardening this chapter performs ahead of Chapter 19's extraction; see the [Reading List](/bibliography/).
+- Gregor Hohpe & Bobby Woolf, *Enterprise Integration Patterns* (Addison-Wesley, 2003): the content-based router, content enricher, and message translator this chapter builds the anti-corruption layer from.
+- Eric Evans, *Domain-Driven Design* (Addison-Wesley, 2003): the anti-corruption layer concept this chapter implements as two Camel patterns working together.
+- Sam Newman, *Monolith to Microservices* (O'Reilly, 2019): the decorating-collaborator pattern this chapter names and uses to harden a seam before the physical extraction behind it exists.
+- Cloud Native Design Patterns, [DDD & Hexagonal Architecture](https://github.com/patterncatalyst/cloud-native-design-patterns/blob/main/_docs/19-appendix-f-ddd-hexagonal.md): the companion book's treatment of bounded contexts and the ports/adapters shape this chapter's ACL protects.
+- Chris Richardson, *Microservices Patterns* (Manning, 2018): the anti-corruption layer and API composition patterns underlying the seam-hardening this chapter performs ahead of Chapter 19's extraction; see the [Reading List](/bibliography/).

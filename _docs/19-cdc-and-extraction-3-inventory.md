@@ -1,5 +1,5 @@
 ---
-title: "Transaction Log Tailing, CDC & Extraction 3 — Inventory"
+title: "Transaction Log Tailing, CDC & Extraction 3: Inventory"
 order: 19
 part: "Data Across the Seam"
 description: "Debezium-style CDC/log-tailing to bridge the monolith's tables during transition; gRPC-first Inventory with a decomposed DB and CDC backfill."
@@ -10,11 +10,11 @@ description: "Debezium-style CDC/log-tailing to bridge the monolith's tables dur
 By the end of this chapter you can:
 
 - Explain why a synchronous, mutating collaborator is harder to extract than a read-only leaf or an asynchronous consumer, and what breaks the instant the shared transaction no longer spans both sides of the write.
-- Design a gRPC contract with a deliberately divergent wire vocabulary (`stock_keeping_unit`/`on_hand_qty` versus `sku`/`quantityOnHand`) as a structural anti-corruption layer, not an incidental naming difference.
-- Configure Postgres logical replication for Debezium — `wal_level=logical`, the `pgoutput` plugin, and `REPLICA IDENTITY FULL` — and explain why each setting is required for change data capture to work at all.
+- Design a gRPC contract whose wire vocabulary diverges from the monolith's (`stock_keeping_unit`/`on_hand_qty` versus `sku`/`quantityOnHand`) as a structural anti-corruption layer, not an incidental naming difference.
+- Configure Postgres logical replication for Debezium (`wal_level=logical`, the `pgoutput` plugin, and `REPLICA IDENTITY FULL`) and explain why each setting is required for change data capture to work at all.
 - Build an idempotent CDC consumer that upserts on the source's own primary key, absorbing Kafka's at-least-once redelivery of insert, update, and delete events without double-applying a change.
 - Replace a pessimistic-lock reservation with an atomic conditional `UPDATE` (`Reserve`) and its unconditional mirror (`Release`), and explain why the database's own row lock, not application code, is what serializes concurrent reservations.
-- Replace the free rollback a shared ACID transaction used to provide with an explicit compensating action on checkout failure, and verify the replacement with net-zero evidence captured across two genuinely independent databases.
+- Replace the free rollback a shared ACID transaction used to provide with an explicit compensating action on checkout failure, and verify the replacement with net-zero evidence captured across two independent databases.
 - Run a negative check across a cross-database seam and interpret a documented hybrid-state finding (CDC replication lag) as evidence to publish, not a defect to quietly paper over.
 
 ## Why this matters
@@ -25,12 +25,12 @@ checkout transaction never waited on, so turning it into an eventual-consistency
 problem only ever *shrank* the blast radius of a failure. Inventory is neither
 of those things. `OrderService#placeOrder` has always called into inventory
 *inside* the checkout transaction, synchronously, and has always *mutated*
-stock when it did — a reservation the rest of checkout depends on completing
+stock when it did: a reservation the rest of checkout depends on completing
 before payment is even attempted. Extracting it means turning an in-JVM method
 call guarded by a pessimistic lock into a request-response call across a real
 network boundary, against a database checkout's own transaction no longer
 controls, while keeping every one of this project's equivalence-gate scenarios
-green — including the one, payment-declined, that depends on a write being
+green, including the one, payment-declined, that depends on a write being
 undone. Everything described below is running code already committed in
 this repository: `examples/04-inventory-service/` (the extracted Quarkus
 service, its gRPC server, its CDC consumer, and its `MIGRATION.md`'s measured
@@ -46,7 +46,7 @@ The code is in `examples/04-inventory-service/` and `examples/00-monolith/`.
 The run script in each directory builds/sets up and runs it; each `README.md`
 covers what it does and how to drive it.
 
-{% include excalidraw.html file="inventory-extraction-topology" alt="The inventory extraction's steady-state topology: a client through the Camel strangler proxy to either the Spring monolith's checkout or the Quarkus inventory service's own schema; the monolith's OrderService reserves and releases stock over a synchronous gRPC seam against the inventory service's own database; a retired Debezium CDC path at the bottom shows the one-time backfill that seeded that database during the transition window." caption="Figure 19.1 — The inventory extraction's steady-state seam (synchronous gRPC Reserve/Release) and the now-retired CDC backfill path that got the owned database there" %}
+{% include excalidraw.html file="inventory-extraction-topology" alt="The inventory extraction's steady-state topology: a client through the Camel strangler proxy to either the Spring monolith's checkout or the Quarkus inventory service's own schema; the monolith's OrderService reserves and releases stock over a synchronous gRPC seam against the inventory service's own database; a retired Debezium CDC path at the bottom shows the one-time backfill that seeded that database during the transition window." caption="Figure 19.1: The inventory extraction's steady-state seam (synchronous gRPC Reserve/Release) and the now-retired CDC backfill path that got the owned database there" %}
 
 ## Why inventory leaves third, and why it's the hardest cut yet
 
@@ -55,8 +55,8 @@ Chapter 9 named this concern as Smell 5 the moment the monolith existed:
 then `inventoryService.reserve(sku, qty)`, both as ordinary Java method calls
 on the same call stack, inside the same `@Transactional` that also persisted
 the order and charged a card. The first call handed back the *actual* JPA
-entity — no DTO, no contract, the producer's own persistence representation
-leaking straight across a bounded-context boundary — and the second took a
+entity: no DTO, no contract, the producer's own persistence representation
+leaking straight across a bounded-context boundary, and the second took a
 pessimistic write lock (`findWithLockBySku`, `@Lock(LockModeType.PESSIMISTIC_WRITE)`)
 and decremented stock in the same row, in the same database, in the same
 transaction as everything else checkout does. Three separate properties of
@@ -66,8 +66,8 @@ it.
 First, it is a synchronous collaborator sitting in the critical path, not a
 side effect checkout can forget about. Checkout cannot return `201 Created`
 until the reservation succeeds, so moving it across a service boundary
-introduces real failure modes — a slow network, a hung process, a service that
-simply isn't there — that an in-JVM method call never had to consider. Second,
+introduces failure modes (a slow network, a hung process, a service that
+isn't there) that an in-JVM method call never had to consider. Second,
 unlike the datamesh reference architecture's read-only `CheckStock` RPC, this
 call *writes*. The moment inventory owns its own database, the monolith's
 `@Transactional` can no longer roll that decrement back, because Postgres
@@ -82,34 +82,35 @@ this chapter does.
 
 ## The gRPC seam: the proto as a typed anti-corruption layer
 
-The extraction's client-facing read surface — `GET /api/inventory`,
-`GET /api/inventory/{sku}` — stays REST, routed by the same Camel strangler
-proxy every prior extraction used. The hot path checkout actually depends on
+The extraction's client-facing read surface, `GET /api/inventory` and
+`GET /api/inventory/{sku}`, stays REST, routed by the same Camel strangler
+proxy every prior extraction used. The hot path checkout depends on
 is different in kind: a low-latency, binary, service-to-service call, which is
 exactly what `quarkus-grpc` is built for, and exactly the pattern the sibling
 `datamesh-reference-arch-quarkus` project already demonstrates for a read-only
 `CheckStock`. This project adapts that proto and extends it with the two
-mutating RPCs checkout actually needs — `Reserve` and its compensating
-`Release` — plus `GetStock` for the strangler proxy's own content-enricher
+mutating RPCs checkout needs, `Reserve` and its compensating
+`Release`, plus `GetStock` for the strangler proxy's own content-enricher
 fetch.
 
-The proto's wire vocabulary is deliberately *not* the monolith's internal
+The proto's wire vocabulary is not the monolith's internal
 shape. `StockDto`/`InventoryItem` speak `sku`/`quantityOnHand`/`priceCents`;
 `inventory.proto` speaks `stock_keeping_unit`/`on_hand_qty`/`unit_price_cents`.
 That divergence is not an accident of two teams picking different words for
-the same thing — it is the chapter's anti-corruption layer made structural.
+the same thing: it is the chapter's anti-corruption layer made structural.
 A translator that happens to map identical field names to each other proves
-nothing about whether a real translation step exists; a translator that has
-to rename every field is doing real translation work, and both sides of this seam — the
-monolith's `RemoteInventoryClient` on the call side, `InventoryGrpcServiceImpl`
-on the serve side — are exactly that translator, with the generated proto
+nothing about whether a translation step exists; a translator that has
+to rename every field is doing translation work, and both sides of this seam
+(the monolith's `RemoteInventoryClient` on the call side,
+`InventoryGrpcServiceImpl` on the serve side) are exactly that translator,
+with the generated proto
 types never crossing past either class's boundary. This is also the chapter
-where Smell 5 actually gets cured, not just diagnosed: no code anywhere in the
+where Smell 5 gets cured, not just diagnosed: no code anywhere in the
 monolith holds a reference to the raw `InventoryItem` entity any longer,
-because that entity — and the in-JVM `InventoryService` that produced it —
+because that entity, and the in-JVM `InventoryService` that produced it,
 no longer exists in this module at all.
 
-{% include codetabs.html langs="Before — raw entity leaks across the seam (SMELL #5, removed)|After — RemoteInventoryClient's typed gRPC translation" %}
+{% include codetabs.html langs="Before: raw entity leaks across the seam (SMELL #5, removed)|After: RemoteInventoryClient's typed gRPC translation" %}
 
 ```java
 // inventory/InventoryService.java — quoted in Chapter 9, now deleted entirely
@@ -148,23 +149,23 @@ public record ReserveResult(boolean ok, int onHandQty) {}
 (`inventory.grpc.timeout-ms`, default 5000ms). If the inventory service is
 slow or unreachable, the blocking stub throws an unchecked
 `StatusRuntimeException`, and that exception is left
-*uncaught* by `reserve` — it is not a logical "insufficient stock" outcome, so
+*uncaught* by `reserve`: it is not a logical "insufficient stock" outcome, so
 it must never be mapped to `InsufficientStockException`'s `409`. Spring's
 default handling turns the unmapped exception into a `500`, the correct
 outcome: checkout fails cleanly rather than silently confirming an
-order whose reservation status nobody actually knows.
+order whose reservation status nobody knows.
 
 ## Transaction log tailing: Debezium reads the write-ahead log
 
-Chapter 18 previewed the mechanism this chapter actually runs: rather than a
-big-bang cutover — stop the monolith, export inventory's rows, stand up a new
-database, import, restart everything — the schema split happens as a
+Chapter 18 previewed the mechanism this chapter runs: rather than a
+big-bang cutover (stop the monolith, export inventory's rows, stand up a new
+database, import, restart everything), the schema split happens as a
 *backfill*, underneath a system that keeps running the entire time. That
 backfill is **change data capture**, and this project's version of it is as
 close to the textbook mechanism as the stack allows: a **Debezium Postgres
 connector**, running on **Kafka Connect** (added to the compose stack for this
-chapter), reads the monolith Postgres instance's write-ahead log directly —
-not a polling query, not a table scan, the actual WAL — and turns every insert,
+chapter), reads the monolith Postgres instance's write-ahead log directly,
+not a polling query, not a table scan, the WAL itself, and turns every insert,
 update, and delete against `public.inventory_items` into an ordered stream of
 change events.
 
@@ -178,8 +179,8 @@ primary-key columns in a row's "before" image on update/delete, which would
 leave Debezium's `before` field mostly empty; `FULL` carries the complete prior
 row). The connector registers a replication slot
 (`mea_inventory_slot`) and a publication (`mea_inventory_publication`) scoped
-to exactly one table, then runs with `snapshot.mode=initial`: its very first
-act is to emit one `op=r` ("read") event per existing row — the backfill —
+to exactly one table, then runs with `snapshot.mode=initial`: its first
+act is to emit one `op=r` ("read") event per existing row (the backfill)
 before switching to streaming `op=c`/`u`/`d` events as the monolith keeps
 writing.
 
@@ -204,7 +205,7 @@ writing.
 ```
 
 On the receiving end, `InventoryCdcConsumer` is net-new code with no Spring
-original to lift — the monolith never consumed its own change stream — and it
+original to lift: the monolith never consumed its own change stream, and it
 funnels every operation through one idempotent write path. The excerpt below
 is simplified for exposition; the real method additionally guards against a
 null/blank payload (a Debezium tombstone), wraps the JSON parse in a
@@ -226,12 +227,12 @@ public void consume(String json) {
 ```
 
 Because `schemas.enable=false` strips the field-schema metadata Kafka Connect
-would otherwise wrap each message in, the envelope arrives flat on the wire —
-no outer `{"schema":...,"payload":{...}}` wrapper — which is why the consumer
+would otherwise wrap each message in, the envelope arrives flat on the wire,
+with no outer `{"schema":...,"payload":{...}}` wrapper, which is why the consumer
 binds a plain `String` channel and parses the envelope by hand with Jackson
 rather than letting Quarkus auto-deserialize a typed record. `upsert` writes
-through an `ON CONFLICT` keyed by the CDC-assigned `id` — the same primary key
-the monolith's row carries — so Kafka's at-least-once redelivery semantics
+through an `ON CONFLICT` keyed by the CDC-assigned `id`, the same primary key
+the monolith's row carries, so Kafka's at-least-once redelivery semantics
 never double-apply a change. The following is a captured envelope, taken
 verbatim from `InventoryCdcConsumerTest`'s real Reactive Messaging pipeline
 test (not hand-written for this chapter), showing a streamed update decrementing
@@ -254,14 +255,14 @@ not 4, confirming the ON CONFLICT upsert is idempotent under at-least-once
 delivery.
 ```
 
-{% include excalidraw.html file="cdc-debezium-backfill-pipeline" alt="The CDC backfill pipeline's mechanism, left to right: the monolith's Postgres WAL (wal_level=logical, pgoutput, REPLICA IDENTITY FULL), the mea_inventory_slot replication slot and mea_inventory_publication publication registered on it, the mea-inventory-connector Debezium connector reading that feed (snapshot.mode=initial, emitting op=r backfill events once then streaming op=c/u/d), the mea.public.inventory_items Kafka topic, and InventoryCdcConsumer's idempotent ON CONFLICT upsert into the inventory service's own schema. A second band shows the slot and publication's retirement: scripts/retire-debezium.sh, run once at cutover, deletes the connector and drops both the slot and the publication." caption="Figure 19.3 — The CDC backfill pipeline's mechanism (WAL through the replication slot, the Debezium connector, and the Kafka topic, to InventoryCdcConsumer's idempotent upsert), and the slot/publication's one-time retirement at cutover" %}
+{% include excalidraw.html file="cdc-debezium-backfill-pipeline" alt="The CDC backfill pipeline's mechanism, left to right: the monolith's Postgres WAL (wal_level=logical, pgoutput, REPLICA IDENTITY FULL), the mea_inventory_slot replication slot and mea_inventory_publication publication registered on it, the mea-inventory-connector Debezium connector reading that feed (snapshot.mode=initial, emitting op=r backfill events once then streaming op=c/u/d), the mea.public.inventory_items Kafka topic, and InventoryCdcConsumer's idempotent ON CONFLICT upsert into the inventory service's own schema. A second band shows the slot and publication's retirement: scripts/retire-debezium.sh, run once at cutover, deletes the connector and drops both the slot and the publication." caption="Figure 19.3: The CDC backfill pipeline's mechanism (WAL through the replication slot, the Debezium connector, and the Kafka topic, to InventoryCdcConsumer's idempotent upsert), and the slot/publication's one-time retirement at cutover" %}
 
-This is also where the deferred decision Chapter 17 named actually gets
+This is also where the deferred decision Chapter 17 named gets
 spent. Chapter 17 reached for a polling relay, not CDC, for
-notification's outbox — the right default, because notification's latency
+notification's outbox, the right default, because notification's latency
 tolerance doesn't demand sub-second delivery and a two-line `@Scheduled`
-method carries none of a replication slot's operational weight — and it
-explicitly homed Debezium/CDC here, at the inventory extraction, instead.
+method carries none of a replication slot's operational weight, and it
+homed Debezium/CDC here, at the inventory extraction, instead.
 Inventory's calculus is different: stock levels are read on nearly every
 product page and every checkout attempt across the system, so a multi-second
 lag between a reservation committing and that fact becoming visible
@@ -279,17 +280,17 @@ did in Chapter 18: a CDC-fed replica that shared the upstream table with the
 monolith's still-live write path would have two writers racing on the same
 rows with no way to reconcile them. `examples/04-inventory-service` runs its
 own `inventory` Postgres schema, its own Flyway migrations, and is seeded
-entirely by the connector's initial snapshot — until cutover, when the roles
+entirely by the connector's initial snapshot, until cutover, when the roles
 reverse. Once `RemoteInventoryClient`'s gRPC `Reserve`/`Release` makes the
 inventory service the sole writer of its own data (the decommission step
 below), the connector has nothing left to replicate, and `scripts/retire-debezium.sh`
-deletes it and drops its replication slot and publication — an un-drained
+deletes it and drops its replication slot and publication: an un-drained
 slot would otherwise retain WAL on the monolith's Postgres indefinitely, a
 disk-fill risk with no offsetting benefit once CDC's job is done.
 
 That retirement creates a problem a CDC-only story would paper over: a
-fresh environment — a clean CI run, a new developer's first `docker compose up`
-— has no upstream writer left whose log a connector could tail, so without
+fresh environment, a clean CI run, a new developer's first `docker compose up`,
+has no upstream writer left whose log a connector could tail, so without
 something else, `inventory.inventory_items` would boot empty. The fix is a
 Flyway migration, `V2__seed_inventory.sql`, that seeds the same three demo
 SKUs the monolith's own `V2__seed_data.sql` always used, written
@@ -309,11 +310,11 @@ captures the before/after numbers that make the "why Quarkus" argument
 concrete. Inventory's read surface (`InventoryController`/`InventoryService#listAll,getBySku`)
 follows that template exactly. Its gRPC server and its mutating `Reserve`/`Release`
 RPCs do not, because there is no Spring original to lift for an RPC that never
-existed in the monolith — the monolith's `reserve` lived in-JVM against a
-pessimistic-lock derived query, a fundamentally different mechanism. Those
+existed in the monolith: the monolith's `reserve` lived in-JVM against a
+pessimistic-lock derived query, a different mechanism. Those
 pieces are authored idiomatic-from-day-one.
 
-{% include codetabs.html langs="Phase A — Spring Data JpaRepository (compat lift, read-only)|Phase B — Panache repository (idiomatic; net-new Reserve/Release)" %}
+{% include codetabs.html langs="Phase A: Spring Data JpaRepository (compat lift, read-only)|Phase B: Panache repository (idiomatic; net-new Reserve/Release)" %}
 
 ```java
 // Phase A (per MIGRATION.md's per-component table) — via quarkus-spring-data-jpa
@@ -350,12 +351,12 @@ story review-service's and notification-service's own measurements told:
 
 | Build | Startup time | RSS | Installed features |
 |---|---|---|---|
-| Phase A — JVM, Spring-compat (no gRPC port bound) | 1.673 s | ~313 MB | 19 features incl. `spring-data-jpa`, `spring-di`, `spring-web` |
-| Phase B — JVM, idiomatic + gRPC server live | 1.677 s | ~300 MB | 16 features; `spring-*` gone, `grpc-server` added |
+| Phase A: JVM, Spring-compat (no gRPC port bound) | 1.673 s | ~313 MB | 19 features incl. `spring-data-jpa`, `spring-di`, `spring-web` |
+| Phase B: JVM, idiomatic + gRPC server live | 1.677 s | ~300 MB | 16 features; `spring-*` gone, `grpc-server` added |
 
-Startup is a wash within run-to-run noise, but RSS drops roughly 4% —
-*even though* Phase B adds a live `grpc-server` feature Phase A never bound a
-port for — because the three spring-compat translation extensions removed
+Startup is a wash within run-to-run noise, but RSS drops roughly 4%,
+even though Phase B adds a live `grpc-server` feature Phase A never bound a
+port for, because the three spring-compat translation extensions removed
 cost more at boot than one more gRPC server costs to add. Sixteen tests
 back this transition, including a concurrency test that races two `Reserve`
 calls for a sku's last remaining unit, proving the atomicity claim the next
@@ -364,7 +365,7 @@ section depends on.
 ## Reserve's atomic conditional decrement, and Release its mirror
 
 `InventoryGrpcServiceImpl#reserve` does not read the current quantity, decide
-in application code, and then write — the classic check-then-act race. It
+in application code, and then write: the classic check-then-act race. It
 issues one conditional `UPDATE`:
 
 ```sql
@@ -375,23 +376,23 @@ UPDATE inventory.inventory_items
 
 and reports the rows-affected count. Exactly one row affected means the
 check and the decrement happened atomically, in the database's own
-transaction, under the database's own row-level write lock — no
+transaction, under the database's own row-level write lock: no
 `SELECT ... FOR UPDATE`, no optimistic `@Version` column, no application-level
 lock of any kind. Two concurrent `Reserve` calls racing the same sku's last
 unit serialize on that lock automatically: whichever commits first leaves
 `quantity_on_hand` below the other caller's `>= :qty` predicate, so the second
 `UPDATE` affects zero rows and reports insufficient stock, with *no* decrement
 having happened on its behalf. `InventoryGrpcServiceTest`'s concurrency case
-proves exactly this — two simultaneous reservations for one remaining unit,
+proves exactly this: two simultaneous reservations for one remaining unit,
 exactly one reports `reservationOk: true`.
 
-`Release` is the unconditional mirror — `quantity_on_hand = quantity_on_hand + :qty
-WHERE sku = :sku`, no upper bound — and its own javadoc is explicit about what
+`Release` is the unconditional mirror (`quantity_on_hand = quantity_on_hand + :qty
+WHERE sku = :sku`, no upper bound), and its own javadoc is explicit about what
 it does *not* yet guard against: unlike `Reserve`'s conditional predicate,
 `Release` carries no idempotency key, so a retried call whose effect already
 landed server-side (the same at-least-once hazard the CDC consumer's upsert
 guards against) would over-restore stock. That gap is documented, not
-silently built around — a limitation deferred to Chapter
+silently built around: a limitation deferred to Chapter
 23's full saga, not speculative compensation infrastructure this extraction
 does not need yet.
 
@@ -406,14 +407,14 @@ the inventory decrement that had already executed a few lines earlier. No
 application code anywhere had to be written to make that happen. It was a
 side effect of one database's write-ahead log, not a designed guarantee.
 
-{% include excalidraw.html file="inventory-reserve-compensation-sequence" alt="Two stacked sequence diagrams: the old flow where a single in-process ACID transaction rolls back a payment decline's inventory decrement automatically; the new flow where Reserve commits in the inventory service's own database outside the monolith's transaction, so a payment decline must trigger an explicit compensating Release instead." caption="Figure 19.2 — Reserve/Release: the cross-seam saga-lite that replaces the in-process free rollback a shared transaction used to provide" %}
+{% include excalidraw.html file="inventory-reserve-compensation-sequence" alt="Two stacked sequence diagrams: the old flow where a single in-process ACID transaction rolls back a payment decline's inventory decrement automatically; the new flow where Reserve commits in the inventory service's own database outside the monolith's transaction, so a payment decline must trigger an explicit compensating Release instead." caption="Figure 19.2: Reserve/Release, the cross-seam saga-lite that replaces the in-process free rollback a shared transaction used to provide" %}
 
 The instant inventory's decrement commits in its own database, over its own
-gRPC call, that free rollback is structurally gone — there is no longer one
+gRPC call, that free rollback is structurally gone: there is no longer one
 write-ahead log spanning both writes for Postgres to unwind. `OrderService#placeOrder`
 now tracks every sku it has successfully reserved remotely this checkout, and
 its surrounding `catch` block issues a compensating `Release` for each one on
-*any* failure that happens afterward — insufficient stock on a later line, a
+*any* failure that happens afterward, whether insufficient stock on a later line, a
 payment decline, a shipping failure, or any other exception before the order
 confirms:
 
@@ -429,12 +430,12 @@ try {
 }
 ```
 
-This is a deliberate, minimal first taste of saga compensation — explicit,
-best-effort, logged loudly on failure rather than silently swallowed — not
+This is a deliberate, minimal first taste of saga compensation: explicit,
+best-effort, logged loudly on failure rather than silently swallowed, not
 the full choreographed saga Chapter 23 eventually builds. The difference
 between "the database undid it for me" and "I had to write the undo myself"
 is this chapter's single most important lesson, and `CUTOVER.md`'s own
-captured evidence proves it actually holds under real traffic, not just under
+captured evidence proves it holds under real traffic, not just under
 a mocked unit test:
 
 ```
@@ -462,7 +463,7 @@ sprang.
 ```
 
 Scenario 2, out-of-stock, needed no compensation at all: `Reserve`'s
-conditional predicate is what makes that true — when the `WHERE` clause
+conditional predicate is what makes that true. When the `WHERE` clause
 fails, zero rows are touched and `reservation_ok=false` comes back before any
 decrement happens, so `OrderService` maps that straight to the familiar `409`
 with nothing to undo.
@@ -470,11 +471,11 @@ with nothing to undo.
 ## Decomposing the foreign key: `OrderItem` becomes a snapshot
 
 `order_items.inventory_item_id` was a real, enforced Postgres foreign key and
-a real JPA `@ManyToOne` — the kind of coupling Chapter 18 called "enforced by
+a real JPA `@ManyToOne`, the kind of coupling Chapter 18 called "enforced by
 the database, not declared in application code." It cannot survive inventory
 owning its own database, because a foreign key cannot point across two
-separate Postgres instances. `OrderItem` now holds a denormalized snapshot —
-`sku`, `productName`, `unitPriceCents` — captured once, at checkout time, from
+separate Postgres instances. `OrderItem` now holds a denormalized snapshot,
+`sku`, `productName`, `unitPriceCents`, captured once, at checkout time, from
 the gRPC `GetStock` reply, with `sku` kept only as a soft string reference, no
 database-level constraint and no JPA association:
 
@@ -488,7 +489,7 @@ private String sku;
 The Flyway migration that cut the live constraint also captures why the
 snapshot is correct behavior, not merely a decomposition side effect: because
 the price is captured at order time, a later price change in inventory never
-retroactively rewrites a historical order's line items — exactly the
+retroactively rewrites a historical order's line items, exactly the
 semantics a read model should have anyway. `OrderDto.Item`'s shape already
 projected sku/quantity/unit-price from these same fields before the cut, so
 `GET /api/orders/{id}` is byte-for-byte unchanged; the equivalence suite's
@@ -497,9 +498,9 @@ order-read assertions prove it rather than merely assert it should be true.
 ## Cutover: two flags, a hard negative check, and a documented finding
 
 Inventory's reversibility story uses the same two-flag shape every prior
-extraction used — a monolith-side flag (`inventory.mode=local|remote`) for
+extraction used: a monolith-side flag (`inventory.mode=local|remote`) for
 the write path, a proxy-side flag (`strangler.inventory.enabled`) for the
-read path — flipped together at cutover. `CUTOVER.md`'s recorded timeline is
+read path, flipped together at cutover. `CUTOVER.md`'s recorded timeline is
 the strongest evidence yet produced in this book for two separate claims.
 
 The first is the negative check Chapter 17 introduced and this chapter had to
@@ -524,7 +525,7 @@ Result: GREEN — 75/75 assertions, newman exit code 0.
 ```
 
 Unlike Notification's negative check, there was no backlog to drain on
-restart — `Reserve`/`Release` are synchronous RPCs with no queue behind them,
+restart: `Reserve`/`Release` are synchronous RPCs with no queue behind them,
 so recovery was immediate. The failure mode itself is the point: the suite
 does not degrade gracefully or coincidentally pass when the extracted
 service is down; it fails hard, loud, and precisely scoped, closing the exact
@@ -551,30 +552,30 @@ immediate post-checkout read outran the CDC connector's replication of that
 same checkout's write.
 ```
 
-This is precisely the eventual-consistency risk inherent to CDC — CDC
-replication is asynchronous by construction — but it
+This is precisely the eventual-consistency risk inherent to CDC: replication
+is asynchronous by construction, but it
 had been assumed to land only on the dedicated Inventory Context Contract
 read folder, which was written with a bounded-wait precisely for this reason,
 not on a checkout scenario's immediate read-after-write. No code was changed
 to paper over the finding: the Newman collection stayed unedited, and the
 monolith's `inventory.mode` default stayed `local`, because resolving it
-is the decommission step's job, not cutover's. The resolution is unglamorous and correct —
+is the decommission step's job, not cutover's. The resolution is unglamorous and correct:
 decommission the monolith's local inventory write path entirely, so
 `inventory.mode=remote` becomes the only path that exists, closing the
 CDC-replica/shared-table hybrid state by removing one of its two writers.
 Once `RemoteInventoryClient`'s gRPC path is the sole way `OrderService`
 reaches inventory, `GET :8080/api/inventory` returns `404` on the monolith
 directly, `scripts/retire-debezium.sh` retires the now-purposeless connector,
-and Smell 5 — plus the foreign-key portion of Smell 1 — are marked cured in
+and Smell 5, plus the foreign-key portion of Smell 1, are marked cured in
 `SMELLS.md`, with the evidence trail above as the receipt.
 
 ## A green gRPC gate in CI
 
 None of the above is a local-machine ritual, and the committed job is more
-modest than CDC's own war story might suggest — which is itself the point.
-`.github/workflows/code-ci.yml`'s `inventory-equivalence-gate` job brings up a
+modest than CDC's own war story might suggest. `.github/workflows/code-ci.yml`'s
+`inventory-equivalence-gate` job brings up a
 plain disposable `postgres:16-alpine` (no logical replication, no `pgoutput`,
-no replica identity tweaks — none of that is needed here), plus Kafka, started
+no replica identity tweaks, none of that is needed here), plus Kafka, started
 only so the monolith's outbox producer has a broker to boot cleanly against,
 not because this job asserts anything about the async notification path.
 There is no Kafka Connect service and no Debezium connector: CDC was retired
@@ -591,19 +592,19 @@ disciplined way every negative check in this book has been: the compensating
 forced decline and turned Scenario 3's "3c" assertion red in CI exactly as
 expected; then the call was restored and the suite went green again. A CI job
 that only ever reports green is not proof of anything; a CI job caught
-failing on a deliberate break, then passing once the break is
+failing on a break injected into the code, then passing once the break is
 reverted, is.
 
-> **ADLC in Action** — This extraction ran the identical Frame → Map → Plan →
+> **ADLC in Action.** This extraction ran the identical Frame → Map → Plan →
 > Generate → Verify → Operate → Reconcile loop Chapter 17 demonstrated for
 > Notification, at its hardest rung yet. Frame fixed eight decisions up front
 > in `decisions.md` (gRPC for the synchronous hot
 > path, Debezium-on-Kafka-Connect over Embedded, the sync-reserve/async-replication
-> split, Reserve-plus-compensating-Release as a deliberate first taste of
+> split, Reserve-plus-compensating-Release as a minimal first taste of
 > saga, the foreign-key decomposition, two-phase-plus-idiomatic-gRPC, two-flag
 > reversibility, and the extended negative-check discipline). Plan laid out
-> sixteen steps across three parallel lanes — the CDC/Connect infrastructure,
-> the gRPC contract, and the new service's scaffold — with a reasoning-model
+> sixteen steps across three parallel lanes (the CDC/Connect infrastructure,
+> the gRPC contract, and the new service's scaffold), with a reasoning-model
 > validation gate named before a line of gRPC or CDC code existed, most pointedly at the
 > cutover step where out-of-stock and payment-decline-rollback had to be
 > proven across the real service boundary, not asserted against a mock.
@@ -614,60 +615,60 @@ reverted, is.
 > finding, both run against the real services and both included in the
 > record, including the one that didn't go the way the plan first assumed. Operate is the two-flag
 > cutover `CUTOVER.md` records end to end. Reconcile is `SMELLS.md` marking
-> Smell 5 — and the foreign-key portion of Smell 1 — cured, with the
+> Smell 5, and the foreign-key portion of Smell 1, cured, with the
 > replication-slot teardown as the closing housekeeping step.
 
 ## What you learned
 
 - A **synchronous collaborator that mutates** cannot be extracted the way a
-  read-only leaf or an asynchronous consumer can — the call has to cross the
+  read-only leaf or an asynchronous consumer can. The call has to cross the
   network before the caller can proceed, and the database that used to
   guarantee atomicity automatically no longer spans both sides of the write.
 - A **proto with a distinct wire vocabulary** is a stronger
-  anti-corruption layer than one whose field names happen to already agree —
+  anti-corruption layer than one whose field names happen to already agree:
   `stock_keeping_unit`/`on_hand_qty` versus `sku`/`quantityOnHand` forces a
-  real translation step to exist on both sides of the seam, curing the
+  translation step to exist on both sides of the seam, curing the
   raw-entity leak Chapter 9 first diagnosed.
-- **Change data capture reads the write-ahead log directly** — no poll, no
-  table scan — trading a replication slot and a Kafka Connect process you
-  now operate for a lower latency floor than a polling relay can offer;
+- **Change data capture reads the write-ahead log directly.** No poll, no
+  table scan, trading a replication slot and a Kafka Connect process you
+  now operate for a lower latency floor than a polling relay can offer.
   Chapter 17 chose polling because notification didn't need that floor, and
-  explicitly named this chapter as where that budget would be spent instead;
+  named this chapter as where that budget would be spent instead;
   Chapter 20 later generalizes the same tradeoff.
 - **Reserve stays synchronous even after extraction**, because overselling a
   physical unit of stock is a correctness failure no compensating action can
-  fully repair — only the *replication* of the owned copy for downstream
+  fully repair; only the *replication* of the owned copy for downstream
   reads is allowed to be asynchronous.
 - The **free rollback a shared transaction used to provide is gone the
-  instant a decrement commits in another service's database** — a
+  instant a decrement commits in another service's database.** A
   **compensating action**, issued explicitly by the caller on every
   post-reservation failure path, is what has to replace it, and `CUTOVER.md`'s
   Scenario 3 evidence (29 in, 29 out, against a monolith copy frozen at a
-  different value) is the proof it actually works across a real boundary.
+  different value) is the proof it works across a real boundary.
 - An **owned database only becomes provably "the one really answering"**
-  once a negative check kills the dependency and forces the suite red — and
+  once a negative check kills the dependency and forces the suite red, and
   this project's own documented hybrid-state finding, left in as evidence
   rather than quietly fixed, shows exactly what happens when the two
   reversibility flags move independently instead of together.
 
 Part 7 picks up the compensation pattern this chapter introduced in its
-smallest possible form — one reservation, one compensating call, no
-idempotency key, no saga ledger — and builds it out fully. Chapter 23's
+smallest possible form (one reservation, one compensating call, no
+idempotency key, no saga ledger) and builds it out fully. Chapter 23's
 choreographed saga for Payment coordinates multiple events across multiple
 services with the opposite control style from what you just read here;
 Chapter 24 does the same for Shipping through an explicit orchestrator. Both
 inherit the exact limitation this chapter's `Release` javadoc names
 and leaves open. Chapter 26, extracting Order itself last, is where this
 project's CQRS read side is finally built from the event stream these
-extractions have been feeding since Chapter 17 — and where the gRPC seam and
+extractions have been feeding since Chapter 17, and where the gRPC seam and
 the CDC-backfilled, now self-sufficient inventory database this chapter built
 become one of several services that read side has to federate.
 
 ## For deeper coverage
 
-- [Debezium — Connector documentation](https://debezium.io/documentation/) — the canonical reference for the Postgres connector, snapshot modes, and WAL requirements this chapter configures directly.
-- [PostgreSQL — Logical Replication](https://www.postgresql.org/docs/current/logical-replication.html) — the canonical reference for `wal_level=logical`, the `pgoutput` plugin, and `REPLICA IDENTITY FULL`, the three settings this chapter's CDC pipeline depends on.
-- Martin Kleppmann, *Designing Data-Intensive Applications* (O'Reilly, 2017) — change data capture and log-based replication as a structural alternative to dual writes, the mechanism underlying this chapter's backfill.
-- Chris Richardson, *Microservices Patterns* (Manning, 2018) — saga-style compensation, the pattern this chapter's Reserve/Release pair is a first, minimal taste of before Part 7's full sagas.
-- Eric Evans, *Domain-Driven Design* (Addison-Wesley, 2003) — the anti-corruption layer this chapter's deliberately divergent gRPC wire vocabulary implements.
-- Cloud Native Design Patterns, [Stream Processing](https://github.com/patterncatalyst/cloud-native-design-patterns/blob/main/_docs/06-stream-processing.md) — the companion book's treatment of log-based stream processing underlying this chapter's Debezium pipeline.
+- [Debezium: Connector documentation](https://debezium.io/documentation/), the canonical reference for the Postgres connector, snapshot modes, and WAL requirements this chapter configures directly.
+- [PostgreSQL: Logical Replication](https://www.postgresql.org/docs/current/logical-replication.html), the canonical reference for `wal_level=logical`, the `pgoutput` plugin, and `REPLICA IDENTITY FULL`, the three settings this chapter's CDC pipeline depends on.
+- Martin Kleppmann, *Designing Data-Intensive Applications* (O'Reilly, 2017), change data capture and log-based replication as a structural alternative to dual writes, the mechanism underlying this chapter's backfill.
+- Chris Richardson, *Microservices Patterns* (Manning, 2018), saga-style compensation, the pattern this chapter's Reserve/Release pair is a first, minimal taste of before Part 7's full sagas.
+- Eric Evans, *Domain-Driven Design* (Addison-Wesley, 2003), the anti-corruption layer this chapter's divergent gRPC wire vocabulary implements.
+- Cloud Native Design Patterns, [Stream Processing](https://github.com/patterncatalyst/cloud-native-design-patterns/blob/main/_docs/06-stream-processing.md), the companion book's treatment of log-based stream processing underlying this chapter's Debezium pipeline.
