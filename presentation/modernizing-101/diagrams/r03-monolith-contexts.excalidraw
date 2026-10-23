@@ -4,7 +4,7 @@
   "source": "dgen.py",
   "elements": [
     {
-      "id": "4961d681-63af-4aa3-b740-2406d3e8e9bc",
+      "id": "25e14bb2-3609-493e-9b0d-1b29026035ed",
       "type": "text",
       "x": 277.0,
       "y": 14,
@@ -38,7 +38,7 @@
       "baseline": 22
     },
     {
-      "id": "0125753f-80db-4404-8c83-1166d2859808",
+      "id": "cd146539-61c4-4a51-9903-3ddf5b7f5ca9",
       "type": "text",
       "x": 245.5,
       "y": 50,
@@ -72,7 +72,7 @@
       "baseline": 14
     },
     {
-      "id": "9e610dfb-d6c7-4788-bfe8-4c4aaa44f7e4",
+      "id": "2eb39c1b-dfd8-4048-a86f-8e797294524a",
       "type": "rectangle",
       "x": 40,
       "y": 100,
@@ -100,11 +100,11 @@
       "locked": false
     },
     {
-      "id": "b69cab30-3129-44a1-9054-f7a03736d647",
+      "id": "2c623d58-8100-4a98-b1c1-a51f67c3da4e",
       "type": "text",
       "x": 60,
       "y": 111,
-      "width": 358,
+      "width": 351,
       "height": 17,
       "angle": 0,
       "strokeColor": "#4A4A4A",
@@ -125,16 +125,16 @@
       "locked": false,
       "fontSize": 13,
       "fontFamily": 1,
-      "text": "Spring Boot monolith \u2014 one deploy, one process",
+      "text": "Spring Boot monolith: one deploy, one process",
       "textAlign": "left",
       "verticalAlign": "top",
       "containerId": null,
-      "originalText": "Spring Boot monolith \u2014 one deploy, one process",
+      "originalText": "Spring Boot monolith: one deploy, one process",
       "lineHeight": 1.25,
       "baseline": 13
     },
     {
-      "id": "c17ef109-d54d-4bcb-b8c1-056f0891426e",
+      "id": "dbb37aeb-81b9-4b34-aab1-79cf2d4841ee",
       "type": "rectangle",
       "x": 60,
       "y": 150,
@@ -162,7 +162,7 @@
       "locked": false
     },
     {
-      "id": "e0884b43-fe18-4238-8133-fa14cf593b0c",
+      "id": "c3c067f7-db46-49ed-acf2-7baac0d01d31",
       "type": "text",
       "x": 126.0,
       "y": 174.0,
@@ -196,7 +196,7 @@
       "baseline": 16
     },
     {
-      "id": "54f74811-dea2-4272-a0cf-fc758964c023",
+      "id": "9c02abdc-8d98-49ed-82c6-f43ec4e29618",
       "type": "rectangle",
       "x": 255,
       "y": 150,
@@ -224,7 +224,7 @@
       "locked": false
     },
     {
-      "id": "08868e7c-a554-4d58-8c38-5cd69e8a8b2b",
+      "id": "40b0e8a9-e7d6-48c0-a366-c7e79c58f5c3",
       "type": "text",
       "x": 302.0,
       "y": 174.0,
@@ -258,7 +258,7 @@
       "baseline": 16
     },
     {
-      "id": "a23129fa-06ac-410f-91ae-16e9e913e196",
+      "id": "0f2c36d4-2a4b-4489-b04c-f73e494f680a",
       "type": "rectangle",
       "x": 450,
       "y": 150,
@@ -286,7 +286,7 @@
       "locked": false
     },
     {
-      "id": "752ec8a6-a88d-4518-a3ea-870135cbd941",
+      "id": "14be902d-1372-463f-bfb2-b6a6537eb538",
       "type": "text",
       "x": 506.5,
       "y": 174.0,
@@ -320,7 +320,7 @@
       "baseline": 16
     },
     {
-      "id": "4b2f4f4d-f948-4300-8488-2449823416f7",
+      "id": "ab7d143f-5980-4a7e-8566-7b9d27890b2c",
       "type": "rectangle",
       "x": 645,
       "y": 150,
@@ -348,7 +348,7 @@
       "locked": false
     },
     {
-      "id": "4799b70e-e15e-43af-a9dc-a84ca33281cf",
+      "id": "634e7212-3c83-4b53-8ae4-f15d61badf08",
       "type": "text",
       "x": 697.0,
       "y": 174.0,
@@ -382,7 +382,7 @@
       "baseline": 16
     },
     {
-      "id": "53c483f1-61dd-4cd3-bcab-e79bc5b4a4f9",
+      "id": "1f7e484f-2b42-46f9-bccd-dda38427bb4f",
       "type": "rectangle",
       "x": 840,
       "y": 150,
@@ -410,7 +410,7 @@
       "locked": false
     },
     {
-      "id": "1b75a00d-50c8-43f3-a9d7-82442dadbfe3",
+      "id": "24fa497c-b4fa-4af4-91ea-d92dcf2ae4b7",
       "type": "text",
       "x": 872.5,
       "y": 174.0,
@@ -444,7 +444,7 @@
       "baseline": 16
     },
     {
-      "id": "ffb66944-393f-4b19-9fbd-577682100946",
+      "id": "5f9ade84-17c7-4bbd-b96a-455d6837ea64",
       "type": "rectangle",
       "x": 1035,
       "y": 150,
@@ -472,7 +472,7 @@
       "locked": false
     },
     {
-      "id": "a90ab251-3288-4a8a-955f-1e27793a42cf",
+      "id": "bde70a1f-971d-4594-a00c-27a4b24e38ee",
       "type": "text",
       "x": 1096.5,
       "y": 174.0,
@@ -506,7 +506,7 @@
       "baseline": 16
     },
     {
-      "id": "f2729a8a-d9c6-44a9-bbfb-435e40e0521d",
+      "id": "139d801e-c5b3-456c-bcd0-08bc843da51d",
       "type": "rectangle",
       "x": 360,
       "y": 400,
@@ -534,7 +534,7 @@
       "locked": false
     },
     {
-      "id": "520c0970-8656-4084-a9c9-af3385b8be35",
+      "id": "339b7770-9a7f-4556-ba9b-01153e12d334",
       "type": "text",
       "x": 482.0,
       "y": 424,
@@ -568,7 +568,7 @@
       "baseline": 16
     },
     {
-      "id": "1509a877-94c9-45d4-8e5f-ff4a6ab88740",
+      "id": "8673ef63-907b-4cbc-9d1f-bf0401605928",
       "type": "text",
       "x": 521.5,
       "y": 444,
@@ -602,7 +602,7 @@
       "baseline": 12
     },
     {
-      "id": "aabacda9-08c8-40f9-ab3e-263cb549d1c5",
+      "id": "58fce2ce-cf49-4b92-afaf-4b3cbc62b1b2",
       "type": "text",
       "x": 507.0,
       "y": 460,
@@ -636,7 +636,7 @@
       "baseline": 12
     },
     {
-      "id": "1c250f5e-146a-4119-894c-e1bc2968e4e4",
+      "id": "68f1c843-fd63-4db6-bd17-61b29555390e",
       "type": "arrow",
       "x": 150,
       "y": 214,
@@ -676,7 +676,7 @@
       "endArrowhead": "arrow"
     },
     {
-      "id": "df62057b-7ac5-4783-bc7c-ff91a2129441",
+      "id": "9c1768ff-64d4-4dd6-9f23-c5816d526cb7",
       "type": "arrow",
       "x": 510,
       "y": 214,
@@ -716,7 +716,7 @@
       "endArrowhead": "arrow"
     },
     {
-      "id": "ab168cbc-b588-4cd2-9ae9-06486e3c1ba8",
+      "id": "59c78d5a-d082-4764-b3cc-f34b3438e341",
       "type": "arrow",
       "x": 870,
       "y": 214,
@@ -756,7 +756,7 @@
       "endArrowhead": "arrow"
     },
     {
-      "id": "df87f0c4-8f9f-4b77-b022-d424c23adb88",
+      "id": "387f94dd-8c04-4b26-967e-4d3c74e72ed6",
       "type": "arrow",
       "x": 1140,
       "y": 214,
@@ -796,7 +796,7 @@
       "endArrowhead": "arrow"
     },
     {
-      "id": "20ca34d9-f2cc-4fcb-a553-ce3e1270f39b",
+      "id": "af238dc8-e4af-49fa-98aa-5e7d60a62d0d",
       "type": "rectangle",
       "x": 960,
       "y": 150,
@@ -824,7 +824,7 @@
       "locked": false
     },
     {
-      "id": "7439b9d9-5f3c-4508-a33f-3e08f0d53fbd",
+      "id": "6323becc-57d7-48a1-bc62-914a9ccd8b2e",
       "type": "text",
       "x": 976,
       "y": 165,
@@ -858,7 +858,7 @@
       "baseline": 11
     },
     {
-      "id": "7e62fa80-101d-410d-9d90-bb32d86a40d0",
+      "id": "82415eec-52b1-4a81-ad33-67f85dba888c",
       "type": "text",
       "x": 976,
       "y": 185,

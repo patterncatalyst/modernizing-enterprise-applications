@@ -4,7 +4,7 @@
   "source": "dgen.py",
   "elements": [
     {
-      "id": "673c27ac-35ae-4d46-b4cf-2c7e747110f4",
+      "id": "c524dc9f-4031-49b2-abcf-a11b13bcf3d5",
       "type": "text",
       "x": 462.0,
       "y": 14,
@@ -38,11 +38,11 @@
       "baseline": 22
     },
     {
-      "id": "1eef0bcc-c606-4e48-aa6d-2f7dd627d7cb",
+      "id": "69e4a7bf-db83-4d5c-aae9-becf961e7e6a",
       "type": "text",
-      "x": 229.5,
+      "x": 234.0,
       "y": 50,
-      "width": 781,
+      "width": 772,
       "height": 18,
       "angle": 0,
       "strokeColor": "#5A5A5A",
@@ -63,16 +63,16 @@
       "locked": false,
       "fontSize": 14,
       "fontFamily": 1,
-      "text": "Apache Camel is the integration layer; Quarkus runs every service \u2014 and Camel runs on Quarkus",
+      "text": "Apache Camel is the integration layer; Quarkus runs every service, and Camel runs on Quarkus",
       "textAlign": "center",
       "verticalAlign": "top",
       "containerId": null,
-      "originalText": "Apache Camel is the integration layer; Quarkus runs every service \u2014 and Camel runs on Quarkus",
+      "originalText": "Apache Camel is the integration layer; Quarkus runs every service, and Camel runs on Quarkus",
       "lineHeight": 1.25,
       "baseline": 14
     },
     {
-      "id": "36010b88-8b20-40f1-bbb9-d6543033e811",
+      "id": "70efeec7-fa57-44df-bec3-dc261b21064f",
       "type": "rectangle",
       "x": 40,
       "y": 95,
@@ -100,11 +100,11 @@
       "locked": false
     },
     {
-      "id": "3b72ca25-1038-40ba-bf32-8cc3204c9c9a",
+      "id": "ef13b82c-98cc-4c92-b802-f8d358d8e3d6",
       "type": "text",
       "x": 60,
       "y": 107,
-      "width": 608,
+      "width": 600,
       "height": 17,
       "angle": 0,
       "strokeColor": "#006E6E",
@@ -125,16 +125,16 @@
       "locked": false,
       "fontSize": 13,
       "fontFamily": 1,
-      "text": "Apache Camel \u2014 the integration layer (camel-quarkus, build-time, native-ready)",
+      "text": "Apache Camel: the integration layer (camel-quarkus, build-time, native-ready)",
       "textAlign": "left",
       "verticalAlign": "top",
       "containerId": null,
-      "originalText": "Apache Camel \u2014 the integration layer (camel-quarkus, build-time, native-ready)",
+      "originalText": "Apache Camel: the integration layer (camel-quarkus, build-time, native-ready)",
       "lineHeight": 1.25,
       "baseline": 13
     },
     {
-      "id": "525213cd-cfdc-4d98-8860-4bc9a0ef1707",
+      "id": "c1930b75-1ea6-4496-8e03-dfe6fafe596f",
       "type": "rectangle",
       "x": 70,
       "y": 150,
@@ -162,7 +162,7 @@
       "locked": false
     },
     {
-      "id": "2d836ecb-0577-48fc-9666-9c0765e0d743",
+      "id": "0b066962-1c21-4a68-9ffb-3d4f15dcdbd5",
       "type": "text",
       "x": 277.5,
       "y": 174,
@@ -196,7 +196,7 @@
       "baseline": 16
     },
     {
-      "id": "c4d87142-1a84-4667-99cb-ed2e3d529cf1",
+      "id": "f77063df-e49c-40de-9c52-db8bb75f4c36",
       "type": "text",
       "x": 211.5,
       "y": 194,
@@ -230,7 +230,7 @@
       "baseline": 12
     },
     {
-      "id": "e174c974-9bd4-4952-a689-7ad4405a8248",
+      "id": "5e7b4755-f42c-42da-b53f-fa001f39bbb7",
       "type": "text",
       "x": 215.0,
       "y": 210,
@@ -264,7 +264,7 @@
       "baseline": 12
     },
     {
-      "id": "94f31a3d-32f6-4f64-ab71-e2fc79b5cad4",
+      "id": "f63fa250-339b-4fa5-91f2-836c35c079b2",
       "type": "rectangle",
       "x": 650,
       "y": 150,
@@ -292,7 +292,7 @@
       "locked": false
     },
     {
-      "id": "be7aaca4-0afd-4049-947c-d070ecac4588",
+      "id": "5229718f-d9fc-4890-9d7d-c23a13b5dc6f",
       "type": "text",
       "x": 828.5,
       "y": 174,
@@ -326,7 +326,7 @@
       "baseline": 16
     },
     {
-      "id": "ba22d4a5-b382-45a6-88f3-f03f2263a53d",
+      "id": "49f21b6f-6f88-4740-bd85-4de16c5b2764",
       "type": "text",
       "x": 806.0,
       "y": 194,
@@ -360,7 +360,7 @@
       "baseline": 12
     },
     {
-      "id": "09f36588-2e3c-4680-a77a-702547038f32",
+      "id": "1b563a23-f36e-491a-9de0-b7fbfae90efd",
       "type": "text",
       "x": 791.5,
       "y": 210,
@@ -394,7 +394,7 @@
       "baseline": 12
     },
     {
-      "id": "b451d72a-f433-41a4-9647-10ac71181fb2",
+      "id": "0c0ee53b-5b40-4863-9643-13cb78e187fb",
       "type": "rectangle",
       "x": 40,
       "y": 340,
@@ -422,11 +422,11 @@
       "locked": false
     },
     {
-      "id": "d9e8d5d6-d5d8-446a-827d-35ff66b0b7ea",
+      "id": "3dcc3bb9-f8b4-499c-8ce7-7a1d89c3b908",
       "type": "text",
       "x": 60,
       "y": 352,
-      "width": 429,
+      "width": 421,
       "height": 17,
       "angle": 0,
       "strokeColor": "#0066CC",
@@ -447,16 +447,16 @@
       "locked": false,
       "fontSize": 13,
       "fontFamily": 1,
-      "text": "Quarkus \u2014 the services (one runtime, opt-in extensions)",
+      "text": "Quarkus: the services (one runtime, opt-in extensions)",
       "textAlign": "left",
       "verticalAlign": "top",
       "containerId": null,
-      "originalText": "Quarkus \u2014 the services (one runtime, opt-in extensions)",
+      "originalText": "Quarkus: the services (one runtime, opt-in extensions)",
       "lineHeight": 1.25,
       "baseline": 13
     },
     {
-      "id": "32e8f538-1a9e-4cd6-8ff2-07e9602f1fbe",
+      "id": "fc4e18b3-dec0-4603-9531-cf3c5a9b4720",
       "type": "rectangle",
       "x": 60,
       "y": 400,
@@ -484,7 +484,7 @@
       "locked": false
     },
     {
-      "id": "da789736-470c-437d-88e3-52a2e06d7847",
+      "id": "39cc86ea-71b6-4fd7-8b36-0954a2c3de43",
       "type": "text",
       "x": 111.0,
       "y": 427.0,
@@ -518,7 +518,7 @@
       "baseline": 16
     },
     {
-      "id": "fcaea68e-c52f-4131-99b8-9aef61d28a0d",
+      "id": "f3849354-2210-44bb-8670-d9392697ed73",
       "type": "rectangle",
       "x": 224,
       "y": 400,
@@ -546,7 +546,7 @@
       "locked": false
     },
     {
-      "id": "d6f67c12-8b6b-4e12-af15-3790c6498388",
+      "id": "1e32efd8-95a2-41b8-a112-543a1a740443",
       "type": "text",
       "x": 256.0,
       "y": 427.0,
@@ -580,7 +580,7 @@
       "baseline": 16
     },
     {
-      "id": "5905c7f5-61d3-4113-9bb1-7f1be2eb8f90",
+      "id": "96be446f-1c48-4435-8090-48d112dfd344",
       "type": "rectangle",
       "x": 388,
       "y": 400,
@@ -608,7 +608,7 @@
       "locked": false
     },
     {
-      "id": "1c61dd53-f2cb-42f4-9c40-284a48299d51",
+      "id": "1646b906-2cd1-4c58-be20-f08cb7562b7f",
       "type": "text",
       "x": 429.5,
       "y": 427.0,
@@ -642,7 +642,7 @@
       "baseline": 16
     },
     {
-      "id": "05b41064-4fcd-4379-a697-b6e86fbef40e",
+      "id": "2f222cea-05e0-4869-9bd7-11a0602cf373",
       "type": "rectangle",
       "x": 552,
       "y": 400,
@@ -670,7 +670,7 @@
       "locked": false
     },
     {
-      "id": "39cbb7ef-e1e0-419b-8160-94c8a530c5a8",
+      "id": "fcebe7e9-2f24-4447-b267-01904ba0a2eb",
       "type": "text",
       "x": 589.0,
       "y": 427.0,
@@ -704,7 +704,7 @@
       "baseline": 16
     },
     {
-      "id": "e9c2e4fa-8bba-47d9-ab95-acf998aa5c30",
+      "id": "b5d8af14-aa2d-4d9c-afab-c317f6b312c3",
       "type": "rectangle",
       "x": 60,
       "y": 490,
@@ -732,7 +732,7 @@
       "locked": false
     },
     {
-      "id": "d7acc452-dde4-44c8-a2bf-8ab724bbaf18",
+      "id": "cb33979f-7ca4-4c93-b463-b19311aac1e2",
       "type": "text",
       "x": 77.5,
       "y": 517.0,
@@ -766,7 +766,7 @@
       "baseline": 16
     },
     {
-      "id": "f6a2398f-e29c-42ae-a0b1-988862be230f",
+      "id": "3c159bad-6de0-4922-bd53-989edaa0ec6b",
       "type": "rectangle",
       "x": 224,
       "y": 490,
@@ -794,7 +794,7 @@
       "locked": false
     },
     {
-      "id": "0e901239-a339-45cc-8ce8-d6b267463301",
+      "id": "2a18fb5b-a72a-49b9-851d-5b1b521c1f47",
       "type": "text",
       "x": 270.5,
       "y": 517.0,
@@ -828,7 +828,7 @@
       "baseline": 16
     },
     {
-      "id": "55fdf7d4-71d7-4c63-9b67-9437cab88585",
+      "id": "02f29caf-4a56-428a-b6f6-467b5598443b",
       "type": "rectangle",
       "x": 388,
       "y": 490,
@@ -856,7 +856,7 @@
       "locked": false
     },
     {
-      "id": "2a6c455f-8a2c-4a62-923e-ac7e4dafd81b",
+      "id": "113fcfa3-aa6c-4379-9cbd-fc11ec900ed4",
       "type": "text",
       "x": 391.0,
       "y": 517.0,
@@ -890,7 +890,7 @@
       "baseline": 16
     },
     {
-      "id": "4bea043e-96f3-496f-8e15-196e04306e7b",
+      "id": "2d3c3ae6-59bc-41c0-8b07-925be83f3532",
       "type": "arrow",
       "x": 330,
       "y": 224,
@@ -930,7 +930,7 @@
       "endArrowhead": "arrow"
     },
     {
-      "id": "f985ed39-0fa8-4ed1-9b20-041c07e76553",
+      "id": "936c5b72-a6b2-4cb7-9265-91984c0bc385",
       "type": "text",
       "x": 317.0,
       "y": 294.0,
@@ -964,7 +964,7 @@
       "baseline": 11
     },
     {
-      "id": "3cd58bc9-717c-4bc3-a80f-52131644d2c3",
+      "id": "c7498c66-5fdd-4151-9d6e-924b3732fe5b",
       "type": "arrow",
       "x": 910,
       "y": 224,
@@ -1004,7 +1004,7 @@
       "endArrowhead": "arrow"
     },
     {
-      "id": "ad92d550-8d94-41e6-9db2-6abbd5ed37db",
+      "id": "cd277dfc-15be-4c54-ac32-bb865b01e485",
       "type": "text",
       "x": 726.0,
       "y": 294.0,
@@ -1038,7 +1038,7 @@
       "baseline": 11
     },
     {
-      "id": "099cc91d-e5a5-4eea-831e-1fc6fceb5b82",
+      "id": "032dddeb-0426-43d7-ba61-951a781112fe",
       "type": "text",
       "x": 231.0,
       "y": 601,
