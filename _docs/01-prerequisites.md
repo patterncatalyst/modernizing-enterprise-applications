@@ -7,18 +7,18 @@ description: "SDKMAN, JDK 25, Maven, the Quarkus and Camel CLIs, Docker Engine a
 
 The introduction promised a monolith you can actually run, extractions you can
 actually watch happen, and a behavior-equivalence suite you can actually fail
-and fix. None of that is a thought experiment past this point — starting with
+and fix. None of that is a thought experiment past this point. Starting with
 the next chapter, every claim in this book is backed by code sitting in this
 repository, and this chapter's entire job is to get that code building and
 talking to itself on your machine before a single pattern gets discussed.
 There is no new example directory here to point at; instead, this chapter
 walks you through the toolchain and then through the three pieces of code that
-already exist — `examples/00-monolith/`, `examples/01-strangler-proxy/`, and
-`examples/02-review-service/` — far enough to prove they run. Chapters 3, 14,
+already exist (`examples/00-monolith/`, `examples/01-strangler-proxy/`, and
+`examples/02-review-service/`) far enough to prove they run. Chapters 3, 14,
 and 15 are where each one gets explained properly; this chapter's bar is
 lower and more mechanical: clone, install, start, and confirm.
 
-{% include excalidraw.html file="toolchain-and-repo-layout" alt="The local toolchain split into required (JDK 25, Maven) and optional (Quarkus CLI, Camel CLI) pieces, the docker compose stack on Docker Engine (Postgres, Kafka in KRaft mode, the Grafana LGTM bundle), and the examples/, tooling/, demos/, infra/, scripts/, and _docs/ directories those two feed." caption="Figure 1.1 — The local toolchain and the repository layout it builds, runs, and stands up." %}
+{% include excalidraw.html file="toolchain-and-repo-layout" alt="The local toolchain split into required (JDK 25, Maven) and optional (Quarkus CLI, Camel CLI) pieces, the docker compose stack on Docker Engine (Postgres, Kafka in KRaft mode, the Grafana LGTM bundle), and the examples/, tooling/, demos/, infra/, scripts/, and _docs/ directories those two feed." caption="Figure 1.1: The local toolchain and the repository layout it builds, runs, and stands up." %}
 
 ## What you need, and where it comes from
 
@@ -28,8 +28,8 @@ and it is worth knowing which is which before you install anything, because
 installing tools you will not touch until Part 9 is wasted effort today.
 
 **A Java Development Kit, version 25.** Every JVM example in this
-book — the Spring Boot monolith, the Quarkus services, the Camel
-routes — targets JDK 25, and the monolith's `pom.xml` pins both
+book (the Spring Boot monolith, the Quarkus services, the Camel
+routes) targets JDK 25, and the monolith's `pom.xml` pins both
 `<java.version>` and `<maven.compiler.release>` to `25` explicitly rather than
 leaving them to whatever the build machine happens to have on its `PATH`.
 That pin is deliberate: a modernization book that claims a service "starts in
@@ -50,7 +50,7 @@ java -version
 
 The `-tem` suffix selects the Eclipse Temurin distribution, the same one the
 project's GitHub Actions CI job installs (`actions/setup-java@v4` with
-`distribution: temurin`, `java-version: "25"`) — matching your local JDK
+`distribution: temurin`, `java-version: "25"`); matching your local JDK
 vendor to CI's is one fewer variable the next time a build behaves
 differently in the two places. If your Fedora or RHEL host already has a JDK 25
 package you are comfortable with, that works too; SDKMAN is the recommendation because it makes it trivial to hold two or
@@ -60,12 +60,12 @@ flipping between this book's JVM-mode and native-image examples in Part 5.
 **Apache Maven 3.9.x**, or just the Maven Wrapper the individual projects
 already carry. This is the one place in the toolchain where the two examples
 in this repository differ from each other, and the difference is
-worth internalizing now rather than discovering it as a build failure later.
-`examples/00-monolith/` — the Spring Boot "before" picture — has no
+better learned now than discovered as a build failure later.
+`examples/00-monolith/` (the Spring Boot "before" picture) has no
 `mvnw` script committed; it expects a Maven installation already on your
 `PATH`, invoked as plain `mvn`. `examples/01-strangler-proxy/` and
-`examples/02-review-service/` — the Quarkus and Camel-on-Quarkus "after"
-pieces — each carry their own `mvnw` / `mvnw.cmd` wrapper and a `.mvn/wrapper/`
+`examples/02-review-service/` (the Quarkus and Camel-on-Quarkus "after"
+pieces) each carry their own `mvnw` / `mvnw.cmd` wrapper and a `.mvn/wrapper/`
 directory, invoked as `./mvnw` from inside that project's own directory. The
 wrapper exists precisely so a Quarkus project's exact Maven version travels
 with the repository instead of depending on whatever happens to be installed
@@ -79,7 +79,7 @@ sdk install maven 3.9.9
 mvn -version
 ```
 
-**The Quarkus CLI — optional, but convenient.** Nothing in this book
+**The Quarkus CLI: optional, but convenient.** Nothing in this book
 *requires* the standalone `quarkus` command; every Quarkus project here ships
 its own wrapper and builds fine with `./mvnw package` or `./mvnw quarkus:dev`
 alone. The CLI is worth having anyway once you reach Part 5's extraction
@@ -95,9 +95,9 @@ sdk install quarkus
 quarkus --version
 ```
 
-**The Camel CLI and Camel TUI — optional, scoped to Part 5 onward.** You will
+**The Camel CLI and Camel TUI: optional, scoped to Part 5 onward.** You will
 not need either to build or run `examples/01-strangler-proxy/` in this
-chapter — it is an ordinary Quarkus Maven module and `./mvnw package` is all
+chapter; it is an ordinary Quarkus Maven module and `./mvnw package` is all
 it takes. The CLI becomes useful later, when Chapter 14 and beyond have you
 prototyping a new Camel route interactively (`camel init`, `camel run`)
 before it graduates into a committed Maven project, and the Camel MCP server
@@ -113,7 +113,7 @@ camel --version
 **Docker Engine and the `docker compose` plugin.** The local stack
 (Postgres, Kafka, the Grafana LGTM observability bundle), Testcontainers and
 Quarkus Dev Services in the test suites, the native-image container builds,
-and the minikube cluster in Part 9 all run on **Docker Engine** — the
+and the minikube cluster in Part 9 all run on **Docker Engine**: the
 `docker-ce` packages from Docker's own repository, talking to
 `/var/run/docker.sock` through the docker context named `default`. Docker
 Desktop is never required. Compose is the v2 CLI plugin, invoked as
@@ -123,7 +123,7 @@ binary). One container engine for every path is the point: the image tags
 the cluster pull, so the everyday dev loop and the containers a test run
 spins up for itself cannot drift apart. The book is written and verified on
 **Fedora and RHEL** hosts (bare metal or VM). Install from Docker's
-repository — Fedora (dnf5) is shown; on RHEL the repository line is
+repository. Fedora (dnf5) is shown; on RHEL the repository line is
 `sudo dnf config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo`:
 
 ```bash
@@ -134,7 +134,7 @@ sudo systemctl enable --now docker
 sudo usermod -aG docker "$USER"        # then log out and back in
 ```
 
-Remove `podman-docker` first if it is installed — it shadows the `docker`
+Remove `podman-docker` first if it is installed: it shadows the `docker`
 command. Then confirm the engine, the context, and the plugin:
 
 {% raw %}
@@ -148,13 +148,13 @@ docker compose version
 With the engine on the default socket, Testcontainers and Quarkus Dev Services
 find it with no further configuration (no `DOCKER_HOST` export needed).
 
-**Node.js and Newman — for the behavior-equivalence suite.** The suite that
+**Node.js and Newman: for the behavior-equivalence suite.** The suite that
 gates every extraction in this book from Chapter 15 onward is a Postman
 collection run through **Newman**, Postman's command-line collection runner,
 which itself runs on Node.js. You do not need Node for anything else in this
-book — no JavaScript application code appears anywhere in the examples — so a
+book (no JavaScript application code appears anywhere in the examples), so a
 recent LTS release (Node 22 or newer; the project's CI job uses Node 22 via
-`actions/setup-node@v4`) is sufficient — `sudo dnf install -y nodejs npm`
+`actions/setup-node@v4`) is sufficient: `sudo dnf install -y nodejs npm`
 on Fedora and RHEL. Install Newman globally once Node is in place:
 
 ```bash
@@ -163,12 +163,12 @@ newman --version
 ```
 
 **Git**, for cloning the repository and following along with the commit
-history this book cites directly — Chapter 7, for instance, walks through ten
+history this book cites directly. Chapter 7, for instance, walks through ten
 real commit hashes from this project's own history as its evidence trail, and
 you will want `git log` working locally to read them in context rather than
 taking the book's word for it.
 
-**Ruby and Bundler — only if you intend to build this Jekyll site locally.**
+**Ruby and Bundler: only if you intend to build this Jekyll site locally.**
 Reading the chapters does not require Ruby at all; this book is published as
 a static GitHub Pages site and a browser is the only client most readers
 need. If you want to preview chapter edits or regenerate diagrams on your own
@@ -187,8 +187,8 @@ bundle exec jekyll serve
 
 With the toolchain in place, start by cloning the repository and copying the
 tracked environment template to a local, gitignored `.env` file. This two-step
-pattern — a tracked `.env.example` with safe, documented defaults, and a
-gitignored `.env` you actually run against — is how the project keeps image
+pattern, a tracked `.env.example` with safe, documented defaults, and a
+gitignored `.env` you actually run against, is how the project keeps image
 tags and credentials both reproducible and out of version control:
 
 ```bash
@@ -198,9 +198,9 @@ cp .env.example .env
 ```
 
 Open `.env` and skim it before moving on; it is short and every line is
-commented. It pins the image tags — the Grafana `otel-lgtm` bundle
+commented. It pins the image tags (the Grafana `otel-lgtm` bundle
 (`0.36.0`), Postgres (`18.6-alpine`), Apache Kafka (`4.3.1`), Debezium Connect
-(`3.7.0.Final`) and Apicurio Registry (`3.3.3`) — and the host ports, along with the monolith's
+(`3.7.0.Final`) and Apicurio Registry (`3.3.3`)) and the host ports, along with the monolith's
 database name, user, and password, and a fixed Kafka KRaft cluster identity.
 None of these values are secret (the password is literally
 `monolith_dev_only`), but pinning them in one tracked file rather than
@@ -211,11 +211,11 @@ across the repository.
 
 ## Bring up the infrastructure stack
 
-The project's local infrastructure — Postgres (the monolith's and, for now,
+The project's local infrastructure, Postgres (the monolith's and, for now,
 Review's shared database), single-broker KRaft-mode Kafka (no ZooKeeper,
 needed from the event-driven extractions in Part 6 onward), and the Grafana
 LGTM observability bundle (Loki, Grafana, Tempo, Mimir, and an embedded
-OpenTelemetry Collector) — is defined once in the root `compose.yaml` and
+OpenTelemetry Collector), is defined once in the root `compose.yaml` and
 brought up with a single helper script:
 
 ```bash
@@ -251,11 +251,11 @@ Kafka:      localhost:9092 (host) / kafka:9094 (compose network)
 Open `http://localhost:3000` in a browser once the script reports healthy.
 Grafana is configured for anonymous admin access in this local stack
 (`GF_AUTH_ANONYMOUS_ENABLED=true`), which is appropriate for a disposable dev
-environment and would be the wrong default anywhere else — you will not see
+environment and would be the wrong default anywhere else. You will not see
 any dashboards populated yet, because nothing has emitted a trace, metric, or
 log to it; that wiring is the subject of Part 9. For now, a reachable Grafana
-login screen with no authentication prompt is simply your confirmation that
-the stack is actually up. When you are done for the session, tear it down
+login screen with no authentication prompt is your confirmation that
+the stack is up. When you are done for the session, tear it down
 with the matching script, which by default preserves the named Postgres and
 Kafka volumes so your seed data and topics survive a restart:
 
@@ -266,8 +266,8 @@ scripts/stack-down.sh -v     # stop containers, wipe volumes (fresh state)
 
 ## Build and run the monolith
 
-With Postgres up, build the Spring Boot monolith with plain Maven — no
-wrapper, as noted above — from the repository root:
+With Postgres up, build the Spring Boot monolith with plain Maven (no
+wrapper, as noted above) from the repository root:
 
 ```bash
 mvn -f examples/00-monolith package
@@ -276,7 +276,7 @@ mvn -f examples/00-monolith package
 This compiles the six bounded contexts (order, inventory, payment, shipping,
 notification, review) into a single `monolith.jar` under
 `examples/00-monolith/target/`. Before you run it, there is one fragile detail
-worth documenting rather than hitting as a confusing connection failure:
+readers should know about now rather than hit as a confusing connection failure:
 `examples/00-monolith/src/main/resources/application.yml` ships a *default*
 datasource password of `monolith` for convenience, but the actual Postgres
 container the stack just started was provisioned from `.env`'s
@@ -293,7 +293,7 @@ SPRING_DATASOURCE_PASSWORD=monolith_dev_only \
 
 On startup, Flyway runs the monolith's own migrations
 (`V1__init_schema.sql`, `V2__seed_data.sql`) against the `monolith` database
-automatically — there is no separate migration step to remember — and the
+automatically; there is no separate migration step to remember, and the
 application binds to port **8080**. A `GET http://localhost:8080/api/reviews?sku=SKU-WIDGET-001`
 against a freshly seeded database should return a non-empty JSON array; if it
 does, the monolith is up and seeded correctly.
@@ -313,8 +313,8 @@ java -jar target/quarkus-app/quarkus-run.jar
 
 The Review service listens on port **8081** and, in its current form, reads
 and writes the *same* `reviews` table in the *same* Postgres database the
-monolith owns — true per-service data ownership is a Part 6 concern, not
-this chapter's or even Part 5's — so there is nothing extra to migrate or
+monolith owns. True per-service data ownership is a Part 6 concern, not
+this chapter's or even Part 5's, so there is nothing extra to migrate or
 seed here; the monolith's Flyway run already created the table this service
 needs. In a second shell, build and run the Camel strangler proxy the same
 way:
@@ -333,13 +333,13 @@ project's own cutover) and everything else always goes to the monolith on
 8080. If you would rather explore either Quarkus project with live reload
 instead of a packaged jar while you are getting oriented, `./mvnw quarkus:dev`
 from inside either directory starts it in dev mode and recompiles changes on
-the fly — a detail you will use constantly from Part 5 onward and might as
+the fly, a detail you will use constantly from Part 5 onward and might as
 well try once now.
 
 ## Run the behavior-equivalence suite
 
-With all three services reachable — monolith on 8080, Review on 8081, proxy
-on 8888 — you are ready to run the same check every extraction chapter in
+With all three services reachable (monolith on 8080, Review on 8081, proxy
+on 8888), you are ready to run the same check every extraction chapter in
 this book runs before it trusts a change: the **behavior-equivalence suite**,
 a Newman collection captured once against the running monolith and re-run,
 completely unmodified, against whatever backend you point it at. Install
@@ -356,7 +356,7 @@ by the `baseUrl` you pass it; nothing about the collection itself changes
 whether you point it at the monolith directly (`http://localhost:8080`), the
 Review service directly (`http://localhost:8081`), or the proxy fronting
 both (`http://localhost:8888`). A clean run against the proxy reports every
-assertion passing — smoke checks, a full happy-path checkout, an
+assertion passing: smoke checks, a full happy-path checkout, an
 out-of-stock rejection, a payment-decline rollback, and the Review service's
 own read/write contract including its authentication and validation
 behavior. If any assertion fails, the script's output names exactly which
@@ -370,21 +370,21 @@ working baseline.
 
 ## Finding your way around the repository
 
-Before moving on, it is worth a quick orientation pass over the top-level
-directories you will keep returning to. None of this needs to be memorized —
+Before moving on, take a quick orientation pass over the top-level
+directories you will keep returning to. None of this needs to be memorized;
 you will have walked every one of these paths by the time you reach
-Part 3 — but knowing roughly what lives where now will save you a few
+Part 3, but knowing roughly what lives where now will save you a few
 `find` commands later.
 
 | Directory | What's in it |
 |---|---|
-| `examples/` | One runnable project per hands-on chapter — the monolith, the strangler proxy, each extracted service — committed in full, not as snippets. |
-| `tooling/` | Shared developer tooling that spans examples, starting with `tooling/newman/` — the behavior-equivalence suite's collection and environments. |
-| `demos/` | Thin, documented wrapper scripts that drive the examples for a reader — `demo-equivalence.sh`, `demo-cutover.sh` — rather than raw tool invocations buried in prose. |
-| `infra/` | Configuration consumed by `compose.yaml` — the OpenTelemetry Collector config, Grafana datasource provisioning, and the monolith's database init scripts. |
-| `scripts/` | Project-level automation — `stack-up.sh` / `stack-down.sh` for the local infrastructure, plus the diagram generator used across chapters. |
-| `_docs/` | The chapters themselves — this file is `_docs/01-prerequisites.md`. |
-| `_plans/` | The project's own ADLC ledger — `decisions.md`, `build-plan.md`, and per-iteration plans — introduced properly as a reader-facing concept in the next chapter. |
+| `examples/` | One runnable project per hands-on chapter: the monolith, the strangler proxy, each extracted service, committed in full, not as snippets. |
+| `tooling/` | Shared developer tooling that spans examples, starting with `tooling/newman/`, the behavior-equivalence suite's collection and environments. |
+| `demos/` | Thin, documented wrapper scripts that drive the examples for a reader (`demo-equivalence.sh`, `demo-cutover.sh`) rather than raw tool invocations buried in prose. |
+| `infra/` | Configuration consumed by `compose.yaml`: the OpenTelemetry Collector config, Grafana datasource provisioning, and the monolith's database init scripts. |
+| `scripts/` | Project-level automation: `stack-up.sh` / `stack-down.sh` for the local infrastructure, plus the diagram generator used across chapters. |
+| `_docs/` | The chapters themselves: this file is `_docs/01-prerequisites.md`. |
+| `_plans/` | The project's own ADLC ledger: `decisions.md`, `build-plan.md`, and per-iteration plans, introduced properly as a reader-facing concept in the next chapter. |
 | `assets/` | Site styling, images, and the paired SVG/Excalidraw diagrams embedded throughout the chapters. |
 
 ## Ports at a glance
@@ -398,7 +398,7 @@ from `compose.yaml` and each project's `application.properties` every time:
 | Monolith (Spring Boot) | 8080 | `examples/00-monolith/src/main/resources/application.yml` |
 | Review service (Quarkus) | 8081 | `examples/02-review-service` |
 | Strangler proxy (Camel on Quarkus) | 8888 | `examples/01-strangler-proxy`, `quarkus.http.port` |
-| Grafana (LGTM bundle) | 3000 | `compose.yaml`; OTLP on 4317/4318, Prometheus on host **19090** (container 9090 — Cockpit owns host 9090 on Fedora Server and RHEL), Loki on 3100, Tempo on 3200 |
+| Grafana (LGTM bundle) | 3000 | `compose.yaml`; OTLP on 4317/4318, Prometheus on host **19090** (container 9090; Cockpit owns host 9090 on Fedora Server and RHEL), Loki on 3100, Tempo on 3200 |
 
 ## CI runs this same gate
 
@@ -407,7 +407,7 @@ project's `code-ci.yml` workflow builds the Review service, applies the
 monolith's own committed Flyway SQL directly against a disposable Postgres
 service container (rather than booting the monolith's JVM just to get
 tables), starts the packaged service, and runs the behavior-equivalence
-suite's "Review Context Contract" folder against it — failing the job on any
+suite's "Review Context Contract" folder against it, failing the job on any
 non-zero Newman exit code. That workflow was deliberately validated both
 ways before it was trusted: a temporarily widened validation rule
 (`@Max(5)` loosened to `@Max(500)` on a review rating) made the exact same
@@ -415,7 +415,7 @@ ways before it was trusted: a temporarily widened validation rule
 rather than merely running green by default, before the change was reverted
 and the workflow committed. The practical upshot for you, right now, is that
 the commands in this chapter are not a one-off onboarding ritual distinct
-from how the project verifies itself — they are the same gate, run by a
+from how the project verifies itself: they are the same gate, run by a
 different caller.
 
 ## What you learned
@@ -431,12 +431,12 @@ different caller.
 - `scripts/stack-up.sh` brings up Postgres, Kafka, and the Grafana LGTM
   bundle from one `compose.yaml`, gated by real healthchecks rather than a
   fixed sleep.
-- The behavior-equivalence suite — one Newman collection, parameterized
-  entirely by `--baseUrl` — is the same check this chapter asks you to run
+- The behavior-equivalence suite, one Newman collection, parameterized
+  entirely by `--baseUrl`, is the same check this chapter asks you to run
   by hand and the one GitHub Actions runs unattended; getting it green here
   means you are starting Part 3 from a verified baseline, not a hopeful one.
 
 The next chapter, **"The Project Ledger,"** introduces the three documents
 this project uses as its own memory across the chapters you are about to
-read — `decisions.md`, `build-plan.md`, and its reconciliation record — and
+read (`decisions.md`, `build-plan.md`, and its reconciliation record) and
 shows you how to keep the same kind of ledger for your own migration.

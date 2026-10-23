@@ -5,13 +5,13 @@ part: "Why Modernize"
 description: "Modernization goals, the ten microservice traits, 'microservices are not the goal,' and when microservices are a bad idea."
 ---
 
-Chapter 2 gave you the ledger you will keep as you work through this book —
+Chapter 2 gave you the ledger you will keep as you work through this book:
 the decision log, the build plan, the reconciliation record. This chapter
 asks the question that every entry in that ledger ultimately has to answer:
 why are you doing any of this at all? Before this book builds a single line
 of the reference monolith, before it names a strategy or chooses an
 extraction order, it owes you an argument, clear enough to survive
-contact with a budget meeting: modernization is worth doing when it solves a
+contact with a budget meeting: modernization pays for itself when it solves a
 problem you can name and measure, and it should be executed as a disciplined
 engineering activity with a safety net, not as a leap of faith toward a
 fashionable architecture. That argument has two uncomfortable corollaries.
@@ -38,10 +38,10 @@ modernization effort that cannot point at symptoms from at least one of them
 is a modernization effort chasing a trend rather than solving a problem.
 
 The first family is delivery performance, and it shows up as exactly the
-metrics a team already tracks (or should): **lead time for changes** — how
+metrics a team already tracks (or should): **lead time for changes** (how
 long does it take a single line of code to go from committed to running in
-production — and **change-failure rate** — what fraction of the changes that
-do ship cause an incident, a rollback, or a hotfix. In a monolith where every
+production) and **change-failure rate** (what fraction of the changes that
+do ship cause an incident, a rollback, or a hotfix). In a monolith where every
 change shares one build, one test suite, one deployable, and one release
 train, both metrics degrade as the system grows, and not gradually: a
 codebase at ten times its original size does not take ten times as long to
@@ -52,7 +52,7 @@ module's container, and waiting for a release window shared by six teams is
 a change with an inflated lead time for reasons that have nothing to do with
 the change itself. And a monolith where a bug in one module can corrupt
 shared, in-process state for every other module is a monolith where the
-blast radius of a mistake — and therefore the change-failure rate — scales
+blast radius of a mistake, and therefore the change-failure rate, scales
 with the size of the whole system, not the size of the change. These are not
 abstract concerns invented for this book; they are the two metrics every
 delivery-performance framework in wide industry use treats as the clearest
@@ -61,8 +61,8 @@ ability to ship safely.
 
 The second family is structural, and it is slower-moving but, over a long
 enough horizon, more expensive. **Scaling limits** show up when one
-high-traffic concern — in this book's running example, product reviews
-during a flash sale, or inventory lookups during a restock — forces you to
+high-traffic concern (in this book's running example, product reviews
+during a flash sale, or inventory lookups during a restock) forces you to
 scale the entire monolith just to give one hot path more capacity, paying
 for idle capacity in five modules that didn't need it to serve the one that
 did. **Team autonomy** erodes as more teams own code inside the same
@@ -70,13 +70,13 @@ deployable: Conway's Law cuts both ways, and a single shared artifact forces
 the coordination the org chart was trying to avoid by having separate teams
 in the first place, turning every cross-team change into a negotiation over
 a shared release window. And **stack decay** compounds quietly in the
-background — a framework version nobody has upgraded in three years because
+background: a framework version nobody has upgraded in three years because
 upgrading means re-testing the entire monolith at once, a security patch
 that can't ship independently of a dozen unrelated modules, and a hiring
 market where the engineers who know the stack well enough to work in it
 safely are retiring faster than new ones are being trained on it. None of
-these four problems — lead time, change-failure rate, scaling limits, team
-autonomy — is solved by rewriting in a newer language or adopting a trendier
+these four problems (lead time, change-failure rate, scaling limits, team
+autonomy) is solved by rewriting in a newer language or adopting a trendier
 framework for its own sake. They are solved, when they are solved at all, by
 changing the *boundaries* in the system: where one deployable ends and
 another begins, where one team's change can ship without another team's
@@ -89,7 +89,7 @@ Kleppmann names the property underneath all four of these symptoms directly
 in *Designing Data-Intensive Applications*: reliability, scalability, and
 **maintainability** are the three top-level concerns he argues every data
 system has to satisfy, and maintainability itself breaks into three
-facets — operability, simplicity, and **evolvability**, a system's ability
+facets: operability, simplicity, and **evolvability**, a system's ability
 to accommodate change easily as requirements shift. Read that way, this
 book's entire project is a maintainability intervention aimed squarely at
 that third facet: every pattern from the strangler proxy onward exists to
@@ -104,14 +104,14 @@ worth being precise about what the word is actually promising, because
 useful target for the extraction chapters later in this book. The deck this
 book's house style descends from names ten traits that, together, define
 what this book is building toward one extraction at a time. A microservice
-is **independently deployable** — it ships on its own schedule, not the
+is **independently deployable**: it ships on its own schedule, not the
 monolith's shared release train. It is **modeled around a business
 domain**, not a technical layer, so a service's boundary matches a bounded
 context rather than a tier like "data access" or "UI." Its instances
 **communicate over the network** rather than through in-process calls,
 which is the same change that turns a stack trace into a distributed trace.
 It is best understood as **a form of opinionated service-oriented
-architecture** — the integration ideas SOA introduced, with much stronger
+architecture**: the integration ideas SOA introduced, with much stronger
 defaults about size and ownership than SOA ever enforced. It is
 **technology agnostic**, so one team's service can run a different language
 or framework than its neighbor's without coordination. A set of them,
@@ -128,7 +128,7 @@ any one service can be unavailable at any moment, rather than the
 monolith's implicit assumption that if the process is up, every module
 inside it is reachable.
 
-None of these ten traits is this book's goal in isolation — the sentence
+None of these ten traits is this book's goal in isolation; the sentence
 that opened this chapter already warned against that trap. Together, though,
 they are the destination the strangler-fig sequence in Chapter 4 is aimed
 at: each of the six extractions this book runs, from review through order,
@@ -136,7 +136,7 @@ is a bet that one more bounded context can acquire independent
 deployability, owned data, and a real API boundary without first losing the
 behavior the monolith already gets right.
 
-{% include excalidraw.html file="microservice-traits" alt="A ten-box grid of the microservice traits this chapter enumerates: independently deployable, modeled around a business domain, communicate over the network, a form of opinionated service-oriented architecture, technology agnostic, a distributed system as a set, API-focused, decentralized governance, decentralized data management, and designed for failure." caption="Figure 3.1 — The ten microservice traits this book's extractions are built toward" %}
+{% include excalidraw.html file="microservice-traits" alt="A ten-box grid of the microservice traits this chapter enumerates: independently deployable, modeled around a business domain, communicate over the network, a form of opinionated service-oriented architecture, technology agnostic, a distributed system as a set, API-focused, decentralized governance, decentralized data management, and designed for failure." caption="Figure 3.1: The ten microservice traits this book's extractions are built toward" %}
 
 ## The counter-case: when modernization is the wrong call
 
@@ -153,7 +153,7 @@ system imposes.
 Sam Newman is blunt about this in *Building Microservices*: microservices
 trade a simpler deployment and operational model for independent
 scalability and deployability, and that trade is only favorable when the
-organization actually needs the things it buys — when the domain is complex
+organization needs the things it buys: when the domain is complex
 enough that independent evolution of its parts is worth the cost of network
 calls, eventual consistency, and distributed debugging that used to be a
 stack trace and is now a trace across five services. Several concrete
@@ -161,8 +161,8 @@ situations make that trade a bad one, and this book is specific about
 naming them rather than treating "modernize" as an unconditional good:
 
 - **Unclear domain boundaries.** If you cannot draw a confident line between
-  where one bounded context ends and another begins — the work Part 4 of
-  this book spends three full chapters teaching — splitting along a guessed
+  where one bounded context ends and another begins (the work Part 4 of
+  this book spends three full chapters teaching), splitting along a guessed
   boundary produces services that constantly call back and forth across
   the seam, which is strictly worse than a monolith with the same
   coupling, because now the coupling crosses a network.
@@ -176,13 +176,13 @@ naming them rather than treating "modernize" as an unconditional good:
   strangle code you do not own and cannot change; a COTS system's
   modernization story is integration and encapsulation, not decomposition.
 - **An organization that has not yet mastered the practices microservices
-  assume** — continuous delivery, automated testing, infrastructure as code.
+  assume**: continuous delivery, automated testing, infrastructure as code.
   Ozkaya makes this point directly in *Design Microservices Architecture
   with Patterns and Principles*: microservices amplify whatever delivery
   discipline already exists, for better or worse, so adopting them before
   that discipline exists compounds the underlying problem rather than
   curing it.
-- **Résumé-driven design.** The plainest case, and the one worth naming
+- **Résumé-driven design.** The plainest case, stated
   without euphemism: rearchitecting a working system because an
   architecture decision looks good in a portfolio, rather than because a
   measured business or engineering problem demands it, is not modernization.
@@ -197,29 +197,29 @@ catalogue of Chapter 9. But stating the counter-case here, before a single
 service is extracted, is what keeps this book's enthusiasm for
 the strangler pattern from reading as uncritical. A reader whose own system
 fails more of the tests above than it passes should walk away from this
-book having learned when *not* to apply it — which Chapter 4 turns into an
+book having learned when *not* to apply it, which Chapter 4 turns into an
 actual decision rubric once the strategy menu (Lift and Shift, Modernize and
 Extend, Rip and Rewrite) is on the table.
 
 ## Why big-bang rewrites fail
 
 Granting that modernization is sometimes the right call, the next question
-is how. The most intuitive answer — stop shipping features, rewrite the
-system from a clean slate in the new stack, cut over once it is done — is
-also the answer with the worst track record in the industry, and it is
-worth understanding precisely why, because the failure mode is structural,
+is how. The most intuitive answer (stop shipping features, rewrite the
+system from a clean slate in the new stack, cut over once it is done) is
+also the answer with the worst track record in the industry, and it matters to
+understand precisely why, because the failure mode is structural,
 not a matter of a particular team executing poorly.
 
 A big-bang rewrite makes three bets simultaneously, and all three have to
 pay off at once for the project to succeed. It bets that the team correctly
 understood every piece of behavior the old system had accumulated over
-years of bug fixes, edge-case handling, and undocumented business rules —
+years of bug fixes, edge-case handling, and undocumented business rules,
 behavior nobody wrote down as a specification because nobody had to, since
 the running system *was* the specification. It bets that a system of
 comparable scope can be built faster in the new stack than the old system
 decayed, which is rarely true once the new system reaches the complexity
 the old one already has. And it bets that the business can tolerate a long
-stretch — often measured in quarters, sometimes years — where almost no new
+stretch (often measured in quarters, sometimes years) where almost no new
 value ships to users, because the entire engineering organization is heads
 down on a rewrite that produces nothing releasable until it produces
 everything. Any one of those three bets failing sinks the project; the
@@ -230,9 +230,9 @@ most rewrites finish. Newman's guidance in *Building Microservices* is
 consistent and specific on this point: migrate incrementally, keep the old
 and new systems running side by side, and never schedule a single moment
 where everything has to work for the first time all at once. The entire
-discipline this book teaches — one bounded context extracted at a time,
+discipline this book teaches, one bounded context extracted at a time,
 each one proven equivalent to its old behavior before the old code is
-deleted — is Newman's incremental guidance turned into a concrete,
+deleted, is Newman's incremental guidance turned into a concrete,
 repeatable procedure.
 
 The strangler fig pattern, which Chapter 14 introduces in full, is the
@@ -249,14 +249,14 @@ a stale design document. And it refuses to bet the business on a single
 cutover date: because the monolith and the new service run side by side
 behind a flag until the new service is proven equivalent, the project can
 pause, slow down, or reverse a single extraction without threatening
-anything else in flight. None of that removes risk from modernization — it
+anything else in flight. None of that removes risk from modernization; it
 distributes the risk across many small, independently reversible steps
 instead of concentrating all of it into one irreversible moment at the end.
 That is what "modernization as disciplined engineering" means concretely:
 not caution for its own sake, but risk management applied to the shape of
 the migration itself.
 
-{% include excalidraw.html file="rewrite-vs-strangler-risk" alt="A side-by-side risk-shape contrast. Left, the big-bang rewrite: three bets made at once (full behavioral understanding, outrunning decay, business patience for zero shipped value) feeding one irreversible cutover, with a late, all-or-nothing payoff. Right, the strangler fig: small steps starting with the review service, each proven equivalent before the next starts, running side by side with the monolith so any one step can pause, slow, or reverse without threatening the rest, with value shipping continuously." caption="Figure 3.2 — One irreversible bet versus many reversible steps: the same migration, two risk shapes" %}
+{% include excalidraw.html file="rewrite-vs-strangler-risk" alt="A side-by-side risk-shape contrast. Left, the big-bang rewrite: three bets made at once (full behavioral understanding, outrunning decay, business patience for zero shipped value) feeding one irreversible cutover, with a late, all-or-nothing payoff. Right, the strangler fig: small steps starting with the review service, each proven equivalent before the next starts, running side by side with the monolith so any one step can pause, slow, or reverse without threatening the rest, with value shipping continuously." caption="Figure 3.2: One irreversible bet versus many reversible steps: the same migration, two risk shapes" %}
 
 ## Modernization as a measurable activity
 
@@ -264,12 +264,12 @@ The discipline this chapter is arguing for has a specific, checkable form:
 behavior stays constant while the properties you actually care about
 improve, and both halves of that sentence have to be demonstrated, not
 asserted. "Behavior stays constant" is the job of the **behavior-equivalence
-suite** this book introduces properly in Chapter 10 — a contract test
+suite** this book introduces properly in Chapter 10: a contract test
 collection captured against the running monolith and re-run, unchanged,
 against every extracted service, with an **equivalence gate** in the pipeline
 that blocks a module's retirement until the gate passes. "The properties you
-care about improve" means naming those properties up front — latency,
-startup time, memory footprint, deploy independence — and measuring them
+care about improve" means naming those properties up front (latency,
+startup time, memory footprint, deploy independence) and measuring them
 before and after, the same way an engineer would validate any other
 optimization. A modernization project that cannot show both halves of that
 sentence for at least one completed step is not yet disciplined engineering,
@@ -279,7 +279,7 @@ This book does not ask you to take that claim on faith, because it already
 has a completed example: the review service extraction this book ran end to
 end, with every number below measured on a real build
 rather than estimated for the page (`examples/02-review-service/MIGRATION.md`
-has the full record). The extraction ran in two phases — Phase A lifts the
+has the full record). The extraction ran in two phases: Phase A lifts the
 Spring code onto Quarkus with minimal changes via the Quarkiverse
 Spring-compatibility extensions, so the equivalence gate passes quickly and
 the extraction is de-risked before anything is rewritten for elegance; Phase
@@ -288,14 +288,14 @@ measured payoff shows up:
 
 | Build | Startup time | Resident memory | Equivalence suite |
 |---|---|---|---|
-| Phase A — JVM, Spring-compat | 1.492 s | ~316 MB | 16/16 green |
-| Phase B — JVM, idiomatic Quarkus | 1.431–1.437 s | ~304 MB | 16/16 green |
-| Phase B — native image | 0.048–0.049 s | ~73 MB | 16/16 green |
+| Phase A: JVM, Spring-compat | 1.492 s | ~316 MB | 16/16 green |
+| Phase B: JVM, idiomatic Quarkus | 1.431–1.437 s | ~304 MB | 16/16 green |
+| Phase B: native image | 0.048–0.049 s | ~73 MB | 16/16 green |
 
 Read that table the way an engineer should, not the way a slide deck would.
-The JVM-to-JVM improvement from Phase A to Phase B is real but modest —
+The JVM-to-JVM improvement from Phase A to Phase B is real but modest:
 startup is within run-to-run noise and memory drops only about four percent,
-simply from no longer loading three translation extensions at boot. The
+from no longer loading three translation extensions at boot. The
 payoff that actually justifies the migration shows up moving to native
 image: roughly thirty times faster startup and just over four times less
 resident memory, which is the difference between a service that can scale
@@ -304,23 +304,23 @@ None of those numbers would mean anything without the middle column of that
 record, which this table does not show but the chapter's own account makes
 explicit: the same sixteen-assertion equivalence suite passed, unchanged,
 against all three builds, including the native build that only passed after
-a closed-world reflection defect was found and fixed — a defect the JVM
+a closed-world reflection defect was found and fixed, a defect the JVM
 build's more forgiving runtime reflection had silently papered over. That is
 the whole argument in one artifact: three different runtimes, identical
 observable behavior proven by the same unmodified test suite, and a measured
-three-property improvement (startup, memory, and — once the flag flips and
-the monolith's review module is decommissioned — deploy independence) that
+three-property improvement (startup, memory, and, once the flag flips and
+the monolith's review module is decommissioned, deploy independence) that
 the team can defend in a budget meeting with numbers instead of adjectives.
 Every extraction from Chapter 17 onward repeats this exact shape: hold
 behavior constant, measure what actually changed, show the work.
 
-{% include excalidraw.html file="migration-metrics-review" alt="A two-band comparison figure for the review-service extraction's measured metrics. Top band, startup time: Phase A JVM Spring-compat at 1.492 seconds, Phase B JVM idiomatic Quarkus at 1.431 to 1.437 seconds, and Phase B native image at 0.048 to 0.049 seconds, with the native bar roughly 31 times shorter than Phase A's. Bottom band, resident memory: Phase A at about 316 MB, Phase B JVM at about 304 MB, and Phase B native at about 73 MB, with the native bar roughly 4 times shorter than Phase A's. Every row carries the same 16 of 16 green equivalence-suite result." caption="Figure 3.3 — Startup time and memory across Phase A, Phase B JVM, and Phase B native, same 16/16 equivalence suite throughout" %}
+{% include excalidraw.html file="migration-metrics-review" alt="A two-band comparison figure for the review-service extraction's measured metrics. Top band, startup time: Phase A JVM Spring-compat at 1.492 seconds, Phase B JVM idiomatic Quarkus at 1.431 to 1.437 seconds, and Phase B native image at 0.048 to 0.049 seconds, with the native bar roughly 31 times shorter than Phase A's. Bottom band, resident memory: Phase A at about 316 MB, Phase B JVM at about 304 MB, and Phase B native at about 73 MB, with the native bar roughly 4 times shorter than Phase A's. Every row carries the same 16 of 16 green equivalence-suite result." caption="Figure 3.3: Startup time and memory across Phase A, Phase B JVM, and Phase B native, same 16/16 equivalence suite throughout" %}
 
 ## The cost of inaction: coupling compounds
 
-It is worth being equally concrete about the cost of doing nothing, because
+It is equally concrete to state the cost of doing nothing, because
 "modernize eventually" is itself a decision with a price, and that price is
-not flat over time — it compounds. Larry Constantine's observation, quoted
+not flat over time; it compounds. Larry Constantine's observation, quoted
 directly in this book's own source material, is the mechanism: "a structure
 is stable if cohesion is high, and coupling is low." A system where that
 balance has already tipped the other way does not sit still while a team
@@ -331,7 +331,7 @@ path of least resistance in a tightly coupled system is almost always to
 couple the new code to what is already there rather than to carve out a
 clean boundary nobody has time to build.
 
-This book does not ask you to take that claim in the abstract either — it
+This book does not ask you to take that claim in the abstract either; it
 is the entire premise of Part 3. The reference monolith built in Chapter 8
 has five smells, each named and catalogued in Chapter 9: a
 shared schema with cross-context foreign keys and joins that make inventory
@@ -348,13 +348,13 @@ was an accident in the fictional team's
 original design, and that is exactly the point: they are the ordinary,
 defensible shortcuts a real team takes under a real deadline, and each one
 is individually cheap the day it is introduced. What Chapter 9 demonstrates
-is that they are not cheap cumulatively — the god service and the shared
+is that they are not cheap cumulatively: the god service and the shared
 schema interact to make the order-placement flow nearly impossible to
 change safely without touching four other contexts at once, which is
 precisely the lead-time and change-failure-rate cost this chapter opened
 with, now visible in actual source code rather than described in the
 abstract. Chapter 13's treatment of coupling as a dimension you can reason
-about — not just a feeling — gives you the vocabulary to see this
+about, not just a feeling, gives you the vocabulary to see this
 compounding before it happens in your own systems, rather than only after a
 migration has become urgent enough to be expensive.
 
@@ -366,7 +366,7 @@ contexts is a schema you can still split with a weekend's migration script;
 the same schema with thirty foreign keys and a dozen reports built directly
 against it is a schema that takes a dedicated team a quarter to split
 safely, if it can be split at all without a rewrite. "Modernize later" is
-therefore not a neutral default — it is a bet that the cost of cutting the
+therefore not a neutral default; it is a bet that the cost of cutting the
 seam stays flat while you wait, and that bet has historically lost. The
 discipline this book argues for is not urgency for its own sake; it is
 treating the cost curve of accumulating coupling as a real, measurable
@@ -386,8 +386,8 @@ Assessment,"** takes that question head-on: it lays out the Lift and Shift,
 Modernize and Extend, and Rip and Rewrite menu this book's own monolith is
 run through, the strategic-value-versus-change-frequency framing that turns
 "should we modernize this" into a defensible, measured answer rather than a
-guess, and the specific strategy — a strangler-fig migration executed
-within the Modernize and Extend family — that every later chapter commits
+guess, and the specific strategy (a strangler-fig migration executed
+within the Modernize and Extend family) that every later chapter commits
 to and builds. From there,
 Part 3 puts the argument this chapter made into running code: Chapter 8
 builds the monolith, Chapter 9 catalogues its five remaining deliberate
