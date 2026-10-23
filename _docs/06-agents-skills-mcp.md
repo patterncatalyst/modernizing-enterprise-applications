@@ -31,8 +31,8 @@ produced a passing diff."
 
 The simplest version of this is a single agent: one model, one loop, one set
 of tools, working a task start to finish. Much of the mechanical work in a
-build like this — scaffolding a Quarkus project, writing a Camel route,
-authoring a chapter's prose — runs as a single agent, because a single loop
+build like this (scaffolding a Quarkus project, writing a Camel route,
+authoring a chapter's prose) runs as a single agent, because a single loop
 with the right tools is the cheapest way to get a bounded task done, and
 adding a second agent to a task that doesn't need one is pure coordination
 overhead with no offsetting benefit.
@@ -40,31 +40,31 @@ overhead with no offsetting benefit.
 The more interesting case is
 **multi-agent orchestration**: more than one agent, each with a distinct role
 and a distinct set of tools, coordinated so that one agent's output becomes
-another's input, and — critically — so that no single agent is trusted to
+another's input, and, critically, so that no single agent is trusted to
 grade its own work. This book's Plan and Verify phases are carried out by
 exactly this pattern, under a name worth being precise about:
 **plan → execute → validate**. One model tier (the *planning* model) reads the
 Frame statement, does the Map-phase reconnaissance, and drafts a concrete step
-plan — what becomes a `decisions.md` entry and a row in `build-plan.md`. That
+plan: what becomes a `decisions.md` entry and a row in `build-plan.md`. That
 plan sits in front of a human gate before anything else happens; Chapter 5
 called this the cheapest place in the whole lifecycle to catch a wrong
 assumption, and a second model's enthusiasm for its own plan is not a
 substitute for that human's sign-off. Once the plan is approved, a second
 model tier (the *execution* model) carries out Generate: it scaffolds the
 project, writes the code, writes the tests, and runs them. It does not get to
-decide, on its own authority, that its own output is correct — that question
+decide, on its own authority, that its own output is correct. That question
 goes back to the first tier, now acting in a third, *adversarial* role: it
 re-reads the approved plan, re-reads the diff the execution model actually
 produced, and checks the two against each other and against the
 behavior-equivalence suite before recommending the second human gate. The
 same model tier that proposed the plan is the one skeptical enough to doubt
-whether its own plan was executed faithfully — a different posture than
+whether its own plan was executed faithfully: a different posture than
 "wrote it, therefore vouches for it."
 
 {% include excalidraw.html
    file="plan-execute-validate-relay"
    alt="Six boxes in a row: Frame (human, states intent, writes the decisions.md entry), Plan tier (the planning model, reads Frame plus Map recon, drafts the step plan), Human gate 1 (plan approval, before any diff exists), Execute tier (the execution model, Generate: scaffolds, writes code and tests, runs them), Validate tier (the planning model again, adversarial: re-reads plan and diff against the equivalence suite), Human gate 2 (equivalence sign-off, Verify phase). A dashed line below the row connects the Plan and Validate boxes, labeled: same model tier, now adversarial, not self-vouching."
-   caption="Figure 6.1 — The relay: the planning model drafts, the execution model builds, the same planning tier validates adversarially, with a human gate on either side of Generate" %}
+   caption="Figure 6.1: The relay: the planning model drafts, the execution model builds, the same planning tier validates adversarially, with a human gate on either side of Generate" %}
 
 ```
 A Review-extraction plan draft -- the planning tier's output, before the
@@ -88,7 +88,7 @@ S10 Flip strangler.review.enabled; re-run the equivalence suite through
 
 Why call this "supervisor orchestration" rather than just "two models talking
 to each other"? Because the planning tier's validating pass is not a peer
-review between equals — it supervises, in the specific sense of holding
+review between equals. It supervises, in the specific sense of holding
 authority over whether the execution tier's work is accepted, exactly the
 dynamic Daniel Oh's *Enterprise Agentic AI Workshop* demonstrates under that
 name: a coordinator agent delegating bounded subtasks to specialist sub-agents
@@ -98,15 +98,15 @@ this line; it is worth restating here because this is the chapter where the
 analogy stops being a reference and starts being a concrete execution model.
 The workshop's reference projects build that supervisor
 pattern as the product; the ADLC's relay puts the identical pattern to work as
-a *means of production* — the coordinator-and-specialist shape is the same, only
+a *means of production*: the coordinator-and-specialist shape is the same, only
 the thing being coordinated differs; the walkthrough in Chapter 7 shows exactly
 what that relay caught, and failed to catch, on the Review extraction.
 
 One more distinction matters here: *orchestration* is not the same
 thing as *parallelism*. The plan → execute → validate relay is strictly
-sequential — each phase's output gates the next, and the whole point is that
+sequential: each phase's output gates the next, and the whole point is that
 nothing in Generate starts before a human has approved Plan. Elsewhere,
-independent agents *do* run in parallel — authoring separate chapter files or
+independent agents *do* run in parallel: authoring separate chapter files or
 generating diagrams can be parallelized because they touch disjoint files,
 while a shared build artifact or ledger is serialized to one writer at a time
 under a single-writer rule. Multi-agent orchestration, in
@@ -114,7 +114,7 @@ other words, is a design decision about *dependencies between tasks*, not a
 blanket instruction to "use more agents." A task that has no shared
 state and no approval gate between its pieces is a good candidate for
 parallel agents; a task where one piece's output must be approved before the
-next begins — Plan before Generate, Generate before Verify — is not, no matter
+next begins (Plan before Generate, Generate before Verify) is not, no matter
 how tempting it is to save wall-clock time by running them together.
 
 ## Skills: packaged, repeatable instructions
@@ -124,7 +124,7 @@ liability, because "almost anything" includes solving a well-understood
 problem in a slightly different, slightly wrong way every single time it is
 asked. A **skill**, in the sense this project uses the term, is a packaged,
 named set of instructions an agent loads before it acts on a particular kind
-of task — not a suggestion buried in a long system prompt, but a discrete,
+of task, not a suggestion buried in a long system prompt, but a discrete,
 invocable unit with its own name, its own triggers, and its own worked
 conventions, so that the fifth time an agent scaffolds a Quarkus project it
 makes the same choices the first time did.
@@ -136,18 +136,18 @@ is more useful than describing skills in the abstract:
 - **`lgtm-tutorial`** encodes the
   chapter skeleton, the depth standard, the runnable-example shape, the
   `unverified` discipline, and the validation snippets a chapter runs
-  before it ships — a house style applied consistently, without a reader ever
+  before it ships, a house style applied consistently, without a reader ever
   seeing the skill itself.
 - **`lgtm-quarkus`** and **`lgtm-camel`** scaffold the dev toolchain for a new
-  Quarkus or Camel project respectively — SDKMAN, the JDK, Maven, the MCP
-  server wiring, the testing harness — so that every service extraction in
+  Quarkus or Camel project respectively: SDKMAN, the JDK, Maven, the MCP
+  server wiring, the testing harness, so that every service extraction in
   this book starts from the same known-good baseline rather than a
   hand-assembled one that drifts service to service.
 - **`lgtm-diagram-generator`** generates figures from a short Python spec of
   boxes and arrows, so the diagrams across many chapters share one visual
   language instead of each chapter inventing its own.
-- **`lgtm-docker-stack`** stands up the local observability substrate —
-  Postgres, Kafka, the LGTM stack — that every extraction's Dev Services and
+- **`lgtm-docker-stack`** stands up the local observability substrate
+  (Postgres, Kafka, the LGTM stack) that every extraction's Dev Services and
   behavior-equivalence suite run against.
 - **`lgtm-github`** carries the release-sync and commit-convention discipline
   for pushing a finished iteration upstream, gated, per this project's own
@@ -155,7 +155,7 @@ is more useful than describing skills in the abstract:
 
 A skill is not only a packaged *task*; it is also a packaged *boundary*. The
 second kind of skill this project leans on hardest is project governance
-through context files — `AGENTS.md` and `CLAUDE.md` — that live inside a
+through context files (`AGENTS.md` and `CLAUDE.md`) that live inside a
 generated project and constrain every agent that works on it afterward,
 whether or not that agent remembers how the project started. The
 `examples/02-review-service/AGENTS.md` file in this project states the
@@ -184,13 +184,13 @@ agent to silently decide on the user's behalf when more than one extension
 could work. It forces a stop, a search against real version-matched data, and
 a human choice, before a single line of code exists. That is a governance
 file doing exactly the job a style guide or an architecture review board does
-in a traditional SDLC — except it travels with the repository, applies to
+in a traditional SDLC, except it travels with the repository, applies to
 every agent that opens it rather than to whichever reviewer is on call, and
 costs nothing to re-read on the hundredth feature the way it did on the
 first. This is also the project-level analog of the pattern Chapter 5 flagged
 and deferred to here: Daniel Oh's workshop uses `AGENTS.md` the same way, to
 govern agent behavior inside its own reference projects, and the mapping runs
-both directions — this project's `AGENTS.md` is the workshop's pattern
+both directions: this project's `AGENTS.md` is the workshop's pattern
 applied to a Quarkus migration rather than to an agent built from scratch,
 and this project's own `CLAUDE.md` sibling file does nothing more than point
 back at it -- it reads, in full, "See AGENTS.md for project instructions" --
@@ -206,8 +206,8 @@ year stale, or improvise a Camel route's YAML DSL from a half-remembered
 example, with no way to check either claim against the version actually
 running. The **Model Context Protocol (MCP)** closes that gap: an MCP server
 is a small, purpose-built service that exposes a fixed set of callable tools
-— not a chat interface, a set of functions with real inputs and real,
-structured outputs — that an agent can call mid-loop to get ground truth
+(not a chat interface, a set of functions with real inputs and real,
+structured outputs) that an agent can call mid-loop to get ground truth
 instead of a guess. This matters most exactly where a model's memory is
 weakest: fast-moving frameworks, version-specific APIs, and anything that
 requires actually running a program rather than describing one.
@@ -253,9 +253,9 @@ strangler proxy's routing logic is choosing a real, currently-supported
 component and a real Enterprise Integration Pattern rather than a plausible
 one, and **route validation** (`camel_validate_route`,
 `camel_configuration_validate`) so a route's structure is checked against the
-Camel runtime's own rules — a malformed `choice()`/`when()`/`otherwise()`
+Camel runtime's own rules: a malformed `choice()`/`when()`/`otherwise()`
 block, a reference to a component that was never added as a dependency, an
-endpoint URI with a typo'd parameter — before the route is ever deployed and
+endpoint URI with a typo'd parameter, before the route is ever deployed and
 exercised by the behavior-equivalence suite.
 
 ```
@@ -277,7 +277,7 @@ That last parenthetical is worth lingering on, because it draws the line
 between what each layer of this project's safety net actually checks. The
 MCP server's route validation is a *structural* gate: it confirms the route
 compiles into a legal Camel processing graph. It is not, and was never meant
-to be, a *behavioral* gate — it has no opinion about whether a routing
+to be, a *behavioral* gate. It has no opinion about whether a routing
 predicate matches the right requests once real traffic flows through it,
 which is exactly the gap the differential monolith-down test in Chapter 7
 existed to close. Camel MCP catches the class of defect that would otherwise
@@ -289,8 +289,8 @@ most of what it takes to trust a loop this fast.
 
 {% include excalidraw.html
    file="structural-vs-behavioral-gates"
-   alt="Two stacked panels. Top: the structural gate, camel_validate_route and camel_configuration_validate, run during Generate before deploy; it confirms the route compiles into a legal Camel graph, catching a malformed choice/when/otherwise block, an unresolved component reference, or a typo'd endpoint parameter — the class of defect that surfaces as a confusing runtime stack trace. It cannot catch whether a routing predicate matches the right requests once real traffic flows. Bottom: the behavioral gate, the Newman equivalence suite plus its adversarial follow-up, run during Verify against a running service; it catches a routing predicate matching the wrong requests — the class of defect that surfaces as a misleadingly correct-looking response. A dashed line connects what the structural gate cannot catch to the behavioral gate that closes the gap."
-   caption="Figure 6.2 — The structural gate (camel-mcp route validation) and the behavioral gate (the equivalence suite) catch different classes of mistake; neither substitutes for the other" %}
+   alt="Two stacked panels. Top: the structural gate, camel_validate_route and camel_configuration_validate, run during Generate before deploy; it confirms the route compiles into a legal Camel graph, catching a malformed choice/when/otherwise block, an unresolved component reference, or a typo'd endpoint parameter, the class of defect that surfaces as a confusing runtime stack trace. It cannot catch whether a routing predicate matches the right requests once real traffic flows. Bottom: the behavioral gate, the Newman equivalence suite plus its adversarial follow-up, run during Verify against a running service; it catches a routing predicate matching the wrong requests, the class of defect that surfaces as a misleadingly correct-looking response. A dashed line connects what the structural gate cannot catch to the behavioral gate that closes the gap."
+   caption="Figure 6.2: The structural gate (camel-mcp route validation) and the behavioral gate (the equivalence suite) catch different classes of mistake; neither substitutes for the other" %}
 
 The underlying reason MCP matters is the same for both servers: an agent's training
 data is a snapshot, and a framework, an API, or a catalog of components is
@@ -299,7 +299,7 @@ and EIP catalog grows and occasionally deprecates entries; a project's own
 Quarkus version is pinned in a file the agent can read but has no reason to
 have memorized. MCP tools convert "what does the model remember about
 Quarkus" into "what does *this* installed, version-pinned toolchain actually
-say right now" — which is the difference between an agent that is usually
+say right now," which is the difference between an agent that is usually
 close enough and one whose Generate-phase output is grounded in the same
 reality the Verify-phase gate will check it against.
 
@@ -309,7 +309,7 @@ None of the three building blocks in this chapter does anything alone; the
 ADLC's seven phases are where they combine, and naming the combination phase
 by phase makes the composition concrete rather than aspirational:
 
-- **Frame** stays entirely human — no agent, skill, or MCP tool substitutes
+- **Frame** stays entirely human: no agent, skill, or MCP tool substitutes
   for a person stating intent and writing the decision-log entry, because the
   outcome this step is supposed to achieve is a judgment call, not a
   retrievable fact.
@@ -318,18 +318,18 @@ by phase makes the composition concrete rather than aspirational:
   ground the agent's reconnaissance in the real shape of the code and the
   real toolchain before any plan gets drafted.
 - **Plan** is the planning tier of the relay, informed by whatever Map turned
-  up, producing the step plan that sits in front of the first human gate —
+  up, producing the step plan that sits in front of the first human gate:
   the supervisor half of the supervisor-orchestration pattern, before it has
   anything to supervise yet.
 - **Generate** is the execution tier, using the project's skills
   (`lgtm-quarkus`, `lgtm-camel`, the governance rules in `AGENTS.md`) and the
-  same MCP servers — now invoked to scaffold, search docs, and validate
-  structure rather than merely reconnoiter — to produce the actual diff.
+  same MCP servers (now invoked to scaffold, search docs, and validate
+  structure rather than merely reconnoiter) to produce the actual diff.
 - **Verify** returns to the planning tier in its adversarial role, checking
   the diff against the approved plan and the behavior-equivalence suite,
   informed again by whatever MCP-level structural checks already ran during
   Generate, before the second human gate.
-- **Operate** and **Reconcile** are mostly governance-file and ledger work —
+- **Operate** and **Reconcile** are mostly governance-file and ledger work:
   `AGENTS.md`/`CLAUDE.md` keep constraining any agent that touches the
   running service, and the same three ledger artifacts Chapter 5 introduced
   record what actually happened, which is this project's Reconcile phase
@@ -338,8 +338,8 @@ by phase makes the composition concrete rather than aspirational:
 One discipline threads through every one of those bullets and is worth
 restating, because it is the reason this chapter's captured
 transcripts look the way they do: every piece of agent or MCP
-tool output quoted in this book — the plan draft above, the `quarkus_skills`
-discovery, the `camel_validate_route` check — is pre-captured and narrated,
+tool output quoted in this book (the plan draft above, the `quarkus_skills`
+discovery, the `camel_validate_route` check) is pre-captured and narrated,
 checked into the repository at the moment it happened, not re-run live at
 build time or read time. The reasoning is the same reasoning Chapter 5 gave
 for the "ADLC in Action" callouts generally: a reader
@@ -347,26 +347,26 @@ opening this chapter on a Quarkus or Camel release this project was
 never tested against sees the exact exchange that produced the code in front
 of them, immune to whatever drifted in the tools in the meantime.
 Reproducibility, here, does not mean "run it again and get the same answer
-from a live service" — it means "read the same transcript and verify the same
+from a live service." It means "read the same transcript and verify the same
 claim," which is a strictly stronger guarantee once tool versions are allowed
 to move.
 
 ## What's next
 
-This chapter named the actors — the relay's two tiers in a supervisor
+This chapter named the actors: the relay's two tiers in a supervisor
 relationship, the `lgtm-*` skills and the `AGENTS.md`/`CLAUDE.md` governance
 layer, and the two MCP servers that ground Generate and Map in real,
-version-matched tools — without yet proving any of it holds together under
+version-matched tools, without yet proving any of it holds together under
 real pressure. That proof is Chapter 7's entire job: it runs this exact
 machinery once, end to end, on the Review extraction, and narrates two real
 defects the safety net caught before either reached a reader. If this chapter
-left you wanting to *build* an agent rather than *use* one — to write your
+left you wanting to *build* an agent rather than *use* one, to write your
 own `@Agent`-annotated supervisor, not just read about the relay described
-here — Daniel Oh's **Enterprise Agentic AI Workshop** is the hands-on
+here, Daniel Oh's **Enterprise Agentic AI Workshop** is the hands-on
 companion Chapter 5 pointed to and this chapter has now cashed in twice: it
 teaches the construction of exactly the patterns named here (supervisor
 orchestration, plan-and-execute re-planning, `AGENTS.md` governance) on a
 Quarkus/Java stack. This book's relationship to that material is
-complementary, not redundant — that workshop builds the agent; this book
+complementary, not redundant: that workshop builds the agent; this book
 puts a finished agentic workflow to work modernizing a production-shaped
 system, and the next chapter is where you watch it do exactly that.

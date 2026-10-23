@@ -2,30 +2,30 @@
 title: "Appendix A: Deploying to OpenShift"
 order: 33
 part: "Appendices"
-description: "The finished eight-workload system on OpenShift: a Helm chart, Routes, Security Context Constraints, and the internal registry — built and verified live on OpenShift Local (CRC)."
+description: "The finished eight-workload system on OpenShift: a Helm chart, Routes, Security Context Constraints, and the internal registry, built and verified live on OpenShift Local (CRC)."
 duration: 40 minutes
 ---
 
-Chapter 30 brought the modernized system up on a real cluster — minikube, with
-Istio and the LGTM stack — and Chapter 31 wired its CI/CD and supply-chain gates.
+Chapter 30 brought the modernized system up on a real cluster (minikube, with
+Istio and the LGTM stack), and Chapter 31 wired its CI/CD and supply-chain gates.
 Both targeted vanilla Kubernetes. This appendix does the same thing on **OpenShift**,
 because "deploy it to Kubernetes" and "deploy it to OpenShift" are not the same
-sentence. OpenShift adds opinions — Security Context Constraints that reject pinned
-UIDs, Routes instead of hand-rolled ingress, an integrated image registry — and
-those opinions are exactly what you have to design for.
+sentence. OpenShift adds opinions: Security Context Constraints that reject pinned
+UIDs, Routes instead of hand-rolled ingress, an integrated image registry. Those
+opinions are what you have to design for.
 
 Everything below ran on a live cluster. The eight application workloads plus
 Postgres and Kafka came up `1/1` in namespace `mea`; an external `curl` through an
 OpenShift Route reached the Camel strangler proxy, which routed to inventory-service,
-which read its own Flyway-migrated Postgres schema and returned seeded JSON — the
-whole stack, end to end. The packaging is a single Helm chart under
+which read its own Flyway-migrated Postgres schema and returned seeded JSON: the
+whole stack, working end to end. The packaging is a single Helm chart under
 [`openshift/helm/mea/`](https://github.com/patterncatalyst/modernizing-enterprise-applications/tree/main/openshift/helm/mea);
 this appendix explains what is in it, what changed from `deploy/k8s/`, and how it
 was verified.
 
 ## Prerequisites
 
-You do not need a paid subscription or a cloud account. **OpenShift Local** (CRC —
+You do not need a paid subscription or a cloud account. **OpenShift Local** (CRC,
 "CodeReady Containers") runs a real, single-node OpenShift cluster in a local VM.
 
 1. **Create a free Red Hat Developer account.** Go to
@@ -42,7 +42,7 @@ You do not need a paid subscription or a cloud account. **OpenShift Local** (CRC
    **OpenShift 4.22.14**. CRC wants the machine to itself: stop any running
    minikube profile first (`minikube stop -p mea`).
 4. **Size the host.** CRC's defaults (4 vCPU / ~10.5 GB RAM) are not enough for
-   eight Quarkus services *plus* Postgres and Kafka *plus* OpenShift itself — the
+   eight Quarkus services *plus* Postgres and Kafka *plus* OpenShift itself: the
    infra pods will sit `Pending` with `Insufficient memory`. Give it more:
 
    ```sh
@@ -60,11 +60,11 @@ You do not need a paid subscription or a cloud account. **OpenShift Local** (CRC
    `crc setup` needs root for a couple of steps (it installs a small setuid helper
    and configures the libvirt network), so run it in a terminal where `sudo` can
    prompt you. The first `crc start` provisions the VM and waits for the cluster to
-   settle — budget 10–15 minutes. It also prints the console URL and a login;
+   settle (budget 10–15 minutes). It also prints the console URL and a login;
    none of the steps below need it, so keep it out of shared terminals and notes.
 
 6. **Get `oc`.** CRC ships a version-matched `oc`; `eval "$(crc oc-env)"` puts it
-   on your `PATH`. (There is no supported `oc` package in Fedora's repositories —
+   on your `PATH`. (There is no supported `oc` package in Fedora's repositories;
    use CRC's, or the tarball from `mirror.openshift.com`.) No password handling
    is needed: `crc start` writes a `crc-admin` kubeconfig context, and every
    command and script below names it explicitly:
@@ -77,9 +77,9 @@ You do not need a paid subscription or a cloud account. **OpenShift Local** (CRC
    If you want the web console, `crc console --credentials` prints the login;
    run it yourself and keep the output out of notes and commits. You will also
    need `helm` (v3+; this appendix used v4), `skopeo`, and the JDK 25 + Maven
-   toolchain from Chapter 1 — but **no container engine**: every image is
+   toolchain from Chapter 1, but **no container engine**: every image is
    built inside the cluster. Right after `crc start` returns, the API server may
-   briefly reset connections while its operators roll out — if a command fails
+   briefly reset connections while its operators roll out; if a command fails
    with `EOF`, wait a minute and retry.
 
 ## What changes when the target is OpenShift
@@ -90,14 +90,14 @@ their assumptions do not survive contact with OpenShift, and the chart in
 
 ### 1. Security Context Constraints reject pinned UIDs
 
-Every app Deployment in `deploy/k8s/base/` pins `runAsUser: 185` — the UID the
+Every app Deployment in `deploy/k8s/base/` pins `runAsUser: 185`: the UID the
 Quarkus UBI images are built around. OpenShift admission runs each pod through a
 **Security Context Constraint (SCC)**. The default, `restricted-v2`, *assigns* each
 pod a high UID from a per-namespace range and **rejects** a pod that demands a
 specific one. Pin `185` and the pod never admits.
 
 The fix is counterintuitive: **drop `runAsUser` entirely** and let OpenShift pick.
-The UBI OpenJDK images are designed for this — their files are group-`0` readable
+The UBI OpenJDK images are designed for this: their files are group-`0` readable
 and writable, so they run fine as an arbitrary UID. On the live cluster the app
 pods were assigned UID `1000660000`:
 
@@ -109,7 +109,7 @@ strangler-proxy   scc=restricted-v2   runAsUser=1000660000
 
 Postgres and Kafka are the exception. Their upstream images *do* need specific
 non-root UIDs (Postgres as `70`, the Apache Kafka image as `1000`) because those
-UIDs own the data directories. For them, dropping `runAsUser` is wrong — instead
+UIDs own the data directories. For them, dropping `runAsUser` is wrong; instead
 you grant them an SCC that *allows* their UID. The chart creates a ServiceAccount,
 `mea-infra`, and binds it to the `nonroot-v2` SCC; the two StatefulSets run under
 that account:
@@ -129,7 +129,7 @@ ClusterRole is what grants the SCC (the CLI shorthand is
 
 The `deploy/k8s/` story ends at `kubectl port-forward`. OpenShift has first-class
 ingress: a `Route` object hands a Service a real external hostname served by the
-cluster router. The chart defines two — the strangler proxy (the system's permanent
+cluster router. The chart defines two, the strangler proxy (the system's permanent
 REST edge) and the GraphQL gateway:
 
 ```
@@ -138,7 +138,7 @@ graphql-gateway   graphql-gateway-mea.apps-crc.testing   edge/Redirect
 ```
 
 `edge/Redirect` means TLS terminates at the router and plain HTTP is redirected to
-HTTPS — no certificate wiring in the application.
+HTTPS, with no certificate wiring in the application.
 
 ### 3. The integrated registry
 
@@ -168,7 +168,8 @@ schema, whether it is a Kafka consumer (and so needs a graceful-shutdown window)
 and its resource tier.
 
 `templates/app-deployment.yaml` then ranges over that map. The interesting parts
-are the conditionals — this is where "data drives the template" earns its keep:
+are the conditionals: this is where driving the template from data, instead of
+duplicating YAML per service, pays off:
 
 {% raw %}
 ```yaml
@@ -202,16 +203,16 @@ are the conditionals — this is where "data drives the template" earns its keep
 ```
 {% endraw %}
 
-The shared environment contract — the cross-service URLs, the per-service datasource
-URLs, the gRPC coordinates — is a single ConfigMap, `mea-app-config`, ported from
-`deploy/k8s/base/app-config.yaml`. The one change worth noting is that every
+The shared environment contract (the cross-service URLs, the per-service datasource
+URLs, the gRPC coordinates) is a single ConfigMap, `mea-app-config`, ported from
+`deploy/k8s/base/app-config.yaml`. The one change is that every
 in-cluster address is built from the release namespace
 {% raw %}(`<svc>.{{ .Release.Namespace }}.svc.cluster.local`){% endraw %}, so the
 chart installs into any namespace without editing. Postgres and Kafka keep every
-hard-won fix from Chapter 30's live apply — Postgres's `args`-not-`command`
-entrypoint and `PGDATA` subdirectory, Kafka's `publishNotReadyAddresses` and
-pod-stable quorum-voter DNS and 10-second probe timeout — because those bugs bite
-on OpenShift exactly as they did on minikube.
+hard-won fix from Chapter 30's live apply: Postgres's `args`-not-`command`
+entrypoint and `PGDATA` subdirectory, and Kafka's `publishNotReadyAddresses`,
+pod-stable quorum-voter DNS, and 10-second probe timeout. Those fixes matter on
+OpenShift exactly as they did on minikube.
 
 ## Building the images inside the cluster
 
@@ -220,7 +221,7 @@ host, and each ships a `src/main/docker/Dockerfile.jvm` on
 `ubi10/openjdk-25-runtime`. Nothing on the host turns those into images:
 [`openshift/build-images.sh`](https://github.com/patterncatalyst/modernizing-enterprise-applications/blob/main/openshift/build-images.sh)
 gives each service a **Docker-strategy binary BuildConfig** and streams it a
-minimal context — the `quarkus-app` directory plus the Containerfile — with
+minimal context (the `quarkus-app` directory plus the Containerfile) with
 `oc start-build --from-dir`. OpenShift runs the build and pushes `<svc>:1.0`
 to an ImageStream in project `mea`, which is exactly the
 `image-registry.openshift-image-registry.svc:5000/mea/<svc>:1.0` reference the
@@ -242,13 +243,13 @@ oc --context crc-admin -n mea start-build order-service \
 
 No registry is exposed for the builds and no credentials leave the cluster.
 
-**One real snag worth planning for:** the CRC VM could not reach Docker Hub
-(`dial tcp registry-1.docker.io:443: i/o timeout`), so Postgres and Kafka —
-upstream images — landed in `ImagePullBackOff`. The *host* could reach Docker Hub,
+**Plan for the CRC VM's network isolation.** The VM could not reach Docker Hub
+(`dial tcp registry-1.docker.io:443: i/o timeout`), so Postgres and Kafka, both
+upstream images, landed in `ImagePullBackOff`. The *host* could reach Docker Hub,
 so the fix is to copy them through the host into the internal registry and point
 the chart at the copies.
 [`openshift/mirror-infra-images.sh`](https://github.com/patterncatalyst/modernizing-enterprise-applications/blob/main/openshift/mirror-infra-images.sh)
-does that with `skopeo` — no container engine — verifying TLS against the
+does that with `skopeo` (no container engine), verifying TLS against the
 cluster's own ingress CA and authenticating with a 15-minute token for the
 project's `builder` ServiceAccount, held in a private authfile and never printed:
 
@@ -259,7 +260,7 @@ openshift/mirror-infra-images.sh
 ```
 
 On a cluster with Docker Hub egress you would skip this and reference the upstream
-images directly — `values.yaml` has both forms, one commented.
+images directly; `values.yaml` has both forms, one commented.
 
 ## Deploying, and watching it come up
 
@@ -272,7 +273,7 @@ crc-admin --namespace mea` followed by `oc rollout status` for each StatefulSet
 and Deployment, so it returns only once everything is actually up.
 
 Two things are worth expecting. First, if you skipped the memory bump, the infra
-pods sit `Pending` — `oc describe pod postgres-0` says `Insufficient memory`, and the
+pods sit `Pending`: `oc describe pod postgres-0` says `Insufficient memory`, and the
 `oc describe node` "Allocated resources" line shows memory requests at 99%. Stop the
 cluster, raise `crc config set memory`, start again; the pods schedule.
 
@@ -281,7 +282,7 @@ fine. A Quarkus service with `quarkus.flyway.migrate-at-start=true` fails fast i
 Postgres is not yet reachable (`UnknownHostException` while the headless Service has
 no ready endpoints, then connection refused). As Postgres and Kafka go `1/1`, each
 service recovers on its next back-off. The restart counts are the scar tissue of
-that ordering — the end state is all green:
+that ordering; the end state is all green:
 
 ```
 NAME                   READY   STATUS    RESTARTS
@@ -298,7 +299,7 @@ strangler-proxy        1/1     Running   0
 ```
 
 (If you want a clean start with no restart churn, you can deploy the infra
-StatefulSets first and wait for them before the apps — but the self-healing path
+StatefulSets first and wait for them before the apps, but the self-healing path
 above is what a plain `helm install` does, and it converges.)
 
 ## Verifying it works
@@ -313,7 +314,7 @@ $ curl -s --cacert /tmp/ingress-ca.crt https://graphql-gateway-mea.apps-crc.test
 { "status": "UP", "checks": [ ] }
 ```
 
-The full path, through the strangler proxy's Route — external client → Route →
+The full path through the strangler proxy's Route is external client → Route →
 Camel edge router → inventory-service → its own Postgres `inventory` schema:
 
 ```sh
@@ -345,14 +346,14 @@ runs `crc stop` (`--no-stop` to keep the VM up).
 
 ## The managed counterpart: GitOps and Pipelines
 
-Everything above was imperative — you ran `helm install`. The OpenShift-native way
+Everything above was imperative: you ran `helm install`. The OpenShift-native way
 to *keep* a cluster matching the chart is **OpenShift GitOps** (Argo CD): an
 `Application` object points at `openshift/helm/mea` in this repo, and Argo
 reconciles the cluster to it, continuously, pruning drift and self-healing. A
 starter manifest is committed at
 [`openshift/gitops/application.yaml`](https://github.com/patterncatalyst/modernizing-enterprise-applications/blob/main/openshift/gitops/application.yaml).
-Its symmetric partner is **OpenShift Pipelines** (Tekton) for the build half — the
+Its symmetric partner is **OpenShift Pipelines** (Tekton) for the build half: the
 `build-images.sh` loop above becomes a `Pipeline` triggered on push, the
 managed counterpart to the GitHub Actions workflows of Chapter 31. Both are
-deliberately left as starting points rather than part of the verified deploy: each
+left as starting points rather than part of the verified deploy: each
 needs its operator installed, and GitOps needs this repo reachable from the cluster.
