@@ -1,20 +1,20 @@
 #!/usr/bin/env python3
-"""ch.31 figure: delivery-pipeline-ci-gates — the GitHub Actions pipeline this
-repository actually ships, drawn honestly against what is real vs. deferred.
+"""ch.31 figure: delivery-pipeline-ci-gates: the GitHub Actions pipeline this
+repository actually ships, drawn against what ships versus what is deferred.
 
 A git push / PR fans into three workflow files that exist in .github/workflows/:
-  * code-ci.yml  — the BEHAVIOR gates: seven path-filtered jobs (equivalence per
+  * code-ci.yml : the BEHAVIOR gates: seven path-filtered jobs (equivalence per
                    seam + the order/gateway contract gate + the schema-registry
                    gate) that run a service and drive the Newman suite.
-  * supply-chain.yml — the PROVENANCE gate (ch.31, additive): build -> SBOM
+  * supply-chain.yml: the PROVENANCE gate (ch.31, additive): build -> SBOM
                    (syft/CycloneDX) -> scan (grype) -> policy (fail-on High).
-  * pages.yml    — builds and deploys the Jekyll site to GitHub Pages.
+  * pages.yml   : builds and deploys the Jekyll site to GitHub Pages.
 
-Drawn as ghost (dashed) boxes on the right, the honestly-deferred pieces that a
+Drawn as ghost (dashed) boxes on the right, the deferred pieces that a
 full GitOps delivery chain would add but this repo does not yet have: pushing
 built images to a registry, a pull-based GitOps operator (Argo CD / Flux)
 reconciling deploy/k8s into the cluster, and Istio weighted canary (ch.30
-deferred all Istio traffic-shaping). No codenames; file names are real.
+deferred all Istio traffic-shaping). No codenames; file names are the actual ones.
 
 Sourced from: .github/workflows/code-ci.yml (the seven job names),
 supply-chain.yml, pages.yml; examples/10-supply-chain/{demo.sh,policy.yaml}.
@@ -34,9 +34,9 @@ trigger = node(60, 400, 230, 90,
 
 # ---- lane 1: behavior gates (code-ci.yml) ----------------------------------
 behavior_band = {"x": 360, "y": 70, "w": 700, "h": 360,
-                 "label": "code-ci.yml  —  behavior gates (what the system DOES)", "fill": "#fafafa"}
+                 "label": "code-ci.yml :  behavior gates (what the system DOES)", "fill": "#fafafa"}
 equiv = node(390, 120, 300, 80,
-             ["equivalence-gate", "monolith baseline — Newman suite"], style="accent")
+             ["equivalence-gate", "monolith baseline: Newman suite"], style="accent")
 seams = node(390, 215, 300, 120,
              ["notification / inventory /", "payment / shipping",
               "-equivalence-gate", "one per extracted seam"], style="box")
@@ -51,7 +51,7 @@ behavior_note = node(390, 350, 640, 60,
 
 # ---- lane 2: provenance gate (supply-chain.yml) ----------------------------
 prov_band = {"x": 360, "y": 460, "w": 700, "h": 200,
-             "label": "supply-chain.yml  —  provenance gate (what the system CONTAINS)  [ch.31, additive]",
+             "label": "supply-chain.yml :  provenance gate (what the system CONTAINS)  [ch.31, additive]",
              "fill": "#f4f8f5"}
 build = node(385, 520, 150, 110, ["mvn package", "runtime closure"], style="sub")
 sbom = node(555, 520, 160, 110, ["syft", "CycloneDX SBOM"], style="accent")
@@ -60,7 +60,7 @@ policy = node(905, 520, 135, 110, ["policy.yaml", "fail-on: High"], style="ink")
 
 # ---- lane 3: site (pages.yml) ----------------------------------------------
 pages = node(360, 690, 700, 70,
-             ["pages.yml  —  build + deploy the Jekyll site to GitHub Pages"], style="sub")
+             ["pages.yml :  build + deploy the Jekyll site to GitHub Pages"], style="sub")
 
 # ---- deferred (ghost) : the rest of a GitOps delivery chain ----------------
 deferred_band = {"x": 1120, "y": 300, "w": 320, "h": 360,
@@ -88,7 +88,7 @@ edges = [
 
 notes = [
     {"x": W / 2, "y": 34,
-     "text": "ch.31 — the delivery pipeline this repo ships: behavior gates + a provenance gate, drawn against what is deferred",
+     "text": "ch.31: the delivery pipeline this repo ships: behavior gates + a provenance gate, drawn against what is deferred",
      "anchor": "middle", "bold": True, "size": 16},
     {"x": 60, "y": H - 24,
      "text": "Real: code-ci.yml (7 jobs), supply-chain.yml, pages.yml. Dashed: a registry push + GitOps operator + Istio canary this repo names but does not yet run.",

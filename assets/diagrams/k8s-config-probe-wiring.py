@@ -1,29 +1,29 @@
 #!/usr/bin/env python3
-"""ch.29 figure: k8s-config-probe-wiring — how config, secrets, probes, and
+"""ch.29 figure: k8s-config-probe-wiring: how config, secrets, probes, and
 graceful shutdown actually wire into one representative pod.
 
-TOP pod — notification-service, standing in for the five Kafka-consuming,
+TOP pod: notification-service, standing in for the five Kafka-consuming,
 quarkus-smallrye-health-carrying services (notification/inventory/payment/
 shipping/order; all five share the identical probe/lifecycle shape, per each
 one's own base/*.yaml). Two distinct env mechanisms land in the same
 container: a blanket `envFrom: configMapRef: mea-app-config` (every key,
 harmless if unused) plus two explicit `env:` entries that each win over a
-HARDCODED application.properties value by MicroProfile Config ordinal — the
+HARDCODED application.properties value by MicroProfile Config ordinal: the
 mapped env var (ordinal 300, EnvConfigSource) outranks
 application.properties (ordinal 250, PropertiesConfigSource) in every
 profile, with no code change (see app-config.yaml's own header comment).
 `QUARKUS_DATASOURCE_JDBC_URL` is sourced from the ConfigMap's
 `NOTIFICATION_SERVICE_JDBC_URL` key (configMapKeyRef); the datasource
-credentials are sourced from the `mea-postgres-app` Secret (secretKeyRef) —
+credentials are sourced from the `mea-postgres-app` Secret (secretKeyRef)
 never duplicated as a second ConfigMap key. All three probes are real
 httpGet targets because quarkus-smallrye-health is on this service's
 classpath.
 
-BOTTOM pod — review-service / strangler-proxy, the two of the eight
+BOTTOM pod: review-service / strangler-proxy, the two of the eight
 Deployments whose pom.xml carries NO quarkus-smallrye-health (confirmed:
 examples/02-review-service/pom.xml, examples/01-strangler-proxy/pom.xml).
 `/q/health/*` would 404 there, so all three probes fall back to tcpSocket on
-the container port — proving the listener is up, not that routing or the DB
+the container port: proving the listener is up, not that routing or the DB
 connection actually works. Neither is a Kafka consumer, so neither carries
 the preStop/terminationGracePeriodSeconds override below.
 
@@ -54,13 +54,13 @@ configmap = node(60, 160, 420, 190,
 
 secret = node(60, 420, 420, 110,
               ["Secret mea-postgres-app", "stringData: username, password",
-               "type: Opaque — dev-only, plaintext-in-git"], style="box")
+               "type: Opaque: dev-only, plaintext-in-git"], style="box")
 
 # ============================================================================
-# TOP pod: notification-service — full health + graceful-shutdown wiring
+# TOP pod: notification-service: full health + graceful-shutdown wiring
 # ============================================================================
 pod_band = {"x": 560, "y": 120, "w": 1100, "h": 580,
-            "label": "Pod: notification-service — quarkus-smallrye-health on classpath, terminationGracePeriodSeconds: 45",
+            "label": "Pod: notification-service: quarkus-smallrye-health on classpath, terminationGracePeriodSeconds: 45",
             "fill": "#eaf4ec"}
 
 container = node(600, 180, 420, 150, style="ink", lines=[
@@ -72,15 +72,15 @@ container = node(600, 180, 420, 150, style="ink", lines=[
 ])
 
 startup = node(1120, 180, 480, 80, style="accent", lines=[
-    "startupProbe — httpGet /q/health/started",
+    "startupProbe: httpGet /q/health/started",
     "initialDelay 5s · period 5s · failureThreshold 30",
 ])
 ready = node(1120, 275, 480, 80, style="accent", lines=[
-    "readinessProbe — httpGet /q/health/ready",
+    "readinessProbe: httpGet /q/health/ready",
     "initialDelay 5s · period 10s · failureThreshold 3",
 ])
 live = node(1120, 370, 480, 80, style="accent", lines=[
-    "livenessProbe — httpGet /q/health/live",
+    "livenessProbe: httpGet /q/health/live",
     "initialDelay 10s · period 10s · failureThreshold 3",
 ])
 
@@ -111,10 +111,10 @@ top_edges = [
 ]
 
 # ============================================================================
-# BOTTOM pod: review-service / strangler-proxy — tcpSocket fallback
+# BOTTOM pod: review-service / strangler-proxy: tcpSocket fallback
 # ============================================================================
 contrast_band = {"x": 560, "y": 760, "w": 1100, "h": 280,
-                  "label": "Pod: review-service / strangler-proxy — no quarkus-smallrye-health, not a Kafka consumer",
+                  "label": "Pod: review-service / strangler-proxy: no quarkus-smallrye-health, not a Kafka consumer",
                   "fill": "#fafafa"}
 
 container2 = node(600, 820, 420, 140, style="box", lines=[
@@ -125,15 +125,15 @@ container2 = node(600, 820, 420, 140, style="box", lines=[
 ])
 
 startup2 = node(1120, 820, 480, 70, style="ghost", lines=[
-    "startupProbe — tcpSocket :http",
+    "startupProbe: tcpSocket :http",
     "initialDelay 5s · period 5s · failureThreshold 30",
 ])
 ready2 = node(1120, 900, 480, 70, style="ghost", lines=[
-    "readinessProbe — tcpSocket :http",
+    "readinessProbe: tcpSocket :http",
     "initialDelay 5s · period 10s · failureThreshold 3",
 ])
 live2 = node(1120, 980, 480, 70, style="ghost", lines=[
-    "livenessProbe — tcpSocket :http",
+    "livenessProbe: tcpSocket :http",
     "initialDelay 10s · period 10s · failureThreshold 3",
 ])
 
@@ -149,7 +149,7 @@ edges = top_edges + bottom_edges
 
 notes = [
     {"x": W / 2, "y": 32,
-     "text": "ch.29 — config, secret, probe, and graceful-shutdown wiring for one representative pod",
+     "text": "ch.29: config, secret, probe, and graceful-shutdown wiring for one representative pod",
      "anchor": "middle", "bold": True, "size": 17},
     {"x": W / 2, "y": 54,
      "text": "same ConfigMap + Secret feed every pod; the probe shape and the preStop/terminationGrace override are what differ",

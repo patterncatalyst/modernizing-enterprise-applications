@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""ch.26 figure: order-cqrs-split — the CQRS write/read split inside the
+"""ch.26 figure: order-cqrs-split: the CQRS write/read split inside the
 extracted order service (examples/07-order-service).
 
 Command path (top band, ONE @Transactional, DRQ-073): `POST /api/orders` ->
@@ -43,15 +43,15 @@ g.OUT = os.path.dirname(__file__)
 W, H = 1450, 1080
 
 # ============================================================================
-# Band A — command path: the write model, one @Transactional
+# Band A: command path: the write model, one @Transactional
 # ============================================================================
 band_a = {"x": 20, "y": 60, "w": 1410, "h": 300,
-          "label": "Command path — one @Transactional (write model)", "fill": "#fafafa"}
+          "label": "Command path: one @Transactional (write model)", "fill": "#fafafa"}
 
 client = node(40, 110, 180, 80, ["Client", "POST /api/orders"], style="sub")
 ordersvc = node(260, 110, 300, 80,
                 ["OrderService.placeOrder()", "validate customer; reserve; persist; outbox"], style="user")
-inventory = node(600, 110, 250, 80, ["Inventory service", ":9004 — gRPC Reserve (sync)"], style="accent")
+inventory = node(600, 110, 250, 80, ["Inventory service", ":9004: gRPC Reserve (sync)"], style="accent")
 writeStore = node(890, 110, 280, 80,
                    ["Write model", "Order + OrderItem (PostgreSQL)", "persisted PENDING"], style="box")
 
@@ -73,15 +73,15 @@ band_a_edges = [
 ]
 
 # ============================================================================
-# Band B — projection: the write/read bridge, same transaction as each write
+# Band B: projection: the write/read bridge, same transaction as each write
 # ============================================================================
 band_b = {"x": 20, "y": 390, "w": 1410, "h": 260,
-          "label": "Projection — the write/read bridge (same @Transactional as each write)", "fill": "#eaf4ec"}
+          "label": "Projection: the write/read bridge (same @Transactional as each write)", "fill": "#eaf4ec"}
 
 kafka4 = node(260, 440, 260, 90,
               ["Kafka topics", "payment.captured / payment.declined", "shipment.dispatched / shipment.failed"],
               style="ink")
-listener = node(560, 440, 260, 90, ["OrderSagaListener", "4 reactions — status-guarded, idempotent"], style="box")
+listener = node(560, 440, 260, 90, ["OrderSagaListener", "4 reactions: status-guarded, idempotent"], style="box")
 projector = node(890, 440, 260, 110,
                   ["OrderViewProjector.project()", "upsert by orderId", "same @Transactional as the write"],
                   style="accent")
@@ -92,37 +92,37 @@ band_b_nodes = [kafka4, listener, projector, readStore]
 band_b_edges = [
     connect(kafka4, listener, label="@Incoming (4 topics)"),
     connect(listener, projector, label="project(order, paymentStatus, shipmentStatus)"),
-    connect(writeStore, projector, label="project(order, null, null) — initial PENDING, same txn", amber=True),
+    connect(writeStore, projector, label="project(order, null, null): initial PENDING, same txn", amber=True),
     connect(projector, readStore, label="upsert order_view (same txn)", amber=True),
 ]
 
 # ============================================================================
-# Band C — query path: reads EXCLUSIVELY from the read model
+# Band C: query path: reads EXCLUSIVELY from the read model
 # ============================================================================
 band_c = {"x": 20, "y": 690, "w": 1410, "h": 320,
-          "label": "Query path — reads EXCLUSIVELY from the read model (no aggregate fallback)", "fill": "#fafafa"}
+          "label": "Query path: reads EXCLUSIVELY from the read model (no aggregate fallback)", "fill": "#fafafa"}
 
 clientHttp = node(40, 740, 220, 90, ["Client", "GET /api/orders(/{id})"], style="sub")
 getById = node(1180, 740, 240, 90, ["OrderService.getById()/listAll()", "orderViewRepository ONLY"], style="user")
 
 clientGraphQL = node(40, 860, 220, 90, ["Client", "GraphQL order(id) query"], style="sub")
-gatewayNode = node(1180, 860, 240, 90, ["GraphQL gateway :8090", "order(id) — see fig. 2"], style="accent")
+gatewayNode = node(1180, 860, 240, 90, ["GraphQL gateway :8090", "order(id): see fig. 2"], style="accent")
 
 band_c_nodes = [clientHttp, getById, clientGraphQL, gatewayNode]
 band_c_edges = [
     connect(clientHttp, getById, label="GET /api/orders(/{id})"),
     connect(clientGraphQL, gatewayNode, label="query order(id)"),
     connect(gatewayNode, getById, label="REST GET :8087, same endpoint any client uses"),
-    connect(getById, readStore, label="reads EXCLUSIVELY — no aggregate fallback", amber=True),
+    connect(getById, readStore, label="reads EXCLUSIVELY: no aggregate fallback", amber=True),
 ]
 
 notes = [
     {"x": W / 2, "y": 32,
-     "text": "ch.26 — the CQRS write/read split: command path, projection bridge, read-only query path",
+     "text": "ch.26: the CQRS write/read split: command path, projection bridge, read-only query path",
      "anchor": "middle", "bold": True, "size": 17},
 
     {"x": W / 2, "y": 378,
-     "text": "write model and read model are two DISTINCT tables in the SAME order-service PostgreSQL schema — never joined at read time",
+     "text": "write model and read model are two DISTINCT tables in the SAME order-service PostgreSQL schema: never joined at read time",
      "anchor": "middle", "size": 11, "color": "#2f5f3d", "bold": True},
 
     {"x": 40, "y": 1060,

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""ch.32 figure: over-decomposition-spectrum — the "how far do you split"
+"""ch.32 figure: over-decomposition-spectrum: the "how far do you split"
 spectrum, from a single monolith to nanoservice sprawl, with a marker on where
-this project deliberately stopped: six services aligned to six bounded contexts,
+this project stopped: six services aligned to six bounded contexts,
 plus an aggregation gateway. The point is that more services is not the goal;
 context-aligned services are, and past that line lies the distributed monolith.
 
@@ -29,7 +29,7 @@ sweet = {"x": 470, "y": 110, "w": 520, "h": 300,
 mono = node(60, 170, 180, 150,
             ["1 monolith", "one deploy, one DB", "ch.08-10", "too coupled to change safely"], style="box")
 modmono = node(270, 170, 170, 150,
-               ["modular monolith", "modules, one deploy", "a valid destination", "— not this book's"], style="sub")
+               ["modular monolith", "modules, one deploy", "a valid destination", "not this book's"], style="sub")
 contexts = node(500, 170, 230, 170,
                 ["6 context services", "order · inventory · payment", "shipping · notification · review",
                  "+ graphql-gateway", "<- this project (ch.26)"], style="accent")
@@ -50,15 +50,15 @@ edges = [
 
 notes = [
     {"x": W / 2, "y": 40,
-     "text": "ch.32 — the over-decomposition spectrum: where this project deliberately stopped",
+     "text": "ch.32: the over-decomposition spectrum: where this project stopped",
      "anchor": "middle", "bold": True, "size": 16},
     {"x": W / 2, "y": 62,
-     "text": "the goal is context-aligned services, not maximal splitting — past the sweet spot is the distributed monolith",
+     "text": "the goal is context-aligned services, not maximal splitting: past the sweet spot is the distributed monolith",
      "anchor": "middle", "size": 11, "color": "#555555"},
     {"x": 150, "y": 470, "text": "too coupled", "anchor": "middle", "size": 11, "color": "#777777"},
     {"x": 1105, "y": 470, "text": "too chatty", "anchor": "middle", "size": 11, "color": "#777777"},
     {"x": W / 2, "y": H - 16,
-     "text": "Six services came from six bounded contexts found by event storming (ch.11-13) — the seams were discovered, not invented to hit a count.",
+     "text": "Six services came from six bounded contexts found by event storming (ch.11-13): the seams were discovered, not invented to hit a count.",
      "anchor": "middle", "size": 10, "color": "#777777"},
 ]
 

@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
-"""ch.10 figure: whitebox-pyramid-vs-blackbox-equivalence — the chapter's one
+"""ch.10 figure: whitebox-pyramid-vs-blackbox-equivalence: the chapter's one
 new idea, drawn as a legitimate side-by-side (per the diagram plan, this
 pair is the explicitly called-out combined [SIDE] figure for ch.10).
 
-LEFT — white-box: "Everything above this line is white-box: it knows the
+LEFT: white-box: "Everything above this line is white-box: it knows the
 monolith's internals, calls its Java classes directly or through Spring's
 test slices, and in Tier 3's case inspects a real database it is free to
 reset between runs... A white-box test can't even compile against code
 that doesn't share the monolith's class names, let alone its database
 rows."
 
-RIGHT — black-box: the Newman behavior-equivalence suite
+RIGHT: black-box: the Newman behavior-equivalence suite
 (`tooling/newman/mea.postman_collection.json`) "earns the name
 behavior-equivalence suite for a specific, critical reason: every request
 in it targets a `baseUrl` collection variable rather than a hardcoded
@@ -36,15 +36,15 @@ g.OUT = os.path.dirname(__file__)
 W, H = 1560, 760
 
 # ============================================================================
-# LEFT band — white-box: the Tier 1-3 pyramid, calling Java directly
+# LEFT band: white-box: the Tier 1-3 pyramid, calling Java directly
 # ============================================================================
 band_left = {"x": 20, "y": 70, "w": 740, "h": 560,
-             "label": "White-box — Tier 1-3 pyramid calls Java directly, inspects a real DB",
+             "label": "White-box: Tier 1-3 pyramid calls Java directly, inspects a real DB",
              "fill": "#fafafa"}
 
-tier3m = node(270, 140, 240, 70, ["Tier 3 — Integration", "real Postgres, Testcontainers"], style="box")
-tier2m = node(220, 240, 340, 70, ["Tier 2 — Slice (@WebMvcTest)", "service mocked, web stack boots"], style="box")
-tier1m = node(170, 340, 440, 70, ["Tier 1 — Unit (Mockito)", "every collaborator mocked"], style="box")
+tier3m = node(270, 140, 240, 70, ["Tier 3: Integration", "real Postgres, Testcontainers"], style="box")
+tier2m = node(220, 240, 340, 70, ["Tier 2: Slice (@WebMvcTest)", "service mocked, web stack boots"], style="box")
+tier1m = node(170, 340, 440, 70, ["Tier 1: Unit (Mockito)", "every collaborator mocked"], style="box")
 internals = node(110, 440, 560, 110, [
     "Monolith internals",
     "OrderService, PaymentService, live Postgres rows",
@@ -59,20 +59,20 @@ left_edges = [
 ]
 
 # ============================================================================
-# RIGHT band — black-box: the Newman behavior-equivalence suite
+# RIGHT band: black-box: the Newman behavior-equivalence suite
 # ============================================================================
 band_right = {"x": 800, "y": 70, "w": 740, "h": 560,
-              "label": "Black-box — the behavior-equivalence suite sees only HTTP",
+              "label": "Black-box: the behavior-equivalence suite sees only HTTP",
               "fill": "#eaf4ec"}
 
 newman = node(940, 140, 460, 120, [
-    "Newman — mea.postman_collection.json",
-    "4 scenario folders — smoke, happy-path, OOS, declined",
+    "Newman: mea.postman_collection.json",
+    "4 scenario folders: smoke, happy-path, OOS, declined",
     "+ Review Context Contract (forward reference)",
 ], style="accent")
 
 baseurl = node(990, 300, 360, 80, [
-    "baseUrl — collection variable",
+    "baseUrl: collection variable",
     "re-pointable: monolith today, Quarkus tomorrow",
 ], style="box")
 
@@ -88,14 +88,14 @@ quarkus_target = node(1200, 440, 300, 110, [
 
 right_nodes = [newman, baseurl, monolith_target, quarkus_target]
 right_edges = [
-    connect(newman, baseurl, label="HTTP only — status code + JSON body"),
+    connect(newman, baseurl, label="HTTP only: status code + JSON body"),
     connect(baseurl, monolith_target),
     connect(baseurl, quarkus_target, dashed=True, label="re-pointed, zero assertions edited", amber=True),
 ]
 
 notes = [
     {"x": W / 2, "y": 32,
-     "text": "ch.10 — same system, two kinds of test: white-box pyramid vs. black-box equivalence suite",
+     "text": "ch.10: same system, two kinds of test: white-box pyramid vs. black-box equivalence suite",
      "anchor": "middle", "bold": True, "size": 16},
     {"x": W / 2, "y": 56,
      "text": "the pyramid knows Java class names; the equivalence suite only knows baseUrl and HTTP",
@@ -105,11 +105,11 @@ notes = [
      "text": "A white-box test can't compile against code that doesn't share the monolith's class names,",
      "anchor": "start", "size": 10.5, "color": "#555555"},
     {"x": 110, "y": 591,
-     "text": "let alone its database rows — it proves the implementation, not the behavior, is correct.",
+     "text": "let alone its database rows: it proves the implementation, not the behavior, is correct.",
      "anchor": "start", "size": 10.5, "color": "#555555"},
 
     {"x": 940, "y": 575,
-     "text": "Every request targets baseUrl, not a hardcoded host — the same collection, unedited, can point",
+     "text": "Every request targets baseUrl, not a hardcoded host: the same collection, unedited, can point",
      "anchor": "start", "size": 10.5, "color": "#555555"},
     {"x": 940, "y": 591,
      "text": "at the monolith today or a Quarkus service tomorrow, with not one assertion changed in between.",

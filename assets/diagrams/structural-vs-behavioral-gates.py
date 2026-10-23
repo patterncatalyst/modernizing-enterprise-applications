@@ -1,24 +1,24 @@
 #!/usr/bin/env python3
-"""ch.06 figure: structural-vs-behavioral-gates — "MCP tools: acting against
+"""ch.06 figure: structural-vs-behavioral-gates: "MCP tools: acting against
 the real toolchain, not from memory," the paragraph beginning "That last
 parenthetical is worth lingering on": the two gate kinds this chapter
 contrasts, and which class of mistake each one actually catches.
 
-TOP — the STRUCTURAL gate: camel-mcp's `camel_validate_route` /
+TOP: the STRUCTURAL gate: camel-mcp's `camel_validate_route` /
 `camel_configuration_validate`, run during Generate, before a route is ever
 deployed. It "confirms the route compiles into a legal Camel processing
-graph" — catching "a malformed choice()/when()/otherwise() block, a
+graph": catching "a malformed choice()/when()/otherwise() block, a
 reference to a component that was never added as a dependency, an endpoint
 URI with a typo'd parameter." It is explicitly "not, and was never meant to
-be, a behavioral gate — it has no opinion about whether a routing predicate
+be, a behavioral gate: it has no opinion about whether a routing predicate
 matches the right requests once real traffic flows through it." Camel MCP
 "catches the class of defect that would otherwise surface as a confusing
 runtime stack trace."
 
-BOTTOM — the BEHAVIORAL gate: the Newman behavior-equivalence suite and its
+BOTTOM: the BEHAVIORAL gate: the Newman behavior-equivalence suite and its
 Opus adversarial follow-up, run during Verify against a running service.
 "The equivalence gate and its adversarial follow-up catch the class of
-defect that surfaces as a misleadingly correct-looking response" — exactly
+defect that surfaces as a misleadingly correct-looking response": exactly
 "the gap the differential monolith-down test in Chapter 7 existed to
 close."
 
@@ -42,10 +42,10 @@ g.OUT = os.path.dirname(__file__)
 W, H = 1400, 760
 
 # ============================================================================
-# TOP band — the structural gate
+# TOP band: the structural gate
 # ============================================================================
 band_top = {"x": 20, "y": 80, "w": 1360, "h": 250,
-            "label": "Structural gate — camel-mcp route validation (Generate phase, before deploy)",
+            "label": "Structural gate: camel-mcp route validation (Generate phase, before deploy)",
             "fill": "#fafafa"}
 
 route_check = node(60, 150, 400, 120,
@@ -65,10 +65,10 @@ top_edges = [
 ]
 
 # ============================================================================
-# BOTTOM band — the behavioral gate
+# BOTTOM band: the behavioral gate
 # ============================================================================
 band_bottom = {"x": 20, "y": 390, "w": 1360, "h": 280,
-               "label": "Behavioral gate — equivalence suite + adversarial follow-up (Verify phase, against a running service)",
+               "label": "Behavioral gate: equivalence suite + adversarial follow-up (Verify phase, against a running service)",
                "fill": "#eaf4ec"}
 
 suite_check = node(60, 460, 400, 120,
@@ -99,10 +99,10 @@ bottom_edges = [
 
 notes = [
     {"x": W / 2, "y": 32,
-     "text": "ch.06 — structural gate vs behavioral gate: two layers, two different classes of mistake",
+     "text": "ch.06: structural gate vs behavioral gate: two layers, two different classes of mistake",
      "anchor": "middle", "bold": True, "size": 17},
     {"x": W / 2, "y": 56,
-     "text": "neither substitutes for the other — knowing which layer is responsible for which kind of defect is most of what it takes to trust a loop this fast",
+     "text": "neither substitutes for the other: knowing which layer is responsible for which kind of defect is most of what it takes to trust a loop this fast",
      "anchor": "middle", "size": 12, "color": "#555555"},
 
     {"x": 980, "y": 520,

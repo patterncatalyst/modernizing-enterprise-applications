@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""ch.15 figure: strangler-review-extraction — the walking-skeleton topology.
+"""ch.15 figure: strangler-review-extraction: the walking-skeleton topology.
 
 Two stacked states (before/after the Review cutover), each an hourglass:
 Client + the Newman behavior-equivalence suite fan into the Camel strangler
@@ -33,9 +33,9 @@ def build_panel(panel_y, after):
     if not after:
         proxy_lines = ["Camel strangler proxy", ":8888",
                        "flag: strangler.review.enabled = false"]
-        monolith_lines = ["Spring monolith", ":8080 — 6 contexts", "(incl. Review)"]
+        monolith_lines = ["Spring monolith", ":8080: 6 contexts", "(incl. Review)"]
         review_style = "ghost"
-        review_lines = ["Quarkus Review service", ":8081 — Phase A lift", "(not yet live)"]
+        review_lines = ["Quarkus Review service", ":8081: Phase A lift", "(not yet live)"]
         review_edge_kw = {"label": "/api/reviews* (flag=true only)", "dashed": True}
         proxy_main_edge_label = "/api/** incl. /api/reviews* (flag=false)"
         suite_label = "run #1: 49/49 green"
@@ -43,13 +43,13 @@ def build_panel(panel_y, after):
     else:
         proxy_lines = ["Camel strangler proxy", ":8888",
                        "flag: strangler.review.enabled = true (default)"]
-        monolith_lines = ["Spring monolith", ":8080 — 5 contexts", "(Review decommissioned)"]
+        monolith_lines = ["Spring monolith", ":8080: 5 contexts", "(Review decommissioned)"]
         review_style = "accent"
-        review_lines = ["Quarkus Review service", ":8081 — Phase A lift", "(live, serving /api/reviews*)"]
+        review_lines = ["Quarkus Review service", ":8081: Phase A lift", "(live, serving /api/reviews*)"]
         review_edge_kw = {"label": "/api/reviews* (flag=true)", "amber": True}
         proxy_main_edge_label = "/api/** (everything else)"
         suite_label = "run #2 (post routing fix): 49/49 green"
-        pg_extra = "(Phase A: still shared — see MIGRATION.md)"
+        pg_extra = "(Phase A: still shared: see MIGRATION.md)"
 
     proxy = node(330, panel_y + 150, 250, 110, proxy_lines, style="accent")
     monolith = node(650, panel_y + 20, 270, 100, monolith_lines, style="box")
@@ -73,13 +73,13 @@ before_nodes, before_edges = build_panel(70, after=False)
 after_nodes, after_edges = build_panel(70 + PANEL_H + 60, after=True)
 
 notes = [
-    {"x": W / 2, "y": 32, "text": "ch.15 — Extracting Review: the strangler-fig seam (before -> after cutover)",
+    {"x": W / 2, "y": 32, "text": "ch.15: Extracting Review: the strangler-fig seam (before -> after cutover)",
      "anchor": "middle", "bold": True, "size": 18},
 
-    {"x": 40, "y": 65, "text": "BEFORE — flag OFF: Review still served by the monolith",
+    {"x": 40, "y": 65, "text": "BEFORE: flag OFF: Review still served by the monolith",
      "anchor": "start", "bold": True, "size": 14},
     {"x": 40, "y": 70 + PANEL_H + 48,
-     "text": "AFTER — flag ON, committed default: Review served by Quarkus; monolith decommissioned",
+     "text": "AFTER: flag ON, committed default: Review served by Quarkus; monolith decommissioned",
      "anchor": "start", "bold": True, "size": 14},
 
     {"x": 40, "y": 70 + PANEL_H + 60 + 420,

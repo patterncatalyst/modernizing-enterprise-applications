@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""ch.19 figure: inventory-extraction-topology — the Inventory extraction's
+"""ch.19 figure: inventory-extraction-topology: the Inventory extraction's
 steady-state seam, plus the now-retired CDC backfill path that got it there.
 
 Live path: Client -> Camel strangler proxy (:8888) -> either the Spring
@@ -11,7 +11,7 @@ stock in the inventory service's OWN schema (never a local table); on a
 post-reserve failure (insufficient stock on a later line, a payment decline,
 a shipping failure) it calls the compensating gRPC `Release`. `inventory.proto`
 is the ACL -- its wire vocabulary (`stock_keeping_unit`/`on_hand_qty`/
-`reservation_ok`) is deliberately distinct from the monolith's internal
+`reservation_ok`) is kept distinct from the monolith's internal
 `StockDto`/`InventoryItem` shape (`sku`/`quantityOnHand`/`priceCents`).
 
 Historical path (bottom band, RETIRED): during the S3-S10 transition window,
@@ -113,7 +113,7 @@ notes = [
      "anchor": "start", "size": 11, "color": "#555555"},
 
     {"x": 40, "y": 444,
-     "text": "ACL honesty: inventory.proto's wire vocabulary (stock_keeping_unit/on_hand_qty/reservation_ok) is deliberately distinct from the",
+     "text": "The ACL: inventory.proto's wire vocabulary (stock_keeping_unit/on_hand_qty/reservation_ok) is kept distinct from the",
      "anchor": "start", "size": 11, "color": "#555555"},
     {"x": 40, "y": 458,
      "text": "monolith's internal StockDto (sku/priceCents/quantityOnHand) -- RemoteInventoryClient and InventoryGrpcServiceImpl are the ACL's two sides.",

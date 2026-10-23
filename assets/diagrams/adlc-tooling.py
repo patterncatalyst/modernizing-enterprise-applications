@@ -6,7 +6,7 @@ generalizing the deck's slides 3-5. This is a public repo: every vendor- or
 codename-specific tool reference from the source deck is replaced with a
 generic, industry-standard role label (hosted AI platform, local agent
 runtime, local coding agent, internal developer platform (IDP), cloud dev
-environment, issue tracker, coding assistant) — no product codenames are
+environment, issue tracker, coding assistant): no product codenames are
 reproduced here.
 """
 import sys, os

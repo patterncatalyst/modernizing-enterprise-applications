@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""ch.11 figure: context-map — the six bounded contexts (order, inventory,
+"""ch.11 figure: context-map: the six bounded contexts (order, inventory,
 payment, shipping, notification, review) drawn as a DDD context map, with
 the relationship TYPE labelled on each edge exactly as
 `_docs/11-ddd-and-hexagonal.md` frames it.

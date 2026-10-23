@@ -1,20 +1,20 @@
 #!/usr/bin/env python3
-"""ch.20 figure: dual-write-vs-outbox — the core teaching contrast of "The
+"""ch.20 figure: dual-write-vs-outbox: the core teaching contrast of "The
 Outbox Pattern, Done Right": the dual-write hazard this chapter names versus
 the transactional outbox that cures it. A legitimate before/after
 side-by-side (per the diagram plan, this pair is one of the explicitly
 called-out combined figures).
 
-TOP band — the dual-write hazard: "save to the database, then publish to
+TOP band: the dual-write hazard: "save to the database, then publish to
 Kafka" as two independent writes to two independent systems over two
 independent network paths. Nothing makes them succeed or fail together; a
 crash, a client timeout, or a pod reschedule in the gap between them leaves
 one system updated and the other not, with nothing downstream watching for
 the mismatch. Reversing the order (publish first, save second) only
-relocates the same gap — it does not close it.
+relocates the same gap: it does not close it.
 
-BOTTOM band — the transactional outbox: the business write and the outbox
-row commit together in the SAME transaction, on the SAME database — there is
+BOTTOM band: the transactional outbox: the business write and the outbox
+row commit together in the SAME transaction, on the SAME database: there is
 no interval in which one exists and the other doesn't. The second hop
 (outbox row to Kafka) is still a separate step, but it is now explicit,
 bounded, and owned by one piece of infrastructure (`OutboxRelay`) instead of
@@ -41,10 +41,10 @@ g.OUT = os.path.dirname(__file__)
 W, H = 1400, 820
 
 # ============================================================================
-# TOP band — the dual-write hazard
+# TOP band: the dual-write hazard
 # ============================================================================
 band_old = {"x": 20, "y": 60, "w": 1360, "h": 260,
-            "label": "The dual-write hazard — two independent writes, two systems, no shared commit",
+            "label": "The dual-write hazard: two independent writes, two systems, no shared commit",
             "fill": "#fafafa"}
 
 client1 = node(40, 130, 150, 110, ["Client", "POST /api/orders"], style="sub")
@@ -52,7 +52,7 @@ svc1 = node(210, 130, 220, 110, ["OrderService.placeOrder()", "no shared transac
 write1 = node(450, 130, 210, 110, ["write 1: Postgres", "orderRepository.save(order)"], style="box")
 write2 = node(680, 130, 210, 110, ["write 2: Kafka", "kafkaTemplate.send(order.placed)"], style="box")
 crash = node(910, 130, 200, 110, ["CRASH WINDOW", "process dies, client times out,", "or the pod is rescheduled"], style="ghost")
-outcome1 = node(1130, 130, 230, 110, ["NO SHARED OUTCOME", "order with no event — or an", "event for no order"], style="ink")
+outcome1 = node(1130, 130, 230, 110, ["NO SHARED OUTCOME", "order with no event: or an", "event for no order"], style="ink")
 
 old_nodes = [client1, svc1, write1, write2, crash, outcome1]
 old_edges = [
@@ -64,16 +64,16 @@ old_edges = [
 ]
 
 # ============================================================================
-# BOTTOM band — the transactional outbox
+# BOTTOM band: the transactional outbox
 # ============================================================================
 band_new = {"x": 20, "y": 380, "w": 1360, "h": 400,
-            "label": "The transactional outbox — one atomic commit, a decoupled at-least-once publish",
+            "label": "The transactional outbox: one atomic commit, a decoupled at-least-once publish",
             "fill": "#eaf4ec"}
 
 client2 = node(40, 450, 150, 100, ["Client", "POST /api/orders"], style="sub")
 svc2 = node(210, 450, 220, 100, ["OrderService.placeOrder()", "BEGIN @Transactional"], style="user")
 txnwrite = node(450, 450, 260, 100, ["order row + outbox row", "SAME transaction, SAME commit"], style="accent")
-commit2 = node(730, 450, 220, 100, ["COMMIT", "atomic — one write, not two"], style="ink")
+commit2 = node(730, 450, 220, 100, ["COMMIT", "atomic: one write, not two"], style="ink")
 
 relay = node(450, 610, 220, 110, ["OutboxRelay", "@Scheduled poll, 2000ms"], style="box")
 kafka2 = node(690, 610, 180, 110, ["Kafka", "order.placed"], style="ink")
@@ -91,18 +91,18 @@ new_edges = [
 
 notes = [
     {"x": W / 2, "y": 32,
-     "text": "ch.20 — the dual-write hazard vs. the transactional outbox",
+     "text": "ch.20: the dual-write hazard vs. the transactional outbox",
      "anchor": "middle", "bold": True, "size": 17},
 
     {"x": 40, "y": 272,
-     "text": "A crash, a client timeout, or a pod reschedule in the gap between the two writes leaves one system updated and the other not — nothing is watching for the mismatch.",
+     "text": "A crash, a client timeout, or a pod reschedule in the gap between the two writes leaves one system updated and the other not: nothing is watching for the mismatch.",
      "anchor": "start", "size": 11, "color": "#555555"},
     {"x": 40, "y": 288,
      "text": "Reversing the order (publish, then save) relocates the same gap; it does not close it. No sequencing of two independent writes to two independent systems closes this gap.",
      "anchor": "start", "size": 11, "color": "#555555"},
 
     {"x": 40, "y": 755,
-     "text": "The second hop (table to broker) is still separate — but now explicit, bounded, and owned by one piece of infrastructure, not hidden inside application code.",
+     "text": "The second hop (table to broker) is still separate: but now explicit, bounded, and owned by one piece of infrastructure, not buried in application code.",
      "anchor": "start", "size": 11, "color": "#555555"},
     {"x": 40, "y": 771,
      "text": "At-least-once delivery out of the relay is only safe because the consumer on the far side is idempotent (check-then-insert, deduped by aggregate id).",

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""ch.29 figure: k8s-deployment-topology — the end-state ch.29 topology once
+"""ch.29 figure: k8s-deployment-topology: the end-state ch.29 topology once
 `kubectl apply -k deploy/k8s/overlays/minikube` lands: 8 app Deployments
 (each behind its own ClusterIP Service; strangler-proxy's Service alone is
 patched to NodePort by the minikube overlay) plus 2 infra StatefulSets, all
@@ -7,13 +7,13 @@ in the `mea` namespace.
 
 App tier (top): strangler-proxy is the single NodePort entry (base/
 strangler-proxy.yaml's Service is ClusterIP; overlays/minikube/
-kustomization.yaml's patch flips only that one Service to NodePort — every
+kustomization.yaml's patch flips only that one Service to NodePort: every
 other Service here stays ClusterIP-only, per that file's own comment on
 exposing "the one Service this overlay exposes off-cluster"). Its Camel
 `.choice()` route (examples/01-strangler-proxy/.../StranglerProxyRoute.java)
-dispatches by URI path prefix to the six extracted services — the real
+dispatches by URI path prefix to the six extracted services: the real
 `startsWith` prefixes it matches on. graphql-gateway is NOT one of those six
-targets (grepped: no `/graphql` branch in StranglerProxyRoute) — it sits in
+targets (grepped: no `/graphql` branch in StranglerProxyRoute): it sits in
 the app tier with its own ClusterIP Service and no ingress route of its own
 in this manifest set.
 
@@ -24,18 +24,18 @@ in `mea-app-config` (see app-config.yaml's header comment on the
 ordinal-override vs. native-placeholder split for these two keys).
 
 Infra tier (bottom): postgres and kafka are both headless-Service-backed
-StatefulSets (`clusterIP: None`), not Deployments — mirroring
+StatefulSets (`clusterIP: None`), not Deployments: mirroring
 infra/postgres-statefulset.yaml / infra/kafka-statefulset.yaml. Six of the
 eight app Deployments reach postgres on :5432 (one schema per service,
-reader review-service: the one exception, on the shared `public` schema —
+reader review-service: the one exception, on the shared `public` schema
 see app-config.yaml's per-service `*_SERVICE_JDBC_URL` keys). Five reach
-kafka on :9092 — the same five whose Deployments carry
+kafka on :9092: the same five whose Deployments carry
 `terminationGracePeriodSeconds: 45` + a 10s preStop sleep for a clean Kafka
 `LeaveGroupRequest` (notification/inventory/payment/shipping/order; see
-each one's own manifest comment on this discipline) — review-service,
+each one's own manifest comment on this discipline): review-service,
 strangler-proxy, and graphql-gateway are not Kafka clients.
 
-Edges are deliberately summarized as three fan-in/fan-out buses (gRPC, DB,
+Edges are summarized as three fan-in/fan-out buses (gRPC, DB,
 Kafka) rather than one line per pair, to keep eleven DNS edges legible
 instead of a wall of crossing lines.
 
@@ -56,7 +56,7 @@ g.OUT = os.path.dirname(__file__)
 W, H = 1780, 1080
 
 # ============================================================================
-# namespace band — everything in this figure lives in `mea`
+# namespace band: everything in this figure lives in `mea`
 # ============================================================================
 ns_band = {"x": 40, "y": 70, "w": 1700, "h": 950,
            "label": "Kubernetes namespace: mea  (deploy/k8s/base + overlays/minikube)",
@@ -66,8 +66,8 @@ ns_band = {"x": 40, "y": 70, "w": 1700, "h": 950,
 client = node(70, 140, 260, 70, ["External client", "reaches the cluster via NodePort"], style="user")
 
 proxy = node(70, 240, 1380, 110,
-             ["strangler-proxy", "Service: ClusterIP :8888 — NodePort (overlays/minikube patch)",
-              "tcpSocket probes only — no quarkus-smallrye-health"], style="ink")
+             ["strangler-proxy", "Service: ClusterIP :8888: NodePort (overlays/minikube patch)",
+              "tcpSocket probes only: no quarkus-smallrye-health"], style="ink")
 
 # ---- the 7 remaining app-tier boxes, one row --------------------------------
 COL_W, GUTTER, COL_X0, ROW_Y, ROW_H = 210, 24, 70, 420, 120
@@ -92,7 +92,7 @@ order = node(col(5), ROW_Y, COL_W, ROW_H,
              ["order-service", "ClusterIP :8087", "httpGet /q/health/*"], style="box")
 gateway = node(col(6), ROW_Y, COL_W, ROW_H,
                ["graphql-gateway", "ClusterIP :8090 + gRPC :9093", "httpGet /q/health/*",
-                "no ingress route — ClusterIP only"], style="accent")
+                "no ingress route: ClusterIP only"], style="accent")
 
 svc_row = [review, notification, inventory, payment, shipping, order, gateway]
 
@@ -108,7 +108,7 @@ path_edges = [
 client_edge = [connect(client, proxy, label="single entry point")]
 
 # ============================================================================
-# three summarized buses: gRPC, DB, Kafka — fan multiple sources into one sink
+# three summarized buses: gRPC, DB, Kafka: fan multiple sources into one sink
 # ============================================================================
 def bus_fan_in(sources, sink, bus_y, label=None, dashed=False):
     edges = []
@@ -127,14 +127,14 @@ GRPC_BUS_Y, DB_BUS_Y, KAFKA_BUS_Y = 580, 620, 670
 
 # ---- infra tier --------------------------------------------------------------
 infra_band = {"x": 60, "y": 740, "w": 1660, "h": 250,
-              "label": "Infra tier — StatefulSets, headless Services (clusterIP: None)", "fill": "#fafafa"}
+              "label": "Infra tier: StatefulSets, headless Services (clusterIP: None)", "fill": "#fafafa"}
 
 postgres = node(140, 800, 620, 140,
-                ["postgres", "StatefulSet, 1 replica — db \"monolith\"",
+                ["postgres", "StatefulSet, 1 replica: db \"monolith\"",
                  "PVC 2Gi · wal_level=logical",
                  "6 app services connect here on :5432"], style="sub")
 kafka = node(900, 800, 620, 140,
-             ["kafka", "StatefulSet, 1 replica — KRaft broker",
+             ["kafka", "StatefulSet, 1 replica: KRaft broker",
               "PVC 2Gi · topics auto-created",
               "5 Kafka-consuming services on :9092"], style="sub")
 
@@ -142,7 +142,7 @@ grpc_edges = bus_fan_in([order, gateway], inventory, GRPC_BUS_Y,
                         label="order-service + graphql-gateway -> inventory gRPC :9004")
 # bus_fan_in always points the merge arrow at the sink's TOP edge, which is
 # correct for the DB/Kafka buses (sink below) but backwards for the gRPC bus
-# (sink — inventory — is IN the row, sources are either side of it). Re-point
+# (sink: inventory: is IN the row, sources are either side of it). Re-point
 # the final leg at inventory's BOTTOM edge instead, since the bus sits below
 # the row, and add inventory's own stub down to the bus junction.
 grpc_edges[-1] = {"x1": inventory["x"] + inventory["w"] / 2, "y1": GRPC_BUS_Y,
@@ -157,13 +157,13 @@ edges = client_edge + path_edges + grpc_edges + db_edges + kafka_edges
 
 notes = [
     {"x": W / 2, "y": 32,
-     "text": "ch.29 — k8s deployment topology: the mea namespace once overlays/minikube is applied",
+     "text": "ch.29: k8s deployment topology: the mea namespace once overlays/minikube is applied",
      "anchor": "middle", "bold": True, "size": 17},
     {"x": W / 2, "y": 54,
      "text": "8 Deployments, each behind its own ClusterIP Service (strangler-proxy's alone patched to NodePort) + 2 infra StatefulSets",
      "anchor": "middle", "size": 11.5, "color": "#555555"},
 
-    {"x": 60, "y": 108, "text": "App tier — Deployment + ClusterIP Service per box",
+    {"x": 60, "y": 108, "text": "App tier: Deployment + ClusterIP Service per box",
      "anchor": "start", "size": 11, "color": "#555555"},
 
     {"x": col(6) + COL_W / 2, "y": ROW_Y - 14,

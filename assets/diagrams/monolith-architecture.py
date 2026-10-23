@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""ch.08 figure: monolith-architecture — the reference monolith "before" picture.
+"""ch.08 figure: monolith-architecture: the reference monolith "before" picture.
 
 One Spring Boot deployable (JDK 25) containing six bounded-context packages
 (order, inventory, payment, shipping, notification, review), each drawn as a
@@ -14,7 +14,7 @@ Smells drawn as the seams this book later cuts:
   - SMELL #1 (ch.18): cross-context FK joins living in the one shared schema
     (order_items -> inventory_items, payments/shipments/notifications ->
     orders, reviews -> customers + inventory_items, orders -> customers).
-Review is annotated as the first context extracted (ch.15) — this figure
+Review is annotated as the first context extracted (ch.15): this figure
 still draws it as designed (all six contexts), per ch.08's own framing of
 the monolith "as designed" before that first cut.
 

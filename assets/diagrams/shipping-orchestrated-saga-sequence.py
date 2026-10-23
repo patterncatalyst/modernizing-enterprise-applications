@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""ch.24 figure: shipping-orchestrated-saga-sequence — the full happy +
+"""ch.24 figure: shipping-orchestrated-saga-sequence: the full happy +
 failure flow for the Shipping extraction's ORCHESTRATED saga, the ch.24
 analogue of payment-choreographed-saga-sequence.svg (ch.23).
 
@@ -50,16 +50,16 @@ g.OUT = os.path.dirname(__file__)
 W, H = 2000, 1700
 
 # ============================================================================
-# Band A — checkout: unchanged, synchronous (ch.19/ch.23)
+# Band A: checkout: unchanged, synchronous (ch.19/ch.23)
 # ============================================================================
 band_a = {"x": 20, "y": 50, "w": 1960, "h": 250,
-          "label": "Checkout — synchronous, unchanged from ch.19/ch.23", "fill": "#fafafa"}
+          "label": "Checkout: synchronous, unchanged from ch.19/ch.23", "fill": "#fafafa"}
 
 client = node(40, 100, 160, 80, ["Client", "POST /api/orders"], style="sub")
 ordersvc = node(230, 100, 260, 80,
-                ["OrderService.placeOrder()", "reserve, persist PENDING, outbox — one @Transactional"],
+                ["OrderService.placeOrder()", "reserve, persist PENDING, outbox: one @Transactional"],
                 style="user")
-inventory1 = node(520, 100, 220, 80, ["Inventory service", ":9004 — gRPC Reserve (SYNC)"], style="accent")
+inventory1 = node(520, 100, 220, 80, ["Inventory service", ":9004: gRPC Reserve (SYNC)"], style="accent")
 resp202 = node(770, 100, 210, 80, ["202 Accepted", "order PENDING"], style="ink")
 outboxA = node(230, 210, 260, 70, ["order.placed outbox row", "same txn as persist"], style="sub")
 relayA = node(520, 210, 220, 70, ["OutboxRelay", "@Scheduled poller"], style="box")
@@ -77,14 +77,14 @@ band_a_edges = [
 ]
 
 # ============================================================================
-# Band B — payment capture: unchanged choreography (ch.23)
+# Band B: payment capture: unchanged choreography (ch.23)
 # ============================================================================
 band_b = {"x": 20, "y": 320, "w": 1960, "h": 220,
-          "label": "Payment capture — async choreography, unchanged from ch.23", "fill": "#fafafa"}
+          "label": "Payment capture: async choreography, unchanged from ch.23", "fill": "#fafafa"}
 
 consumerB = node(230, 370, 260, 70, ["OrderPlacedConsumer", "@Incoming(order.placed)"], style="box")
-chargeB = node(520, 370, 220, 70, ["PaymentService", "charge — idempotent by orderId"], style="accent")
-outboxB = node(230, 460, 260, 70, ["payment outbox row", "CAPTURED — same txn"], style="sub")
+chargeB = node(520, 370, 220, 70, ["PaymentService", "charge: idempotent by orderId"], style="accent")
+outboxB = node(230, 460, 260, 70, ["payment outbox row", "CAPTURED: same txn"], style="sub")
 relayB = node(520, 460, 220, 70, ["PaymentOutboxRelay", "@Scheduled poller"], style="box")
 kafkaCaptured = node(790, 400, 230, 70, ["Kafka topic", "payment.captured"], style="ink")
 
@@ -98,23 +98,23 @@ band_b_edges = [
 ]
 
 # ============================================================================
-# Band C — the orchestrated saga: TWO independent reactions to ONE topic,
+# Band C: the orchestrated saga: TWO independent reactions to ONE topic,
 # and the central Camel Saga EIP coordinator (THE ch.24 figure).
 # ============================================================================
 band_c = {"x": 20, "y": 560, "w": 1960, "h": 340,
-          "label": "Shipping orchestrated saga — the Camel Saga EIP coordinator sequences fulfilment (ch.24)",
+          "label": "Shipping orchestrated saga: the Camel Saga EIP coordinator sequences fulfilment (ch.24)",
           "fill": "#eaf4ec"}
 
-monolithReact = node(40, 610, 270, 80, ["OrderSagaListener", "onPaymentCaptured() — separate consumer group"],
+monolithReact = node(40, 610, 270, 80, ["OrderSagaListener", "onPaymentCaptured(): separate consumer group"],
                       style="box")
 awaitingShip = node(40, 710, 270, 70, ["Order: AWAITING_SHIPMENT"], style="ink")
 
-consumerShip = node(360, 610, 240, 80, ["PaymentCapturedConsumer", "shipping service — @Incoming"], style="box")
-shipSvc = node(360, 710, 240, 70, ["ShippingService", "processPaymentCaptured() — idempotent by orderId"],
+consumerShip = node(360, 610, 240, 80, ["PaymentCapturedConsumer", "shipping service: @Incoming"], style="box")
+shipSvc = node(360, 710, 240, 70, ["ShippingService", "processPaymentCaptured(): idempotent by orderId"],
                style="sub")
 
 coordinator = node(660, 640, 290, 120,
-                    ["Camel Saga EIP coordinator", "InMemorySagaService — direct:ship-start",
+                    ["Camel Saga EIP coordinator", "InMemorySagaService: direct:ship-start",
                      ".saga() sequences steps + owns the compensation decision"],
                     style="ink")
 
@@ -128,7 +128,7 @@ band_c_nodes = [monolithReact, awaitingShip, consumerShip, shipSvc, coordinator,
 band_c_edges = [
     connect(kafkaCaptured, monolithReact, label="@KafkaListener(payment.captured)"),
     connect(monolithReact, awaitingShip, label="PENDING -> AWAITING_SHIPMENT"),
-    connect(kafkaCaptured, consumerShip, label="@Incoming — separate consumer group", amber=True),
+    connect(kafkaCaptured, consumerShip, label="@Incoming: separate consumer group", amber=True),
     connect(consumerShip, shipSvc, label="processPaymentCaptured()"),
     connect(shipSvc, coordinator, label="sendBodyAndHeader(direct:ship-start)"),
     connect(coordinator, stepEnrich, label="invokes ①→④ in sequence", amber=True),
@@ -141,14 +141,14 @@ coordinator_note = {"x": 810, "y": 790, "text": "ONE visible place owns the sequ
                      "anchor": "middle", "size": 11, "color": "#2f5f3d", "bold": True}
 
 # ============================================================================
-# Band D — success: saga completes, coordinator marks done
+# Band D: success: saga completes, coordinator marks done
 # ============================================================================
 band_d = {"x": 20, "y": 920, "w": 1960, "h": 200,
-          "label": "Success — saga completes (completionMode=AUTO; no exception thrown)", "fill": "#fafafa"}
+          "label": "Success: saga completes (completionMode=AUTO; no exception thrown)", "fill": "#fafafa"}
 
 relayShip = node(360, 970, 220, 70, ["ShipmentOutboxRelay", "@Scheduled poller"], style="box")
 kafkaDispatched = node(610, 970, 230, 70, ["Kafka topic", "shipment.dispatched"], style="ink")
-onDispatched = node(870, 970, 280, 70, ["monolith: onShipmentDispatched()", "@KafkaListener — idempotent"],
+onDispatched = node(870, 970, 280, 70, ["monolith: onShipmentDispatched()", "@KafkaListener: idempotent"],
                      style="box")
 confirmed = node(1180, 970, 220, 70, ["Order: CONFIRMED"], style="ink")
 
@@ -161,11 +161,11 @@ band_d_edges = [
 ]
 
 # ============================================================================
-# Band E — failure: book-carrier throws SHIP-FAIL; coordinator compensates,
+# Band E: failure: book-carrier throws SHIP-FAIL; coordinator compensates,
 # and the cross-context inventory undo is DELEGATED to the order context.
 # ============================================================================
 band_e = {"x": 20, "y": 1140, "w": 1960, "h": 440,
-          "label": "Failure — book-carrier throws SHIP-FAIL; coordinator compensates (delegated to the order context)",
+          "label": "Failure: book-carrier throws SHIP-FAIL; coordinator compensates (delegated to the order context)",
           "fill": "#fafafa"}
 
 shipFailEx = node(1010, 1190, 210, 90, ["ShipFailException", "SHIP-FAIL sentinel in address"], style="box")
@@ -176,11 +176,11 @@ cancelShip = node(1550, 1190, 210, 90, ["cancel shipment", "PENDING -> CANCELLED
 failedOutboxE = node(1550, 1320, 210, 90, ["shipment.failed outbox", "same txn as CANCELLED"], style="sub")
 relayFailE = node(1260, 1320, 220, 90, ["ShipmentOutboxRelay", "@Scheduled poller"], style="box")
 kafkaFailedE = node(1010, 1320, 220, 90, ["Kafka topic", "shipment.failed"], style="ink")
-onFailed = node(720, 1320, 260, 90, ["monolith: onShipmentFailed()", "@KafkaListener — idempotent"], style="box")
+onFailed = node(720, 1320, 260, 90, ["monolith: onShipmentFailed()", "@KafkaListener: idempotent"], style="box")
 
 shippingFailedState = node(420, 1450, 220, 90, ["Order: SHIPPING_FAILED"], style="ink")
 release = node(700, 1450, 260, 90,
-               ["Inventory service", ":9004 — gRPC Release", "DELEGATED — order owns the reserved-line snapshot"],
+               ["Inventory service", ":9004: gRPC Release", "DELEGATED: order owns the reserved-line snapshot"],
                style="accent")
 netzero = node(1000, 1450, 200, 90, ["NET-ZERO", "stock restored"], style="ink")
 
@@ -195,14 +195,14 @@ band_e_edges = [
     connect(relayFailE, kafkaFailedE, label="publish"),
     connect(kafkaFailedE, onFailed, label="@KafkaListener(shipment.failed)"),
     connect(onFailed, shippingFailedState, label="AWAITING_SHIPMENT -> SHIPPING_FAILED"),
-    connect(onFailed, release, label="delegated Release — shipping service NEVER calls Release directly",
+    connect(onFailed, release, label="delegated Release: shipping service NEVER calls Release directly",
             amber=True),
     connect(release, netzero, label="stock restored"),
 ]
 
 notes = [
     {"x": W / 2, "y": 30,
-     "text": "ch.24 — the orchestrated saga: one Camel Saga EIP coordinator sequences fulfilment and owns the compensation decision",
+     "text": "ch.24: the orchestrated saga: one Camel Saga EIP coordinator sequences fulfilment and owns the compensation decision",
      "anchor": "middle", "bold": True, "size": 17},
 
     coordinator_note,
