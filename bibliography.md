@@ -1,8 +1,8 @@
 ---
-title: "Reading List"
+title: "Bibliography"
 layout: plan
 permalink: /bibliography/
-description: "The reference books this modernization course's patterns, rigor, and vocabulary draw on — nothing here is ported from them."
+description: "The reference books this modernization course's patterns, rigor, and vocabulary draw on: nothing here is ported from them."
 ---
 
 This course's pattern coverage, its migration playbook, and the vocabulary it
@@ -26,5 +26,5 @@ The **Strangler Fig** pattern at the center of this course is Martin Fowler's;
 the canonical write-up is his [*StranglerFigApplication*](https://martinfowler.com/bliki/StranglerFigApplication.html)
 article rather than a book.
 
-These titles inform this course's coverage and rigor only — nothing in these
+These titles inform this course's coverage and rigor only: nothing in these
 chapters or the runnable examples copies text or code from them.
