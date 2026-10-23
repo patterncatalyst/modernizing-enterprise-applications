@@ -645,7 +645,3 @@ harder.
 - Michael Nygard, *Release It!*, 2nd ed. (Pragmatic Bookshelf, 2018) — the stability argument for decoupling a request path from a slower downstream concern, the exact failure-domain coupling this extraction cures.
 - [Quarkus — Using Apache Kafka with Reactive Messaging](https://quarkus.io/guides/kafka) — the canonical reference for the declarative `@Incoming` consumer model `OrderPlacedConsumer` uses.
 - Cloud Native Design Patterns, [Event-Driven](https://github.com/patterncatalyst/cloud-native-design-patterns/blob/main/_docs/05-event-driven.md) — the companion book's treatment of event-driven architecture this extraction's outbox-to-consumer pipeline is a worked instance of.
-
----
-
-*Verification status: <span class="status status--verified">verified</span>. Every artifact cited — `examples/00-monolith/`'s outbox and relay, `examples/03-notification-service/`, the proxy's `CUTOVER.md` (including the negative check), the Newman "Notification Context Contract" folder, and CI's `notification-equivalence-gate` — is real code and dated evidence in the repository, gated green.*

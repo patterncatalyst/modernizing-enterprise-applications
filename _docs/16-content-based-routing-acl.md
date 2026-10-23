@@ -530,7 +530,3 @@ whatever's on the other side.
 - Sam Newman, *Monolith to Microservices* (O'Reilly, 2019) — the decorating-collaborator pattern this chapter names and uses to harden a seam before the physical extraction behind it exists.
 - Cloud Native Design Patterns, [DDD & Hexagonal Architecture](https://github.com/patterncatalyst/cloud-native-design-patterns/blob/main/_docs/19-appendix-f-ddd-hexagonal.md) — the companion book's treatment of bounded contexts and the ports/adapters shape this chapter's ACL protects.
 - Chris Richardson, *Microservices Patterns* (Manning, 2018) — the anti-corruption layer and API composition patterns underlying the seam-hardening this chapter performs ahead of Chapter 19's extraction; see the [Reading List](/bibliography/).
-
----
-
-*Verification status: <span class="status status--verified">verified</span>. The `SMELL[ch.16]` excerpts and the content-based router from `StranglerProxyRoute.java` are real code exercised by Code CI, and the `choice`/`enrich`/`transform` semantics are from Camel 4.22.1's catalog. The `InventoryAclRoute`/`StockDtoTranslatingStrategy` listing is an illustrative sketch; the production anti-corruption layer ships with the inventory extraction in ch.19 (`examples/04-inventory-service`).*

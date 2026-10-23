@@ -478,14 +478,3 @@ times.
 > Albada's *Building Applications with AI Agents* remains the deeper
 > treatment of why that kind of externalized, auditable memory matters for
 > any agent architecture, not just this one.
-
----
-
-*Verification status: the two findings this chapter centers on are real,
-dated, and recorded in this project's example trees —
-`examples/02-review-service/MIGRATION.md` (the native-image
-`@RegisterForReflection` gap) and `examples/01-strangler-proxy/CUTOVER.md`
-(the routing predicate false positive). What remains unverified is only the claim that
-the deferred per-context schema split (Part 6) will fully retire the
-shared-table blind spot this chapter documents; that claim is tracked, not
-assumed, and gets its own verification pass when ch.18/19 ship.*

@@ -299,13 +299,3 @@ reconciliation record the ADLC's final phase still owes — as a template for
 the ledger you will want to keep on your own migration, starting with the
 first decision you make. From there, Part 1 makes the case for why any of this modernization
 work is worth doing in the first place — and when it is not.
-
----
-*Verification status: not applicable — this is a conceptual chapter with no
-runnable example under `examples/`. Its factual claims point at artifacts the
-`examples/` directories make checkable elsewhere in this book: the six-context
-monolith and its deliberate
-smells (Part 3), the behavior-equivalence suite and the equivalence gate
-(Chapter 10 and Chapter 7), and the two real defects the first extraction
-surfaced (Chapter 7, `examples/02-review-service/MIGRATION.md`,
-`examples/01-strangler-proxy/CUTOVER.md`).*

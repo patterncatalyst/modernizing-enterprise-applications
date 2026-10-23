@@ -382,11 +382,3 @@ gestured at — Frame, Map, Plan, Generate, Verify, Operate, and the Reconcile
 phase that writes to the files you just read about — gets defined properly,
 with the ledger as its running, working example rather than a diagram. Chapter
 3, "Modernization as Engineering, Not Fashion," is next.
-
----
-*Verification status: not applicable — this is a conceptual chapter about the
-project ledger's planning artifacts, not a runnable example under `examples/`.
-The artifacts it describes live in this repository under `_plans/`
-(`decisions.md`, `build-plan.md`, and the per-iteration plan and status
-files). The one artifact it notes is *not yet* written — a populated
-`reconciliation.md` — is named as such above rather than asserted.*

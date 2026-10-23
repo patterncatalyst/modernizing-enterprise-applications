@@ -574,7 +574,3 @@ project, the alternative relay strategy previewed above.
 - Gregor Hohpe & Bobby Woolf, *Enterprise Integration Patterns* (Addison-Wesley, 2003) — the idempotent-receiver pattern and the message-key-driven ordering discipline behind this chapter's two-layer dedupe and aggregate-id keying.
 - [Debezium — Connector documentation](https://debezium.io/documentation/) — the canonical reference for the log-based CDC relay this chapter compares against the polling relay it implements.
 - [Apache Kafka — Message Delivery Semantics](https://kafka.apache.org/documentation/#semantics) — the canonical definition of at-least-once and exactly-once delivery this chapter's "effectively-once" framing refines.
-
----
-
-*Verification status: <span class="status status--verified">verified</span>. This chapter adds no new code: it reads the outbox mechanism in `examples/00-monolith/` and `examples/03-notification-service/` that ch.17 already exercised end-to-end, including the idempotency negative check. The cleanup/retention and poison-message gaps it names are explicitly future hardening, not implemented here.*

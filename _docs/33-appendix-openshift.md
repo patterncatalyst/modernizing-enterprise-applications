@@ -356,39 +356,3 @@ Its symmetric partner is **OpenShift Pipelines** (Tekton) for the build half —
 managed counterpart to the GitHub Actions workflows of Chapter 31. Both are
 deliberately left as starting points rather than part of the verified deploy: each
 needs its operator installed, and GitOps needs this repo reachable from the cluster.
-
----
-
-*Verification status: **verified live**, 2026-10-06, on OpenShift Local (CRC
-2.64.0, OpenShift 4.22.14, single node, 20 GB / 8 vCPU). All ten workloads reached
-`1/1 Running` in namespace `mea` (eight application Deployments + the Postgres and
-Kafka StatefulSets). The SCC behaviour was confirmed by reading each pod's
-`openshift.io/scc` annotation and effective UID: application pods under
-`restricted-v2` with assigned UID `1000660000`, `postgres-0`/`kafka-0` under
-`nonroot-v2` with UIDs `70`/`1000`. The GraphQL gateway's `/q/health/ready` returned
-`{"status":"UP"}` and the strangler-proxy Route returned seeded inventory JSON, both
-over the external `apps-crc.testing` hostnames. The full capture is committed at
-`openshift/evidence/verification.txt`. Re-verified 2026-10-09 on the current pins
-(UBI 10 images built in the cluster, Postgres 18.6 and Kafka 4.3.1 mirrored with
-skopeo): same SCC/UID picture, gateway `UP`, inventory 200, and `/api/reviews`
-200 now that `deploy.sh` bootstraps the monolith's `public` schema. **Not verified:** the GitOps
-`Application` and any Tekton pipeline were authored but not applied (no operators
-installed). The image mirror step is CRC-network-specific; on a cluster with Docker
-Hub egress, the upstream `postgres`/`kafka` refs apply unchanged. Cited:
-`openshift/helm/mea/**` (the chart), `openshift/README.md`, `openshift/evidence/verification.txt`,
-`openshift/gitops/application.yaml`; `deploy/k8s/base/**` (the Kubernetes manifests
-this chart ports); `examples/*/src/main/docker/Dockerfile.jvm`. Re-confirm by
-re-running `helm upgrade --install` against a fresh `crc start`, then re-driving the
-two Route `curl`s and re-reading the pod SCC annotations — the assigned UID will
-differ per cluster, but the SCC names and the 200s should not.*
-
-*2026-10-09 update, **re-verified live 2026-10-09**: the commands above
-were changed after the run recorded here. The images are now built inside the
-cluster (`openshift/build-images.sh`) instead of with a host `podman build`/`push`
-loop, Postgres and Kafka are copied with `skopeo` (`openshift/mirror-infra-images.sh`)
-instead of `podman pull`/`push`, the Route checks verify TLS with the ingress CA,
-and the pins moved to Postgres `18.6-alpine` (PVC at `/var/lib/postgresql`,
-`PGDATA=/var/lib/postgresql/18/docker`), Kafka `4.3.1`, and
-`ubi10/openjdk-25-runtime:1.24-15`. The verification paragraph above and
-`openshift/evidence/verification.txt` describe the 2026-10-06 run as it
-happened; re-run the sequence to refresh them. Re-verified live 2026-10-09 on CRC 2.64.0 / OpenShift 4.22.14 with these commands: the skopeo mirror, all eight in-cluster builds and the deploy succeeded, and the Route checks passed (see the verification paragraph above and `openshift/evidence/verification.txt`).*

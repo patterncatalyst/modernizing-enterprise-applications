@@ -370,15 +370,3 @@ Quarkus/Java stack. This book's relationship to that material is
 complementary, not redundant — that workshop builds the agent; this book
 puts a finished agentic workflow to work modernizing a production-shaped
 system, and the next chapter is where you watch it do exactly that.
-
----
-*Verification status: not applicable — this is a conceptual chapter with no
-runnable example under `examples/`. The captured transcripts quoted above are
-drawn from this project's example artifacts
-(`examples/02-review-service/AGENTS.md`, `examples/01-strangler-proxy/`) or
-reconstructed in the same narrated-and-checked-in style; the
-underlying claims — the relay tiers, the `lgtm-*` skill names, the two MCP
-servers and their tool names — are checkable against this repository directly.
-Chapter 7 is where this chapter's
-claims about what the safety net actually catches get their full worked
-proof.*

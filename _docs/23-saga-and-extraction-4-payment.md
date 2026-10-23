@@ -526,7 +526,3 @@ answers to.
 - Sam Newman, *Monolith to Microservices* (O'Reilly, 2019) — the incremental extraction playbook, including the synchronous-to-asynchronous contract shift this chapter makes.
 - [RFC 9110 — HTTP Semantics, §15.3.3, 202 Accepted](https://www.rfc-editor.org/rfc/rfc9110.html#name-202-accepted) — the canonical definition of the status code this chapter's checkout contract change relies on.
 - Cloud Native Design Patterns, [Appendix D — Sagas](https://github.com/patterncatalyst/cloud-native-design-patterns/blob/main/_docs/17-appendix-d-sagas.md) — the companion book's saga appendix, matched directly to this chapter's choreographed implementation.
-
----
-
-*Verification status: <span class="status status--verified">verified</span>. Every artifact cited — `examples/05-payment-service/`, the monolith's `OrderSagaListener`, the proxy's payment branch and `CUTOVER.md` (cutover, reversibility, and the consumer-killed negative check: RED then GREEN), the Newman payment folders, and CI's `payment-equivalence-gate` — is real code and dated evidence, gated green; the service's own tests (`PaymentServiceTest`, `OrderPlacedConsumerTest`, 18 in total) pass.*
