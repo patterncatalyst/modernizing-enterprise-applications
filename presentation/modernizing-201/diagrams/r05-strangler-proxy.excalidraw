@@ -4,7 +4,7 @@
   "source": "dgen.py",
   "elements": [
     {
-      "id": "451bd585-9a42-4809-80ad-33229187daf2",
+      "id": "07800f2f-60a5-4fbc-a7ea-b70a361b326b",
       "type": "text",
       "x": 231.0,
       "y": 14,
@@ -38,11 +38,11 @@
       "baseline": 22
     },
     {
-      "id": "8aea289e-7ff2-4a27-a03c-1fd77653c630",
+      "id": "c6c356da-e43c-4723-a532-2e8fda3c0ef4",
       "type": "text",
-      "x": 141.5,
+      "x": 145.5,
       "y": 50,
-      "width": 957,
+      "width": 949,
       "height": 18,
       "angle": 0,
       "strokeColor": "#5A5A5A",
@@ -63,16 +63,16 @@
       "locked": false,
       "fontSize": 14,
       "fontFamily": 1,
-      "text": "A Camel proxy routes each path to the monolith or the extracted service \u2014 flip the flag when the suite stays green",
+      "text": "A Camel proxy routes each path to the monolith or the extracted service: flip the flag when the suite stays green",
       "textAlign": "center",
       "verticalAlign": "top",
       "containerId": null,
-      "originalText": "A Camel proxy routes each path to the monolith or the extracted service \u2014 flip the flag when the suite stays green",
+      "originalText": "A Camel proxy routes each path to the monolith or the extracted service: flip the flag when the suite stays green",
       "lineHeight": 1.25,
       "baseline": 14
     },
     {
-      "id": "9a51d513-53ba-4118-a6f9-a94fcf239d73",
+      "id": "26fbb9dd-6e2e-4107-a98c-a815081fc05c",
       "type": "rectangle",
       "x": 40,
       "y": 180,
@@ -100,7 +100,7 @@
       "locked": false
     },
     {
-      "id": "88f235c5-b4b3-4264-be66-0785a91980c5",
+      "id": "bfc20b48-800d-49a5-863d-6a9372a72512",
       "type": "text",
       "x": 96.5,
       "y": 204,
@@ -134,7 +134,7 @@
       "baseline": 16
     },
     {
-      "id": "16a87340-6108-4e0d-a057-8b6eea46b558",
+      "id": "5210aade-f946-4da6-ae63-12d9113cef58",
       "type": "text",
       "x": 96.5,
       "y": 224,
@@ -168,7 +168,7 @@
       "baseline": 12
     },
     {
-      "id": "460049c9-16c9-49b2-835e-e82d0aa19b44",
+      "id": "6cd23e4e-d0fd-4ff8-95ef-4a8633a53954",
       "type": "rectangle",
       "x": 300,
       "y": 180,
@@ -196,7 +196,7 @@
       "locked": false
     },
     {
-      "id": "82d374e9-a156-44c1-8509-a1bd013aaffc",
+      "id": "d2fbe2bd-92eb-4b7a-8558-fb93ebd13b97",
       "type": "text",
       "x": 333.0,
       "y": 204,
@@ -230,7 +230,7 @@
       "baseline": 16
     },
     {
-      "id": "e2a1e62c-b2f9-4cbf-81ae-8d0d254e8377",
+      "id": "b38397d9-8997-44b3-8858-c60232dab850",
       "type": "text",
       "x": 351.5,
       "y": 224,
@@ -264,7 +264,7 @@
       "baseline": 12
     },
     {
-      "id": "4b9a81eb-57b9-480a-a7ce-2a99a94a64f3",
+      "id": "53c0516b-a6a2-4c1e-832b-d6a82a2aa9b5",
       "type": "text",
       "x": 329.5,
       "y": 240,
@@ -298,7 +298,7 @@
       "baseline": 12
     },
     {
-      "id": "d9a8a963-35fd-42c7-bbca-db556eddbe2d",
+      "id": "deeb4592-86bb-4734-92e6-9d2cd9257b21",
       "type": "arrow",
       "x": 210,
       "y": 220,
@@ -338,7 +338,7 @@
       "endArrowhead": "arrow"
     },
     {
-      "id": "efdd66d9-230b-456c-b239-6fd14788c30f",
+      "id": "5b6826b3-f1c2-4a77-9ae8-fe258d91ee63",
       "type": "rectangle",
       "x": 620,
       "y": 90,
@@ -366,7 +366,7 @@
       "locked": false
     },
     {
-      "id": "7c52ed93-cf31-4935-b61f-ebb71e87544e",
+      "id": "f429def9-26da-40fa-9131-a0371c45ac06",
       "type": "text",
       "x": 702.0,
       "y": 114,
@@ -400,7 +400,7 @@
       "baseline": 16
     },
     {
-      "id": "408411b1-638d-4666-aa6b-2019895a4b67",
+      "id": "bb67357e-fd48-4cbb-bfe6-f6d8c4490131",
       "type": "text",
       "x": 661.0,
       "y": 134,
@@ -434,7 +434,7 @@
       "baseline": 12
     },
     {
-      "id": "0f5c9a8e-59ce-4d87-b08e-58a0edf7ac9a",
+      "id": "1d08ba89-69c4-4e59-8641-0104ac47149c",
       "type": "rectangle",
       "x": 620,
       "y": 280,
@@ -462,7 +462,7 @@
       "locked": false
     },
     {
-      "id": "20040336-bae2-43bc-8637-2fd97bf8b94d",
+      "id": "dcecbfdf-c83a-4b51-8940-f883390103a4",
       "type": "text",
       "x": 658.5,
       "y": 304,
@@ -496,7 +496,7 @@
       "baseline": 16
     },
     {
-      "id": "6c5f08e6-ab5f-4af9-8d24-91f53104d0bf",
+      "id": "ffa8badd-0740-431b-8956-3ab7144abe54",
       "type": "text",
       "x": 675.5,
       "y": 324,
@@ -530,7 +530,7 @@
       "baseline": 12
     },
     {
-      "id": "260e1b35-54ea-4bb6-8001-3735cfc03fb8",
+      "id": "0d343e70-577d-4dca-8e7b-d48b2035f9b4",
       "type": "text",
       "x": 693.5,
       "y": 340,
@@ -564,7 +564,7 @@
       "baseline": 12
     },
     {
-      "id": "1a1da305-c26d-40a9-a8b6-b0194bf1e4e5",
+      "id": "6e134cab-2c9e-4620-b3d1-e62789e0f543",
       "type": "arrow",
       "x": 510,
       "y": 200,
@@ -604,7 +604,7 @@
       "endArrowhead": "arrow"
     },
     {
-      "id": "158e185e-071b-45ee-be3a-9fa888bf9d8d",
+      "id": "b8064bf3-bfb3-4719-a995-a5a9067e006d",
       "type": "text",
       "x": 539.0,
       "y": 147.0,
@@ -638,7 +638,7 @@
       "baseline": 11
     },
     {
-      "id": "0179ae78-95be-448e-a001-3cf41bb074af",
+      "id": "df5db38d-d3bc-44ca-8819-0415ce5a65bc",
       "type": "arrow",
       "x": 510,
       "y": 240,
@@ -678,7 +678,7 @@
       "endArrowhead": "arrow"
     },
     {
-      "id": "2e745b87-c1d1-470f-b054-055ca219df4c",
+      "id": "879d37b6-5b8e-4b57-ba09-d5eb91871736",
       "type": "text",
       "x": 542.0,
       "y": 262.0,
@@ -712,7 +712,7 @@
       "baseline": 11
     },
     {
-      "id": "0428d4d3-eb43-44f7-b332-257b248036a2",
+      "id": "4c9067c6-1824-4fef-b630-3c4bd167cfa4",
       "type": "rectangle",
       "x": 40,
       "y": 430,
@@ -740,7 +740,7 @@
       "locked": false
     },
     {
-      "id": "df26361d-fd1f-4fb1-b3ee-bc380d3343ac",
+      "id": "3e589978-4288-4da9-aec6-737ad77bc3fc",
       "type": "text",
       "x": 60,
       "y": 443,
@@ -774,7 +774,7 @@
       "baseline": 13
     },
     {
-      "id": "8ba21bf4-3119-4900-a210-078554f56511",
+      "id": "a6bc8a90-d2ea-4a8e-8421-afe14efd9c4b",
       "type": "rectangle",
       "x": 70,
       "y": 490,
@@ -802,7 +802,7 @@
       "locked": false
     },
     {
-      "id": "17d4e589-8bcc-4a1d-93b7-95c0b0560761",
+      "id": "c0c98b32-45a7-4013-b094-ef4343f03487",
       "type": "text",
       "x": 125.5,
       "y": 494,
@@ -836,7 +836,7 @@
       "baseline": 11
     },
     {
-      "id": "d23eb586-1aea-4e6a-9fc0-773022e6eada",
+      "id": "4c45ebf3-3fae-4896-b36a-013520c6b1fc",
       "type": "arrow",
       "x": 240,
       "y": 500,
@@ -876,7 +876,7 @@
       "endArrowhead": "arrow"
     },
     {
-      "id": "d6572ed5-6da9-4956-8391-ab250abea89e",
+      "id": "3e0a0ea5-192c-4797-b73a-a463428c53e2",
       "type": "rectangle",
       "x": 254,
       "y": 490,
@@ -904,7 +904,7 @@
       "locked": false
     },
     {
-      "id": "5f9741b3-38c5-4572-8688-92ae842989ef",
+      "id": "48ac9604-1464-480e-8bfd-168e68b824ad",
       "type": "text",
       "x": 289.5,
       "y": 494,
@@ -938,7 +938,7 @@
       "baseline": 11
     },
     {
-      "id": "7539ccdd-7a06-4380-873a-7bf6e173ca93",
+      "id": "48504af1-4392-4f29-96b0-d6785e43e3dd",
       "type": "arrow",
       "x": 424,
       "y": 500,
@@ -978,7 +978,7 @@
       "endArrowhead": "arrow"
     },
     {
-      "id": "7d294c29-de78-4e8e-9e7d-d15a98a90184",
+      "id": "e81a04a4-3c02-4064-a13b-d9eace53123a",
       "type": "rectangle",
       "x": 438,
       "y": 490,
@@ -1006,7 +1006,7 @@
       "locked": false
     },
     {
-      "id": "35e68e97-414a-4ae8-a0b9-fa6f10ea695b",
+      "id": "29cfd29f-fed2-4466-9f14-e36b180f7103",
       "type": "text",
       "x": 483.5,
       "y": 494,
@@ -1040,7 +1040,7 @@
       "baseline": 11
     },
     {
-      "id": "f7a96725-89eb-47a0-aff1-6d84b845303a",
+      "id": "86b3c2ac-2570-4493-960d-68d3e4a99a70",
       "type": "arrow",
       "x": 608,
       "y": 500,
@@ -1080,7 +1080,7 @@
       "endArrowhead": "arrow"
     },
     {
-      "id": "c2d2ea5f-4018-40d1-ace3-ec091fe0855b",
+      "id": "3d114a34-0183-4f8d-acef-c07fad51808d",
       "type": "rectangle",
       "x": 622,
       "y": 490,
@@ -1108,7 +1108,7 @@
       "locked": false
     },
     {
-      "id": "b50f6477-4bb0-4ca5-b895-3677c8e2dad9",
+      "id": "9df9da5b-9a0d-48d1-bc52-58c7377e4ab4",
       "type": "text",
       "x": 674.0,
       "y": 494,
@@ -1142,7 +1142,7 @@
       "baseline": 11
     },
     {
-      "id": "4522735d-0430-48e0-82e8-20371b99cdd2",
+      "id": "ae15ea5a-6c79-4540-a880-f0cd47abaa98",
       "type": "arrow",
       "x": 792,
       "y": 500,
@@ -1182,7 +1182,7 @@
       "endArrowhead": "arrow"
     },
     {
-      "id": "fcc4e07f-a2d9-479d-ba66-8f745e62488d",
+      "id": "8f5dca06-5531-4544-bc91-77aa289c1b45",
       "type": "rectangle",
       "x": 806,
       "y": 490,
@@ -1210,7 +1210,7 @@
       "locked": false
     },
     {
-      "id": "20f9cec2-5b8d-4490-a8a3-60cbef0d4b3c",
+      "id": "9820e3c6-1c38-4e49-8692-130e4eae21eb",
       "type": "text",
       "x": 855.0,
       "y": 494,
@@ -1244,7 +1244,7 @@
       "baseline": 11
     },
     {
-      "id": "8287db78-0b13-495b-a2e7-f3010694d0b8",
+      "id": "61a1a189-a082-4cdf-8703-c5b077fb142f",
       "type": "arrow",
       "x": 976,
       "y": 500,
@@ -1284,7 +1284,7 @@
       "endArrowhead": "arrow"
     },
     {
-      "id": "c33b6cda-3840-497d-bd4d-d0c295a7f2e0",
+      "id": "dc2cd9af-5bfa-497e-80ae-6eae1749b786",
       "type": "rectangle",
       "x": 990,
       "y": 490,
@@ -1312,7 +1312,7 @@
       "locked": false
     },
     {
-      "id": "b7d97c1a-c08c-4295-8593-e4d2fcbac8aa",
+      "id": "d71d4fb2-8706-4d8f-b1db-f3c5985643af",
       "type": "text",
       "x": 1049.0,
       "y": 494,
@@ -1346,7 +1346,7 @@
       "baseline": 11
     },
     {
-      "id": "e98b0488-6872-450d-bcde-d661c9f338a1",
+      "id": "ae92aae5-776e-48f5-811f-3a35d50c66c4",
       "type": "text",
       "x": 60,
       "y": 549,

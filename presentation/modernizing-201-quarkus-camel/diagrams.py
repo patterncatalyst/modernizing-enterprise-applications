@@ -17,7 +17,7 @@ from dgen import Scene, PALETTE
 # ---------------------------------------------------------------------------
 def r01_modernization_2x2():
     s = Scene("r01-modernization-2x2", 1200, 660,
-              title="Modernize by value and risk — not all at once",
+              title="Modernize by value and risk: not all at once",
               subtitle="The six Rs on a value / change-risk grid; this book lives in the top-right, done incrementally")
     # grid
     x0, y0, cw, ch, gap = 210, 120, 440, 215, 16
@@ -26,9 +26,9 @@ def r01_modernization_2x2():
     s.label(110, y0 + ch, "business", size=12, weight="bold", color=PALETTE["neutral"])
     s.label(110, y0 + ch + 18, "value", size=12, weight="bold", color=PALETTE["neutral"])
     # top-left: high value, low risk
-    s.box(x0, y0, cw, ch, "Rehost / Replatform", ["quick wins — containerize,", "lift onto Kubernetes"], kind="platform")
+    s.box(x0, y0, cw, ch, "Rehost / Replatform", ["quick wins: containerize,", "lift onto Kubernetes"], kind="platform")
     # top-right: high value, high risk
-    s.box(x0 + cw + gap, y0, cw, ch, "Refactor / Re-architect", ["the strangler fig — one seam", "at a time  (this book)"], kind="rest")
+    s.box(x0 + cw + gap, y0, cw, ch, "Refactor / Re-architect", ["the strangler fig: one seam", "at a time  (this book)"], kind="rest")
     # bottom-left: low value, low risk
     s.box(x0, y0 + ch + gap, cw, ch, "Retain / Encapsulate", ["leave it running;", "wrap it behind an API"], kind="svc")
     # bottom-right: low value, high risk
@@ -82,7 +82,7 @@ def r03_monolith_contexts():
               subtitle="A fresh Spring Boot monolith whose planted coupling smells each map to a pattern that cures it")
     # monolith band
     s.panel(40, 100, 1200, 150)
-    s.label(60, 124, "Spring Boot monolith — one deploy, one process", size=13, weight="bold", color=PALETTE["neutral"])
+    s.label(60, 124, "Spring Boot monolith: one deploy, one process", size=13, weight="bold", color=PALETTE["neutral"])
     ctxs = ["order", "inventory", "payment", "shipping", "notification", "review"]
     bw, bh, gap = 180, 64, 15
     x = 60
@@ -108,10 +108,10 @@ def r03_monolith_contexts():
 def r04_event_storm_seams():
     s = Scene("r04-event-storm-seams", 1240, 620,
               title="Finding the seams: from the event storm to bounded contexts",
-              subtitle="Cluster the domain events by aggregate — the clusters are the seams, discovered, not invented")
+              subtitle="Cluster the domain events by aggregate: the clusters are the seams, discovered, not invented")
     # left: the storm wall of events
     s.panel(40, 110, 470, 460)
-    s.label(60, 136, "the storm wall — domain events", size=13, weight="bold", color=PALETTE["neutral"])
+    s.label(60, 136, "the storm wall: domain events", size=13, weight="bold", color=PALETTE["neutral"])
     events = ["OrderPlaced", "StockReserved", "PaymentCaptured",
               "ShipmentDispatched", "CustomerNotified", "ReviewSubmitted"]
     for i, e in enumerate(events):
@@ -134,7 +134,7 @@ def r04_event_storm_seams():
 def r05_strangler_proxy():
     s = Scene("r05-strangler-proxy", 1240, 640,
               title="The strangler fig: a proxy in front, one seam out at a time",
-              subtitle="A Camel proxy routes each path to the monolith or the extracted service — flip the flag when the suite stays green")
+              subtitle="A Camel proxy routes each path to the monolith or the extracted service; flip the flag when the suite stays green")
     s.box(40, 180, 170, 80, "client", ["same API"], kind="svc")
     s.box(300, 180, 210, 90, "strangler proxy", ["Camel .choice()", "routes by path + flag"], kind="rest")
     s.arrow(210, 220, 300, 220, kind="neutral")
@@ -163,7 +163,7 @@ def r05_strangler_proxy():
 def r06_outbox_pipeline():
     s = Scene("r06-outbox-pipeline", 1260, 600,
               title="Data across the seam: the transactional outbox",
-              subtitle="Write the business row and the event in ONE local transaction — then relay it; never dual-write")
+              subtitle="Write the business row and the event in one local transaction, then relay it; never dual-write")
     y = 200
     s.box(40, y, 180, 90, "service", ["handles the", "command"], kind="svc")
     s.box(280, y, 240, 100, "one DB transaction", ["business table +", "outbox table (atomic)"], kind="data")
@@ -176,7 +176,7 @@ def r06_outbox_pipeline():
     s.arrow(1000, y + 45, 1060, y + 45, kind="neutral")
     # anti-pattern callout
     s.panel(280, y + 150, 700, 70)
-    s.label(300, y + 178, "WHY NOT DUAL-WRITE?", size=11, weight="bold", color=PALETTE["danger"])
+    s.label(300, y + 178, "Why not dual-write?", size=11, weight="bold", color=PALETTE["danger"])
     s.label(300, y + 200, "write-DB-then-publish crashes between the two steps -> the event is lost. The outbox makes it one atomic write.", size=12, color=PALETTE["muted"])
     s.write()
 
@@ -190,7 +190,7 @@ def r07_choreo_vs_orchestr():
               subtitle="Payment extraction is choreographed; shipping extraction is orchestrated with the Camel Saga EIP")
     # left: choreography
     s.panel(40, 110, 560, 480)
-    s.label(60, 136, "Choreographed (payment) — no conductor", size=13, weight="bold", color=PALETTE["neutral"])
+    s.label(60, 136, "Choreographed (payment): no conductor", size=13, weight="bold", color=PALETTE["neutral"])
     s.box(220, 180, 200, 70, "order", kind="svc")
     s.box(220, 310, 200, 70, "payment", kind="svc")
     s.box(220, 440, 200, 70, "shipping", kind="svc")
@@ -199,7 +199,7 @@ def r07_choreo_vs_orchestr():
     s.label(70, 560, "services react to each other's events", size=11, color=PALETTE["muted"])
     # right: orchestration
     s.panel(640, 110, 580, 480)
-    s.label(660, 136, "Orchestrated (shipping) — a route conducts", size=13, weight="bold", color=PALETTE["neutral"])
+    s.label(660, 136, "Orchestrated (shipping): a route conducts", size=13, weight="bold", color=PALETTE["neutral"])
     s.box(830, 180, 210, 80, "saga orchestrator", ["Camel Saga EIP"], kind="govern")
     s.box(680, 350, 160, 70, "reserve", kind="svc")
     s.box(870, 350, 160, 70, "dispatch", kind="svc")
@@ -219,7 +219,7 @@ def r08_chassis():
               title="The chassis in 2026: a platform you opt into",
               subtitle="With Quarkus + MicroProfile the cross-cutting foundation is a dependency you declare, not a framework you build")
     cx, cy = 620, 340
-    s.box(cx - 150, cy - 55, 300, 110, "your service", ["business logic", "— and little else"], kind="rest")
+    s.box(cx - 150, cy - 55, 300, 110, "your service", ["business logic", "and little else"], kind="rest")
     sats = [
         ("config", "@ConfigProperty", 230, 150),
         ("health", "smallrye-health", 1010, 150),
@@ -259,7 +259,7 @@ def r09_final_topology():
         s.arrow(sx, 364, 450, 460, kind="muted", dashed=True)
     for sx in (285, 585, 885):
         s.arrow(sx, 364, 850, 460, kind="muted", dashed=True)
-    s.label(60, 580, "Istio mesh (mTLS + tracing) + LGTM observability layered on top — verified live on minikube", size=11, color=PALETTE["muted"])
+    s.label(60, 580, "Istio mesh (mTLS + tracing) + LGTM observability layered on top, verified live on minikube", size=11, color=PALETTE["muted"])
     s.write()
 
 
@@ -271,11 +271,11 @@ def r09_supply_chain_gate():
               title="The supply-chain gate: the modernization, made measurable",
               subtitle="Same gate, same day: the monolith fails it, the extracted service passes it (syft + grype + policy-as-code)")
     # inputs
-    s.box(40, 150, 240, 90, "monolith.jar", ["before — Spring Boot", "fat jar"], kind="neutral")
-    s.box(40, 380, 240, 90, "order-service", ["after — Quarkus", "runtime closure"], kind="svc")
+    s.box(40, 150, 240, 90, "monolith.jar", ["before: Spring Boot", "fat jar"], kind="neutral")
+    s.box(40, 380, 240, 90, "order-service", ["after: Quarkus", "runtime closure"], kind="svc")
     # gate pipeline
     s.panel(360, 130, 470, 360)
-    s.label(380, 156, "the gate — local and in CI", size=13, weight="bold", color=PALETTE["neutral"])
+    s.label(380, 156, "the gate: local and in CI", size=13, weight="bold", color=PALETTE["neutral"])
     s.box(400, 190, 390, 70, "1 - syft", ["CycloneDX SBOM"], kind="platform")
     s.box(400, 290, 390, 70, "2 - grype", ["scan vs CVE database"], kind="platform")
     s.box(400, 390, 390, 70, "3 - policy.yaml", ["fail-on: High"], kind="govern")
@@ -284,8 +284,8 @@ def r09_supply_chain_gate():
     s.arrow(595, 260, 595, 290, kind="neutral")
     s.arrow(595, 360, 595, 390, kind="neutral")
     # verdicts
-    s.box(880, 150, 340, 110, "FAIL  — gate fires", ["4 Critical  6 High  8 Medium", "non-zero exit -> CI red"], kind="danger")
-    s.box(880, 380, 340, 110, "PASS  — within policy", ["0 Critical  0 High  0 Medium", "exit 0 -> CI green"], kind="platform")
+    s.box(880, 150, 340, 110, "FAIL: gate fires", ["4 Critical  6 High  8 Medium", "non-zero exit -> CI red"], kind="danger")
+    s.box(880, 380, 340, 110, "PASS: within policy", ["0 Critical  0 High  0 Medium", "exit 0 -> CI green"], kind="platform")
     s.arrow(790, 330, 880, 205, kind="danger", label="monolith")
     s.arrow(790, 460, 880, 435, kind="platform", label="order-service")
     s.write()
@@ -296,7 +296,7 @@ def r09_supply_chain_gate():
 # ---------------------------------------------------------------------------
 def r10_pattern_scorecard():
     s = Scene("r10-pattern-scorecard", 1280, 640,
-              title="The pattern catalog, re-walked — a verdict per pattern",
+              title="The pattern catalog, re-walked: a verdict per pattern",
               subtitle="Newman's incremental playbook, scored against the finished system; blue = used, amber = partial, grey = deferred")
     cols = [
         ("Decomposition", ["Strangler fig", "Bounded context", "Anti-corruption layer", "Rewrite (big-bang)"],
@@ -321,16 +321,16 @@ def r10_pattern_scorecard():
 
 def r_coupling_ladder():
     s = Scene("r-coupling-ladder", 1200, 880,
-              title="The coupling ladder — sequencing the extractions",
+              title="The coupling ladder: sequencing the extractions",
               subtitle="Constantine's taxonomy, worst to best; five of seven rungs have a live example in the monolith")
     rows = [
-        ("1. Content coupling (worst)", "placeOrder reads a live InventoryItem straight from inventory — Smell 5", "danger"),
-        ("2. Common coupling", "one shared Postgres schema, six contexts, no enforced owner — Smell 1", "danger"),
+        ("1. Content coupling (worst)", "placeOrder reads a live InventoryItem straight from inventory (Smell 5)", "danger"),
+        ("2. Common coupling", "one shared Postgres schema, six contexts, no enforced owner (Smell 1)", "danger"),
         ("3. Control coupling", "paymentMethod() threaded into charge() to pick an approve / decline path", "govern"),
         ("4. Stamp coupling", "OrderItem takes the whole InventoryItem for the three fields it needs", "govern"),
-        ("5. Data coupling — done right", "listAll() returns OrderDto via toDto(), not raw entities", "platform"),
-        ("6. Message coupling (target)", "no monolith example — interaction only through messages (ch.14–26)", "muted"),
-        ("7. API / data-structure (best)", "no monolith example — a versioned contract at the boundary", "muted"),
+        ("5. Data coupling: done right", "listAll() returns OrderDto via toDto(), not raw entities", "platform"),
+        ("6. Message coupling (target)", "no monolith example; interaction only through messages (ch.14–26)", "muted"),
+        ("7. API / data-structure (best)", "no monolith example; a versioned contract at the boundary", "muted"),
     ]
     x, w, y0, bh, gap = 150, 1010, 110, 92, 14
     for i, (title, detail, kind) in enumerate(rows):
@@ -341,20 +341,20 @@ def r_coupling_ladder():
     s.arrow(90, y_top, 90, y_bot, kind="neutral")
     s.label(70, y_top - 10, "worst", size=12, color=PALETTE["danger"], anchor="middle")
     s.label(70, y_bot + 22, "best", size=12, color=PALETTE["platform"], anchor="middle")
-    s.label(150, y0 + 5 * (bh + gap) - 2, "no monolith example below rung 5 — the extractions build toward it",
+    s.label(150, y0 + 5 * (bh + gap) - 2, "no monolith example below rung 5; the extractions build toward it",
             size=11, color=PALETTE["muted"])
     s.write()
 
 
 def r_two_phase_migration():
     s = Scene("r-two-phase-migration", 1200, 740,
-              title="The two-phase migration — the per-service recipe",
+              title="The two-phase migration: the per-service recipe",
               subtitle="Phase A de-risks fast; Phase B makes the 'why Quarkus' case with numbers (Review service, measured)")
-    s.box(70, 120, 320, 150, "Phase A — lift onto Quarkus",
+    s.box(70, 120, 320, 150, "Phase A: lift onto Quarkus",
           ["Spring-compat extensions", "spring-web / -di / -data-jpa", "suite green, fast"], kind="svc")
-    s.box(440, 120, 320, 150, "Phase B — idiomatic Quarkus",
+    s.box(440, 120, 320, 150, "Phase B: idiomatic Quarkus",
           ["Quarkus REST + Panache + CDI", "compat shim removed"], kind="platform")
-    s.box(810, 120, 320, 150, "Phase B — native image",
+    s.box(810, 120, 320, 150, "Phase B: native image",
           ["GraalVM Mandrel builder", "same code, no rewrite"], kind="rest")
     s.arrow(390, 195, 440, 195, kind="neutral", label="refactor")
     s.arrow(760, 195, 810, 195, kind="rest", label="package -Dnative")
@@ -363,9 +363,9 @@ def r_two_phase_migration():
     s.label(100, 365, "Measured startup + RSS  (same Postgres, profile=prod)", size=14, weight="bold", color=PALETTE["neutral"])
     cols = [(110, "Build"), (640, "Startup"), (880, "RSS")]
     mrows = [
-        ("Phase A — JVM (spring-compat)", "1.492 s", "~316 MB"),
-        ("Phase B — JVM (idiomatic)", "1.43 s", "~304 MB"),
-        ("Phase B — native image", "0.048 s", "~73 MB"),
+        ("Phase A: JVM (spring-compat)", "1.492 s", "~316 MB"),
+        ("Phase B: JVM (idiomatic)", "1.43 s", "~304 MB"),
+        ("Phase B: native image", "0.048 s", "~73 MB"),
     ]
     for cx, h in cols:
         s.label(cx, 405, h, size=12.5, weight="bold", color=PALETTE["neutral"])
@@ -375,14 +375,14 @@ def r_two_phase_migration():
         s.label(110, y, b, size=12.5, color=kind)
         s.label(640, y, st, size=12.5, color=kind)
         s.label(880, y, rss, size=12.5, color=kind)
-    s.label(100, 620, "~30x faster startup, ~4.2x less resident memory, JVM to native — same idiomatic code.",
+    s.label(100, 620, "~30x faster startup, ~4.2x less resident memory, JVM to native: same idiomatic code.",
             size=12.5, weight="bold", color=PALETTE["platform"])
     s.write()
 
 
 def r_context_map():
     s = Scene("r-context-map", 1200, 760,
-              title="The context map — the six bounded contexts",
+              title="The context map: the six bounded contexts",
               subtitle="What the seam-finding turns into service boundaries; order holds four outbound edges, review none")
     order = (70, 300, 220, 110)
     s.box(*order, "order", ["checkout aggregate", "four outbound edges"], kind="rest")
@@ -397,7 +397,7 @@ def r_context_map():
         s.box(x, y, 240, 90, name, [tag], kind="svc")
         pboxes[name] = (x, y)
     s.box(820, 120, 200, 90, "review", ["no outbound edges", "extracted first"], kind="muted")
-    s.box(430, 640, 420, 90, "PostgreSQL", ["one shared schema — no owner (shared kernel)"], kind="data")
+    s.box(430, 640, 420, 90, "PostgreSQL", ["one shared schema, no owner (shared kernel)"], kind="data")
     ox, oy = order[0] + order[2], order[1] + order[3] / 2
     # order -> inventory : conformist, ACL missing
     s.arrow(ox, oy, 440, 165, kind="govern", label="conformist · ACL missing")
@@ -413,18 +413,18 @@ def r_context_map():
 
 def r_chassis_scorecard():
     s = Scene("r-chassis-scorecard", 1200, 900,
-              title="The chassis scorecard — capabilities by status",
+              title="The chassis scorecard: capabilities by status",
               subtitle="Verified against this repo's code; blue = used, grey outline = partial, light grey = deferred")
     rows = [
-        ("1. Config — USED", "@ConfigProperty + %dev/%prod/%test profiles", "svc"),
-        ("2. Fault Tolerance — DEFERRED", "no @Retry/@Timeout/@CircuitBreaker — manual deadlines stand in", "muted"),
-        ("3. Health — PARTIAL", "smallrye-health on 6 of 8 (auto /q/health); no custom checks", "neutral"),
-        ("4. Metrics — DEFERRED", "no Micrometer, no /q/metrics", "muted"),
-        ("5. OpenAPI — DEFERRED", "no smallrye-openapi; the gateway's GraphQL schema replaces it", "muted"),
-        ("6. REST Client — USED", "@RegisterRestClient in shipping + gateway resolvers, config-driven", "svc"),
-        ("7. Security / JWT — PARTIAL", "HTTP Basic + @RolesAllowed on review; OIDC deferred", "neutral"),
-        ("8. Native / build-time — USED", "native profile in all 8 poms — ~31x startup / ~4x memory", "svc"),
-        ("9. Dev-mode — USED", "quarkus:dev live reload; Dev Services off (shared Postgres)", "svc"),
+        ("1. Config: USED", "@ConfigProperty + %dev/%prod/%test profiles", "svc"),
+        ("2. Fault Tolerance: DEFERRED", "no @Retry/@Timeout/@CircuitBreaker; manual deadlines stand in", "muted"),
+        ("3. Health: PARTIAL", "smallrye-health on 6 of 8 (auto /q/health); no custom checks", "neutral"),
+        ("4. Metrics: DEFERRED", "no Micrometer, no /q/metrics", "muted"),
+        ("5. OpenAPI: DEFERRED", "no smallrye-openapi; the gateway's GraphQL schema replaces it", "muted"),
+        ("6. REST Client: USED", "@RegisterRestClient in shipping + gateway resolvers, config-driven", "svc"),
+        ("7. Security / JWT: PARTIAL", "HTTP Basic + @RolesAllowed on review; OIDC deferred", "neutral"),
+        ("8. Native / build-time: USED", "native profile in all 8 poms: ~31x startup / ~4x memory", "svc"),
+        ("9. Dev-mode: USED", "quarkus:dev live reload; Dev Services off (shared Postgres)", "svc"),
     ]
     x, w, y0, bh, gap = 70, 1060, 110, 72, 8
     for i, (title, detail, kind) in enumerate(rows):
@@ -444,16 +444,16 @@ def r_quarkus_camel_map():
     """Where each runtime lives: Camel is the integration layer, Quarkus runs the services."""
     s = Scene("r-quarkus-camel-map", 1240, 640,
               title="Two runtimes, one system",
-              subtitle="Apache Camel is the integration layer; Quarkus runs every service — and Camel runs on Quarkus")
+              subtitle="Apache Camel is the integration layer; Quarkus runs every service, and Camel runs on Quarkus")
     # Camel band (top)
     s.panel(40, 95, 1160, 150)
-    s.label(60, 120, "Apache Camel — the integration layer (camel-quarkus, build-time, native-ready)",
+    s.label(60, 120, "Apache Camel: the integration layer (camel-quarkus, build-time, native-ready)",
             size=13, weight="bold", color=PALETTE["platform"])
     s.box(70, 150, 520, 74, "Edge router", ["content-based routing by URI path", "platform-http → the six services"], kind="platform")
     s.box(650, 150, 520, 74, "Saga orchestrator", ["Camel Saga EIP + compensation", "sequences the shipping fulfilment"], kind="platform")
     # Quarkus band (bottom)
     s.panel(40, 340, 1160, 250)
-    s.label(60, 365, "Quarkus — the services (one runtime, opt-in extensions)",
+    s.label(60, 365, "Quarkus: the services (one runtime, opt-in extensions)",
             size=13, weight="bold", color=PALETTE["svc"])
     svcs = ["order", "inventory", "payment", "shipping", "notification", "review", "graphql-gateway"]
     bw, bh, gap, x, y = 150, 70, 14, 60, 400
@@ -472,7 +472,7 @@ def r_quarkus_dev_loop():
     """Dev Services + continuous testing + live reload — the inner dev loop."""
     s = Scene("r-quarkus-dev-loop", 1200, 600,
               title="The inner dev loop",
-              subtitle="mvn quarkus:dev — live reload, continuous testing, and Dev Services with no infrastructure to start by hand")
+              subtitle="mvn quarkus:dev: live reload, continuous testing, and Dev Services with no infrastructure to start by hand")
     s.box(460, 250, 280, 96, "mvn quarkus:dev", ["one command", "nothing else to start"], kind="rest")
     s.box(80, 110, 300, 84, "Edit code", ["save a .java / .properties"], kind="svc")
     s.box(820, 110, 300, 84, "Live reload", ["next request recompiles", "sub-second, no restart"], kind="platform")
@@ -489,10 +489,10 @@ def r_build_time_vs_runtime():
     """Quarkus's core idea: do the framework work at build time, not every boot."""
     s = Scene("r-build-time-vs-runtime", 1200, 600,
               title="Build-time, not boot-time",
-              subtitle="Quarkus does classpath scanning, metamodel building, and proxying once at build — the runtime just runs")
+              subtitle="Quarkus does classpath scanning, metamodel building, and proxying once at build; the runtime just runs")
     # traditional column
     s.panel(50, 110, 520, 420)
-    s.label(74, 136, "Traditional JVM framework — at every boot", size=13, weight="bold", color=PALETTE["danger"])
+    s.label(74, 136, "Traditional JVM framework: at every boot", size=13, weight="bold", color=PALETTE["danger"])
     trad = [
         ("Scan the classpath", ["reflection over annotations"]),
         ("Build the metamodel", ["wiring, ORM, config"]),
@@ -503,7 +503,7 @@ def r_build_time_vs_runtime():
         s.box(80, 170 + i * 88, 460, 70, t, ln, kind=("danger" if i == 3 else "muted"))
     # quarkus column
     s.panel(630, 110, 520, 420)
-    s.label(654, 136, "Quarkus — once, at build time", size=13, weight="bold", color=PALETTE["platform"])
+    s.label(654, 136, "Quarkus: once, at build time", size=13, weight="bold", color=PALETTE["platform"])
     q = [
         ("Augmentation at build", ["scan + wire + proxy ONCE"]),
         ("Closed-world metamodel", ["baked into the artifact"]),
