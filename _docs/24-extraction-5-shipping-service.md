@@ -550,7 +550,3 @@ context whose own extraction finally empties the monolith out.
 - Michael Nygard, *Release It!* (2nd ed., Pragmatic Bookshelf, 2018) — stability under partial failure, relevant to the in-memory coordinator's crash-window limitation this chapter names rather than hides.
 - [Apache Camel — Saga EIP](https://camel.apache.org/components/next/eips/saga-eip.html) — the official documentation for the `.saga()`/`.compensation()`/`.option()` clauses this chapter's coordinator is built from.
 - Cloud Native Design Patterns, [Appendix D — Sagas](https://github.com/patterncatalyst/cloud-native-design-patterns/blob/main/_docs/17-appendix-d-sagas.md) — the companion book's saga appendix, this time read against an orchestrated implementation.
-
----
-
-*Verification status: <span class="status status--verified">verified</span>. Every artifact cited — `examples/06-shipping-service/` (the Camel Saga EIP route and steps), the monolith's `OrderSagaListener` reactions, the proxy's shipping branch, the Newman Scenario 4 and Shipping Context Contract folders, and CI's `shipping-equivalence-gate` — is real code and dated evidence, gated green; the saga-correctness suite (16 tests, including the forced `SHIP-FAIL` compensate path and an `AdviceWith` proof that compensation fires exactly once) passes.*

@@ -394,7 +394,3 @@ extraction.
 - Martin Fowler, [*CQRS*](https://martinfowler.com/bliki/CQRS.html) — the short, canonical statement of the pattern's intent and its most common pitfall, overusing it where a single model would do.
 - Sam Newman, *Building Microservices* (2nd ed., O'Reilly, 2021) — service boundaries and independent scaling, the argument for why `notification-service`'s read model gets its own schema and deploy cycle.
 - Cloud Native Design Patterns, [Event-Driven](https://github.com/patterncatalyst/cloud-native-design-patterns/blob/main/_docs/05-event-driven.md) — the companion book's treatment of the event-driven plumbing that feeds a CQRS read model.
-
----
-
-*Verification status: <span class="status status--verified">verified</span>. The code described is the already-running CQRS-lite behavior in `examples/00-monolith/` and `examples/03-notification-service/` exercised in ch.17; this chapter reframes it and adds no new code. The `eventStore.loadEvents(...)` fold is an intentional illustration only — there is no event store in this repository, by design. The GraphQL read-model aggregation it previews is realized in ch.26 (`examples/08-graphql-gateway`).*

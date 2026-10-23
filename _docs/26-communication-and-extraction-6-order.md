@@ -552,7 +552,3 @@ time.
 - Martin Fowler, [*StranglerFigApplication*](https://martinfowler.com/bliki/StranglerFigApplication.html) — the pattern this chapter's cutover completes, once the edge router has nowhere left to be conditional.
 - Sam Newman, *Monolith to Microservices* (O'Reilly, 2019) — the overall migration playbook's guidance on a final extraction and a decommissioned system worth preserving, not deleting.
 - Cloud Native Design Patterns, [Communications](https://github.com/patterncatalyst/cloud-native-design-patterns/blob/main/_docs/02-communications.md) — the companion book's treatment of the REST, gRPC, event-driven, and aggregation styles this chapter puts side by side.
-
----
-
-*Verification status: <span class="status status--verified">verified</span>. Every artifact cited — `examples/07-order-service/` (CQRS write side plus the same-transaction `order_view` projection), `examples/08-graphql-gateway/`, the collapsed edge router in `examples/01-strangler-proxy/` with `EdgeRouterRoutingTest`, the struck SMELL #2 and SMELL #3 in `SMELLS.md`, the `reference/monolith-before` branch and the `v0-monolith`/`stage/01`…`stage/06` tags, and CI's `order-gateway-contract-gate` — is real code and dated evidence, gated green; the order and gateway test suites (40 and 4 tests) pass.*

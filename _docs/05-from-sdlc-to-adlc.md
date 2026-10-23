@@ -381,9 +381,3 @@ model is easy to describe and easy to leave abstract, **Chapter 7, "The ADLC
 Safety Net,"** runs the entire loop once, end to end, on a trivial change —
 establishing the exact "ADLC in Action" callout format that every migration
 chapter from Chapter 15 onward will reuse at rising difficulty.
-
----
-*Verification status: not applicable — this is a conceptual chapter with no
-runnable example under `examples/`. The codetab above illustrates a Phase A
-lift pattern described in Part 5; it is not itself a standalone runnable
-artifact.*

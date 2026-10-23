@@ -394,7 +394,3 @@ out not to be worth cutting at all.
 - Gregor Hohpe & Bobby Woolf, *Enterprise Integration Patterns* (Addison-Wesley, 2003) — the message-based choreography this chapter's "whenever X then issue Y" policy stickies anticipate.
 - Chris Richardson, *Microservices Patterns* (Manning, 2018) — the saga patterns the wall's policy stickies become once payment's and shipping's seams are actually cut.
 - Cloud Native Design Patterns, [Event-Driven](https://github.com/patterncatalyst/cloud-native-design-patterns/blob/main/_docs/05-event-driven.md) — the companion book's treatment of event-driven architecture, the target shape this storm's policies move toward.
-
----
-
-*Verification status: <span class="status status--verified">verified</span>. Every excerpt is quoted verbatim from `examples/00-monolith/`, and the `Topics.java` constants are greppable in that tree. The event-to-seam mapping is realized by the extractions in ch.17, 19, 23, and 24.*

@@ -465,22 +465,3 @@ deduplication, and the dual-write trap, and Chapter 21 generalizes the
 event-fed read model this chapter previewed into CQRS's full read/write
 split — the same single move, replace a live join with an owned copy, run
 once per remaining relationship in the schema until nothing is left.
-
----
-*Verification status: not applicable — this is a conceptual chapter with no
-runnable example under `examples/`; `examples/00-monolith/`,
-`examples/02-review-service/`, and `examples/03-notification-service/` are
-all unchanged by this chapter. Every schema definition, entity, and javadoc
-quoted above is drawn directly from those modules' current source and is
-independently checkable with `grep -rn 'SMELL\[ch\.18\]' examples/00-monolith/src`
-and by reading `examples/02-review-service/README.md`,
-`examples/00-monolith/.../common/Customer.java`, and
-`examples/03-notification-service/.../db/migration/V1__create_notifications_table.sql`
-directly. The two illustrative code snippets in the denormalization-move
-section are explicitly marked as sketches of Chapter 19's target shape, not
-claims about existing code, and should not be treated as verified until
-Chapter 19 actually builds and runs them. What remains unverified going
-forward is the plan itself: that CDC backfill, the gRPC seam, and the
-extended negative-check discipline this chapter previews actually hold up
-against Inventory's real data and real traffic, which only Chapter 19's own
-equivalence-gate run can confirm.*

@@ -563,7 +563,3 @@ the exact chapter that will cure it.
 - Eric Evans, *Domain-Driven Design* (Addison-Wesley, 2003) — the bounded-context vocabulary this chapter's six packages anticipate, named explicitly once Chapter 11 arrives.
 - [Quarkus — Spring Data JPA compatibility guide](https://quarkus.io/guides/spring-data-jpa) — the mechanics behind the Phase A lift codetabs example this chapter closes with.
 - Martin Kleppmann, *Designing Data-Intensive Applications* (O'Reilly, 2017) — the shared-schema tradeoffs this chapter's ER diagram makes concrete, the starting point Chapters 18 and 19 unwind.
-
----
-
-*Verification status: <span class="status status--verified">verified</span>. The code, schema, and API surface described above are real in `examples/00-monolith/`, which builds green under `mvn verify` in CI. The REST endpoint table, the Flyway migration walkthrough, and the Phase A codetabs are all drawn from that tree.*
