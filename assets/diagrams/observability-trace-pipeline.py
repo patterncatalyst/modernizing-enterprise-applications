@@ -158,7 +158,7 @@ legend = {"x": 60, "y": 700,
 
 notes = [
     {"x": W / 2, "y": 32,
-     "text": "ch.30: observability trace pipeline: two span sources, one collector, the trace they produced",
+     "text": "observability trace pipeline: two span sources, one collector, the trace they produced",
      "anchor": "middle", "bold": True, "size": 17},
     {"x": W / 2, "y": 56,
      "text": "Envoy sidecar spans + app-level OTel spans both export OTLP to the same otel-lgtm collector: Tempo/Mimir/Loki store, Grafana reads",

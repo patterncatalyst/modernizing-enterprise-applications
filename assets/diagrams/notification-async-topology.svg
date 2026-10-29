@@ -84,7 +84,7 @@
 <path d="M1370.0,640.0 L1370.0,750.0" fill="none" stroke="#555" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#a)"/>
 <text x="1376.0" y="689.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">push (fire-and-forget)</text>
 <text x="1376.0" y="689.0" font-size="11" fill="#555" text-anchor="middle">push (fire-and-forget)</text>
-<text x="780.0" y="30" font-size="18" fill="#1d1d1d" text-anchor="middle" font-weight="700">ch.17: Extracting Notification: the transactional-outbox + async event-driven pipeline</text>
+<text x="780.0" y="30" font-size="18" fill="#1d1d1d" text-anchor="middle" font-weight="700">Extracting Notification: the transactional-outbox + async event-driven pipeline</text>
 <text x="650" y="215" font-size="12.5" fill="#1d1d1d" text-anchor="start" font-weight="700">Write side: checkout writes order + outbox atomically; a scheduled relay is the only thing that talks to Kafka</text>
 <text x="630" y="478" font-size="12" fill="#1d1d1d" text-anchor="start" font-weight="700">Read + consume side: two independent consumers off the SAME topic: persistence (shared group) and WebSocket push (unique group)</text>
 <text x="40" y="940" font-size="11" fill="#555555" text-anchor="start">CURED: SMELL #4&#x27;s synchronous, in-transaction NotificationService call is gone</text>

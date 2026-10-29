@@ -82,7 +82,7 @@ paysvc = node(620, 450, 260, 100, ["Payment service", "commits locally: own DB"]
 shipsvc = node(910, 450, 260, 100, ["Shipping service", "commits locally: own DB"], style="accent")
 
 saga = node(620, 610, 260, 110,
-            ["Saga: compensating action", "explicit Release, triggered by", "payment.declined (ch.23/24)"],
+            ["Saga: compensating action", "explicit Release, triggered by", "payment.declined"],
             style="ink")
 
 new_nodes = [ordersvc, invsvc, paysvc, shipsvc, saga]
@@ -95,7 +95,7 @@ new_edges = [
 
 notes = [
     {"x": W / 2, "y": 32,
-     "text": "ch.22: ACID -> ACD: the isolation given up, and what replaces the free rollback",
+     "text": "ACID -> ACD: the isolation given up, and what replaces the free rollback",
      "anchor": "middle", "bold": True, "size": 16},
 
     {"x": 40, "y": 272,
@@ -106,7 +106,7 @@ notes = [
      "text": "Kept: full LOCAL ACID inside each service's own database. Given up: atomicity and isolation ACROSS services: four commits on four DBs, each independent of the other three.",
      "anchor": "start", "size": 11, "color": "#555555"},
     {"x": 40, "y": 591,
-     "text": "Atomic (locally) + Consistent (eventually) + Durable survive as ACD. No cross-service isolation is what the chapter's title names as gone: not a value judgement, a tradeoff.",
+     "text": "Atomic (locally) + Consistent (eventually) + Durable survive as ACD. No cross-service isolation is what is given up: not a value judgement, a tradeoff.",
      "anchor": "start", "size": 11, "color": "#555555"},
 
     {"x": 620, "y": 735,
@@ -114,7 +114,7 @@ notes = [
      "anchor": "start", "size": 10.5, "color": "#555555"},
 
     {"x": 40, "y": 800,
-     "text": "Sourced from _docs/22-acid-to-acd.md; examples/00-monolith/SMELLS.md (SMELL #3); order/OrderService.java#placeOrder's @Transactional javadoc. Two-phase commit is rejected (coordinator SPOF, blocking locks, recentralized ownership): see the chapter's own treatment.",
+     "text": "Sourced from _docs/22-acid-to-acd.md; examples/00-monolith/SMELLS.md (SMELL #3); order/OrderService.java#placeOrder's @Transactional javadoc. Two-phase commit is rejected (coordinator SPOF, blocking locks, recentralized ownership).",
      "anchor": "start", "size": 10, "color": "#777777"},
 ]
 

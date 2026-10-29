@@ -1,9 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 820" font-family="'Red Hat Text', system-ui, sans-serif" role="img">
 <defs><marker id="a" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#555"/></marker><marker id="am" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2f5f3d"/></marker></defs>
 <rect x="20" y="60" width="760" height="700" rx="12" fill="#fafafa" stroke="#ddd"/>
-<text x="32" y="80" font-size="12" font-weight="700" fill="#1d1d1d">CHOREOGRAPHY: ch.23 payment (no central coordinator)</text>
+<text x="32" y="80" font-size="12" font-weight="700" fill="#1d1d1d">CHOREOGRAPHY: payment (no central coordinator)</text>
 <rect x="820" y="60" width="760" height="700" rx="12" fill="#eaf4ec" stroke="#ddd"/>
-<text x="832" y="80" font-size="12" font-weight="700" fill="#1d1d1d">ORCHESTRATION: ch.24 shipping (one Camel Saga coordinator)</text>
+<text x="832" y="80" font-size="12" font-weight="700" fill="#1d1d1d">ORCHESTRATION: shipping (one Camel Saga coordinator)</text>
 <rect x="60" y="110" width="300" height="70" rx="9" fill="#111111" stroke="#111111" stroke-width="2"/>
 <text x="210.0" y="143.0" font-size="13.5" font-weight="700" fill="#ffffff" text-anchor="middle">Kafka</text>
 <text x="210.0" y="160.0" font-size="11.5" fill="#dddddd" text-anchor="middle">order.placed / payment.captured / payment.declined</text>
@@ -54,12 +54,10 @@
 <text x="1016.0" y="309.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">emits outcome event only</text>
 <text x="1016.0" y="309.0" font-size="11" fill="#555" text-anchor="middle">emits outcome event only</text>
 <path d="M780,200 L820,200" fill="none" stroke="#2f5f3d" stroke-width="2" marker-end="url(#am)"/>
-<text x="806.0" y="194.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">ch.24</text>
-<text x="806.0" y="194.0" font-size="11" fill="#2f5f3d" text-anchor="middle">ch.24</text>
 <text x="800.0" y="32" font-size="17" fill="#1d1d1d" text-anchor="middle" font-weight="700">orchestration vs. choreography, made concrete on this one codebase</text>
 <text x="400" y="650" font-size="11.5" fill="#555555" text-anchor="middle">each service decides, on its own, what its reaction means for the order</text>
 <text x="400" y="666" font-size="11.5" fill="#555555" text-anchor="middle">no single artifact reads top-to-bottom as &quot;the saga&quot;</text>
 <text x="1200" y="650" font-size="11.5" fill="#2f5f3d" text-anchor="middle" font-weight="700">ONE visible place owns the sequence top-to-bottom</text>
 <text x="1200" y="666" font-size="11.5" fill="#2f5f3d" text-anchor="middle" font-weight="700">reading the route tells you the whole story</text>
-<text x="40" y="800" font-size="10.5" fill="#555555" text-anchor="start">Sourced from examples/05-payment-service/.../{OrderPlacedConsumer,PaymentService}.java, examples/00-monolith/.../order/OrderSagaListener.java (ch.23), and examples/06-shipping-service/.../{ShipmentSagaRoute,ShipmentSagaSteps}.java (ch.24).</text>
+<text x="40" y="800" font-size="10.5" fill="#555555" text-anchor="start">Sourced from examples/05-payment-service/.../{OrderPlacedConsumer,PaymentService}.java, examples/00-monolith/.../order/OrderSagaListener.java, and examples/06-shipping-service/.../{ShipmentSagaRoute,ShipmentSagaSteps}.java.</text>
 </svg>

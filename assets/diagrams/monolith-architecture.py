@@ -50,7 +50,7 @@ REPO_Y = 250
 cols = {}
 for i, (ctx, ctrl_lbl, svc_lbl, repo_lbl, style) in enumerate(CONTEXTS):
     x = COL_X0 + i * (COL_W + GUTTER)
-    extra = ["(SMELL[ch.26]: god service)"] if ctx == "order" else []
+    extra = ["(SMELL: god service)"] if ctx == "order" else []
     ctrl = node(x, CTRL_Y, COL_W, ROW_H, [ctrl_lbl, f"{ctx} context"], style=style)
     svc = node(x, SVC_Y, COL_W, ROW_H, [svc_lbl] + extra, style=style)
     repo = node(x, REPO_Y, COL_W, ROW_H, [repo_lbl], style=style)
@@ -76,13 +76,13 @@ order_mid_y = order_svc["y"] + order_svc["h"] / 2
 # order -> inventory is an adjacent column: a direct line, no detour needed.
 inv_svc = cols["inventory"]["svc"]
 edges.append(connect(order_svc, inv_svc, amber=True,
-                      label="direct call, no ACL (ch.16)"))
+                      label="direct call, no ACL"))
 
 bus_targets = ["payment", "shipping", "notification"]
 farthest_x = cols[bus_targets[-1]]["svc"]["x"]
 edges.append({"x1": order_edge_x, "y1": order_mid_y, "x2": order_edge_x, "y2": BUS_Y, "amber": True})
 edges.append({"x1": order_edge_x, "y1": BUS_Y, "x2": farthest_x, "y2": BUS_Y, "amber": True,
-              "label": "god service -- direct calls into other contexts (ch.26)"})
+              "label": "god service -- direct calls into other contexts"})
 for ctx in bus_targets:
     svc = cols[ctx]["svc"]
     bx = svc["x"]
@@ -158,18 +158,18 @@ bands = [
 ]
 
 notes = [
-    {"x": W / 2, "y": 30, "text": "ch.08 -- The reference monolith (before): six bounded contexts, one deployable, one shared schema",
+    {"x": W / 2, "y": 30, "text": "The reference monolith (before): six bounded contexts, one deployable, one shared schema",
      "anchor": "middle", "bold": True, "size": 17},
     {"x": W / 2, "y": 56, "text": "one REST API surface, documented by springdoc OpenAPI",
      "anchor": "middle", "size": 12, "color": "#555555"},
 
     {"x": W - 40, "y": 420,
-     "text": "SMELL[ch.22]/[ch.23]/[ch.24]: OrderService#placeOrder wraps inventory + order + payment + shipment + "
+     "text": "SMELL: OrderService#placeOrder wraps inventory + order + payment + shipment + "
              "notification in ONE @Transactional spanning five contexts (ACID -> ACD).",
      "anchor": "end", "size": 10.5, "color": "#555555"},
 
     {"x": 40, "y": 598,
-     "text": "SMELL[ch.18]: FK joins cross bounded-context boundaries freely inside the one shared schema -- "
+     "text": "SMELL: FK joins cross bounded-context boundaries freely inside the one shared schema -- "
              "order_items->inventory_items, payments/shipments/notifications->orders, reviews->customers+inventory_items, orders->customers.",
      "anchor": "start", "size": 10.5, "color": "#555555"},
     {"x": 40, "y": 614,
@@ -177,17 +177,17 @@ notes = [
      "anchor": "start", "size": 10.5, "color": "#555555"},
 
     {"x": cols["review"]["x"] + COL_W / 2, "y": 95,
-     "text": "review: first context extracted (ch.15)", "anchor": "middle", "bold": True, "size": 11.5,
+     "text": "review: first context extracted", "anchor": "middle", "bold": True, "size": 11.5,
      "color": "#2f5f3d"},
     {"x": cols["review"]["x"] + COL_W / 2, "y": REPO_Y + ROW_H + 18,
-     "text": "SMELL[ch.15]: REST-only, no runtime collaborator -- yet governed by the",
+     "text": "SMELL: REST-only, no runtime collaborator -- yet governed by the",
      "anchor": "middle", "size": 9.5, "color": "#555555"},
     {"x": cols["review"]["x"] + COL_W / 2, "y": REPO_Y + ROW_H + 30,
      "text": "monolith's one global SecurityFilterChain alongside every other context.",
      "anchor": "middle", "size": 9.5, "color": "#555555"},
 
     {"x": 40, "y": H - 16,
-     "text": "SMELL[ch.17]: the order-confirmation notification is sent synchronously, in-process, inside the checkout transaction.",
+     "text": "SMELL: the order-confirmation notification is sent synchronously, in-process, inside the checkout transaction.",
      "anchor": "start", "size": 10.5, "color": "#555555"},
 ]
 

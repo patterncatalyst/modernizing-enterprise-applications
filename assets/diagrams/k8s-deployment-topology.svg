@@ -92,7 +92,7 @@
 <path d="M1345.0,540 L1345.0,670" fill="none" stroke="#2f5f3d" stroke-width="2" marker-end="url(#am)"/>
 <path d="M409.0,670 L1345.0,670" fill="none" stroke="#2f5f3d" stroke-width="2" marker-end="url(#am)"/>
 <path d="M1210.0,670 L1210.0,800" fill="none" stroke="#2f5f3d" stroke-width="2" marker-end="url(#am)"/>
-<text x="890.0" y="32" font-size="17" fill="#1d1d1d" text-anchor="middle" font-weight="700">ch.29: k8s deployment topology: the mea namespace once overlays/minikube is applied</text>
+<text x="890.0" y="32" font-size="17" fill="#1d1d1d" text-anchor="middle" font-weight="700">k8s deployment topology: the mea namespace once overlays/minikube is applied</text>
 <text x="890.0" y="54" font-size="11.5" fill="#555555" text-anchor="middle">8 Deployments, each behind its own ClusterIP Service (strangler-proxy&#x27;s alone patched to NodePort) + 2 infra StatefulSets</text>
 <text x="60" y="108" font-size="11" fill="#555555" text-anchor="start">App tier: Deployment + ClusterIP Service per box</text>
 <text x="1579.0" y="406" font-size="10" fill="#2f5f3d" text-anchor="middle">not one of strangler-proxy&#x27;s six path targets</text>

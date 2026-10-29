@@ -82,7 +82,7 @@ edges = [
 
 notes = [
     {"x": W / 2, "y": 32,
-     "text": "ch.25: the circuit breaker's state machine: named here, not yet built",
+     "text": "the circuit breaker's state machine: named here, not yet built",
      "anchor": "middle", "bold": True, "size": 16},
     {"x": W / 2, "y": 56,
      "text": "closed -> open on a failure threshold; open -> half-open on cool-down; half-open resolves either way",

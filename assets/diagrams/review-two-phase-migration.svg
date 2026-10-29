@@ -20,7 +20,7 @@
 <path d="M740.0,190.0 L820.0,190.0" fill="none" stroke="#2f5f3d" stroke-width="2" marker-end="url(#am)"/>
 <text x="780.0" y="115.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">./mvnw package -Dnative (container build, ~75s)</text>
 <text x="780.0" y="115.0" font-size="11" fill="#2f5f3d" text-anchor="middle">./mvnw package -Dnative (container build, ~75s)</text>
-<text x="590.0" y="32" font-size="18" fill="#1d1d1d" text-anchor="middle" font-weight="700">ch.15: Review service: the two-phase migration template</text>
+<text x="590.0" y="32" font-size="18" fill="#1d1d1d" text-anchor="middle" font-weight="700">Review service: the two-phase migration template</text>
 <text x="590.0" y="60" font-size="12" fill="#555555" text-anchor="middle">Phase A de-risks the extraction fast; Phase B is where the &quot;why Quarkus&quot; case gets made with numbers.</text>
 <text x="70" y="345" font-size="12.5" fill="#1d1d1d" text-anchor="start" font-weight="700">Build</text>
 <text x="620" y="345" font-size="12.5" fill="#1d1d1d" text-anchor="start" font-weight="700">Startup</text>

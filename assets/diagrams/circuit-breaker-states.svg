@@ -31,7 +31,7 @@
 <path d="M490.41666666666663,540.0 L319.58333333333337,440.0" fill="none" stroke="#2f5f3d" stroke-width="2" marker-end="url(#am)"/>
 <text x="411.0" y="484.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">trial call succeeds</text>
 <text x="411.0" y="484.0" font-size="11" fill="#2f5f3d" text-anchor="middle">trial call succeeds</text>
-<text x="650.0" y="32" font-size="16" fill="#1d1d1d" text-anchor="middle" font-weight="700">ch.25: the circuit breaker&#x27;s state machine: named here, not yet built</text>
+<text x="650.0" y="32" font-size="16" fill="#1d1d1d" text-anchor="middle" font-weight="700">the circuit breaker&#x27;s state machine: named here, not yet built</text>
 <text x="650.0" y="56" font-size="12" fill="#555555" text-anchor="middle">closed -&gt; open on a failure threshold; open -&gt; half-open on cool-down; half-open resolves either way</text>
 <text x="60" y="760" font-size="10.5" fill="#555555" text-anchor="start">Deferred by design: no measured failure rate yet justifies short-circuiting over retrying, and the call site is in the Spring monolith, not a Quarkus chassis.</text>
 <text x="60" y="784" font-size="10" fill="#777777" text-anchor="start">Sourced from _docs/25-failure-modes-and-resilience.md (&quot;Where a circuit breaker and a bulkhead would go: and why they aren&#x27;t here yet&quot;).</text>

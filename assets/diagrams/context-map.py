@@ -129,14 +129,14 @@ bands = [
 
 review_n = cols["review"]
 notes = [
-    {"x": W / 2, "y": 32, "text": "ch.11 -- Context map: six bounded contexts, one relationship nobody decided",
+    {"x": W / 2, "y": 32, "text": "Context map: six bounded contexts, one relationship nobody decided",
      "anchor": "middle", "bold": True, "size": 17},
     {"x": W / 2, "y": 56,
      "text": "order->inventory is conformist with no ACL; order's other edges are direct and synchronous; one ungoverned shared-kernel schema sits under all six",
      "anchor": "middle", "size": 11.5, "color": "#555555"},
 
     {"x": review_n["x"] + review_n["w"] / 2, "y": ROW_Y - 12,
-     "text": "zero outbound edges to siblings -- smell 6, cured (ch.15)",
+     "text": "zero outbound edges to siblings -- smell 6, cured",
      "anchor": "middle", "size": 10, "color": "#2f5f3d"},
 
     {"x": 40, "y": PG_Y + PG_H + 24,

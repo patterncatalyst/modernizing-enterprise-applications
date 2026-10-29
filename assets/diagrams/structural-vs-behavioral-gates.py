@@ -99,14 +99,14 @@ bottom_edges = [
 
 notes = [
     {"x": W / 2, "y": 32,
-     "text": "ch.06: structural gate vs behavioral gate: two layers, two different classes of mistake",
+     "text": "structural gate vs behavioral gate: two layers, two different classes of mistake",
      "anchor": "middle", "bold": True, "size": 17},
     {"x": W / 2, "y": 56,
      "text": "neither substitutes for the other: knowing which layer is responsible for which kind of defect is most of what it takes to trust a loop this fast",
      "anchor": "middle", "size": 12, "color": "#555555"},
 
     {"x": 980, "y": 520,
-     "text": "ch.07's differential monolith-down test sharpens this gate further",
+     "text": "the differential monolith-down test sharpens this gate further",
      "anchor": "start", "size": 10, "color": "#777777"},
 
     {"x": 40, "y": H - 46,

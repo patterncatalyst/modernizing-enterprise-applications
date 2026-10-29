@@ -35,8 +35,8 @@
 <text x="598.0" y="816.5" font-size="13.5" font-weight="700" fill="#ffffff" text-anchor="middle">External system</text>
 <text x="598.0" y="833.5" font-size="11.5" fill="#dddddd" text-anchor="middle">pink sticky -- outside the team&#x27;s control, called through a policy</text>
 <text x="598.0" y="848.5" font-size="11.5" fill="#dddddd" text-anchor="middle">e.g. the card network, a carrier&#x27;s dispatch API</text>
-<text x="590.0" y="34" font-size="18" fill="#1d1d1d" text-anchor="middle" font-weight="700">ch.12 -- Event-storming note-type legend: the wall&#x27;s color grammar</text>
-<text x="590.0" y="60" font-size="12" fill="#555555" text-anchor="middle">in the order a session adds them -- each sticky color named as the chapter calls it, mapped onto this book&#x27;s house-style box types</text>
+<text x="590.0" y="34" font-size="18" fill="#1d1d1d" text-anchor="middle" font-weight="700">Event-storming note-type legend: the wall&#x27;s color grammar</text>
+<text x="590.0" y="60" font-size="12" fill="#555555" text-anchor="middle">in the order a session adds them -- each sticky color under its conventional name, mapped onto this book&#x27;s house-style box types</text>
 <text x="86.0" y="225" font-size="9" fill="#777777" text-anchor="middle">1</text>
 <text x="86.0" y="335" font-size="9" fill="#777777" text-anchor="middle">2</text>
 <text x="86.0" y="445" font-size="9" fill="#777777" text-anchor="middle">3</text>

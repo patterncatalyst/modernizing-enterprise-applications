@@ -50,7 +50,7 @@
 <path d="M292.4,520.0 L232.6,650.0" fill="none" stroke="#555" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#a)"/>
 <text x="268.5" y="579.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">judges whether layers 1+2&#x27;s coverage fit the stakes</text>
 <text x="268.5" y="579.0" font-size="11" fill="#555" text-anchor="middle">judges whether layers 1+2&#x27;s coverage fit the stakes</text>
-<text x="650.0" y="32" font-size="17" fill="#1d1d1d" text-anchor="middle" font-weight="700">ch.07: the safety net has three layers; removing any one lets a specific bug through</text>
+<text x="650.0" y="32" font-size="17" fill="#1d1d1d" text-anchor="middle" font-weight="700">the safety net has three layers; removing any one lets a specific bug through</text>
 <text x="650.0" y="56" font-size="12" fill="#555555" text-anchor="middle">the ADLC is not safe because an agent is careful: it is safe because all three layers hold at once</text>
 <text x="40" y="884" font-size="10" fill="#777777" text-anchor="start">Sourced from _docs/07-adlc-safety-net.md (&quot;The lesson: necessary, not sufficient&quot;; the Verify and Operate sections&#x27; bug #1 and bug #2 narratives).</text>
 </svg>

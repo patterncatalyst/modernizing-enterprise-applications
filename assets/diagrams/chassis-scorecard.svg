@@ -10,10 +10,10 @@
 <text x="750.0" y="287.0" font-size="11.5" fill="#555555" text-anchor="middle">No @Retry/@Timeout/@CircuitBreaker/@Fallback/@Bulkhead: manual withDeadlineAfter + REST-client timeouts stand in</text>
 <rect x="50" y="322" width="1400" height="72" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
 <text x="750.0" y="356.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">3. Health: PARTIAL</text>
-<text x="750.0" y="373.0" font-size="11.5" fill="#555555" text-anchor="middle">quarkus-smallrye-health on 6 of 8 services (auto /q/health): no custom checks; platform wiring deferred to Part 9</text>
+<text x="750.0" y="373.0" font-size="11.5" fill="#555555" text-anchor="middle">quarkus-smallrye-health on 6 of 8 services (auto /q/health): no custom checks; platform wiring deferred to the platform layer</text>
 <rect x="50" y="408" width="1400" height="72" rx="9" fill="#ffffff" stroke="#999999" stroke-width="1.5" stroke-dasharray="6 4"/>
 <text x="750.0" y="442.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">4. Metrics: DEFERRED</text>
-<text x="750.0" y="459.0" font-size="11.5" fill="#555555" text-anchor="middle">No Micrometer, no /q/metrics: deferred to ch.30</text>
+<text x="750.0" y="459.0" font-size="11.5" fill="#555555" text-anchor="middle">No Micrometer, no /q/metrics: deferred to the observability layer</text>
 <rect x="50" y="494" width="1400" height="72" rx="9" fill="#ffffff" stroke="#999999" stroke-width="1.5" stroke-dasharray="6 4"/>
 <text x="750.0" y="528.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">5. OpenAPI: DEFERRED</text>
 <text x="750.0" y="545.0" font-size="11.5" fill="#555555" text-anchor="middle">Monolith had springdoc; no quarkus-smallrye-openapi on the services: gateway&#x27;s GraphQL schema replaces it</text>
@@ -25,7 +25,7 @@
 <text x="750.0" y="717.0" font-size="11.5" fill="#555555" text-anchor="middle">HTTP Basic + @RolesAllowed on review-service, reproducing the monolith&#x27;s SecurityConfig: no quarkus-smallrye-jwt; OIDC deferred</text>
 <rect x="50" y="752" width="1400" height="72" rx="9" fill="#eaf4ec" stroke="#3d7a4e" stroke-width="2"/>
 <text x="750.0" y="786.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">8. Native / build-time: USED</text>
-<text x="750.0" y="803.0" font-size="11.5" fill="#555555" text-anchor="middle">native Maven profile in all 8 poms + @RegisterForReflection: ch.03 measured ~31x startup / ~4x memory</text>
+<text x="750.0" y="803.0" font-size="11.5" fill="#555555" text-anchor="middle">native Maven profile in all 8 poms + @RegisterForReflection: ~31x startup / ~4x memory measured</text>
 <rect x="50" y="838" width="1400" height="72" rx="9" fill="#eaf4ec" stroke="#3d7a4e" stroke-width="2"/>
 <text x="750.0" y="872.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">9. Dev-mode: USED</text>
 <text x="750.0" y="889.0" font-size="11.5" fill="#555555" text-anchor="middle">quarkus:dev live reload; Dev Services disabled (shared Postgres): %test + in-memory messaging substitutes</text>
@@ -38,7 +38,7 @@
 <rect x="698" y="940" width="300" height="50" rx="9" fill="#ffffff" stroke="#999999" stroke-width="1.5" stroke-dasharray="6 4"/>
 <text x="848.0" y="963.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">DEFERRED</text>
 <text x="848.0" y="980.0" font-size="11.5" fill="#555555" text-anchor="middle">dashed ghost outline</text>
-<text x="750.0" y="32" font-size="16" fill="#1d1d1d" text-anchor="middle" font-weight="700">ch.27: the Quarkus / MicroProfile chassis: what this repo wired, row by row</text>
+<text x="750.0" y="32" font-size="16" fill="#1d1d1d" text-anchor="middle" font-weight="700">the Quarkus / MicroProfile chassis: what this repo wired, row by row</text>
 <text x="750.0" y="56" font-size="11.5" fill="#555555" text-anchor="middle">status is verified against the code in this repo, not a feature checklist: PARTIAL means wired on some services, not all</text>
 <text x="50" y="1040" font-size="10.5" fill="#555555" text-anchor="start">Four capabilities used, two partial, three deferred: the chassis a tutorial repo needs, not the one a production platform needs.</text>
 <text x="50" y="1064" font-size="10" fill="#777777" text-anchor="start">Verified against poms, application.properties, and service annotations across the 8 services + gateway.</text>

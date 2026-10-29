@@ -11,25 +11,25 @@
 <text x="440.0" y="492.5" font-size="11.5" fill="#dddddd" text-anchor="middle">strangler .choice() collapsed; strangler.*.enabled retired</text>
 <rect x="1000" y="40" width="380" height="90" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
 <text x="1190.0" y="83.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Review service</text>
-<text x="1190.0" y="100.0" font-size="11.5" fill="#555555" text-anchor="middle">:8081: REST (ch.15)</text>
+<text x="1190.0" y="100.0" font-size="11.5" fill="#555555" text-anchor="middle">:8081: REST</text>
 <rect x="1000" y="150" width="380" height="90" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
 <text x="1190.0" y="193.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Notification service</text>
-<text x="1190.0" y="210.0" font-size="11.5" fill="#555555" text-anchor="middle">:8083: REST + WebSocket (ch.17)</text>
+<text x="1190.0" y="210.0" font-size="11.5" fill="#555555" text-anchor="middle">:8083: REST + WebSocket</text>
 <rect x="1000" y="260" width="380" height="90" rx="9" fill="#eaf4ec" stroke="#3d7a4e" stroke-width="2"/>
 <text x="1190.0" y="303.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Inventory service</text>
-<text x="1190.0" y="320.0" font-size="11.5" fill="#555555" text-anchor="middle">:8084 REST / :9004 gRPC (ch.19)</text>
+<text x="1190.0" y="320.0" font-size="11.5" fill="#555555" text-anchor="middle">:8084 REST / :9004 gRPC</text>
 <rect x="1000" y="370" width="380" height="90" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
 <text x="1190.0" y="413.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Payment service</text>
-<text x="1190.0" y="430.0" font-size="11.5" fill="#555555" text-anchor="middle">:8085: REST (ch.23)</text>
+<text x="1190.0" y="430.0" font-size="11.5" fill="#555555" text-anchor="middle">:8085: REST</text>
 <rect x="1000" y="480" width="380" height="90" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
 <text x="1190.0" y="523.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Shipping service</text>
-<text x="1190.0" y="540.0" font-size="11.5" fill="#555555" text-anchor="middle">:8088: REST (ch.24)</text>
+<text x="1190.0" y="540.0" font-size="11.5" fill="#555555" text-anchor="middle">:8088: REST</text>
 <rect x="1000" y="590" width="380" height="90" rx="9" fill="#eaf4ec" stroke="#3d7a4e" stroke-width="2"/>
 <text x="1190.0" y="633.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Order service</text>
-<text x="1190.0" y="650.0" font-size="11.5" fill="#555555" text-anchor="middle">:8087: REST, CQRS write+read split (ch.26, fig. 1)</text>
+<text x="1190.0" y="650.0" font-size="11.5" fill="#555555" text-anchor="middle">:8087: REST, CQRS write+read split</text>
 <rect x="1000" y="700" width="380" height="90" rx="9" fill="#eaf4ec" stroke="#3d7a4e" stroke-width="2"/>
 <text x="1190.0" y="743.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">GraphQL gateway</text>
-<text x="1190.0" y="760.0" font-size="11.5" fill="#555555" text-anchor="middle">:8090: aggregation, owns no data (ch.26, fig. 2)</text>
+<text x="1190.0" y="760.0" font-size="11.5" fill="#555555" text-anchor="middle">:8090: aggregation, owns no data</text>
 <rect x="40" y="650" width="460" height="220" rx="9" fill="#ffffff" stroke="#999999" stroke-width="1.5" stroke-dasharray="6 4"/>
 <text x="270.0" y="743.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Spring monolith</text>
 <text x="270.0" y="760.0" font-size="11.5" fill="#555555" text-anchor="middle">:8080: FROZEN, kept in-repo</text>
@@ -59,7 +59,7 @@
 <path d="M580.0,521.3333333333334 L1067.2727272727273,700.0" fill="none" stroke="#2f5f3d" stroke-width="2" marker-end="url(#am)"/>
 <text x="829.6363636363636" y="604.6666666666667" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">/graphql</text>
 <text x="829.6363636363636" y="604.6666666666667" font-size="11" fill="#2f5f3d" text-anchor="middle">/graphql</text>
-<text x="725.0" y="32" font-size="17" fill="#1d1d1d" text-anchor="middle" font-weight="700">ch.26: the strangler completes: final topology (six services + the GraphQL gateway behind one flagless edge router)</text>
+<text x="725.0" y="32" font-size="17" fill="#1d1d1d" text-anchor="middle" font-weight="700">the strangler completes: final topology (six services + the GraphQL gateway behind one flagless edge router)</text>
 <text x="270" y="598" font-size="11" fill="#555555" text-anchor="middle">the monolith is a historical artifact only: nothing in the running topology calls it</text>
-<text x="40" y="930" font-size="10.5" fill="#555555" text-anchor="start">Sourced from examples/01-strangler-proxy/.../StranglerProxyRoute.java (ch.26), the six services&#x27; + gateway&#x27;s application.properties.</text>
+<text x="40" y="930" font-size="10.5" fill="#555555" text-anchor="start">Sourced from examples/01-strangler-proxy/.../StranglerProxyRoute.java, the six services&#x27; + gateway&#x27;s application.properties.</text>
 </svg>
