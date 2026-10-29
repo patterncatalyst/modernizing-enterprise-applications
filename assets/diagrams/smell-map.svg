@@ -21,27 +21,27 @@
 <rect x="40" y="500" width="220" height="170" rx="9" fill="#ffffff" stroke="#999999" stroke-width="1.5"/>
 <text x="150.0" y="575.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">#1 Shared schema &amp; cross-context FKs</text>
 <text x="150.0" y="592.5" font-size="11.5" fill="#555555" text-anchor="middle">V1__init_schema.sql: order_items-&gt;inventory_items, payments/shipments/notifications-&gt;orders, reviews-&gt;customers+inventory_items</text>
-<text x="150.0" y="607.5" font-size="11.5" fill="#555555" text-anchor="middle">cures: ch.18 (owned data), ch.19 (CDC)</text>
+<text x="150.0" y="607.5" font-size="11.5" fill="#555555" text-anchor="middle">cured by owned data + CDC</text>
 <rect x="280" y="500" width="220" height="170" rx="9" fill="#ffffff" stroke="#999999" stroke-width="1.5"/>
 <text x="390.0" y="575.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">#2 God OrderService</text>
 <text x="390.0" y="592.5" font-size="11.5" fill="#555555" text-anchor="middle">order/OrderService.java: reaches directly into inventory/payment/shipping/notification</text>
-<text x="390.0" y="607.5" font-size="11.5" fill="#555555" text-anchor="middle">cures: ch.26 (hardest, last)</text>
+<text x="390.0" y="607.5" font-size="11.5" fill="#555555" text-anchor="middle">cured last (hardest)</text>
 <rect x="520" y="500" width="220" height="170" rx="9" fill="#ffffff" stroke="#999999" stroke-width="1.5"/>
 <text x="630.0" y="575.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">#3 One ACID txn, five contexts</text>
 <text x="630.0" y="592.5" font-size="11.5" fill="#555555" text-anchor="middle">OrderService#placeOrder @Transactional: free rollback across order+inventory+payment+shipping+notification</text>
-<text x="630.0" y="607.5" font-size="11.5" fill="#555555" text-anchor="middle">cures: ch.22 (ACID-&gt;ACD), ch.23/24 (sagas)</text>
+<text x="630.0" y="607.5" font-size="11.5" fill="#555555" text-anchor="middle">cured by ACID-&gt;ACD and the sagas</text>
 <rect x="760" y="500" width="220" height="170" rx="9" fill="#ffffff" stroke="#999999" stroke-width="1.5"/>
 <text x="870.0" y="575.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">#4 Sync notification in checkout txn</text>
 <text x="870.0" y="592.5" font-size="11.5" fill="#555555" text-anchor="middle">notification/NotificationService: in-process call inside placeOrder&#x27;s own transaction</text>
-<text x="870.0" y="607.5" font-size="11.5" fill="#555555" text-anchor="middle">cures: ch.17 (outbox + async consumer)</text>
+<text x="870.0" y="607.5" font-size="11.5" fill="#555555" text-anchor="middle">cured by the outbox + async consumer</text>
 <rect x="1000" y="500" width="220" height="170" rx="9" fill="#ffffff" stroke="#999999" stroke-width="1.5"/>
 <text x="1110.0" y="575.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">#5 No ACL: raw entity leak</text>
 <text x="1110.0" y="592.5" font-size="11.5" fill="#555555" text-anchor="middle">inventory/InventoryService#findBySkuOrThrow returns the JPA entity, not a DTO, to order</text>
-<text x="1110.0" y="607.5" font-size="11.5" fill="#555555" text-anchor="middle">cures: ch.16 (content-based routing &amp; ACL)</text>
+<text x="1110.0" y="607.5" font-size="11.5" fill="#555555" text-anchor="middle">cured by content-based routing &amp; ACL</text>
 <rect x="1240" y="500" width="220" height="170" rx="9" fill="#eaf4ec" stroke="#3d7a4e" stroke-width="2"/>
 <text x="1350.0" y="575.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">#6 Review tangled in shared security: CURED</text>
 <text x="1350.0" y="592.5" font-size="11.5" fill="#555555" text-anchor="middle">security/SecurityConfig&#x27;s one SecurityFilterChain once governed Review despite no runtime dependency</text>
-<text x="1350.0" y="607.5" font-size="11.5" fill="#555555" text-anchor="middle">ch.15: already cut</text>
+<text x="1350.0" y="607.5" font-size="11.5" fill="#555555" text-anchor="middle">already cut</text>
 <path d="M270.0,224.48275862068965 L668.3098591549295,322.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
 <path d="M494.0,239.8876404494382 L699.8591549295775,322.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
 <path d="M664.4788732394367,250.0 L731.4084507042254,322.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
@@ -71,7 +71,7 @@
 <path d="M1350.0,500 L1350.0,460" fill="none" stroke="#2f5f3d" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#am)"/>
 <path d="M1350.0,460 L1290.0,460" fill="none" stroke="#2f5f3d" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#am)"/>
 <path d="M1290.0,460 L1290.0,250" fill="none" stroke="#2f5f3d" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#am)"/>
-<text x="750.0" y="32" font-size="17" fill="#1d1d1d" text-anchor="middle" font-weight="700">ch.09: The six deliberate smells, mapped onto the monolith&#x27;s structure</text>
+<text x="750.0" y="32" font-size="17" fill="#1d1d1d" text-anchor="middle" font-weight="700">The six deliberate smells, mapped onto the monolith&#x27;s structure</text>
 <text x="750.0" y="56" font-size="12" fill="#555555" text-anchor="middle">the visual form of SMELLS.md: five smells still standing, one already cured</text>
 <text x="40" y="864" font-size="10.5" fill="#555555" text-anchor="start">Sourced from examples/00-monolith/SMELLS.md (reference/monolith-before) and _docs/09-deliberate-smells.md.</text>
 </svg>

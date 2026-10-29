@@ -159,7 +159,7 @@ retire_subnotes = [
 
 notes = [
     {"x": W / 2, "y": 32,
-     "text": "ch.19: The CDC backfill pipeline: WAL to Debezium to Kafka to InventoryCdcConsumer, then the slot's retirement",
+     "text": "The CDC backfill pipeline: WAL to Debezium to Kafka to InventoryCdcConsumer, then the slot's retirement",
      "anchor": "middle", "bold": True, "size": 17},
 ] + pipeline_subnotes + retire_subnotes + [
     {"x": 40, "y": 740,

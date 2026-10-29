@@ -118,7 +118,7 @@ band_c_edges = [
 
 notes = [
     {"x": W / 2, "y": 32,
-     "text": "ch.26: the CQRS write/read split: command path, projection bridge, read-only query path",
+     "text": "the CQRS write/read split: command path, projection bridge, read-only query path",
      "anchor": "middle", "bold": True, "size": 17},
 
     {"x": W / 2, "y": 378,

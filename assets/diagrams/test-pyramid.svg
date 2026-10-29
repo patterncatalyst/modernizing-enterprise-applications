@@ -19,8 +19,8 @@
 <path d="M600.0,460.0 L600.0,500.0" fill="none" stroke="#2f5f3d" stroke-width="2" marker-end="url(#am)"/>
 <text x="606.0" y="474.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">one `mvn verify` run exercises all three tiers</text>
 <text x="606.0" y="474.0" font-size="11" fill="#2f5f3d" text-anchor="middle">one `mvn verify` run exercises all three tiers</text>
-<text x="600.0" y="32" font-size="17" fill="#1d1d1d" text-anchor="middle" font-weight="700">ch.10: the monolith&#x27;s test pyramid: three tiers, one `mvn verify`</text>
+<text x="600.0" y="32" font-size="17" fill="#1d1d1d" text-anchor="middle" font-weight="700">the monolith&#x27;s test pyramid: three tiers, one `mvn verify`</text>
 <text x="600.0" y="56" font-size="12" fill="#555555" text-anchor="middle">13 test classes, 41 @Test methods + 1 parameterized test (4 executions) = 45 executions, every one green</text>
 <text x="110" y="748" font-size="10" fill="#777777" text-anchor="start">Sourced from _docs/10-testing-the-monolith.md (&quot;Three tiers, one mvn verify&quot;; Tier 1/2/3 sections).</text>
-<text x="110" y="764" font-size="10" fill="#777777" text-anchor="start">Class and method counts quoted verbatim from the chapter; tests live in examples/00-monolith/src/test/.</text>
+<text x="110" y="764" font-size="10" fill="#777777" text-anchor="start">Class and method counts quoted verbatim; tests live in examples/00-monolith/src/test/.</text>
 </svg>

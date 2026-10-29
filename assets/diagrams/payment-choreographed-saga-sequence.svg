@@ -15,7 +15,7 @@
 <rect x="530" y="110" width="230" height="90" rx="9" fill="#eaf4ec" stroke="#3d7a4e" stroke-width="2"/>
 <text x="645.0" y="145.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Inventory service</text>
 <text x="645.0" y="162.5" font-size="11.5" fill="#555555" text-anchor="middle">:9004: gRPC Reserve (SYNC)</text>
-<text x="645.0" y="177.5" font-size="11.5" fill="#555555" text-anchor="middle">atomic decrement, unchanged from ch.19</text>
+<text x="645.0" y="177.5" font-size="11.5" fill="#555555" text-anchor="middle">atomic decrement</text>
 <rect x="800" y="110" width="230" height="90" rx="9" fill="#111111" stroke="#111111" stroke-width="2"/>
 <text x="915.0" y="145.5" font-size="13.5" font-weight="700" fill="#ffffff" text-anchor="middle">202 Accepted</text>
 <text x="915.0" y="162.5" font-size="11.5" fill="#dddddd" text-anchor="middle">Location: /api/orders/{id}</text>
@@ -58,7 +58,7 @@
 <text x="700.0" y="885.0" font-size="11.5" fill="#555555" text-anchor="middle">PAYMENT_DECLINED</text>
 <rect x="880" y="720" width="240" height="80" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
 <text x="1000.0" y="758.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">Shipping dispatch</text>
-<text x="1000.0" y="775.0" font-size="11.5" fill="#555555" text-anchor="middle">(stays in monolith: ch.24 forward-ref)</text>
+<text x="1000.0" y="775.0" font-size="11.5" fill="#555555" text-anchor="middle">(stays in monolith)</text>
 <rect x="880" y="830" width="240" height="80" rx="9" fill="#111111" stroke="#111111" stroke-width="2"/>
 <text x="1000.0" y="860.5" font-size="13.5" font-weight="700" fill="#ffffff" text-anchor="middle">Inventory service</text>
 <text x="1000.0" y="877.5" font-size="11.5" fill="#dddddd" text-anchor="middle">:9004: gRPC Release (compensating)</text>
@@ -130,6 +130,6 @@
 <path d="M830.0,860.0763358778626 L1180.0,833.3587786259542" fill="none" stroke="#555" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#a)"/>
 <text x="1011.0" y="840.7175572519084" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">observed via poll</text>
 <text x="1011.0" y="840.7175572519084" font-size="11" fill="#555" text-anchor="middle">observed via poll</text>
-<text x="800.0" y="32" font-size="17" fill="#1d1d1d" text-anchor="middle" font-weight="700">ch.23: the choreographed saga: synchronous reserve, async payment outcome, async order reaction</text>
+<text x="800.0" y="32" font-size="17" fill="#1d1d1d" text-anchor="middle" font-weight="700">the choreographed saga: synchronous reserve, async payment outcome, async order reaction</text>
 <text x="40" y="988" font-size="10.5" fill="#555555" text-anchor="start">Sourced from examples/00-monolith/.../order/{OrderController,OrderService,OrderSagaListener}.java, examples/05-payment-service/.../{OrderPlacedConsumer,PaymentService,PaymentOutboxRelay}.java,</text>
 </svg>

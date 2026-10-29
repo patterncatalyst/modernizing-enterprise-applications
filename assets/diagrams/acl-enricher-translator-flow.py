@@ -69,7 +69,7 @@ monolith = node(430, BACK_Y, 260, 100,
                  ["otherwise: monolith", "GET /api/inventory/{sku}: :8080",
                   "already builds StockDto"], style="box")
 inventory_svc = node(720, BACK_Y, 260, 100,
-                      ["when inventoryEnabled: inventory svc", "ch.19 gRPC: :9004",
+                      ["when inventoryEnabled: inventory svc", "gRPC: :9004",
                        "StockReply: different vocabulary"], style="ghost")
 
 backend_nodes = [monolith, inventory_svc]
@@ -77,12 +77,12 @@ backend_edges = [
     connect(choice, monolith, dashed=True, label="otherwise"),
     connect(choice, inventory_svc, dashed=True, label="when flag=true", lx=48, ly=30),
     connect(monolith, enrich, label="reply"),
-    connect(inventory_svc, enrich, dashed=True, label="reply (ch.19)"),
+    connect(inventory_svc, enrich, dashed=True, label="reply"),
 ]
 
 notes = [
     {"x": W / 2, "y": 32,
-     "text": "ch.16: the ACL pipeline: SKU in, StockDto out, regardless of which backend answered",
+     "text": "the ACL pipeline: SKU in, StockDto out, regardless of which backend answered",
      "anchor": "middle", "bold": True, "size": 16},
 
     {"x": 50, "y": H - 70,
@@ -90,7 +90,7 @@ notes = [
              "properties the caller already set survive; only the body changes.",
      "anchor": "start", "size": 11, "color": "#555555"},
     {"x": 50, "y": H - 36,
-     "text": "InventoryAclRoute is a sketch in this chapter: not wired into examples/01-strangler-proxy/ yet; the ch.19 backend box above is drawn ghost for that reason.",
+     "text": "InventoryAclRoute is a sketch not wired into examples/01-strangler-proxy/ yet; the backend box above is drawn ghost for that reason.",
      "anchor": "start", "size": 11, "color": "#555555"},
     {"x": 50, "y": H - 12,
      "text": "Sourced from _docs/16-content-based-routing-acl.md (\"The ACL route, sketched\"; \"How the route works\").",

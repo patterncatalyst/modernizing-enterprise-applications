@@ -109,7 +109,7 @@ edges = [
 ]
 
 notes = [
-    {"x": W / 2, "y": 30, "text": "ch.17: Extracting Notification: the transactional-outbox + async event-driven pipeline",
+    {"x": W / 2, "y": 30, "text": "Extracting Notification: the transactional-outbox + async event-driven pipeline",
      "anchor": "middle", "bold": True, "size": 18},
 
     {"x": 650, "y": 215,

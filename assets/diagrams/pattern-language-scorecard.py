@@ -38,35 +38,35 @@ def cell(col, row, lines, style="box"):
 # Each column is a concern; a header note sits above it.
 nodes = [
     # --- col 0: Decomposition ---
-    cell(0, 0, ["Strangler Fig", "ch.14-26 · strangler-proxy", "used: six seams, front door"], "accent"),
-    cell(0, 1, ["Bounded Context / DDD", "ch.11-13 · the six contexts", "used: event storming -> seams"], "accent"),
-    cell(0, 2, ["Anti-Corruption Layer", "ch.16 · content-based routing", "used: an ACL at the seam"], "accent"),
-    cell(0, 3, ["Branch by Abstraction", "ch.14 · flag-gated proxy", "adapted: routing flag form"], "box"),
+    cell(0, 0, ["Strangler Fig", "strangler-proxy", "used: six seams, front door"], "accent"),
+    cell(0, 1, ["Bounded Context / DDD", "the six contexts", "used: event storming -> seams"], "accent"),
+    cell(0, 2, ["Anti-Corruption Layer", "content-based routing", "used: an ACL at the seam"], "accent"),
+    cell(0, 3, ["Branch by Abstraction", "flag-gated proxy", "adapted: routing flag form"], "box"),
 
     # --- col 1: Data ---
-    cell(1, 0, ["Database per Service", "ch.18 · owned schemas", "used: all six own their data"], "accent"),
-    cell(1, 1, ["Transactional Outbox", "ch.17,20 · outbox relay", "used: no dual write"], "accent"),
-    cell(1, 2, ["Change Data Capture", "ch.19 · Debezium backfill", "used: transition-only, retired"], "accent"),
-    cell(1, 3, ["Event Sourcing / CQRS", "ch.21,26 · order read model", "CQRS used · full ES deferred"], "box"),
+    cell(1, 0, ["Database per Service", "owned schemas", "used: all six own their data"], "accent"),
+    cell(1, 1, ["Transactional Outbox", "outbox relay", "used: no dual write"], "accent"),
+    cell(1, 2, ["Change Data Capture", "Debezium backfill", "used: transition-only, retired"], "accent"),
+    cell(1, 3, ["Event Sourcing / CQRS", "order read model", "CQRS used · full ES deferred"], "box"),
 
     # --- col 2: Communication & contracts ---
-    cell(2, 0, ["Saga (choreographed)", "ch.23 · payment", "used: events + compensation"], "accent"),
-    cell(2, 1, ["Saga (orchestrated)", "ch.24 · shipping · Camel EIP", "used: InMemorySagaService"], "accent"),
-    cell(2, 2, ["API Composition / GraphQL", "ch.26 · graphql-gateway", "used: aggregation gateway"], "accent"),
-    cell(2, 3, ["Schema Registry / contracts", "ch.28 · Avro + Apicurio", "used: demonstrator (isolated)"], "box"),
+    cell(2, 0, ["Saga (choreographed)", "payment", "used: events + compensation"], "accent"),
+    cell(2, 1, ["Saga (orchestrated)", "shipping · Camel EIP", "used: InMemorySagaService"], "accent"),
+    cell(2, 2, ["API Composition / GraphQL", "graphql-gateway", "used: aggregation gateway"], "accent"),
+    cell(2, 3, ["Schema Registry / contracts", "Avro + Apicurio", "used: demonstrator (isolated)"], "box"),
 
     # --- col 3: Reliability, ops, chassis ---
-    cell(3, 0, ["Microservice Chassis", "ch.27 · Quarkus/MicroProfile", "used: config/health/metrics"], "accent"),
-    cell(3, 1, ["Reliability patterns", "ch.25 · timeout/retry/idemp.", "used where earned · CB deferred"], "box"),
-    cell(3, 2, ["Service Mesh + Tracing", "ch.30 · Istio + LGTM", "used: mTLS, OTel (minikube)"], "accent"),
-    cell(3, 3, ["Supply-chain + CI gates", "ch.31 · SBOM/scan/equiv.", "used: verified live"], "accent"),
+    cell(3, 0, ["Microservice Chassis", "Quarkus/MicroProfile", "used: config/health/metrics"], "accent"),
+    cell(3, 1, ["Reliability patterns", "timeout/retry/idemp.", "used where earned · CB deferred"], "box"),
+    cell(3, 2, ["Service Mesh + Tracing", "Istio + LGTM", "used: mTLS, OTel (minikube)"], "accent"),
+    cell(3, 3, ["Supply-chain + CI gates", "SBOM/scan/equiv.", "used: verified live"], "accent"),
 ]
 
 # column headers
 headers = ["Decomposition", "Data", "Communication & Contracts", "Reliability · Ops · Chassis"]
 notes = [
     {"x": W / 2, "y": 40,
-     "text": "ch.32: the pattern language, re-walked: where each pattern actually landed, and the verdict",
+     "text": "the pattern language, re-walked: where each pattern actually landed, and the verdict",
      "anchor": "middle", "bold": True, "size": 16},
     {"x": W / 2, "y": 62,
      "text": "accent = used in anger · outline = used/adapted or partial · dashed = deferred and named",
@@ -79,16 +79,16 @@ for i, h in enumerate(headers):
 # a deferred row across the bottom (ghosts)
 dnodes = [
     cell(0, 4, ["Rewrite / big-bang", "not taken", "deferred: strangler instead"], "ghost"),
-    cell(1, 4, ["Full Event Sourcing", "ch.21 · concept only", "deferred: CQRS-lite sufficed"], "ghost"),
-    cell(2, 4, ["LRA / Narayana saga", "ch.24 · named", "deferred: in-memory saga"], "ghost"),
-    cell(3, 4, ["GitOps operator + canary", "ch.31 · named", "deferred: no speculative infra"], "ghost"),
+    cell(1, 4, ["Full Event Sourcing", "concept only", "deferred: CQRS-lite sufficed"], "ghost"),
+    cell(2, 4, ["LRA / Narayana saga", "named", "deferred: in-memory saga"], "ghost"),
+    cell(3, 4, ["GitOps operator + canary", "named", "deferred: no speculative infra"], "ghost"),
 ]
 nodes += dnodes
 notes.append({"x": GX, "y": 150 + 4 * (ROW_H + RGUT) - 8,
               "text": "left on the shelf:", "anchor": "start", "size": 11, "color": "#777777"})
 
 notes.append({"x": GX, "y": H - 20,
-              "text": "Every box is a claim verified in its own chapter; this figure maps them, it does not re-prove them.",
+              "text": "Every box is a claim verified elsewhere; this figure maps them, it does not re-prove them.",
               "anchor": "start", "size": 10, "color": "#777777"})
 
 g.emit("pattern-language-scorecard", W, H, bands=[], nodes=nodes, edges=[], notes=notes)

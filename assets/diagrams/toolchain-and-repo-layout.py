@@ -53,7 +53,7 @@ band_tool = {"x": 20, "y": 60, "w": 720, "h": 250,
 jdk = node(40, 110, 330, 85, ["JDK 25 (Temurin)", "sdk install java 25-tem", "required"], style="accent")
 mvn = node(390, 110, 330, 85, ["Maven 3.9.x", "sdk install maven 3.9.9", "required, or ./mvnw per-project"], style="accent")
 quarkus_cli = node(40, 205, 330, 85, ["Quarkus CLI", "sdk install quarkus", "optional"], style="ghost")
-camel_cli = node(390, 205, 330, 85, ["Camel CLI", "sdk install camel", "optional, scoped to Part 5+"], style="ghost")
+camel_cli = node(390, 205, 330, 85, ["Camel CLI", "sdk install camel", "optional"], style="ghost")
 
 tool_nodes = [jdk, mvn, quarkus_cli, camel_cli]
 
@@ -111,14 +111,14 @@ bands = [band_tool, band_podman, band_repo]
 nodes = tool_nodes + podman_nodes + repo_nodes
 
 notes = [
-    {"x": W / 2, "y": 32, "text": "ch.01: Toolchain and repo layout: what you install, and where it lands",
+    {"x": W / 2, "y": 32, "text": "Toolchain and repo layout: what you install, and where it lands",
      "anchor": "middle", "bold": True, "size": 16},
     {"x": W / 2, "y": 52,
      "text": "SDKMAN-managed JDK/Maven/CLI tooling and the docker compose stack both build and back the examples/ tree checked into this repository",
      "anchor": "middle", "size": 11.5, "color": "#555555"},
 
     {"x": 20, "y": 632,
-     "text": "Required for every chapter: JDK 25 (Temurin) and Maven 3.9.x, or each project's own ./mvnw. The Quarkus CLI and Camel CLI are optional conveniences scoped to Part 5 onward.",
+     "text": "Required everywhere: JDK 25 (Temurin) and Maven 3.9.x, or each project's own ./mvnw. The Quarkus CLI and Camel CLI are optional conveniences.",
      "anchor": "start", "size": 10.5, "color": "#555555"},
     {"x": 20, "y": 648,
      "text": "One engine for every path: Docker Engine runs the compose stack, Testcontainers/Dev Services and minikube, so the image tags compose.yaml pins are the ones every path runs.",

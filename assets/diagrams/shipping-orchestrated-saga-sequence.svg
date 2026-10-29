@@ -1,11 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2000 1700" font-family="'Red Hat Text', system-ui, sans-serif" role="img">
 <defs><marker id="a" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#555"/></marker><marker id="am" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2f5f3d"/></marker></defs>
 <rect x="20" y="50" width="1960" height="250" rx="12" fill="#fafafa" stroke="#ddd"/>
-<text x="32" y="70" font-size="12" font-weight="700" fill="#1d1d1d">Checkout: synchronous, unchanged from ch.19/ch.23</text>
+<text x="32" y="70" font-size="12" font-weight="700" fill="#1d1d1d">Checkout: synchronous, unchanged</text>
 <rect x="20" y="320" width="1960" height="220" rx="12" fill="#fafafa" stroke="#ddd"/>
-<text x="32" y="340" font-size="12" font-weight="700" fill="#1d1d1d">Payment capture: async choreography, unchanged from ch.23</text>
+<text x="32" y="340" font-size="12" font-weight="700" fill="#1d1d1d">Payment capture: async choreography, unchanged</text>
 <rect x="20" y="560" width="1960" height="340" rx="12" fill="#eaf4ec" stroke="#ddd"/>
-<text x="32" y="580" font-size="12" font-weight="700" fill="#1d1d1d">Shipping orchestrated saga: the Camel Saga EIP coordinator sequences fulfilment (ch.24)</text>
+<text x="32" y="580" font-size="12" font-weight="700" fill="#1d1d1d">Shipping orchestrated saga: the Camel Saga EIP coordinator sequences fulfilment</text>
 <rect x="20" y="920" width="1960" height="200" rx="12" fill="#fafafa" stroke="#ddd"/>
 <text x="32" y="940" font-size="12" font-weight="700" fill="#1d1d1d">Success: saga completes (completionMode=AUTO; no exception thrown)</text>
 <rect x="20" y="1140" width="1960" height="440" rx="12" fill="#fafafa" stroke="#ddd"/>
@@ -216,7 +216,7 @@
 <path d="M960.0,1495.0 L1000.0,1495.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
 <text x="986.0" y="1489.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">stock restored</text>
 <text x="986.0" y="1489.0" font-size="11" fill="#555" text-anchor="middle">stock restored</text>
-<text x="1000.0" y="30" font-size="17" fill="#1d1d1d" text-anchor="middle" font-weight="700">ch.24: the orchestrated saga: one Camel Saga EIP coordinator sequences fulfilment and owns the compensation decision</text>
+<text x="1000.0" y="30" font-size="17" fill="#1d1d1d" text-anchor="middle" font-weight="700">the orchestrated saga: one Camel Saga EIP coordinator sequences fulfilment and owns the compensation decision</text>
 <text x="810" y="790" font-size="11" fill="#2f5f3d" text-anchor="middle" font-weight="700">ONE visible place owns the sequence AND the compensation decision</text>
 <text x="40" y="1672" font-size="10.5" fill="#555555" text-anchor="start">Sourced from examples/06-shipping-service/.../{ShipmentSagaRoute,ShipmentSagaSteps,ShippingService}.java, examples/00-monolith/.../order/OrderSagaListener.java.</text>
 </svg>

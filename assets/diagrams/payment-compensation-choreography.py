@@ -43,7 +43,7 @@ W, H = 1360, 760
 # TOP band: ch.19: compensation from an in-line catch, same request thread
 # ============================================================================
 band_old = {"x": 20, "y": 60, "w": 1320, "h": 260,
-            "label": "ch.19: compensation from an in-line catch (same request thread; synchronous mode, and any reserve failure)",
+            "label": "compensation from an in-line catch (same request thread; synchronous mode, and any reserve failure)",
             "fill": "#fafafa"}
 
 checkout1 = node(40, 130, 260, 90,
@@ -67,7 +67,7 @@ old_edges = [
 # BOTTOM band: ch.23: compensation via choreography, two async hops
 # ============================================================================
 band_new = {"x": 20, "y": 360, "w": 1320, "h": 360,
-            "label": "ch.23: compensation via choreography (choreographed mode): no catch to lean on: two async hops",
+            "label": "compensation via choreography (choreographed mode): no catch to lean on: two async hops",
             "fill": "#eaf4ec"}
 
 checkout2 = node(40, 420, 230, 80,
@@ -86,7 +86,7 @@ listener2 = node(800, 420, 270, 80,
 hop2 = node(650, 560, 90, 50, ["HOP 2", "react"], style="ghost")
 
 release2 = node(800, 520, 270, 80,
-                  ["gRPC Release :9004", "SAME call ch.19 introduced"], style="accent")
+                  ["gRPC Release :9004", "the same Release call"], style="accent")
 netzero2 = node(1130, 470, 170, 90, ["NET-ZERO", "stock restored"], style="ink")
 
 new_nodes = [checkout2, resp2, paymentsvc, outbox2, hop1, listener2, hop2, release2, netzero2]
@@ -101,7 +101,7 @@ new_edges = [
 
 notes = [
     {"x": W / 2, "y": 32,
-     "text": "ch.23: compensation moves from an in-line catch to a choreographed event reaction",
+     "text": "compensation moves from an in-line catch to a choreographed event reaction",
      "anchor": "middle", "bold": True, "size": 16},
 
     {"x": 40, "y": 735,

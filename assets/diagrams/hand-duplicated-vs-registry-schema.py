@@ -39,7 +39,7 @@ W, H = 1400, 700
 band_left = {"x": 20, "y": 60, "w": 650, "h": 560,
              "label": "Today: one contract, authored by hand three times", "fill": "#fafafa"}
 band_right = {"x": 730, "y": 60, "w": 650, "h": 560,
-              "label": "ch.28: one schema, registered once, shared by all three", "fill": "#eaf4ec"}
+              "label": "one schema, registered once, shared by all three", "fill": "#eaf4ec"}
 
 # ---- LEFT: three independent hand-authored copies --------------------------
 order_rec = node(50, 120, 590, 90,
@@ -91,7 +91,7 @@ right_edges = [
 
 notes = [
     {"x": W / 2, "y": 32,
-     "text": "ch.28: the same order.placed contract: hand-duplicated today, registry-governed after",
+     "text": "the same order.placed contract: hand-duplicated today, registry-governed after",
      "anchor": "middle", "bold": True, "size": 16},
 
     {"x": 50, "y": 590,

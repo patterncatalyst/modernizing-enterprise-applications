@@ -38,7 +38,7 @@ W, H = 1400, 640
 band_left = {"x": 20, "y": 60, "w": 650, "h": 540,
              "label": "TODAY: the leaked entity (order/OrderService.java)", "fill": "#fafafa"}
 band_right = {"x": 730, "y": 60, "w": 650, "h": 540,
-              "label": "THROUGH THE ACL: the translated contract (illustrative, ch.19)", "fill": "#eaf4ec"}
+              "label": "THROUGH THE ACL: the translated contract (illustrative)", "fill": "#eaf4ec"}
 
 # ---- LEFT: the raw @Entity crossing the seam -------------------------------
 order_l = node(50, 120, 260, 90,
@@ -68,7 +68,7 @@ left_note3 = {"x": 50, "y": 577,
 
 # ---- RIGHT: the StockDto contract crossing the seam ------------------------
 order_r = node(760, 120, 260, 90,
-               ["order.OrderService", "placeOrder(): ch.19 shape"], style="user")
+               ["order.OrderService", "placeOrder(): post-ACL shape"], style="user")
 call_r = node(760, 250, 260, 100,
               ["producerTemplate.requestBodyAndHeader(", "\"direct:stockFor\", sku)",
                "seam address, not backend address"], style="accent")
@@ -100,10 +100,10 @@ right_note3 = {"x": 760, "y": 577,
                "text": "this side never saw the thing that changed.",
                "anchor": "start", "size": 11, "color": "#555555"}
 
-transform_edge = {"x1": 670, "y1": 300, "x2": 730, "y2": 300, "label": "ch.16's ACL", "amber": True}
+transform_edge = {"x1": 670, "y1": 300, "x2": 730, "y2": 300, "label": "the ACL", "amber": True}
 
 notes = [
-    {"x": W / 2, "y": 32, "text": "ch.16: before and after: what type does the caller actually hold after a stock lookup?",
+    {"x": W / 2, "y": 32, "text": "before and after: what type does the caller actually hold after a stock lookup?",
      "anchor": "middle", "bold": True, "size": 16},
 
     left_note1, left_note2, left_note3,
@@ -111,7 +111,7 @@ notes = [
 
     {"x": 40, "y": H - 14,
      "text": "Sourced from _docs/16-content-based-routing-acl.md (\"Before and after: what crosses the seam\") and "
-             "examples/00-monolith/.../order/OrderService.java#placeOrder (SMELL[ch.16], unmodified).",
+             "examples/00-monolith/.../order/OrderService.java#placeOrder (SMELL, unmodified).",
      "anchor": "start", "size": 10, "color": "#777777"},
 ]
 

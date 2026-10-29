@@ -94,7 +94,7 @@ callout2 = {"x": LABEL_X, "y": bottom2 + 30, "text": "~4x smaller: ~316 MB -> ~7
 
 notes = [
     {"x": W / 2, "y": 32,
-     "text": "ch.03: the Review-extraction measurement: Phase A -> Phase B JVM -> Phase B native",
+     "text": "the Review-extraction measurement: Phase A -> Phase B JVM -> Phase B native",
      "anchor": "middle", "bold": True, "size": 16},
     {"x": W / 2, "y": 56,
      "text": "the same 16/16-assertion equivalence suite passed, unchanged, on all three builds",

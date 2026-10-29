@@ -64,7 +64,7 @@ edges = [
 
 notes = [
     {"x": W / 2, "y": 34,
-     "text": "ch.31: the supply-chain gate: the monolith fails it, the modernized service passes it",
+     "text": "the supply-chain gate: the monolith fails it, the modernized service passes it",
      "anchor": "middle", "bold": True, "size": 16},
     {"x": W / 2, "y": 56,
      "text": "the modernization, made measurable: captured live 2026-10-06 (syft 1.44.0 / grype 0.112.0)",

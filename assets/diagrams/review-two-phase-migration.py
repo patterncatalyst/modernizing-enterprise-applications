@@ -50,7 +50,7 @@ rows = [
 ]
 
 notes = [
-    {"x": W / 2, "y": 32, "text": "ch.15: Review service: the two-phase migration template",
+    {"x": W / 2, "y": 32, "text": "Review service: the two-phase migration template",
      "anchor": "middle", "bold": True, "size": 18},
     {"x": W / 2, "y": 60,
      "text": "Phase A de-risks the extraction fast; Phase B is where the \"why Quarkus\" case gets made with numbers.",

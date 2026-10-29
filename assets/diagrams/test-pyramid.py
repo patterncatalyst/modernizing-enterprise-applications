@@ -75,7 +75,7 @@ edges = [
 
 notes = [
     {"x": W / 2, "y": 32,
-     "text": "ch.10: the monolith's test pyramid: three tiers, one `mvn verify`",
+     "text": "the monolith's test pyramid: three tiers, one `mvn verify`",
      "anchor": "middle", "bold": True, "size": 17},
     {"x": W / 2, "y": 56,
      "text": "13 test classes, 41 @Test methods + 1 parameterized test (4 executions) = 45 executions, every one green",
@@ -85,7 +85,7 @@ notes = [
      "text": "Sourced from _docs/10-testing-the-monolith.md (\"Three tiers, one mvn verify\"; Tier 1/2/3 sections).",
      "anchor": "start", "size": 10, "color": "#777777"},
     {"x": CX - 490, "y": H - 16,
-     "text": "Class and method counts quoted verbatim from the chapter; tests live in examples/00-monolith/src/test/.",
+     "text": "Class and method counts quoted verbatim; tests live in examples/00-monolith/src/test/.",
      "anchor": "start", "size": 10, "color": "#777777"},
 ]
 

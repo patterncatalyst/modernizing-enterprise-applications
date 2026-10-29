@@ -60,7 +60,7 @@ edges = [
 
 notes = [
     {"x": W / 2, "y": 32,
-     "text": "ch.26: the GraphQL aggregation gateway: one order(id) query fans out to five owning services",
+     "text": "the GraphQL aggregation gateway: one order(id) query fans out to five owning services",
      "anchor": "middle", "bold": True, "size": 17},
 
     {"x": 1080, "y": 660,

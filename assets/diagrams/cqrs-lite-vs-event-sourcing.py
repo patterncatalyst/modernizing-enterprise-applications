@@ -56,7 +56,7 @@ agg = node(140, 120, 500, 110,
             "current state stored directly, Postgres"], style="accent")
 
 evt = node(140, 280, 500, 100,
-           ["order.placed event", "published via outbox (ch.17/20)",
+           ["order.placed event", "published via outbox",
             "one fact, not the whole history"], style="ink")
 
 rm = node(140, 430, 500, 120,
@@ -81,7 +81,7 @@ log = node(880, 120, 500, 110,
 
 fold = node(880, 280, 500, 100,
             ["Replay / fold on load", "OrderState = reduce(events, OrderState::apply)",
-             "ch.21's own sketch: no such class exists"], style="ghost")
+             "a sketch: no such class exists"], style="ghost")
 
 state = node(880, 430, 500, 120,
              ["Current state = computed, not stored", "no mutable row: rebuilt from genesis",
@@ -95,7 +95,7 @@ right_edges = [
 
 notes = [
     {"x": W / 2, "y": 32,
-     "text": "ch.21: CQRS-lite (what this book builds) vs. full event sourcing (illustrative contrast)",
+     "text": "CQRS-lite (what this book builds) vs. full event sourcing (illustrative contrast)",
      "anchor": "middle", "bold": True, "size": 16},
 
     {"x": 140, "y": 570,
@@ -116,7 +116,7 @@ notes = [
      "text": "Sourced from _docs/21-event-sourcing-and-cqrs.md (\"Event sourcing: when the log stops being a side effect\", \"Why this book builds CQRS-lite and not event sourcing\").",
      "anchor": "start", "size": 10, "color": "#777777"},
     {"x": 20, "y": 666,
-     "text": "Left: examples/03-notification-service/.../{Notification,NotificationService}.java (verified, ch.17). Right: illustrative only: no event store exists in this codebase, by design.",
+     "text": "Left: examples/03-notification-service/.../{Notification,NotificationService}.java (verified). Right: illustrative only: no event store exists in this codebase, by design.",
      "anchor": "start", "size": 10, "color": "#777777"},
 ]
 

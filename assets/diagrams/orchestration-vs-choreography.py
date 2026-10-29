@@ -41,9 +41,9 @@ g.OUT = os.path.dirname(__file__)
 W, H = 1600, 820
 
 band_choreo = {"x": 20, "y": 60, "w": 760, "h": 700,
-               "label": "CHOREOGRAPHY: ch.23 payment (no central coordinator)", "fill": "#fafafa"}
+               "label": "CHOREOGRAPHY: payment (no central coordinator)", "fill": "#fafafa"}
 band_orch = {"x": 820, "y": 60, "w": 760, "h": 700,
-             "label": "ORCHESTRATION: ch.24 shipping (one Camel Saga coordinator)", "fill": "#eaf4ec"}
+             "label": "ORCHESTRATION: shipping (one Camel Saga coordinator)", "fill": "#eaf4ec"}
 
 # ---- LEFT: choreography -----------------------------------------------------
 kafkaL = node(60, 110, 300, 70, ["Kafka", "order.placed / payment.captured / payment.declined"], style="ink")
@@ -102,7 +102,7 @@ orch_note2 = {"x": 1200, "y": 666,
               "text": "reading the route tells you the whole story",
               "anchor": "middle", "size": 11.5, "color": "#2f5f3d", "bold": True}
 
-transform_edge = {"x1": 780, "y1": 200, "x2": 820, "y2": 200, "label": "ch.24", "amber": True}
+transform_edge = {"x1": 780, "y1": 200, "x2": 820, "y2": 200, "label": "", "amber": True}
 
 notes = [
     {"x": W / 2, "y": 32, "text": "orchestration vs. choreography, made concrete on this one codebase",
@@ -110,8 +110,8 @@ notes = [
     choreo_note, choreo_note2, orch_note, orch_note2,
     {"x": 40, "y": 800,
      "text": "Sourced from examples/05-payment-service/.../{OrderPlacedConsumer,PaymentService}.java, "
-             "examples/00-monolith/.../order/OrderSagaListener.java (ch.23), and "
-             "examples/06-shipping-service/.../{ShipmentSagaRoute,ShipmentSagaSteps}.java (ch.24).",
+             "examples/00-monolith/.../order/OrderSagaListener.java, and "
+             "examples/06-shipping-service/.../{ShipmentSagaRoute,ShipmentSagaSteps}.java.",
      "anchor": "start", "size": 10.5, "color": "#555555"},
 ]
 

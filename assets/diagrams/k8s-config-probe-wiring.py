@@ -149,7 +149,7 @@ edges = top_edges + bottom_edges
 
 notes = [
     {"x": W / 2, "y": 32,
-     "text": "ch.29: config, secret, probe, and graceful-shutdown wiring for one representative pod",
+     "text": "config, secret, probe, and graceful-shutdown wiring for one representative pod",
      "anchor": "middle", "bold": True, "size": 17},
     {"x": W / 2, "y": 54,
      "text": "same ConfigMap + Secret feed every pod; the probe shape and the preStop/terminationGrace override are what differ",

@@ -103,7 +103,7 @@ nodes = [injvm, caller, grpc, outcome1, outcome2, outcome3, mitigate, cascade1, 
 
 edges = [
     connect(injvm, grpc, dashed=True,
-            label="ch.19: this call moved behind a gRPC stub"),
+            label="this call moved behind a gRPC stub"),
     connect(caller, grpc),
     connect(grpc, outcome1),
     connect(grpc, outcome2),
@@ -119,7 +119,7 @@ edges = [
 
 notes = [
     {"x": W / 2, "y": 32,
-     "text": "ch.25: a call across the gRPC boundary has a third outcome an in-JVM call never had",
+     "text": "a call across the gRPC boundary has a third outcome an in-JVM call never had",
      "anchor": "middle", "bold": True, "size": 16},
     {"x": W / 2, "y": 56,
      "text": "returns, throws, or never comes back: and the third outcome is where cascading failure starts",

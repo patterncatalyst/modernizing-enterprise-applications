@@ -26,7 +26,7 @@
 <path d="M920.0,200.0 L960.0,200.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
 <text x="946.0" y="130.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">@Incoming: at-least-once delivery</text>
 <text x="946.0" y="130.0" font-size="11" fill="#555" text-anchor="middle">@Incoming: at-least-once delivery</text>
-<text x="720.0" y="32" font-size="17" fill="#1d1d1d" text-anchor="middle" font-weight="700">ch.20: the outbox&#x27;s four moving parts, end to end</text>
+<text x="720.0" y="32" font-size="17" fill="#1d1d1d" text-anchor="middle" font-weight="700">the outbox&#x27;s four moving parts, end to end</text>
 <text x="40" y="290" font-size="10.5" fill="#555555" text-anchor="start">OrderService#writeOrderPlacedOutboxEvent writes through the same OutboxRepository the relay below reads from.</text>
 <text x="380" y="290" font-size="10.5" fill="#555555" text-anchor="start">findTop50ByPublishedAtIsNullOrderByCreatedAtAsc(), backed by the partial index idx_outbox_unpublished.</text>
 <text x="700" y="290" font-size="10.5" fill="#555555" text-anchor="start">.get(5, TimeUnit.SECONDS) blocks for the ack; published_at is stamped only after.</text>

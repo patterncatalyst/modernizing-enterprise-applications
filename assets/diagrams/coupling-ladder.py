@@ -72,13 +72,13 @@ RUNGS = [
     ("6. Message coupling",
      "interaction only through message passing",
      ["No live example",
-      "target architecture after ch.14-26 --",
+      "target architecture after extraction --",
       "interaction only through message passing"],
      "ghost", "ghost"),
     ("7. API / data-structure coupling (best)",
      "well-defined contract at the boundary",
      ["No live example",
-      "target architecture after ch.14-26 --",
+      "target architecture after extraction --",
       "well-defined contract types at the boundary"],
      "ghost", "ghost"),
 ]
@@ -112,14 +112,14 @@ for i in range(len(rung_nodes) - 1):
 
 notes = [
     {"x": W / 2, "y": 32,
-     "text": "ch.13 -- the Constantine coupling ladder, scored against the monolith",
+     "text": "the Constantine coupling ladder, scored against the monolith",
      "anchor": "middle", "bold": True, "size": 17},
     {"x": W / 2, "y": 56,
      "text": "worst (content) at top, best (API/data-structure) at bottom -- five of seven rungs already have a live example",
      "anchor": "middle", "size": 12, "color": "#555555"},
 
     {"x": LEFT_X, "y": H - 40,
-     "text": "Message and API/data-structure coupling have no monolith example today -- they're what the extracted services (ch.14-26) are built to reach.",
+     "text": "Message and API/data-structure coupling have no monolith example today -- they're what the extracted services are built to reach.",
      "anchor": "start", "size": 10.5, "color": "#555555"},
     {"x": LEFT_X, "y": H - 16,
      "text": "Sourced from _docs/13-coupling-and-modular-monolith.md (\"The Constantine coupling taxonomy, applied to the monolith\") and examples/00-monolith/SMELLS.md (Smells 1 and 5).",

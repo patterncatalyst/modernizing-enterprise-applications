@@ -1,9 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1360 760" font-family="'Red Hat Text', system-ui, sans-serif" role="img">
 <defs><marker id="a" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#555"/></marker><marker id="am" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2f5f3d"/></marker></defs>
 <rect x="20" y="60" width="1320" height="260" rx="12" fill="#fafafa" stroke="#ddd"/>
-<text x="32" y="80" font-size="12" font-weight="700" fill="#1d1d1d">ch.19: compensation from an in-line catch (same request thread; synchronous mode, and any reserve failure)</text>
+<text x="32" y="80" font-size="12" font-weight="700" fill="#1d1d1d">compensation from an in-line catch (same request thread; synchronous mode, and any reserve failure)</text>
 <rect x="20" y="360" width="1320" height="360" rx="12" fill="#eaf4ec" stroke="#ddd"/>
-<text x="32" y="380" font-size="12" font-weight="700" fill="#1d1d1d">ch.23: compensation via choreography (choreographed mode): no catch to lean on: two async hops</text>
+<text x="32" y="380" font-size="12" font-weight="700" fill="#1d1d1d">compensation via choreography (choreographed mode): no catch to lean on: two async hops</text>
 <rect x="40" y="130" width="260" height="90" rx="9" fill="#eef4fb" stroke="#2f6db5" stroke-width="2"/>
 <text x="170.0" y="173.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">OrderService.placeOrder()</text>
 <text x="170.0" y="190.0" font-size="11.5" fill="#555555" text-anchor="middle">reserve (ok) -&gt; persist -&gt; charge</text>
@@ -42,7 +42,7 @@
 <text x="695.0" y="600.0" font-size="11.5" fill="#555555" text-anchor="middle">react</text>
 <rect x="800" y="520" width="270" height="80" rx="9" fill="#eaf4ec" stroke="#3d7a4e" stroke-width="2"/>
 <text x="935.0" y="558.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">gRPC Release :9004</text>
-<text x="935.0" y="575.0" font-size="11.5" fill="#555555" text-anchor="middle">SAME call ch.19 introduced</text>
+<text x="935.0" y="575.0" font-size="11.5" fill="#555555" text-anchor="middle">the same Release call</text>
 <rect x="1130" y="470" width="170" height="90" rx="9" fill="#111111" stroke="#111111" stroke-width="2"/>
 <text x="1215.0" y="513.0" font-size="13.5" font-weight="700" fill="#ffffff" text-anchor="middle">NET-ZERO</text>
 <text x="1215.0" y="530.0" font-size="11.5" fill="#dddddd" text-anchor="middle">stock restored</text>
@@ -76,6 +76,6 @@
 <path d="M1070.0,538.3035714285714 L1130.0,528.6607142857143" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
 <text x="1106.0" y="527.4821428571429" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">restored</text>
 <text x="1106.0" y="527.4821428571429" font-size="11" fill="#555" text-anchor="middle">restored</text>
-<text x="680.0" y="32" font-size="16" fill="#1d1d1d" text-anchor="middle" font-weight="700">ch.23: compensation moves from an in-line catch to a choreographed event reaction</text>
+<text x="680.0" y="32" font-size="16" fill="#1d1d1d" text-anchor="middle" font-weight="700">compensation moves from an in-line catch to a choreographed event reaction</text>
 <text x="40" y="735" font-size="10.5" fill="#555555" text-anchor="start">Sourced from examples/00-monolith/.../order/{OrderService,OrderSagaListener}.java, examples/05-payment-service/.../PaymentService.java.</text>
 </svg>

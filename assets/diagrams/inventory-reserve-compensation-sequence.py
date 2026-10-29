@@ -67,7 +67,7 @@ old_edges = [
 # BOTTOM band: NEW: cross-seam saga-lite, explicit compensation
 # ============================================================================
 band_new = {"x": 20, "y": 340, "w": 1360, "h": 500,
-            "label": "NEW (ch.19, current) -- cross-seam saga-lite: explicit compensation replaces the free rollback",
+            "label": "NEW (current) -- cross-seam saga-lite: explicit compensation replaces the free rollback",
             "fill": "#eaf4ec"}
 
 client2 = node(40, 400, 150, 90, ["Client", "checkout request"], style="sub")
@@ -90,7 +90,7 @@ release_rpc = node(750, 560, 250, 90, ["gRPC Release :9004",
                                        "first taste of saga"], style="accent")
 restored2 = node(1030, 560, 310, 90, ["DECLINE -- stock RESTORED",
                                       "best-effort, no idempotency key yet",
-                                      "(full saga ledger deferred to ch.23)"], style="box")
+                                      "(full saga ledger deferred)"], style="box")
 
 new_nodes = [client2, checkout2, reserve_rpc, pay2, confirm2, insufficient, release_rpc, restored2]
 new_edges = [
@@ -104,7 +104,7 @@ new_edges = [
 ]
 
 notes = [
-    {"x": W / 2, "y": 32, "text": "ch.19 -- Reserve/Release: the cross-seam saga-lite that replaces the in-process \"free rollback\"",
+    {"x": W / 2, "y": 32, "text": "Reserve/Release: the cross-seam saga-lite that replaces the in-process \"free rollback\"",
      "anchor": "middle", "bold": True, "size": 17},
 
     {"x": 40, "y": 272,
@@ -119,7 +119,7 @@ notes = [
      "text": "Limitation: Release is an UNCONDITIONAL increment with no dedupe key -- a retried Release after an",
      "anchor": "start", "size": 10.5, "color": "#555555"},
     {"x": 470, "y": 694,
-     "text": "at-least-once redelivery could over-restore stock; a full fix (idempotency key / saga ledger) is deferred to ch.23.",
+     "text": "at-least-once redelivery could over-restore stock; a full fix (idempotency key / saga ledger) is deferred.",
      "anchor": "start", "size": 10.5, "color": "#555555"},
 
     {"x": 40, "y": 868,

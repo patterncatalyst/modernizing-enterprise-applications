@@ -59,26 +59,26 @@ write = node(50, 170, 300, 130,
 
 event = node(400, 170, 220, 130,
              ["order.placed", "Kafka topic",
-              "via outbox (ch.17/20)"], style="ink")
+              "via outbox"], style="ink")
 
 read1 = node(900, 90, 340, 130,
              ["Read model: notification-service", "Notification entity, own schema",
               "materialized view: has customer been told"], style="accent")
 
 read2 = node(900, 350, 340, 130,
-             ["Read model: ch.26 gateway (forward)", "would project order, inventory,",
+             ["Read model: gateway (forward)", "would project order, inventory,",
               "shipping, notification: not yet built"], style="ghost")
 
 nodes = [write, event, read1, read2]
 edges = [
     connect(write, event, label="outbox row, same transaction as order", ly=-82),
     connect(event, read1, label="idempotent consume: check-then-insert"),
-    connect(event, read2, dashed=True, label="ch.26: not yet built"),
+    connect(event, read2, dashed=True, label="not yet built"),
 ]
 
 notes = [
     {"x": W / 2, "y": 32,
-     "text": "ch.21: CQRS: write model, event, read model(s)",
+     "text": "CQRS: write model, event, read model(s)",
      "anchor": "middle", "bold": True, "size": 17},
 
     {"x": 50, "y": 522,

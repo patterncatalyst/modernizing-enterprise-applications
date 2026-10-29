@@ -3,7 +3,7 @@
 <rect x="20" y="60" width="760" height="700" rx="12" fill="#fafafa" stroke="#ddd"/>
 <text x="32" y="80" font-size="12" font-weight="700" fill="#1d1d1d">SHARED DATABASE: live FK join (today)</text>
 <rect x="820" y="60" width="760" height="700" rx="12" fill="#eaf4ec" stroke="#ddd"/>
-<text x="832" y="80" font-size="12" font-weight="700" fill="#1d1d1d">DATABASE PER SERVICE: snapshot + event feed (ch.19 target)</text>
+<text x="832" y="80" font-size="12" font-weight="700" fill="#1d1d1d">DATABASE PER SERVICE: snapshot + event feed (target)</text>
 <rect x="100" y="110" width="600" height="70" rx="9" fill="#111111" stroke="#111111" stroke-width="2"/>
 <text x="400.0" y="143.0" font-size="13.5" font-weight="700" fill="#ffffff" text-anchor="middle">PostgreSQL: one shared schema</text>
 <text x="400.0" y="160.0" font-size="11.5" fill="#dddddd" text-anchor="middle">V1__init_schema.sql</text>
@@ -38,7 +38,7 @@
 <text x="1020.0" y="342.5" font-size="11.5" fill="#dddddd" text-anchor="middle">order_items_inventory_item_id_fkey removed</text>
 <text x="1020.0" y="357.5" font-size="11.5" fill="#dddddd" text-anchor="middle">no live reference into inventory&#x27;s schema</text>
 <rect x="1060" y="440" width="320" height="100" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
-<text x="1220.0" y="480.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">CDC connector (ch.19)</text>
+<text x="1220.0" y="480.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">CDC connector</text>
 <text x="1220.0" y="497.5" font-size="11.5" fill="#555555" text-anchor="middle">tails the shared schema&#x27;s write-ahead log,</text>
 <text x="1220.0" y="512.5" font-size="11.5" fill="#555555" text-anchor="middle">backfills inventory_items into its own database</text>
 <path d="M380.0,290.55555555555554 L420.0,289.44444444444446" fill="none" stroke="#2f5f3d" stroke-width="2" marker-end="url(#am)"/>
@@ -55,12 +55,10 @@
 <text x="1319.5384615384614" y="324.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">backfill replication</text>
 <text x="1319.5384615384614" y="324.0" font-size="11" fill="#2f5f3d" text-anchor="middle">backfill replication</text>
 <path d="M780,265 L820,265" fill="none" stroke="#2f5f3d" stroke-width="2" marker-end="url(#am)"/>
-<text x="806.0" y="259.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">ch.19</text>
-<text x="806.0" y="259.0" font-size="11" fill="#2f5f3d" text-anchor="middle">ch.19</text>
-<text x="800.0" y="32" font-size="17" fill="#1d1d1d" text-anchor="middle" font-weight="700">ch.18 -- Shared database to database-per-service: one FK join, before and after</text>
-<text x="800.0" y="56" font-size="11.5" fill="#555555" text-anchor="middle">order_items -&gt; inventory_items: a live @ManyToOne today, a point-in-time snapshot plus a CDC event feed after ch.19</text>
-<text x="40" y="740" font-size="11" fill="#555555" text-anchor="start">SMELL[ch.18]: order_items.inventory_item_id is one of nine FKs crossing a bounded-context line in this one schema.</text>
+<text x="800.0" y="32" font-size="17" fill="#1d1d1d" text-anchor="middle" font-weight="700">Shared database to database-per-service: one FK join, before and after</text>
+<text x="800.0" y="56" font-size="11.5" fill="#555555" text-anchor="middle">order_items -&gt; inventory_items: a live @ManyToOne today, a point-in-time snapshot plus a CDC event feed after cutover</text>
+<text x="40" y="740" font-size="11" fill="#555555" text-anchor="start">SMELL: order_items.inventory_item_id is one of nine FKs crossing a bounded-context line in this one schema.</text>
 <text x="860" y="740" font-size="11" fill="#2f5f3d" text-anchor="start" font-weight="700">Written once at order-placement, frozen forever -- a later SKU rename can no longer relabel a historical order.</text>
 <text x="860" y="756" font-size="10.5" fill="#555555" text-anchor="start">A live stock check at checkout still crosses the seam synchronously (gRPC) -- this snapshot is for history, not for &quot;in stock right now.&quot;</text>
-<text x="40" y="800" font-size="10" fill="#777777" text-anchor="start">Sourced from _docs/18-shared-data-to-owned-data.md; examples/00-monolith/.../db/migration/V1__init_schema.sql; OrderItem&#x27;s SMELL[ch.18] javadoc. Post-FK columns are ch.19&#x27;s illustrative target, not existing code.</text>
+<text x="40" y="800" font-size="10" fill="#777777" text-anchor="start">Sourced from _docs/18-shared-data-to-owned-data.md; examples/00-monolith/.../db/migration/V1__init_schema.sql; OrderItem&#x27;s SMELL javadoc. Post-FK columns are an illustrative target, not existing code.</text>
 </svg>

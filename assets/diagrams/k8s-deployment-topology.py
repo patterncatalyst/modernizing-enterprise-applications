@@ -157,7 +157,7 @@ edges = client_edge + path_edges + grpc_edges + db_edges + kafka_edges
 
 notes = [
     {"x": W / 2, "y": 32,
-     "text": "ch.29: k8s deployment topology: the mea namespace once overlays/minikube is applied",
+     "text": "k8s deployment topology: the mea namespace once overlays/minikube is applied",
      "anchor": "middle", "bold": True, "size": 17},
     {"x": W / 2, "y": 54,
      "text": "8 Deployments, each behind its own ClusterIP Service (strangler-proxy's alone patched to NodePort) + 2 infra StatefulSets",

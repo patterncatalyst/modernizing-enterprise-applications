@@ -51,7 +51,7 @@ behavior_note = node(390, 350, 640, 60,
 
 # ---- lane 2: provenance gate (supply-chain.yml) ----------------------------
 prov_band = {"x": 360, "y": 460, "w": 700, "h": 200,
-             "label": "supply-chain.yml :  provenance gate (what the system CONTAINS)  [ch.31, additive]",
+             "label": "supply-chain.yml :  provenance gate (what the system CONTAINS)  [additive]",
              "fill": "#f4f8f5"}
 build = node(385, 520, 150, 110, ["mvn package", "runtime closure"], style="sub")
 sbom = node(555, 520, 160, 110, ["syft", "CycloneDX SBOM"], style="accent")
@@ -67,7 +67,7 @@ deferred_band = {"x": 1120, "y": 300, "w": 320, "h": 360,
                  "label": "deferred (named, not built)", "fill": "#ffffff"}
 registry = node(1145, 350, 270, 80, ["image registry push", "ghcr.io / quay.io"], style="ghost")
 gitops = node(1145, 450, 270, 90, ["GitOps operator", "Argo CD / Flux reconciles", "deploy/k8s -> cluster"], style="ghost")
-canary = node(1145, 560, 270, 80, ["Istio weighted canary", "(ch.30 deferred traffic-shaping)"], style="ghost")
+canary = node(1145, 560, 270, 80, ["Istio weighted canary", "(deferred traffic-shaping)"], style="ghost")
 
 nodes = [trigger, equiv, seams, contract, schema, behavior_note,
          build, sbom, scan, policy, pages,
@@ -88,7 +88,7 @@ edges = [
 
 notes = [
     {"x": W / 2, "y": 34,
-     "text": "ch.31: the delivery pipeline this repo ships: behavior gates + a provenance gate, drawn against what is deferred",
+     "text": "the delivery pipeline this repo ships: behavior gates + a provenance gate, drawn against what is deferred",
      "anchor": "middle", "bold": True, "size": 16},
     {"x": 60, "y": H - 24,
      "text": "Real: code-ci.yml (7 jobs), supply-chain.yml, pages.yml. Dashed: a registry push + GitOps operator + Istio canary this repo names but does not yet run.",

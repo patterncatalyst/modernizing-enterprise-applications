@@ -72,7 +72,7 @@ for i, (key, name, gloss, style) in enumerate(PHASES):
     nodes.append(n)
 
 phase_band = {"x": 20, "y": 68, "w": W - 40, "h": 112,
-              "label": "ADLC phases -- ch.2's own cycle (Frame -> Map -> Plan -> Generate -> Verify -> Operate -> Reconcile)",
+              "label": "ADLC phases -- the cycle (Frame -> Map -> Plan -> Generate -> Verify -> Operate -> Reconcile)",
               "fill": "#ffffff"}
 
 # ---- tier 2: the ledger files this project actually keeps -----------------
@@ -82,7 +82,7 @@ LEDGER = [
     ("r02_plan", 348, 288, ["_plans/iterations/ plan file", "numbered, acceptance-gated steps,", "written before any step starts"], "box"),
     ("r02_status", 656, 288, ["_plans/iterations/ status file", "updated as each step completes --", "the iteration's resume record"], "box"),
     ("decisions", 964, 288, ["_plans/decisions.md", "append decision outcomes --", "DRQ rows: fixed / accepted / proposed"], "box"),
-    ("reconciliation", 1272, 288, ["_plans/reconciliation.md", "record drift vs. cited sources --", "scoped, not yet written (this chapter)"], "ghost"),
+    ("reconciliation", 1272, 288, ["_plans/reconciliation.md", "record drift vs. cited sources --", "scoped, not yet written"], "ghost"),
 ]
 ledger_nodes = {}
 for key, x, w, lines, style in LEDGER:
@@ -138,17 +138,17 @@ resume_band = {"x": 150, "y": 400, "w": 1300, "h": 180,
 
 notes = [
     {"x": W / 2, "y": 32,
-     "text": "ch.02 -- The ledger's files, mapped onto the ADLC's own phases",
+     "text": "The ledger's files, mapped onto the ADLC's own phases",
      "anchor": "middle", "bold": True, "size": 17},
     {"x": W / 2, "y": 56,
-     "text": "Plan and Verify (blue) are this chapter's two human gates; Reconcile (green) is where the ledger actually gets written",
+     "text": "Plan and Verify (blue) are the two human gates; Reconcile (green) is where the ledger actually gets written",
      "anchor": "middle", "size": 12, "color": "#555555"},
 
     {"x": 40, "y": H - 46,
      "text": "Sourced from _docs/02-project-ledger.md (\"The build plan\", \"Per-iteration plans and resume records\", \"The ledger and the two human gates\").",
      "anchor": "start", "size": 10.5, "color": "#555555"},
     {"x": 40, "y": H - 16,
-     "text": "Reconcile row and resume-record quotes are the chapter's own quotes from build-plan.md's phase table and the iteration status file.",
+     "text": "Reconcile row and resume-record quotes are drawn from build-plan.md's phase table and the iteration status file.",
      "anchor": "start", "size": 10.5, "color": "#555555"},
 ]
 

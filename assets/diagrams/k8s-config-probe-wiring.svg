@@ -65,7 +65,7 @@
 <path d="M1120.0,870.2727272727273 L1020.0,876.6363636363636" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
 <path d="M1120.0,915.3636363636364 L1020.0,907.1818181818181" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
 <path d="M1206.0,980.0 L1020.0,937.7272727272727" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
-<text x="860.0" y="32" font-size="17" fill="#1d1d1d" text-anchor="middle" font-weight="700">ch.29: config, secret, probe, and graceful-shutdown wiring for one representative pod</text>
+<text x="860.0" y="32" font-size="17" fill="#1d1d1d" text-anchor="middle" font-weight="700">config, secret, probe, and graceful-shutdown wiring for one representative pod</text>
 <text x="860.0" y="54" font-size="11.5" fill="#555555" text-anchor="middle">same ConfigMap + Secret feed every pod; the probe shape and the preStop/terminationGrace override are what differ</text>
 <text x="60" y="110" font-size="11" fill="#555555" text-anchor="start">Shared across all 8 pods</text>
 <text x="600" y="712" font-size="10" fill="#2f5f3d" text-anchor="start">proves the listener is up, not that routing or the DB connection actually work</text>

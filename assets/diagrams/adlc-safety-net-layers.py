@@ -84,7 +84,7 @@ edges = [
 
 notes = [
     {"x": W / 2, "y": 32,
-     "text": "ch.07: the safety net has three layers; removing any one lets a specific bug through",
+     "text": "the safety net has three layers; removing any one lets a specific bug through",
      "anchor": "middle", "bold": True, "size": 17},
     {"x": W / 2, "y": 56,
      "text": "the ADLC is not safe because an agent is careful: it is safe because all three layers hold at once",

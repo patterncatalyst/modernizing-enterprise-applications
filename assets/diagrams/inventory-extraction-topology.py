@@ -102,7 +102,7 @@ edges = [
 ]
 
 notes = [
-    {"x": W / 2, "y": 30, "text": "ch.19 -- Extracting Inventory: the synchronous gRPC seam (Reserve/Release) + a retired CDC backfill",
+    {"x": W / 2, "y": 30, "text": "Extracting Inventory: the synchronous gRPC seam (Reserve/Release) + a retired CDC backfill",
      "anchor": "middle", "bold": True, "size": 17},
 
     {"x": 300, "y": 414,

@@ -79,7 +79,7 @@
 <path d="M1000,530 L1150,430" fill="none" stroke="#555" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#a)"/>
 <text x="1115.0" y="474.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">backfill + sync</text>
 <text x="1115.0" y="474.0" font-size="11" fill="#555" text-anchor="middle">backfill + sync</text>
-<text x="700.0" y="30" font-size="17" fill="#1d1d1d" text-anchor="middle" font-weight="700">ch.19 -- Extracting Inventory: the synchronous gRPC seam (Reserve/Release) + a retired CDC backfill</text>
+<text x="700.0" y="30" font-size="17" fill="#1d1d1d" text-anchor="middle" font-weight="700">Extracting Inventory: the synchronous gRPC seam (Reserve/Release) + a retired CDC backfill</text>
 <text x="300" y="414" font-size="11" fill="#555555" text-anchor="start">The checkout SEAM: gRPC Reserve atomically decrements stock in the inventory service&#x27;s OWN schema; a post-reserve failure</text>
 <text x="300" y="428" font-size="11" fill="#555555" text-anchor="start">(insufficient stock on a later line, a payment decline, a shipping failure) triggers the compensating gRPC Release.</text>
 <text x="40" y="444" font-size="11" fill="#555555" text-anchor="start">The ACL: inventory.proto&#x27;s wire vocabulary (stock_keeping_unit/on_hand_qty/reservation_ok) is kept distinct from the</text>

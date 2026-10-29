@@ -55,7 +55,7 @@
 <text x="1159.3333333333335" y="334.0" font-size="11" fill="#2f5f3d" text-anchor="middle">only path that can still answer</text>
 <path d="M1022.8571428571429,450.0 L1137.142857142857,500.0" fill="none" stroke="#555" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#a)"/>
 <path d="M1137.142857142857,450.0 L1022.8571428571429,500.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
-<text x="720.0" y="32" font-size="17" fill="#1d1d1d" text-anchor="middle" font-weight="700">ch.07: the shared-table proof: why 49/49 green couldn&#x27;t tell path A from path B</text>
+<text x="720.0" y="32" font-size="17" fill="#1d1d1d" text-anchor="middle" font-weight="700">the shared-table proof: why 49/49 green couldn&#x27;t tell path A from path B</text>
 <text x="720.0" y="56" font-size="12" fill="#555555" text-anchor="middle">Review&#x27;s Phase A form still shares the monolith&#x27;s public schema: the one extraction that did not get its own schema yet</text>
 <text x="60" y="630" font-size="11" fill="#555555" text-anchor="start">A misrouted request and a correctly routed one return identical bodies, because both read and write the same reviews rows.</text>
 <text x="780" y="630" font-size="11" fill="#555555" text-anchor="start">With the monolith down, a 200 from review-service proves the proxy&#x27;s decision reached it</text>

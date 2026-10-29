@@ -112,7 +112,7 @@ new_edges = [
 ]
 
 notes = [
-    {"x": W / 2, "y": 32, "text": "ch.17: The transactional-outbox guarantee: before (synchronous, SMELL #4) vs after (atomic outbox write + async relay)",
+    {"x": W / 2, "y": 32, "text": "The transactional-outbox guarantee: before (synchronous, SMELL #4) vs after (atomic outbox write + async relay)",
      "anchor": "middle", "bold": True, "size": 17},
 
     {"x": 40, "y": 272,

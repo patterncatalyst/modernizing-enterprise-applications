@@ -71,22 +71,22 @@ CARD_X0 = 40
 cards_def = [
     ("#1 Shared schema & cross-context FKs",
      "V1__init_schema.sql: order_items->inventory_items, payments/shipments/notifications->orders, reviews->customers+inventory_items",
-     "cures: ch.18 (owned data), ch.19 (CDC)", "sub"),
+     "cured by owned data + CDC", "sub"),
     ("#2 God OrderService",
      "order/OrderService.java: reaches directly into inventory/payment/shipping/notification",
-     "cures: ch.26 (hardest, last)", "sub"),
+     "cured last (hardest)", "sub"),
     ("#3 One ACID txn, five contexts",
      "OrderService#placeOrder @Transactional: free rollback across order+inventory+payment+shipping+notification",
-     "cures: ch.22 (ACID->ACD), ch.23/24 (sagas)", "sub"),
+     "cured by ACID->ACD and the sagas", "sub"),
     ("#4 Sync notification in checkout txn",
      "notification/NotificationService: in-process call inside placeOrder's own transaction",
-     "cures: ch.17 (outbox + async consumer)", "sub"),
+     "cured by the outbox + async consumer", "sub"),
     ("#5 No ACL: raw entity leak",
      "inventory/InventoryService#findBySkuOrThrow returns the JPA entity, not a DTO, to order",
-     "cures: ch.16 (content-based routing & ACL)", "sub"),
+     "cured by content-based routing & ACL", "sub"),
     ("#6 Review tangled in shared security: CURED",
      "security/SecurityConfig's one SecurityFilterChain once governed Review despite no runtime dependency",
-     "ch.15: already cut", "accent"),
+     "already cut", "accent"),
 ]
 
 cards = []
@@ -137,7 +137,7 @@ review_n = cols["review"]
 callout_edges += callout(cards[5], review_n["x"] + review_n["w"] / 2, review_n["y"] + review_n["h"], amber=True)
 
 notes = [
-    {"x": W / 2, "y": 32, "text": "ch.09: The six deliberate smells, mapped onto the monolith's structure",
+    {"x": W / 2, "y": 32, "text": "The six deliberate smells, mapped onto the monolith's structure",
      "anchor": "middle", "bold": True, "size": 17},
     {"x": W / 2, "y": 56, "text": "the visual form of SMELLS.md: five smells still standing, one already cured",
      "anchor": "middle", "size": 12, "color": "#555555"},

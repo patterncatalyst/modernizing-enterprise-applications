@@ -27,12 +27,12 @@ sweet = {"x": 470, "y": 110, "w": 520, "h": 300,
          "label": "right-sized: services aligned to bounded contexts", "fill": "#eaf4ec"}
 
 mono = node(60, 170, 180, 150,
-            ["1 monolith", "one deploy, one DB", "ch.08-10", "too coupled to change safely"], style="box")
+            ["1 monolith", "one deploy, one DB", "too coupled to change safely"], style="box")
 modmono = node(270, 170, 170, 150,
                ["modular monolith", "modules, one deploy", "a valid destination", "not this book's"], style="sub")
 contexts = node(500, 170, 230, 170,
                 ["6 context services", "order · inventory · payment", "shipping · notification · review",
-                 "+ graphql-gateway", "<- this project (ch.26)"], style="accent")
+                 "+ graphql-gateway", "<- this project"], style="accent")
 finer = node(760, 170, 200, 170,
              ["finer-grained", "split a context further", "only when a real seam",
               "inside it demands it"], style="box")
@@ -50,7 +50,7 @@ edges = [
 
 notes = [
     {"x": W / 2, "y": 40,
-     "text": "ch.32: the over-decomposition spectrum: where this project stopped",
+     "text": "the over-decomposition spectrum: where this project stopped",
      "anchor": "middle", "bold": True, "size": 16},
     {"x": W / 2, "y": 62,
      "text": "the goal is context-aligned services, not maximal splitting: past the sweet spot is the distributed monolith",
@@ -58,7 +58,7 @@ notes = [
     {"x": 150, "y": 470, "text": "too coupled", "anchor": "middle", "size": 11, "color": "#777777"},
     {"x": 1105, "y": 470, "text": "too chatty", "anchor": "middle", "size": 11, "color": "#777777"},
     {"x": W / 2, "y": H - 16,
-     "text": "Six services came from six bounded contexts found by event storming (ch.11-13): the seams were discovered, not invented to hit a count.",
+     "text": "Six services came from six bounded contexts found by event storming: the seams were discovered, not invented to hit a count.",
      "anchor": "middle", "size": 10, "color": "#777777"},
 ]
 

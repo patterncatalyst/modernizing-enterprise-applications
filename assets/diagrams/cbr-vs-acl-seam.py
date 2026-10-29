@@ -57,16 +57,16 @@ center = node(W / 2 - 180, H / 2 - 60, 360, 120,
 # ---- HORIZONTAL axis: content-based routing: WHICH backend answers -------
 monolith = node(60, H / 2 - 55, 300, 110,
                  ["otherwise: the monolith", "GET /api/inventory/{sku}: :8080",
-                  "StockDto already built there (ch.11)"],
+                  "StockDto already built there"],
                  style="box")
 inventory_svc = node(W - 360, H / 2 - 55, 300, 110,
-                      ["when inventoryEnabled: inventory svc", "ch.19 Quarkus gRPC: :9004",
-                       "not live yet in this chapter"],
+                      ["when inventoryEnabled: inventory svc", "Quarkus gRPC: :9004",
+                       "not live yet"],
                       style="ghost")
 
 # ---- VERTICAL axis: anti-corruption layer: WHAT is safe to carry back ----
 raw_reply = node(W / 2 - 190, 110, 380, 110,
-                  ["resource exchange: the raw reply", "monolith JSON today / StockReply (ch.19)",
+                  ["resource exchange: the raw reply", "monolith JSON today / StockReply",
                    "the shape the ACL must NOT pass through"],
                   style="box")
 stock_dto = node(W / 2 - 190, H - 210, 380, 110,
@@ -80,7 +80,7 @@ edges = [
     connect(monolith, center,
             label="flag=false -> monolith URI"),
     connect(center, inventory_svc, dashed=True,
-            label="flag=true (ch.19) -> inventory svc URI"),
+            label="flag=true -> inventory svc URI"),
     connect(raw_reply, center, dashed=True, label="enrich() request-reply fetch"),
     connect(center, stock_dto, amber=True,
             label="StockDtoTranslatingStrategy.aggregate() -> StockDto"),
@@ -88,7 +88,7 @@ edges = [
 
 notes = [
     {"x": W / 2, "y": 32,
-     "text": "ch.16: one seam, two orthogonal questions: which backend answers, and what is safe to carry back",
+     "text": "one seam, two orthogonal questions: which backend answers, and what is safe to carry back",
      "anchor": "middle", "bold": True, "size": 16},
 
     {"x": W / 2, "y": H / 2 - 95,
