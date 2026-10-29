@@ -130,26 +130,26 @@ conventions, so that the fifth time an agent scaffolds a Quarkus project it
 makes the same choices the first time did.
 
 This project runs on a family of skills with a
-shared naming convention, the **lgtm-\*** family, and naming them concretely
+shared naming convention, and naming their roles concretely
 is more useful than describing skills in the abstract:
 
-- **`lgtm-tutorial`** encodes the
+- **A tutorial-authoring skill** encodes the
   chapter skeleton, the depth standard, the runnable-example shape, the
   `unverified` discipline, and the validation snippets a chapter runs
   before it ships, a house style applied consistently, without a reader ever
   seeing the skill itself.
-- **`lgtm-quarkus`** and **`lgtm-camel`** scaffold the dev toolchain for a new
+- **Quarkus and Camel scaffolding skills** set up the dev toolchain for a new
   Quarkus or Camel project respectively: SDKMAN, the JDK, Maven, the MCP
   server wiring, the testing harness, so that every service extraction in
   this book starts from the same known-good baseline rather than a
   hand-assembled one that drifts service to service.
-- **`lgtm-diagram-generator`** generates figures from a short Python spec of
+- **A diagram-generator skill** generates figures from a short Python spec of
   boxes and arrows, so the diagrams across many chapters share one visual
   language instead of each chapter inventing its own.
-- **`lgtm-docker-stack`** stands up the local observability substrate
+- **A local-stack skill** stands up the local observability substrate
   (Postgres, Kafka, the LGTM stack) that every extraction's Dev Services and
   behavior-equivalence suite run against.
-- **`lgtm-github`** carries the release-sync and commit-convention discipline
+- **A release skill** carries the release-sync and commit-convention discipline
   for pushing a finished iteration upstream, gated, per this project's own
   standing rule, on the human's explicit go-ahead.
 
@@ -322,7 +322,7 @@ by phase makes the composition concrete rather than aspirational:
   the supervisor half of the supervisor-orchestration pattern, before it has
   anything to supervise yet.
 - **Generate** is the execution tier, using the project's skills
-  (`lgtm-quarkus`, `lgtm-camel`, the governance rules in `AGENTS.md`) and the
+  (the scaffolding skills, the governance rules in `AGENTS.md`) and the
   same MCP servers (now invoked to scaffold, search docs, and validate
   structure rather than merely reconnoiter) to produce the actual diff.
 - **Verify** returns to the planning tier in its adversarial role, checking

@@ -597,7 +597,7 @@ for and asserts eventual consistency rather than racing a hopeful green.
 > scaffold) and named every reasoning-model validation gate before a line of
 > outbox or consumer code existed. Generate produced the outbox, the relay,
 > the two-phase service, and the consumers under quarkus-agent and
-> lgtm-quarkus tooling. Verify is this chapter's negative-check story,
+> a scaffolding skill. Verify is this chapter's negative-check story,
 > executed, not narrated. Operate is the two-flag cutover recorded in
 > `CUTOVER.md`. Reconcile marks Smell 4 cured.
 

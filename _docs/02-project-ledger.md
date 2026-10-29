@@ -85,8 +85,8 @@ and it is exactly the kind of thing that would otherwise get re-litigated by
 accident three weeks later:
 
 ```
-001 | Podman is the default toolchain (lgtm-podman-stack); minikube
-(lgtm-minikube-stack) only for k8s-specific chapters (ch.29–31). No Docker
+001 | Podman is the default toolchain (a local-stack skill); minikube
+(a cluster-stack skill) only for k8s-specific chapters (ch.29–31). No Docker
 inheritance from DataMesh. | User-fixed. Single compose source avoids Dev
 Services image-tag mismatch; one dev-loop/CI substrate. | fixed
 ```
@@ -102,7 +102,7 @@ Nothing about that row is dramatic, which is the point. Without it written
 down, a later contributor (human or agent) reaching for container tooling
 has no way to know that the project excluded Docker by decision, not by
 oversight. A risk register in the build plan can name exactly this
-failure mode: "someone pulls `lgtm-docker-stack` / DataMesh compose; Dev
+failure mode: "someone pulls a local-stack skill or another project's compose; Dev
 Services tag mismatch." The decision log is what makes that risk
 detectable before it becomes a broken build instead of after.
 
