@@ -609,8 +609,8 @@ reverted, is.
 > cutover step where out-of-stock and payment-decline-rollback had to be
 > proven across the real service boundary, not asserted against a mock.
 > Generate produced the proto, the gRPC server, the CDC consumer, and the
-> monolith's compensating client under quarkus-agent and lgtm-quarkus
-> tooling, following the `migrate-spring-to-quarkus` process for the lifted
+> monolith's compensating client under quarkus-agent and a scaffolding skill,
+> following the `migrate-spring-to-quarkus` process for the lifted
 > read surface. Verify is this chapter's negative check and its hybrid-state
 > finding, both run against the real services and both included in the
 > record, including the one that didn't go the way the plan first assumed. Operate is the two-flag

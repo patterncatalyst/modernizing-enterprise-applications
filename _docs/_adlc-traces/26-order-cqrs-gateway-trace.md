@@ -618,7 +618,7 @@ and a GraphQL edge to secure and trace — not a strangler to complete.
 > CQRS read-model projection (`order_view`, idempotent, rebuildable, reads
 > served exclusively from it), the SmallRye GraphQL aggregation gateway
 > (depth/complexity bounded, fixed downstream targets, owning no data), and
-> the sixth and final strangler flag — under quarkus-agent, lgtm-quarkus,
+> the sixth and final strangler flag — under quarkus-agent, a scaffolding skill,
 > and `migrate-spring-to-quarkus` for the lifted surface. Verify is this
 > chapter's sharpest proof load: four environmental findings surfaced and
 > fixed before any cutover evidence could be trusted (a
