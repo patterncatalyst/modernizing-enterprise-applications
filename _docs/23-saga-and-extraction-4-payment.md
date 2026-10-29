@@ -470,7 +470,7 @@ unedited collection every later run exercises.
 > hops with no request-thread catch to lean on. Generate produced the service,
 > the event contract, the monolith's first Kafka consumer, and a proxy route
 > that turned out not to need the translator the plan had assumed, under
-> quarkus-agent and lgtm-quarkus tooling, following `migrate-spring-to-quarkus`
+> quarkus-agent and a scaffolding skill, following `migrate-spring-to-quarkus`
 > for the lifted read surface. Verify is this chapter's negative check and its
 > real stock numbers (96→95→96, 88→87→88, 72→71→72), plus a suite gap found
 > and closed before decommission rather than left standing. Operate is the

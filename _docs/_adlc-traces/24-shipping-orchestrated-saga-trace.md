@@ -635,7 +635,7 @@ decommission of the monolith, inheriting the order-context reaction machinery
 > `InMemorySagaService`), the monolith's new order lifecycle
 > (`AWAITING_SHIPMENT`/`SHIPPING_FAILED`), and a proxy route that again did not
 > need the translator the plan had anticipated — under quarkus-agent,
-> lgtm-quarkus, lgtm-camel, and camel-mcp tooling, following
+> a scaffolding skill, a Camel scaffolding skill, and camel-mcp tooling, following
 > `migrate-spring-to-quarkus` for the lifted read surface. Verify is this
 > chapter's sharpest negative checks and its real stock numbers —
 > 496→495→496, 478→477→478 — plus a CLI-limitation finding (newman's

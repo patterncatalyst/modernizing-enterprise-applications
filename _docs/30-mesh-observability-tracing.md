@@ -194,7 +194,7 @@ Eight identical patches, one per application Deployment
 `postgres` and `kafka` get none of it, and the overlay's own comment names
 the reason: meshing a stateful workload's own TLS and connection handling
 collides with the injected sidecar's mTLS wrapping, a known issue the
-`lgtm-minikube-stack` skill's own known-issues notes already flagged before
+a cluster-stack skill's own known-issues notes already flagged before
 this chapter ever applied a manifest. The two StatefulSets stay exactly as
 Chapter 29 left them: `1/1`, plaintext, reachable only by the in-cluster
 services that already knew their DNS names.
