@@ -70,7 +70,7 @@ edges = [
 
 notes = [
     {"x": W / 2, "y": 32,
-     "text": "ch.20: the outbox's four moving parts, end to end",
+     "text": "the outbox's four moving parts, end to end",
      "anchor": "middle", "bold": True, "size": 17},
 
     {"x": 40, "y": 290,

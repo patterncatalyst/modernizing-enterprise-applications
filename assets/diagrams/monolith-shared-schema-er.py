@@ -108,14 +108,14 @@ bands = [
 ]
 
 notes = [
-    {"x": W / 2, "y": 32, "text": "ch.08: Shared schema: eight tables, one Postgres schema, nine cross-context foreign keys",
+    {"x": W / 2, "y": 32, "text": "Shared schema: eight tables, one Postgres schema, nine cross-context foreign keys",
      "anchor": "middle", "bold": True, "size": 17},
     {"x": W / 2, "y": 56,
-     "text": "SMELL[ch.18] (SMELLS.md #1): every FK below crosses a bounded-context ownership boundary, enforced only because everything shares one database",
+     "text": "SMELL (SMELLS.md #1): every FK below crosses a bounded-context ownership boundary, enforced only because everything shares one database",
      "anchor": "middle", "size": 11.5, "color": "#555555"},
 
     {"x": 40, "y": H - 16,
-     "text": "Sourced from examples/00-monolith/.../db/migration/V1__init_schema.sql (reference/monolith-before) and SMELLS.md smell #1. Reused in ch.18.",
+     "text": "Sourced from examples/00-monolith/.../db/migration/V1__init_schema.sql (reference/monolith-before) and SMELLS.md smell #1.",
      "anchor": "start", "size": 10.5, "color": "#555555"},
 ]
 

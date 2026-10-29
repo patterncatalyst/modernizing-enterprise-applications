@@ -61,7 +61,7 @@
 <path d="M990.0,540.0 L1120.0,540.0" fill="none" stroke="#2f5f3d" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#am)"/>
 <text x="1061.0" y="484.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">DELETE connector</text>
 <text x="1061.0" y="484.0" font-size="11" fill="#2f5f3d" text-anchor="middle">DELETE connector</text>
-<text x="800.0" y="32" font-size="17" fill="#1d1d1d" text-anchor="middle" font-weight="700">ch.19: The CDC backfill pipeline: WAL to Debezium to Kafka to InventoryCdcConsumer, then the slot&#x27;s retirement</text>
+<text x="800.0" y="32" font-size="17" fill="#1d1d1d" text-anchor="middle" font-weight="700">The CDC backfill pipeline: WAL to Debezium to Kafka to InventoryCdcConsumer, then the slot&#x27;s retirement</text>
 <text x="40" y="288" font-size="10.5" fill="#555555" text-anchor="start">wal_level=logical + pgoutput;</text>
 <text x="40" y="301" font-size="10.5" fill="#555555" text-anchor="start">REPLICA IDENTITY FULL = full row.</text>
 <text x="290" y="288" font-size="10.5" fill="#555555" text-anchor="start">One slot, one publication,</text>

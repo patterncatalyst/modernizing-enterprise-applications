@@ -85,7 +85,7 @@ edges += [
 
 notes = [
     {"x": W / 2, "y": 32,
-     "text": "ch.06: the relay: Plan -> Execute -> Validate, gated by two human sign-offs",
+     "text": "the relay: Plan -> Execute -> Validate, gated by two human sign-offs",
      "anchor": "middle", "bold": True, "size": 17},
     {"x": W / 2, "y": 56,
      "text": "The planning model plans and, later, validates adversarially; the execution model builds in between: the tier that drafted the plan is the one that checks it was executed faithfully",

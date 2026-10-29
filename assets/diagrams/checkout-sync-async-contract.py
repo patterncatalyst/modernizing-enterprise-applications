@@ -86,7 +86,7 @@ removed_402 = node(410, 560, 240, 70,
 removed_edge = connect(declined_b, removed_402, dashed=True, label="removed")
 
 notes = [
-    {"x": W / 2, "y": 32, "text": "ch.23: the sync->async checkout contract change",
+    {"x": W / 2, "y": 32, "text": "the sync->async checkout contract change",
      "anchor": "middle", "bold": True, "size": 17},
 
     {"x": 50, "y": 208, "text": "the POST carries the FINAL answer", "anchor": "start", "size": 11,

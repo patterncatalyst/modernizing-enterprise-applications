@@ -83,7 +83,7 @@ bottom_edges = [
 
 notes = [
     {"x": W / 2, "y": 32,
-     "text": "ch.28: the registry as contract: auto-register, fetch by schema id, enforce BACKWARD compatibility",
+     "text": "the registry as contract: auto-register, fetch by schema id, enforce BACKWARD compatibility",
      "anchor": "middle", "bold": True, "size": 16},
 
     {"x": 60, "y": 395,

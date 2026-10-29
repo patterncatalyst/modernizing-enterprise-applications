@@ -16,7 +16,7 @@
 <text x="713.6708860759493" y="504.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle"></text>
 <rect x="300" y="538" width="198.67088607594937" height="46" rx="9" fill="#111111" stroke="#111111" stroke-width="2"/>
 <text x="399.3354430379747" y="566.5" font-size="13.5" font-weight="700" fill="#ffffff" text-anchor="middle"></text>
-<text x="750.0" y="32" font-size="16" fill="#1d1d1d" text-anchor="middle" font-weight="700">ch.03: the Review-extraction measurement: Phase A -&gt; Phase B JVM -&gt; Phase B native</text>
+<text x="750.0" y="32" font-size="16" fill="#1d1d1d" text-anchor="middle" font-weight="700">the Review-extraction measurement: Phase A -&gt; Phase B JVM -&gt; Phase B native</text>
 <text x="750.0" y="56" font-size="12" fill="#2f5f3d" text-anchor="middle">the same 16/16-assertion equivalence suite passed, unchanged, on all three builds</text>
 <text x="40" y="152.0" font-size="12.5" fill="#1d1d1d" text-anchor="start" font-weight="700">Phase A: JVM, Spring-compat</text>
 <text x="1174.0" y="152.0" font-size="12.5" fill="#1d1d1d" text-anchor="start">1.492 s</text>

@@ -1,11 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1700 1080" font-family="'Red Hat Text', system-ui, sans-serif" role="img">
 <defs><marker id="a" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#555"/></marker><marker id="am" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2f5f3d"/></marker></defs>
 <rect x="20" y="50" width="1660" height="260" rx="12" fill="#fafafa" stroke="#ddd"/>
-<text x="32" y="70" font-size="12" font-weight="700" fill="#1d1d1d">ch.19: in-line catch, same request thread (still true for a reserve failure in any mode)</text>
+<text x="32" y="70" font-size="12" font-weight="700" fill="#1d1d1d">in-line catch, same request thread (still true for a reserve failure in any mode)</text>
 <rect x="20" y="350" width="1660" height="280" rx="12" fill="#fafafa" stroke="#ddd"/>
-<text x="32" y="370" font-size="12" font-weight="700" fill="#1d1d1d">ch.23: choreographed reaction: the failure is DISCOVERED via an event, two async hops, no coordinator</text>
+<text x="32" y="370" font-size="12" font-weight="700" fill="#1d1d1d">choreographed reaction: the failure is DISCOVERED via an event, two async hops, no coordinator</text>
 <rect x="20" y="680" width="1660" height="380" rx="12" fill="#eaf4ec" stroke="#ddd"/>
-<text x="32" y="700" font-size="12" font-weight="700" fill="#1d1d1d">ch.24: coordinator-INITIATED: the coordinator decides to compensate immediately; only the cross-context undo is delegated</text>
+<text x="32" y="700" font-size="12" font-weight="700" fill="#1d1d1d">coordinator-INITIATED: the coordinator decides to compensate immediately; only the cross-context undo is delegated</text>
 <rect x="40" y="110" width="260" height="90" rx="9" fill="#eef4fb" stroke="#2f6db5" stroke-width="2"/>
 <text x="170.0" y="153.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">OrderService.placeOrder()</text>
 <text x="170.0" y="170.0" font-size="11.5" fill="#555555" text-anchor="middle">reserve (ok) -&gt; persist -&gt; charge</text>
@@ -35,7 +35,7 @@
 <text x="890.0" y="470.0" font-size="11.5" fill="#555555" text-anchor="middle">discovers the decline via the EVENT, idempotent</text>
 <rect x="1080" y="410" width="260" height="90" rx="9" fill="#eaf4ec" stroke="#3d7a4e" stroke-width="2"/>
 <text x="1210.0" y="453.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">gRPC Release :9004</text>
-<text x="1210.0" y="470.0" font-size="11.5" fill="#555555" text-anchor="middle">reacts: SAME call ch.19 introduced</text>
+<text x="1210.0" y="470.0" font-size="11.5" fill="#555555" text-anchor="middle">reacts: the same Release call</text>
 <rect x="1380" y="410" width="180" height="90" rx="9" fill="#111111" stroke="#111111" stroke-width="2"/>
 <text x="1470.0" y="453.0" font-size="13.5" font-weight="700" fill="#ffffff" text-anchor="middle">NET-ZERO</text>
 <text x="1470.0" y="470.0" font-size="11.5" fill="#dddddd" text-anchor="middle">stock restored</text>

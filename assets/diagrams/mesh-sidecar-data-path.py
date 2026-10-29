@@ -193,7 +193,7 @@ infra_note = {"x": 90, "y": INFRA_Y + 125,
 
 notes = [
     {"x": W / 2, "y": 32,
-     "text": "ch.30: mesh sidecar data path: the captured hops, sidecar to sidecar",
+     "text": "mesh sidecar data path: the captured hops, sidecar to sidecar",
      "anchor": "middle", "bold": True, "size": 17},
     {"x": W / 2, "y": 56,
      "text": "client -> strangler-proxy -> order-service, and graphql-gateway -> order-service (REST) + inventory-service (gRPC): every meshed hop is mTLS (STRICT)",

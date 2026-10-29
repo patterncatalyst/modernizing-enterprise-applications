@@ -3,7 +3,7 @@
 <rect x="20" y="60" width="650" height="540" rx="12" fill="#fafafa" stroke="#ddd"/>
 <text x="32" y="80" font-size="12" font-weight="700" fill="#1d1d1d">TODAY: the leaked entity (order/OrderService.java)</text>
 <rect x="730" y="60" width="650" height="540" rx="12" fill="#eaf4ec" stroke="#ddd"/>
-<text x="742" y="80" font-size="12" font-weight="700" fill="#1d1d1d">THROUGH THE ACL: the translated contract (illustrative, ch.19)</text>
+<text x="742" y="80" font-size="12" font-weight="700" fill="#1d1d1d">THROUGH THE ACL: the translated contract (illustrative)</text>
 <rect x="50" y="120" width="260" height="90" rx="9" fill="#eef4fb" stroke="#2f6db5" stroke-width="2"/>
 <text x="180.0" y="163.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">order.OrderService</text>
 <text x="180.0" y="180.0" font-size="11.5" fill="#555555" text-anchor="middle">placeOrder()</text>
@@ -17,7 +17,7 @@
 <text x="180.0" y="477.5" font-size="11.5" fill="#dddddd" text-anchor="middle">EntityManager + table mapping</text>
 <rect x="760" y="120" width="260" height="90" rx="9" fill="#eef4fb" stroke="#2f6db5" stroke-width="2"/>
 <text x="890.0" y="163.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">order.OrderService</text>
-<text x="890.0" y="180.0" font-size="11.5" fill="#555555" text-anchor="middle">placeOrder(): ch.19 shape</text>
+<text x="890.0" y="180.0" font-size="11.5" fill="#555555" text-anchor="middle">placeOrder(): post-ACL shape</text>
 <rect x="760" y="250" width="260" height="100" rx="9" fill="#eaf4ec" stroke="#3d7a4e" stroke-width="2"/>
 <text x="890.0" y="290.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">producerTemplate.requestBodyAndHeader(</text>
 <text x="890.0" y="307.5" font-size="11.5" fill="#555555" text-anchor="middle">&quot;direct:stockFor&quot;, sku)</text>
@@ -42,14 +42,14 @@
 <text x="1043.2413793103447" y="299.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">no dependency</text>
 <text x="1043.2413793103447" y="299.0" font-size="11" fill="#555" text-anchor="middle">no dependency</text>
 <path d="M670,300 L730,300" fill="none" stroke="#2f5f3d" stroke-width="2" marker-end="url(#am)"/>
-<text x="706.0" y="294.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">ch.16&#x27;s ACL</text>
-<text x="706.0" y="294.0" font-size="11" fill="#2f5f3d" text-anchor="middle">ch.16&#x27;s ACL</text>
-<text x="700.0" y="32" font-size="16" fill="#1d1d1d" text-anchor="middle" font-weight="700">ch.16: before and after: what type does the caller actually hold after a stock lookup?</text>
+<text x="706.0" y="294.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">the ACL</text>
+<text x="706.0" y="294.0" font-size="11" fill="#2f5f3d" text-anchor="middle">the ACL</text>
+<text x="700.0" y="32" font-size="16" fill="#1d1d1d" text-anchor="middle" font-weight="700">before and after: what type does the caller actually hold after a stock lookup?</text>
 <text x="50" y="545" font-size="11" fill="#555555" text-anchor="start">OrderService depends, at compile time, on inventory&#x27;s own</text>
 <text x="50" y="561" font-size="11" fill="#555555" text-anchor="start">persistence class: lazy-loading, column names, and migrations</text>
 <text x="50" y="577" font-size="11" fill="#555555" text-anchor="start">all become order&#x27;s problem too (Smell 5).</text>
 <text x="760" y="545" font-size="11" fill="#555555" text-anchor="start">Inventory can rename columns, swap its persistence provider,</text>
 <text x="760" y="561" font-size="11" fill="#555555" text-anchor="start">or move databases entirely, and nothing here has to change</text>
 <text x="760" y="577" font-size="11" fill="#555555" text-anchor="start">this side never saw the thing that changed.</text>
-<text x="40" y="626" font-size="10" fill="#777777" text-anchor="start">Sourced from _docs/16-content-based-routing-acl.md (&quot;Before and after: what crosses the seam&quot;) and examples/00-monolith/.../order/OrderService.java#placeOrder (SMELL[ch.16], unmodified).</text>
+<text x="40" y="626" font-size="10" fill="#777777" text-anchor="start">Sourced from _docs/16-content-based-routing-acl.md (&quot;Before and after: what crosses the seam&quot;) and examples/00-monolith/.../order/OrderService.java#placeOrder (SMELL, unmodified).</text>
 </svg>

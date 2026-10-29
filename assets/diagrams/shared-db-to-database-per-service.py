@@ -45,7 +45,7 @@ W, H = 1600, 820
 band_left = {"x": 20, "y": 60, "w": 760, "h": 700,
              "label": "SHARED DATABASE: live FK join (today)", "fill": "#fafafa"}
 band_right = {"x": 820, "y": 60, "w": 760, "h": 700,
-              "label": "DATABASE PER SERVICE: snapshot + event feed (ch.19 target)", "fill": "#eaf4ec"}
+              "label": "DATABASE PER SERVICE: snapshot + event feed (target)", "fill": "#eaf4ec"}
 
 # ============================================================================
 # LEFT: one shared schema, order_items' live FK into inventory_items
@@ -91,7 +91,7 @@ noFkR = node(860, 290, 320, 90, style="ink", lines=[
     "no live reference into inventory's schema",
 ])
 cdcR = node(1060, 440, 320, 100, style="box", lines=[
-    "CDC connector (ch.19)",
+    "CDC connector",
     "tails the shared schema's write-ahead log,",
     "backfills inventory_items into its own database",
 ])
@@ -103,18 +103,18 @@ right_edges = [
     connect(cdcR, inventoryDbR, label="backfill replication", amber=True),
 ]
 
-transform_edge = {"x1": 780, "y1": 265, "x2": 820, "y2": 265, "label": "ch.19", "amber": True}
+transform_edge = {"x1": 780, "y1": 265, "x2": 820, "y2": 265, "label": "", "amber": True}
 
 notes = [
     {"x": W / 2, "y": 32,
-     "text": "ch.18 -- Shared database to database-per-service: one FK join, before and after",
+     "text": "Shared database to database-per-service: one FK join, before and after",
      "anchor": "middle", "bold": True, "size": 17},
     {"x": W / 2, "y": 56,
-     "text": "order_items -> inventory_items: a live @ManyToOne today, a point-in-time snapshot plus a CDC event feed after ch.19",
+     "text": "order_items -> inventory_items: a live @ManyToOne today, a point-in-time snapshot plus a CDC event feed after cutover",
      "anchor": "middle", "size": 11.5, "color": "#555555"},
 
     {"x": 40, "y": 740,
-     "text": "SMELL[ch.18]: order_items.inventory_item_id is one of nine FKs crossing a bounded-context line in this one schema.",
+     "text": "SMELL: order_items.inventory_item_id is one of nine FKs crossing a bounded-context line in this one schema.",
      "anchor": "start", "size": 11, "color": "#555555"},
 
     {"x": 860, "y": 740,
@@ -125,7 +125,7 @@ notes = [
      "anchor": "start", "size": 10.5, "color": "#555555"},
 
     {"x": 40, "y": 800,
-     "text": "Sourced from _docs/18-shared-data-to-owned-data.md; examples/00-monolith/.../db/migration/V1__init_schema.sql; OrderItem's SMELL[ch.18] javadoc. Post-FK columns are ch.19's illustrative target, not existing code.",
+     "text": "Sourced from _docs/18-shared-data-to-owned-data.md; examples/00-monolith/.../db/migration/V1__init_schema.sql; OrderItem's SMELL javadoc. Post-FK columns are an illustrative target, not existing code.",
      "anchor": "start", "size": 10, "color": "#777777"},
 ]
 

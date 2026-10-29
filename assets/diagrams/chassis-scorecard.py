@@ -37,9 +37,9 @@ ROWS = [
     ("Fault Tolerance", "DEFERRED", "ghost",
      "No @Retry/@Timeout/@CircuitBreaker/@Fallback/@Bulkhead: manual withDeadlineAfter + REST-client timeouts stand in"),
     ("Health", "PARTIAL", "box",
-     "quarkus-smallrye-health on 6 of 8 services (auto /q/health): no custom checks; platform wiring deferred to Part 9"),
+     "quarkus-smallrye-health on 6 of 8 services (auto /q/health): no custom checks; platform wiring deferred to the platform layer"),
     ("Metrics", "DEFERRED", "ghost",
-     "No Micrometer, no /q/metrics: deferred to ch.30"),
+     "No Micrometer, no /q/metrics: deferred to the observability layer"),
     ("OpenAPI", "DEFERRED", "ghost",
      "Monolith had springdoc; no quarkus-smallrye-openapi on the services: gateway's GraphQL schema replaces it"),
     ("REST Client", "USED", "accent",
@@ -47,7 +47,7 @@ ROWS = [
     ("Security / JWT", "PARTIAL", "box",
      "HTTP Basic + @RolesAllowed on review-service, reproducing the monolith's SecurityConfig: no quarkus-smallrye-jwt; OIDC deferred"),
     ("Native / build-time", "USED", "accent",
-     "native Maven profile in all 8 poms + @RegisterForReflection: ch.03 measured ~31x startup / ~4x memory"),
+     "native Maven profile in all 8 poms + @RegisterForReflection: ~31x startup / ~4x memory measured"),
     ("Dev-mode", "USED", "accent",
      "quarkus:dev live reload; Dev Services disabled (shared Postgres): %test + in-memory messaging substitutes"),
 ]
@@ -72,7 +72,7 @@ for i, (label, style, caption) in enumerate(legend_items):
 
 notes = [
     {"x": W / 2, "y": 32,
-     "text": "ch.27: the Quarkus / MicroProfile chassis: what this repo wired, row by row",
+     "text": "the Quarkus / MicroProfile chassis: what this repo wired, row by row",
      "anchor": "middle", "bold": True, "size": 16},
     {"x": W / 2, "y": 56,
      "text": "status is verified against the code in this repo, not a feature checklist: PARTIAL means wired on some services, not all",

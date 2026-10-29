@@ -91,7 +91,7 @@
 <path d="M1383.6363636363637,940.0 L1376.3636363636363,960.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
 <path d="M1343.6363636363637,1050.0 L1336.3636363636363,1070.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
 <path d="M1303.6363636363637,1160.0 L1296.3636363636363,1180.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
-<text x="890.0" y="32" font-size="17" fill="#1d1d1d" text-anchor="middle" font-weight="700">ch.30: observability trace pipeline: two span sources, one collector, the trace they produced</text>
+<text x="890.0" y="32" font-size="17" fill="#1d1d1d" text-anchor="middle" font-weight="700">observability trace pipeline: two span sources, one collector, the trace they produced</text>
 <text x="890.0" y="56" font-size="11.5" fill="#555555" text-anchor="middle">Envoy sidecar spans + app-level OTel spans both export OTLP to the same otel-lgtm collector: Tempo/Mimir/Loki store, Grafana reads</text>
 <text x="60" y="700" font-size="11.5" fill="#555555" text-anchor="start">blue = app-level OpenTelemetry span · green = Envoy sidecar span (mesh hop) · indent = call depth, not drawn to time scale</text>
 <text x="60" y="1410" font-size="10" fill="#777777" text-anchor="start">Sourced from deploy/k8s/istio/telemetry.yaml, deploy/k8s/observability/{otelcol-configmap,lgtm-deployment,lgtm-service,grafana-datasources-configmap}.yaml, examples/{04,07,08}&#x27;s application.properties, and evidence/ch30-hero-trace.json.</text>

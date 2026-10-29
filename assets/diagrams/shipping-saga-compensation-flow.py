@@ -49,7 +49,7 @@ W, H = 1700, 1080
 # Band 1: ch.19: in-line catch, same request thread
 # ============================================================================
 band1 = {"x": 20, "y": 50, "w": 1660, "h": 260,
-         "label": "ch.19: in-line catch, same request thread (still true for a reserve failure in any mode)",
+         "label": "in-line catch, same request thread (still true for a reserve failure in any mode)",
          "fill": "#fafafa"}
 
 checkout1 = node(40, 110, 260, 90, ["OrderService.placeOrder()", "reserve (ok) -> persist -> charge"], style="user")
@@ -70,7 +70,7 @@ band1_edges = [
 # Band 2: ch.23: choreographed reaction, two async hops, no coordinator
 # ============================================================================
 band2 = {"x": 20, "y": 350, "w": 1660, "h": 280,
-         "label": "ch.23: choreographed reaction: the failure is DISCOVERED via an event, two async hops, no coordinator",
+         "label": "choreographed reaction: the failure is DISCOVERED via an event, two async hops, no coordinator",
          "fill": "#fafafa"}
 
 paymentSvc2 = node(40, 410, 240, 90, ["PaymentService", "processOrderPlaced() declines"], style="box")
@@ -79,7 +79,7 @@ hop2 = node(590, 440, 110, 50, ["2 HOPS", "emit -> react"], style="ghost")
 listener2 = node(740, 410, 300, 90,
                   ["OrderSagaListener.onPaymentDeclined()", "discovers the decline via the EVENT, idempotent"],
                   style="accent")
-release2 = node(1080, 410, 260, 90, ["gRPC Release :9004", "reacts: SAME call ch.19 introduced"], style="accent")
+release2 = node(1080, 410, 260, 90, ["gRPC Release :9004", "reacts: the same Release call"], style="accent")
 netzero2 = node(1380, 410, 180, 90, ["NET-ZERO", "stock restored"], style="ink")
 
 band2_nodes = [paymentSvc2, outbox2, hop2, listener2, release2, netzero2]
@@ -94,7 +94,7 @@ band2_edges = [
 # Band 3: ch.24: coordinator-INITIATED, cross-context part delegated
 # ============================================================================
 band3 = {"x": 20, "y": 680, "w": 1660, "h": 380,
-         "label": "ch.24: coordinator-INITIATED: the coordinator decides to compensate immediately; only the cross-context undo is delegated",
+         "label": "coordinator-INITIATED: the coordinator decides to compensate immediately; only the cross-context undo is delegated",
          "fill": "#eaf4ec"}
 
 bookCarrier3 = node(40, 740, 240, 90, ["book-carrier step", "throws ShipFailException (SHIP-FAIL)"], style="accent")

@@ -53,7 +53,7 @@ W, H = 2000, 1700
 # Band A: checkout: unchanged, synchronous (ch.19/ch.23)
 # ============================================================================
 band_a = {"x": 20, "y": 50, "w": 1960, "h": 250,
-          "label": "Checkout: synchronous, unchanged from ch.19/ch.23", "fill": "#fafafa"}
+          "label": "Checkout: synchronous, unchanged", "fill": "#fafafa"}
 
 client = node(40, 100, 160, 80, ["Client", "POST /api/orders"], style="sub")
 ordersvc = node(230, 100, 260, 80,
@@ -80,7 +80,7 @@ band_a_edges = [
 # Band B: payment capture: unchanged choreography (ch.23)
 # ============================================================================
 band_b = {"x": 20, "y": 320, "w": 1960, "h": 220,
-          "label": "Payment capture: async choreography, unchanged from ch.23", "fill": "#fafafa"}
+          "label": "Payment capture: async choreography, unchanged", "fill": "#fafafa"}
 
 consumerB = node(230, 370, 260, 70, ["OrderPlacedConsumer", "@Incoming(order.placed)"], style="box")
 chargeB = node(520, 370, 220, 70, ["PaymentService", "charge: idempotent by orderId"], style="accent")
@@ -102,7 +102,7 @@ band_b_edges = [
 # and the central Camel Saga EIP coordinator (THE ch.24 figure).
 # ============================================================================
 band_c = {"x": 20, "y": 560, "w": 1960, "h": 340,
-          "label": "Shipping orchestrated saga: the Camel Saga EIP coordinator sequences fulfilment (ch.24)",
+          "label": "Shipping orchestrated saga: the Camel Saga EIP coordinator sequences fulfilment",
           "fill": "#eaf4ec"}
 
 monolithReact = node(40, 610, 270, 80, ["OrderSagaListener", "onPaymentCaptured(): separate consumer group"],
@@ -202,7 +202,7 @@ band_e_edges = [
 
 notes = [
     {"x": W / 2, "y": 30,
-     "text": "ch.24: the orchestrated saga: one Camel Saga EIP coordinator sequences fulfilment and owns the compensation decision",
+     "text": "the orchestrated saga: one Camel Saga EIP coordinator sequences fulfilment and owns the compensation decision",
      "anchor": "middle", "bold": True, "size": 17},
 
     coordinator_note,

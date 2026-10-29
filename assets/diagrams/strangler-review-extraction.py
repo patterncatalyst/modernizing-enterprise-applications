@@ -73,7 +73,7 @@ before_nodes, before_edges = build_panel(70, after=False)
 after_nodes, after_edges = build_panel(70 + PANEL_H + 60, after=True)
 
 notes = [
-    {"x": W / 2, "y": 32, "text": "ch.15: Extracting Review: the strangler-fig seam (before -> after cutover)",
+    {"x": W / 2, "y": 32, "text": "Extracting Review: the strangler-fig seam (before -> after cutover)",
      "anchor": "middle", "bold": True, "size": 18},
 
     {"x": 40, "y": 65, "text": "BEFORE: flag OFF: Review still served by the monolith",

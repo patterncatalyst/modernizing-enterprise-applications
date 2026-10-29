@@ -99,7 +99,7 @@ right_edges = [
 
 notes = [
     {"x": W / 2, "y": 32,
-     "text": "ch.07: the shared-table proof: why 49/49 green couldn't tell path A from path B",
+     "text": "the shared-table proof: why 49/49 green couldn't tell path A from path B",
      "anchor": "middle", "bold": True, "size": 17},
     {"x": W / 2, "y": 56,
      "text": "Review's Phase A form still shares the monolith's public schema: the one extraction that did not get its own schema yet",

@@ -32,12 +32,12 @@ STEP_Y, STEP_H, STEP_W, GUTTER = 240, 120, 145, 12
 STEP_X0 = 220
 steps = [
     ("validate", ["Validate customer", "customerRepository.findById", "404 if missing"]),
-    ("reserve", ["Reserve stock (loop)", "InventoryService: find + reserve()", "pessimistic lock: SMELL[ch.16] no ACL"]),
+    ("reserve", ["Reserve stock (loop)", "InventoryService: find + reserve()", "pessimistic lock: smell, no ACL"]),
     ("persist", ["Persist order", "orderRepository.save", "cascades order_items"]),
     ("charge", ["Charge payment", "PaymentService.charge", "decline -> rolls back all above"]),
     ("confirm", ["Confirm order", "order.confirm()", "status -> CONFIRMED"]),
     ("dispatch", ["Dispatch shipment", "ShippingService.dispatch", "always succeeds (demo)"]),
-    ("notify", ["Notify customer", "NotificationService", "SMELL[ch.17]: sync, same txn"]),
+    ("notify", ["Notify customer", "NotificationService", "smell: sync, same txn"]),
     ("commit", ["COMMIT", "one Postgres transaction", "five contexts' writes, atomic"]),
 ]
 
@@ -81,14 +81,14 @@ edges.append({"x1": rollback["x"] + 60, "y1": rollback["y"], "x2": step_nodes["r
               "label": "one shared Postgres transaction: undone automatically, free", "ly": -8})
 
 notes = [
-    {"x": W / 2, "y": 32, "text": "ch.08: OrderService#placeOrder: one @Transactional spans five bounded contexts",
+    {"x": W / 2, "y": 32, "text": "OrderService#placeOrder: one @Transactional spans five bounded contexts",
      "anchor": "middle", "bold": True, "size": 17},
     {"x": W / 2, "y": 56,
      "text": "validate -> reserve -> persist -> charge -> confirm -> dispatch -> notify -> commit, in-process, one database",
      "anchor": "middle", "size": 12, "color": "#555555"},
 
     {"x": 40, "y": H - 46,
-     "text": "SMELL[ch.22]/[ch.23]/[ch.24]: this rollback-for-free behavior disappears the moment any one of these contexts gets its own database.",
+     "text": "smell: this rollback-for-free behavior disappears the moment any one of these contexts gets its own database.",
      "anchor": "start", "size": 10.5, "color": "#555555"},
     {"x": 40, "y": H - 16,
      "text": "Sourced from examples/00-monolith/.../order/OrderService.java#placeOrder (reference/monolith-before) and _docs/08-designing-the-monolith.md.",

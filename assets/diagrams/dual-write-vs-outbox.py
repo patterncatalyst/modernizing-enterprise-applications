@@ -91,7 +91,7 @@ new_edges = [
 
 notes = [
     {"x": W / 2, "y": 32,
-     "text": "ch.20: the dual-write hazard vs. the transactional outbox",
+     "text": "the dual-write hazard vs. the transactional outbox",
      "anchor": "middle", "bold": True, "size": 17},
 
     {"x": 40, "y": 272,

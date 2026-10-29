@@ -39,10 +39,10 @@ top_nodes = [customerT, commandT, invT, orderT, payT, shipT, notifT]
 top_edges = [
     connect(customerT, commandT),
     connect(commandT, invT),
-    connect(invT, orderT, amber=True, label="SMELL[ch.16] no ACL"),
-    connect(orderT, payT, amber=True, label="SMELL[ch.22]/[ch.26]"),
+    connect(invT, orderT, amber=True, label="smell: no ACL"),
+    connect(orderT, payT, amber=True, label="smell"),
     connect(payT, shipT, amber=True),
-    connect(shipT, notifT, amber=True, label="SMELL[ch.17]"),
+    connect(shipT, notifT, amber=True, label="smell"),
 ]
 
 # ---- BOTTOM band: the event-storm reading ----------------------------------
@@ -96,7 +96,7 @@ bottom_edges = [
 ]
 
 notes = [
-    {"x": W / 2, "y": 30, "text": "ch.12: Event-storming the checkout flow: two readings of one call chain",
+    {"x": W / 2, "y": 30, "text": "Event-storming the checkout flow: two readings of one call chain",
      "anchor": "middle", "bold": True, "size": 18},
 
     {"x": 40, "y": 65, "text": "TOP: today: OrderService#placeOrder, one @Transactional, five contexts, synchronous calls",
@@ -105,8 +105,8 @@ notes = [
                                 "policies/reactions, an external system, a read model",
      "anchor": "start", "bold": True, "size": 14},
 
-    {"x": 1020, "y": 360, "text": "ch.25: timeout/retry sit here once this is a network call", "anchor": "start", "size": 10, "color": "#555555"},
-    {"x": 1020, "y": 745, "text": "ch.23: saga compensation releases the stock reservation here instead of an ACID rollback",
+    {"x": 1020, "y": 360, "text": "timeout/retry sit here once this is a network call", "anchor": "start", "size": 10, "color": "#555555"},
+    {"x": 1020, "y": 745, "text": "saga compensation releases the stock reservation here instead of an ACID rollback",
      "anchor": "start", "size": 10, "color": "#555555"},
 
     {"x": 380, "y": 505, "text": "Topics.ORDER_PLACED", "anchor": "start", "size": 9, "color": "#3d7a4e"},

@@ -49,7 +49,7 @@ client = node(40, 110, 150, 90, ["Client", "POST /api/orders"], style="sub")
 ordersvc = node(230, 110, 260, 90,
                 ["OrderService.placeOrder()", "one @Transactional: reserve, persist, outbox"], style="user")
 inventory1 = node(530, 110, 230, 90,
-                   ["Inventory service", ":9004: gRPC Reserve (SYNC)", "atomic decrement, unchanged from ch.19"],
+                   ["Inventory service", ":9004: gRPC Reserve (SYNC)", "atomic decrement"],
                    style="accent")
 resp202 = node(800, 110, 230, 90,
                ["202 Accepted", "Location: /api/orders/{id}", "order status = PENDING"], style="ink")
@@ -107,7 +107,7 @@ listener = node(230, 750, 290, 90,
                  ["OrderSagaListener", "@KafkaListener: idempotent (status == PENDING)"], style="box")
 confirmed = node(570, 720, 260, 80, ["onPaymentCaptured", "CONFIRMED + shipping dispatched"], style="accent")
 declined = node(570, 830, 260, 80, ["onPaymentDeclined", "PAYMENT_DECLINED"], style="accent")
-shipnode = node(880, 720, 240, 80, ["Shipping dispatch", "(stays in monolith: ch.24 forward-ref)"], style="box")
+shipnode = node(880, 720, 240, 80, ["Shipping dispatch", "(stays in monolith)"], style="box")
 release2 = node(880, 830, 240, 80,
                   ["Inventory service", ":9004: gRPC Release (compensating)", "stock restored: NET-ZERO"],
                   style="ink")
@@ -129,7 +129,7 @@ band_c_edges = [
 
 notes = [
     {"x": W / 2, "y": 32,
-     "text": "ch.23: the choreographed saga: synchronous reserve, async payment outcome, async order reaction",
+     "text": "the choreographed saga: synchronous reserve, async payment outcome, async order reaction",
      "anchor": "middle", "bold": True, "size": 17},
 
     {"x": 40, "y": 988,
