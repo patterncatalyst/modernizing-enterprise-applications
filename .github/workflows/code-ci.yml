@@ -137,7 +137,7 @@ name: Code CI
 
 on:
   push:
-    branches: ["**"]
+    branches: [main]
     paths:
       - "examples/01-strangler-proxy/**"
       - "examples/02-review-service/**"
