@@ -28,12 +28,12 @@ g.OUT = os.path.dirname(__file__)
 W, H = 1500, 620
 
 RUNGS = [
-    ("1. Review -- ch.15", "REST leaf, zero coupling", "box", 440),
-    ("2. Notification -- ch.17", "async outbox", "box", 360),
-    ("3. Inventory -- ch.19", "CDC + gRPC seam", "box", 280),
-    ("4. Payment -- ch.23", "choreographed saga", "box", 200),
-    ("5. Shipping -- ch.24", "orchestrated saga", "box", 150),
-    ("6. Order + Gateway -- ch.26", "CQRS + GraphQL", "accent", 80),
+    ("1. Review", "REST leaf, zero coupling", "box", 440),
+    ("2. Notification", "async outbox", "box", 360),
+    ("3. Inventory", "CDC + gRPC seam", "box", 280),
+    ("4. Payment", "choreographed saga", "box", 200),
+    ("5. Shipping", "orchestrated saga", "box", 150),
+    ("6. Order + Gateway", "CQRS + GraphQL", "accent", 80),
 ]
 
 COL_W, GUTTER = 210, 24
@@ -50,11 +50,11 @@ edges = [connect(step_nodes[i], step_nodes[i + 1]) for i in range(len(step_nodes
 
 axis_y = 560
 axis_edge = [{"x1": 40, "y1": axis_y, "x2": 1460, "y2": axis_y, "amber": True,
-              "label": "extraction order: increasing coupling, risk, and data entanglement (ch.04)"}]
+              "label": "extraction order: increasing coupling, risk, and data entanglement"}]
 
 notes = [
     {"x": W / 2, "y": 32,
-     "text": "ch.00 -- the extraction sequence: rising difficulty, not rising domain importance",
+     "text": "the extraction sequence: rising difficulty, not rising domain importance",
      "anchor": "middle", "bold": True, "size": 17},
     {"x": W / 2, "y": 56,
      "text": "the mechanism (proxy, anti-corruption layer, equivalence gate) is proven on the cheapest seam first",

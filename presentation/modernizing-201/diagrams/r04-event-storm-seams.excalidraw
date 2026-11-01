@@ -4,7 +4,7 @@
   "source": "dgen.py",
   "elements": [
     {
-      "id": "053bd677-a9d4-48f7-b026-f3adaa745233",
+      "id": "3460e651-fc92-46d9-b29b-9f178b1779a0",
       "type": "text",
       "x": 231.0,
       "y": 14,
@@ -38,11 +38,11 @@
       "baseline": 22
     },
     {
-      "id": "379e0a6c-2ce8-407c-ae3e-ed1eee591f9e",
+      "id": "85465535-b7c3-41df-b828-b59d5d527685",
       "type": "text",
-      "x": 229.5,
+      "x": 234.0,
       "y": 50,
-      "width": 781,
+      "width": 772,
       "height": 18,
       "angle": 0,
       "strokeColor": "#5A5A5A",
@@ -63,16 +63,16 @@
       "locked": false,
       "fontSize": 14,
       "fontFamily": 1,
-      "text": "Cluster the domain events by aggregate \u2014 the clusters are the seams, discovered, not invented",
+      "text": "Cluster the domain events by aggregate: the clusters are the seams, discovered, not invented",
       "textAlign": "center",
       "verticalAlign": "top",
       "containerId": null,
-      "originalText": "Cluster the domain events by aggregate \u2014 the clusters are the seams, discovered, not invented",
+      "originalText": "Cluster the domain events by aggregate: the clusters are the seams, discovered, not invented",
       "lineHeight": 1.25,
       "baseline": 14
     },
     {
-      "id": "df5a3caa-00d2-4d0a-bb89-0e3cdf3cca60",
+      "id": "2cbf8bfb-4641-4c75-b642-5b39bed8f01b",
       "type": "rectangle",
       "x": 40,
       "y": 110,
@@ -100,11 +100,11 @@
       "locked": false
     },
     {
-      "id": "d78f2e61-eeb7-42dd-a8e0-de16cf38b2c2",
+      "id": "b6439539-d4ba-440b-9138-3ee7d1f05270",
       "type": "text",
       "x": 60,
       "y": 123,
-      "width": 234,
+      "width": 226,
       "height": 17,
       "angle": 0,
       "strokeColor": "#4A4A4A",
@@ -125,16 +125,16 @@
       "locked": false,
       "fontSize": 13,
       "fontFamily": 1,
-      "text": "the storm wall \u2014 domain events",
+      "text": "the storm wall: domain events",
       "textAlign": "left",
       "verticalAlign": "top",
       "containerId": null,
-      "originalText": "the storm wall \u2014 domain events",
+      "originalText": "the storm wall: domain events",
       "lineHeight": 1.25,
       "baseline": 13
     },
     {
-      "id": "4be86be0-661f-4a18-87d6-b55b96765da9",
+      "id": "f5ad14f3-3e1d-422e-a41c-de2e3ced4fd9",
       "type": "rectangle",
       "x": 70,
       "y": 175,
@@ -162,7 +162,7 @@
       "locked": false
     },
     {
-      "id": "63aa7818-0dd3-40cb-a61b-e4cf3500c3a7",
+      "id": "afea5986-5872-4393-ba68-a031f6bc33e4",
       "type": "text",
       "x": 134.0,
       "y": 179,
@@ -196,7 +196,7 @@
       "baseline": 11
     },
     {
-      "id": "a60d85c7-e58a-4bb0-bff0-bc2a976ef2d2",
+      "id": "ff3e0e1c-79a3-4263-aec0-e8749b529b53",
       "type": "rectangle",
       "x": 290,
       "y": 175,
@@ -224,7 +224,7 @@
       "locked": false
     },
     {
-      "id": "2cfe709f-7010-4a76-a01b-bfd61e303cc9",
+      "id": "4eec0f20-b18f-4227-9a1b-a0319ca12a27",
       "type": "text",
       "x": 347.5,
       "y": 179,
@@ -258,7 +258,7 @@
       "baseline": 11
     },
     {
-      "id": "0174e4a0-37af-49a5-a6f3-15628f639c28",
+      "id": "05e612a0-a319-4917-a773-4d3a859ed157",
       "type": "rectangle",
       "x": 70,
       "y": 235,
@@ -286,7 +286,7 @@
       "locked": false
     },
     {
-      "id": "8cc15628-504c-46ff-b176-2c04848698db",
+      "id": "23c65744-d4de-48e6-8283-1b0cc0551bf4",
       "type": "text",
       "x": 120.5,
       "y": 239,
@@ -320,7 +320,7 @@
       "baseline": 11
     },
     {
-      "id": "55d6901a-8aae-4683-9199-be084bd1fb6e",
+      "id": "ee921173-dc0e-498d-909f-4a1fba2b173c",
       "type": "rectangle",
       "x": 290,
       "y": 235,
@@ -348,7 +348,7 @@
       "locked": false
     },
     {
-      "id": "095b4656-f7d4-4679-ae4f-35343943a078",
+      "id": "5c7fe5e7-1492-45fd-b80e-a6c9cbd85de0",
       "type": "text",
       "x": 331.0,
       "y": 239,
@@ -382,7 +382,7 @@
       "baseline": 11
     },
     {
-      "id": "834b7914-f85e-4a75-9c05-d5b998af056e",
+      "id": "bc0bbc9c-d360-4546-95e3-76f300d69600",
       "type": "rectangle",
       "x": 70,
       "y": 295,
@@ -410,7 +410,7 @@
       "locked": false
     },
     {
-      "id": "307ca658-2a1e-4c21-9545-18c692a8028f",
+      "id": "2c4440c4-bbe2-460c-ae87-3843946c3bb9",
       "type": "text",
       "x": 117.5,
       "y": 299,
@@ -444,7 +444,7 @@
       "baseline": 11
     },
     {
-      "id": "afabb4b6-00ef-43e1-a191-6a727d025fb3",
+      "id": "56007e43-25d0-4163-9a7b-4cd0b57f13ae",
       "type": "rectangle",
       "x": 290,
       "y": 295,
@@ -472,7 +472,7 @@
       "locked": false
     },
     {
-      "id": "ea3fc64d-9ded-4735-bf36-8f88c0fc3b42",
+      "id": "fe1f1855-e857-42fc-9553-b1cb814bec2e",
       "type": "text",
       "x": 340.5,
       "y": 299,
@@ -506,7 +506,7 @@
       "baseline": 11
     },
     {
-      "id": "b798c4c1-a78a-4540-8222-54ac01dd8bc0",
+      "id": "a006e98a-9763-460f-b002-58355e5956ee",
       "type": "arrow",
       "x": 520,
       "y": 340,
@@ -546,7 +546,7 @@
       "endArrowhead": "arrow"
     },
     {
-      "id": "09533523-dfc7-47a6-a2ec-c304db983332",
+      "id": "11df1000-55d7-4352-b3e2-3f10d9b09c6e",
       "type": "text",
       "x": 519.0,
       "y": 322.0,
@@ -580,7 +580,7 @@
       "baseline": 11
     },
     {
-      "id": "f38b4f70-2203-41c9-8579-584c7aa1dac8",
+      "id": "222faee1-13c8-41ca-9b86-fef9e0d16bbf",
       "type": "rectangle",
       "x": 670,
       "y": 110,
@@ -608,7 +608,7 @@
       "locked": false
     },
     {
-      "id": "0faab7d4-9d68-40e9-9cf9-d2b43940d03b",
+      "id": "264e0a15-9ecd-4076-8ce6-328481c929b5",
       "type": "text",
       "x": 690,
       "y": 123,
@@ -642,7 +642,7 @@
       "baseline": 13
     },
     {
-      "id": "61036480-4a02-42f6-8752-f7d643c73d4b",
+      "id": "4ea4b7d7-bb00-4d42-938d-4eeed7f3c0e5",
       "type": "rectangle",
       "x": 690,
       "y": 170,
@@ -670,7 +670,7 @@
       "locked": false
     },
     {
-      "id": "4d5a17b5-ea75-4287-ac53-7e20b7bc2b9b",
+      "id": "1ca1c114-395f-4f9e-9cd1-5436faecf356",
       "type": "text",
       "x": 788.5,
       "y": 194,
@@ -704,7 +704,7 @@
       "baseline": 16
     },
     {
-      "id": "2c89cf22-e7e2-4e6f-8a11-72a58aeff421",
+      "id": "70c85926-6fc5-49ab-9e03-ee4db8d28c68",
       "type": "text",
       "x": 759.0,
       "y": 214,
@@ -738,7 +738,7 @@
       "baseline": 12
     },
     {
-      "id": "87c70a43-2794-40e1-8f40-cf4ceae70819",
+      "id": "2823d9ea-bd43-4574-816b-3576f623edc3",
       "type": "text",
       "x": 766.0,
       "y": 230,
@@ -772,7 +772,7 @@
       "baseline": 12
     },
     {
-      "id": "f92d3c24-c86c-40b1-a3bf-39233fc6e83f",
+      "id": "90f6fb0b-12e5-4c84-af4c-67b9c3499e66",
       "type": "rectangle",
       "x": 955,
       "y": 170,
@@ -800,7 +800,7 @@
       "locked": false
     },
     {
-      "id": "a79b740e-c2dc-474d-bcb2-827ef14dbfab",
+      "id": "4cdafb9d-3138-45f2-80f5-4efa323f5226",
       "type": "text",
       "x": 1034.5,
       "y": 194,
@@ -834,7 +834,7 @@
       "baseline": 16
     },
     {
-      "id": "b4997d9c-2ce9-43cc-b7d2-cc2e5c7377f2",
+      "id": "1b7b34df-35ab-47eb-9883-e39d4bc88850",
       "type": "text",
       "x": 1024.0,
       "y": 214,
@@ -868,7 +868,7 @@
       "baseline": 12
     },
     {
-      "id": "1bc23324-6b29-4962-af27-954d1d62e7c3",
+      "id": "f06360ee-8707-43c7-9244-aa84449ab328",
       "type": "text",
       "x": 1031.0,
       "y": 230,
@@ -902,7 +902,7 @@
       "baseline": 12
     },
     {
-      "id": "61d2517b-dbbd-4e67-bad7-e11fc49b72df",
+      "id": "58f295e6-28c2-430f-ae46-8b939223ebaa",
       "type": "rectangle",
       "x": 690,
       "y": 298,
@@ -930,7 +930,7 @@
       "locked": false
     },
     {
-      "id": "debbdbfe-acf0-4784-b9e5-81487292dfaf",
+      "id": "5a93ae1d-4f29-4266-869c-5035b8256f96",
       "type": "text",
       "x": 779.0,
       "y": 322,
@@ -964,7 +964,7 @@
       "baseline": 16
     },
     {
-      "id": "c2ffbaae-a1a2-4da8-8419-5a0df83a4894",
+      "id": "cd70a9de-2656-41e7-87e4-8e4f248eccc2",
       "type": "text",
       "x": 759.0,
       "y": 342,
@@ -998,7 +998,7 @@
       "baseline": 12
     },
     {
-      "id": "d823d45a-73f0-4551-a899-832c640ff687",
+      "id": "74c62aeb-795f-4e59-8766-307155ed03ef",
       "type": "text",
       "x": 766.0,
       "y": 358,
@@ -1032,7 +1032,7 @@
       "baseline": 12
     },
     {
-      "id": "3ce2685e-aa30-498b-8fa9-3d020bd54be9",
+      "id": "f932d9a7-22f2-4bcf-99e8-d4f1c5306a25",
       "type": "rectangle",
       "x": 955,
       "y": 298,
@@ -1060,7 +1060,7 @@
       "locked": false
     },
     {
-      "id": "e6de3c82-8a8d-4447-a8a4-0bebdcbefaa7",
+      "id": "51a0c6a0-4845-446f-99d5-1603fab17094",
       "type": "text",
       "x": 1039.5,
       "y": 322,
@@ -1094,7 +1094,7 @@
       "baseline": 16
     },
     {
-      "id": "48f185e0-4c80-4461-b0be-2c0aa973ffeb",
+      "id": "1c63effd-dc32-441e-b7ac-f3fc89a37c61",
       "type": "text",
       "x": 1024.0,
       "y": 342,
@@ -1128,7 +1128,7 @@
       "baseline": 12
     },
     {
-      "id": "08127d7f-c255-4d83-8c1a-35420db6acd6",
+      "id": "1e949b56-4306-4ef8-8141-fcbbed4e425f",
       "type": "text",
       "x": 1031.0,
       "y": 358,
@@ -1162,7 +1162,7 @@
       "baseline": 12
     },
     {
-      "id": "e6013720-323a-44df-a2af-141981134bf4",
+      "id": "bedbb33d-f0e0-472e-ab3a-f8479d710387",
       "type": "rectangle",
       "x": 690,
       "y": 426,
@@ -1190,7 +1190,7 @@
       "locked": false
     },
     {
-      "id": "349d29c6-efce-482f-9f66-1f0f5605ae2f",
+      "id": "b343fcf6-c277-4030-aef6-137265fae0f5",
       "type": "text",
       "x": 755.0,
       "y": 450,
@@ -1224,7 +1224,7 @@
       "baseline": 16
     },
     {
-      "id": "7a40d840-f919-493a-85b8-2d5f20ab1a31",
+      "id": "8e8db6d7-042b-4fd1-87f2-cfa0e18df674",
       "type": "text",
       "x": 759.0,
       "y": 470,
@@ -1258,7 +1258,7 @@
       "baseline": 12
     },
     {
-      "id": "a30db025-c5ad-4b45-bebf-8c91d0b248a7",
+      "id": "ac87156e-8582-4e97-88dd-78456a58fcbe",
       "type": "text",
       "x": 766.0,
       "y": 486,
@@ -1292,7 +1292,7 @@
       "baseline": 12
     },
     {
-      "id": "d20a89f5-a6a7-4fcb-959f-5f4816b05858",
+      "id": "be2bc825-c199-4034-a0b0-e5fa1323243c",
       "type": "rectangle",
       "x": 955,
       "y": 426,
@@ -1320,7 +1320,7 @@
       "locked": false
     },
     {
-      "id": "a6c16e6c-b7e3-4475-988b-6aa34ff2f813",
+      "id": "3c453fa1-a2f9-4dce-97f6-d725a07b56bf",
       "type": "text",
       "x": 1049.0,
       "y": 450,
@@ -1354,7 +1354,7 @@
       "baseline": 16
     },
     {
-      "id": "56183694-1d41-4c8d-8b78-a27e72e9838b",
+      "id": "8d789d2a-32d4-4513-8130-94ef25237124",
       "type": "text",
       "x": 1024.0,
       "y": 470,
@@ -1388,7 +1388,7 @@
       "baseline": 12
     },
     {
-      "id": "6b11e6e3-e0de-4853-b2cc-19707bfc848b",
+      "id": "4ea13649-3a40-4d1d-a991-0fc951ec42b3",
       "type": "text",
       "x": 1031.0,
       "y": 486,

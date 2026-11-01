@@ -23,7 +23,7 @@ date: 2026-10-02
 ### A.1 Core decisions
 
 **ADLC: a thin spine thread + one anchor chapter, NOT a dedicated part.**
-The ADLC (AI Development Lifecycle) is woven through the book as a recurring
+The ADLC (Agentic Development Lifecycle) is woven through the book as a recurring
 "How this chapter was built with agents" sidebar and a **single anchor chapter**
 early in Part 1 that defines the ADLC phases once. Rationale: a dedicated ADLC
 *part* would be speculative apparatus (violates scope discipline) and would
@@ -323,7 +323,7 @@ flag-reversible before decommissioning the monolith slice.
 
 ## F. ADLC / agentic-workflow design
 
-The ADLC (AI Development Lifecycle) replaces the SDLC phases with
+The ADLC (Agentic Development Lifecycle) replaces the SDLC phases with
 agent-augmented ones. Defined once (Ch.2), demonstrated throughout.
 
 ### F.1 Phases (replacing SDLC)

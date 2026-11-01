@@ -54,7 +54,7 @@ notification = node(900, 260, 240, 120,
 payment = node(160, 420, 240, 100,
                ["Payment", "Ca: moderate (1 inbound call)", "Ce: ~0 today"], style="box")
 shipping = node(900, 420, 240, 100,
-                ["Shipping", "Ca: moderate (1 inbound call)", "Ce: ~0 today; +1 post-ch.23"], style="box")
+                ["Shipping", "Ca: moderate (1 inbound call)", "Ce: ~0 today; +1 after payment"], style="box")
 
 top_nodes = [review, order_n, inventory, notification, payment, shipping]
 top_edges = [
@@ -65,7 +65,7 @@ top_edges = [
     connect(payment, order_n, label="Payment.order_id FK", ly=18),
     connect(shipping, order_n, label="Shipment.order_id FK", ly=18),
     connect(notification, order_n, label="Notification.order_id FK", ly=18),
-    connect(shipping, payment, dashed=True, label="future -- after payment extracted (ch.23)"),
+    connect(shipping, payment, dashed=True, label="future -- after payment extracted"),
 ]
 
 # ============================================================================
@@ -76,12 +76,12 @@ band_bottom = {"x": 20, "y": 560, "w": 1260, "h": 260,
                "fill": "#eaf4ec"}
 
 SEQ = [
-    ("1. Review -- ch.15", "Ca~ 0, Ce~ 0 -- lowest score", "ghost"),
-    ("2. Notification -- ch.17", "low Ca, low Ce", "box"),
-    ("3. Inventory -- ch.19", "moderate Ca, Ce~ 0", "box"),
-    ("4. Payment -- ch.23", "moderate Ca, Ce~ 0", "box"),
-    ("5. Shipping -- ch.24", "moderate Ca, Ce~ 0", "box"),
-    ("6. Order -- ch.26", "highest Ca, highest Ce", "ink"),
+    ("1. Review", "Ca~ 0, Ce~ 0 -- lowest score", "ghost"),
+    ("2. Notification", "low Ca, low Ce", "box"),
+    ("3. Inventory", "moderate Ca, Ce~ 0", "box"),
+    ("4. Payment", "moderate Ca, Ce~ 0", "box"),
+    ("5. Shipping", "moderate Ca, Ce~ 0", "box"),
+    ("6. Order", "highest Ca, highest Ce", "ink"),
 ]
 SEQ_W, SEQ_GUTTER, SEQ_X0, SEQ_Y, SEQ_H = 190, 16, 40, 640, 110
 
@@ -97,7 +97,7 @@ for i in range(len(seq_nodes) - 1):
 
 notes = [
     {"x": W / 2, "y": 32,
-     "text": "ch.13 -- the dependency graph, scored by Ca/Ce, resolves into the extraction order",
+     "text": "the dependency graph, scored by Ca/Ce, resolves into the extraction order",
      "anchor": "middle", "bold": True, "size": 16},
 
     {"x": 40, "y": 554,

@@ -4,7 +4,7 @@
   "source": "dgen.py",
   "elements": [
     {
-      "id": "ecb4682c-b8c3-4513-b79e-f43d385489b9",
+      "id": "ee71c3d1-fb7e-4171-bb0f-0877fa0a9542",
       "type": "text",
       "x": 435.0,
       "y": 14,
@@ -38,11 +38,11 @@
       "baseline": 22
     },
     {
-      "id": "5d897248-b589-4060-a1fb-291c77d83240",
+      "id": "f04a9d6b-d4e7-4b67-ad8a-273e6b9353a0",
       "type": "text",
-      "x": 167.5,
+      "x": 172.0,
       "y": 50,
-      "width": 865,
+      "width": 856,
       "height": 18,
       "angle": 0,
       "strokeColor": "#5A5A5A",
@@ -63,16 +63,16 @@
       "locked": false,
       "fontSize": 14,
       "fontFamily": 1,
-      "text": "Quarkus does classpath scanning, metamodel building, and proxying once at build \u2014 the runtime just runs",
+      "text": "Quarkus does classpath scanning, metamodel building, and proxying once at build; the runtime just runs",
       "textAlign": "center",
       "verticalAlign": "top",
       "containerId": null,
-      "originalText": "Quarkus does classpath scanning, metamodel building, and proxying once at build \u2014 the runtime just runs",
+      "originalText": "Quarkus does classpath scanning, metamodel building, and proxying once at build; the runtime just runs",
       "lineHeight": 1.25,
       "baseline": 14
     },
     {
-      "id": "fe043d0c-51e2-49a8-a002-551e58b60da6",
+      "id": "0e28b563-21ae-4b4e-b177-3e225d15cfb0",
       "type": "rectangle",
       "x": 50,
       "y": 110,
@@ -100,11 +100,11 @@
       "locked": false
     },
     {
-      "id": "8413bc93-29f9-4cfd-8889-8c39e9fe9825",
+      "id": "4882c8bc-b01e-49eb-b72e-f8e391e04c5a",
       "type": "text",
       "x": 74,
       "y": 123,
-      "width": 319,
+      "width": 312,
       "height": 17,
       "angle": 0,
       "strokeColor": "#B71C1C",
@@ -125,16 +125,16 @@
       "locked": false,
       "fontSize": 13,
       "fontFamily": 1,
-      "text": "Traditional JVM framework \u2014 at every boot",
+      "text": "Traditional JVM framework: at every boot",
       "textAlign": "left",
       "verticalAlign": "top",
       "containerId": null,
-      "originalText": "Traditional JVM framework \u2014 at every boot",
+      "originalText": "Traditional JVM framework: at every boot",
       "lineHeight": 1.25,
       "baseline": 13
     },
     {
-      "id": "341ec8d1-c750-45de-b121-38ecbe4b0972",
+      "id": "d02a89ce-e9e6-4d35-98ff-2bfed81b9ef6",
       "type": "rectangle",
       "x": 80,
       "y": 170,
@@ -162,7 +162,7 @@
       "locked": false
     },
     {
-      "id": "457aeb84-78f1-46c6-9782-5bee11264d26",
+      "id": "dcb95b03-480a-4f07-8f2c-4662b1082d64",
       "type": "text",
       "x": 224.0,
       "y": 194,
@@ -196,7 +196,7 @@
       "baseline": 16
     },
     {
-      "id": "4465a4ea-f334-4028-afb9-2354934d7c16",
+      "id": "4f26afea-251b-4c2a-8349-79ae6e9ca3a3",
       "type": "text",
       "x": 213.0,
       "y": 214,
@@ -230,7 +230,7 @@
       "baseline": 12
     },
     {
-      "id": "50eb93de-6c8b-4132-8f60-6915059d760a",
+      "id": "97fa8625-a052-478e-81fd-490ee0cee1fe",
       "type": "rectangle",
       "x": 80,
       "y": 258,
@@ -258,7 +258,7 @@
       "locked": false
     },
     {
-      "id": "fd85ff6e-53cb-4925-ad48-85fcf44e7afd",
+      "id": "273c63dc-9a06-4cd3-b6a3-9084286a6e09",
       "type": "text",
       "x": 219.0,
       "y": 282,
@@ -292,7 +292,7 @@
       "baseline": 16
     },
     {
-      "id": "141db6d2-91a6-4c75-bc46-594912e3762a",
+      "id": "2df68b62-901f-4772-b5ba-0c7804a3ab9d",
       "type": "text",
       "x": 242.0,
       "y": 302,
@@ -326,7 +326,7 @@
       "baseline": 12
     },
     {
-      "id": "25ba217a-784f-4cf4-8e11-cd67fdea481b",
+      "id": "380642f8-eafd-47f1-b56a-05d48c3e13df",
       "type": "rectangle",
       "x": 80,
       "y": 346,
@@ -354,7 +354,7 @@
       "locked": false
     },
     {
-      "id": "377f0ec7-4b21-4fc8-a24a-d9a191a5ded2",
+      "id": "7f2668c8-6b36-4fe7-b0a6-79f5aa4437c0",
       "type": "text",
       "x": 233.5,
       "y": 370,
@@ -388,7 +388,7 @@
       "baseline": 16
     },
     {
-      "id": "c974581f-e6c5-4b67-9761-301769ca0191",
+      "id": "8e4036b6-9b33-45fa-8584-a1dfe36931c5",
       "type": "text",
       "x": 242.0,
       "y": 390,
@@ -422,7 +422,7 @@
       "baseline": 12
     },
     {
-      "id": "0c2d80b4-b742-4374-8cb1-abfe30f28761",
+      "id": "6be64024-57c4-413a-948a-8c9923f14256",
       "type": "rectangle",
       "x": 80,
       "y": 434,
@@ -450,7 +450,7 @@
       "locked": false
     },
     {
-      "id": "a575a0f2-6443-44e7-babd-2c1d875d3ffc",
+      "id": "b551cf25-ecd3-4c52-a219-218bf7ec5813",
       "type": "text",
       "x": 204.5,
       "y": 458,
@@ -484,7 +484,7 @@
       "baseline": 16
     },
     {
-      "id": "93ab4ec1-9864-4344-8d7c-bbff4a25ad22",
+      "id": "9bd06ad5-0c00-4e7d-9489-b35af2b4995e",
       "type": "text",
       "x": 216.5,
       "y": 478,
@@ -518,7 +518,7 @@
       "baseline": 12
     },
     {
-      "id": "0dfcb967-983b-49b7-9662-c3afed336053",
+      "id": "f7e27d72-1961-4d56-a531-d500dbe489fc",
       "type": "rectangle",
       "x": 630,
       "y": 110,
@@ -546,11 +546,11 @@
       "locked": false
     },
     {
-      "id": "3a38e27c-6e3e-4d14-b6f4-51b2e84952ed",
+      "id": "ace4d1b3-2869-4958-9c33-69d3f3a2a5ba",
       "type": "text",
       "x": 654,
       "y": 123,
-      "width": 226,
+      "width": 218,
       "height": 17,
       "angle": 0,
       "strokeColor": "#006E6E",
@@ -571,16 +571,16 @@
       "locked": false,
       "fontSize": 13,
       "fontFamily": 1,
-      "text": "Quarkus \u2014 once, at build time",
+      "text": "Quarkus: once, at build time",
       "textAlign": "left",
       "verticalAlign": "top",
       "containerId": null,
-      "originalText": "Quarkus \u2014 once, at build time",
+      "originalText": "Quarkus: once, at build time",
       "lineHeight": 1.25,
       "baseline": 13
     },
     {
-      "id": "6934c898-1165-4d88-8dc7-49fee5d60edf",
+      "id": "153915e0-00bc-4986-bb30-32af79ce3c26",
       "type": "rectangle",
       "x": 660,
       "y": 170,
@@ -608,7 +608,7 @@
       "locked": false
     },
     {
-      "id": "7513bc06-5be0-4260-9b33-1e870c1bc85e",
+      "id": "6285d49c-b1e2-4a8e-9aa6-fdd596143e7c",
       "type": "text",
       "x": 789.5,
       "y": 194,
@@ -642,7 +642,7 @@
       "baseline": 16
     },
     {
-      "id": "85726df9-cfcb-4913-809a-9b9ccf899e3c",
+      "id": "2308e76f-12ae-4b9f-9415-caf0633b547c",
       "type": "text",
       "x": 804.0,
       "y": 214,
@@ -676,7 +676,7 @@
       "baseline": 12
     },
     {
-      "id": "f72ecfe1-20ff-4791-96db-adf016f4f444",
+      "id": "543d3fc8-d754-4e07-92d8-7104c5a4722e",
       "type": "rectangle",
       "x": 660,
       "y": 258,
@@ -704,7 +704,7 @@
       "locked": false
     },
     {
-      "id": "1a3cde60-26d1-4751-90f1-09c0fc24d84d",
+      "id": "c5be9629-8839-4274-914d-bd391d2c794f",
       "type": "text",
       "x": 784.5,
       "y": 282,
@@ -738,7 +738,7 @@
       "baseline": 16
     },
     {
-      "id": "feb9b341-8041-4589-b5ac-e68328418d8c",
+      "id": "bf340349-e350-425b-8afc-a5e564046528",
       "type": "text",
       "x": 807.5,
       "y": 302,
@@ -772,7 +772,7 @@
       "baseline": 12
     },
     {
-      "id": "aab7ed01-6434-49d0-8221-dbfb015b7b06",
+      "id": "8c3b2858-69d7-4acf-a259-5506c8eefbd8",
       "type": "rectangle",
       "x": 660,
       "y": 346,
@@ -800,7 +800,7 @@
       "locked": false
     },
     {
-      "id": "a7b96142-adec-41eb-8f5a-a43ee4e3d47f",
+      "id": "85452247-a06e-4dc8-bc46-eb67b2b22919",
       "type": "text",
       "x": 808.5,
       "y": 370,
@@ -834,7 +834,7 @@
       "baseline": 16
     },
     {
-      "id": "6a596acb-b95b-4560-9648-126f9b531849",
+      "id": "137e64cd-cbfe-429b-9255-6a21477751c4",
       "type": "text",
       "x": 814.5,
       "y": 390,
@@ -868,7 +868,7 @@
       "baseline": 12
     },
     {
-      "id": "0846b4ec-fbcf-4d29-a117-d5658089f5e6",
+      "id": "77a0feb5-eb53-43d7-9b40-9d56ac2cb819",
       "type": "rectangle",
       "x": 660,
       "y": 434,
@@ -896,7 +896,7 @@
       "locked": false
     },
     {
-      "id": "a03e77e3-a06c-44ce-be73-b8df23d80c42",
+      "id": "80f051b7-74ad-4b90-86b3-93b8039a6b1c",
       "type": "text",
       "x": 765.5,
       "y": 458,
@@ -930,7 +930,7 @@
       "baseline": 16
     },
     {
-      "id": "a5152c74-57db-40d6-8851-644e13dd45d0",
+      "id": "2ed74dd8-b42a-4687-9f9d-b11be257e3dd",
       "type": "text",
       "x": 804.0,
       "y": 478,
@@ -964,7 +964,7 @@
       "baseline": 12
     },
     {
-      "id": "36f3bc80-7d4b-4344-90c1-f129b0e84b38",
+      "id": "2992aa57-a044-429d-99f6-f88c8987c4f9",
       "type": "arrow",
       "x": 540,
       "y": 400,
@@ -1004,7 +1004,7 @@
       "endArrowhead": "arrow"
     },
     {
-      "id": "d394573d-5ddc-4280-968f-f9dd8e655e42",
+      "id": "8ad9ec9e-85c4-4a14-9266-998d6c6d3e4d",
       "type": "text",
       "x": 567.0,
       "y": 382.0,

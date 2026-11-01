@@ -4,11 +4,11 @@
   "source": "dgen.py",
   "elements": [
     {
-      "id": "69b372ea-9637-451f-9697-5b5924be2e93",
+      "id": "3437763f-5749-4640-87ad-7952b490afff",
       "type": "text",
-      "x": 283.5,
+      "x": 290.0,
       "y": 14,
-      "width": 633,
+      "width": 620,
       "height": 26,
       "angle": 0,
       "strokeColor": "#4A4A4A",
@@ -29,16 +29,16 @@
       "locked": false,
       "fontSize": 22,
       "fontFamily": 1,
-      "text": "The coupling ladder \u2014 sequencing the extractions",
+      "text": "The coupling ladder: sequencing the extractions",
       "textAlign": "center",
       "verticalAlign": "top",
       "containerId": null,
-      "originalText": "The coupling ladder \u2014 sequencing the extractions",
+      "originalText": "The coupling ladder: sequencing the extractions",
       "lineHeight": 1.25,
       "baseline": 22
     },
     {
-      "id": "2b34b7f0-6034-4f0c-a148-ceed319632d0",
+      "id": "86b6b5f9-0db0-4ce0-aa17-2f5e224a7f87",
       "type": "text",
       "x": 205.5,
       "y": 50,
@@ -72,7 +72,7 @@
       "baseline": 14
     },
     {
-      "id": "c17f4e4c-6023-40f6-8064-21705569e801",
+      "id": "153286ed-fdab-476e-a47c-365ad4919c7c",
       "type": "rectangle",
       "x": 150,
       "y": 110,
@@ -100,7 +100,7 @@
       "locked": false
     },
     {
-      "id": "19c0ff4a-1c72-4e92-8707-d91ea900fd69",
+      "id": "0fa69f9a-4490-47f4-b85a-1d2ae7479c99",
       "type": "text",
       "x": 525.5,
       "y": 134,
@@ -134,7 +134,7 @@
       "baseline": 16
     },
     {
-      "id": "f4831f49-5d5a-4470-9459-5e15f7892998",
+      "id": "8309de86-6885-4880-8abb-634e32831732",
       "type": "text",
       "x": 399.5,
       "y": 154,
@@ -159,16 +159,16 @@
       "locked": false,
       "fontSize": 12,
       "fontFamily": 1,
-      "text": "placeOrder reads a live InventoryItem straight from inventory \u2014 Smell 5",
+      "text": "placeOrder reads a live InventoryItem straight from inventory (Smell 5)",
       "textAlign": "center",
       "verticalAlign": "top",
       "containerId": null,
-      "originalText": "placeOrder reads a live InventoryItem straight from inventory \u2014 Smell 5",
+      "originalText": "placeOrder reads a live InventoryItem straight from inventory (Smell 5)",
       "lineHeight": 1.25,
       "baseline": 12
     },
     {
-      "id": "c2ded0c4-514b-4101-ae5b-de400fdca181",
+      "id": "865fcfa7-306b-4185-8ef3-a26aab8e2d7d",
       "type": "rectangle",
       "x": 150,
       "y": 216,
@@ -196,7 +196,7 @@
       "locked": false
     },
     {
-      "id": "b6e072a0-5759-4b27-94af-181fa5974803",
+      "id": "ea4b9283-09a4-4718-b7eb-15aa805438be",
       "type": "text",
       "x": 569.0,
       "y": 240,
@@ -230,7 +230,7 @@
       "baseline": 16
     },
     {
-      "id": "193ef20e-f7d2-4d92-a54b-b5dc6e27f049",
+      "id": "40a2a386-6661-4764-b619-d813465a8557",
       "type": "text",
       "x": 407.0,
       "y": 260,
@@ -255,16 +255,16 @@
       "locked": false,
       "fontSize": 12,
       "fontFamily": 1,
-      "text": "one shared Postgres schema, six contexts, no enforced owner \u2014 Smell 1",
+      "text": "one shared Postgres schema, six contexts, no enforced owner (Smell 1)",
       "textAlign": "center",
       "verticalAlign": "top",
       "containerId": null,
-      "originalText": "one shared Postgres schema, six contexts, no enforced owner \u2014 Smell 1",
+      "originalText": "one shared Postgres schema, six contexts, no enforced owner (Smell 1)",
       "lineHeight": 1.25,
       "baseline": 12
     },
     {
-      "id": "bbefb96f-173f-42c9-8bc1-e133429ab929",
+      "id": "dcf0f441-71bd-4522-85dc-da64fa14d9a2",
       "type": "rectangle",
       "x": 150,
       "y": 322,
@@ -292,7 +292,7 @@
       "locked": false
     },
     {
-      "id": "e05b2785-547a-49f0-877d-4d2b2cd88d87",
+      "id": "97ed067d-11ca-4a34-9763-edab342966ba",
       "type": "text",
       "x": 564.0,
       "y": 346,
@@ -326,7 +326,7 @@
       "baseline": 16
     },
     {
-      "id": "e3d7a32e-8b13-4fcc-9e19-dc0c2a6031b5",
+      "id": "b342ef77-1794-46c6-9620-671835631127",
       "type": "text",
       "x": 396.0,
       "y": 366,
@@ -360,7 +360,7 @@
       "baseline": 12
     },
     {
-      "id": "e2306192-5a56-401d-8745-242b6f4a4035",
+      "id": "f66b74bf-3376-4bf4-a652-1d5c43e8417f",
       "type": "rectangle",
       "x": 150,
       "y": 428,
@@ -388,7 +388,7 @@
       "locked": false
     },
     {
-      "id": "601b0d05-6c22-419e-8837-1d4254047ef3",
+      "id": "0942b351-225a-49e7-9dc6-e6253efd228f",
       "type": "text",
       "x": 573.5,
       "y": 452,
@@ -422,7 +422,7 @@
       "baseline": 16
     },
     {
-      "id": "e120fa89-fea6-4327-90ee-b92d27abdf48",
+      "id": "b4b9cc1e-929b-43c9-bf1d-e444991b0ad0",
       "type": "text",
       "x": 407.0,
       "y": 472,
@@ -456,7 +456,7 @@
       "baseline": 12
     },
     {
-      "id": "be910632-7bc6-4588-b099-372571f02489",
+      "id": "7416d980-9f78-45df-b109-e0baffe9ec8e",
       "type": "rectangle",
       "x": 150,
       "y": 534,
@@ -484,11 +484,11 @@
       "locked": false
     },
     {
-      "id": "bbabcff6-0e21-4d6d-b0b0-8e5c73a4d77c",
+      "id": "1aacbc03-9874-4b2a-a53d-f1f54b5f6dab",
       "type": "text",
-      "x": 516.0,
+      "x": 521.0,
       "y": 558,
-      "width": 278,
+      "width": 268,
       "height": 20,
       "angle": 0,
       "strokeColor": "#343a40",
@@ -509,16 +509,16 @@
       "locked": false,
       "fontSize": 16,
       "fontFamily": 1,
-      "text": "5. Data coupling \u2014 done right",
+      "text": "5. Data coupling, done right",
       "textAlign": "center",
       "verticalAlign": "top",
       "containerId": null,
-      "originalText": "5. Data coupling \u2014 done right",
+      "originalText": "5. Data coupling, done right",
       "lineHeight": 1.25,
       "baseline": 16
     },
     {
-      "id": "68a8c462-e144-4ce4-b5fd-648abf2fb8a9",
+      "id": "08ad8807-b84f-432e-a69c-d4421e0feb3e",
       "type": "text",
       "x": 453.5,
       "y": 578,
@@ -552,7 +552,7 @@
       "baseline": 12
     },
     {
-      "id": "ea257956-59e6-4da2-ad51-08756e9172f9",
+      "id": "3aa2d4b5-2228-4fd2-a858-2b70d1de6a7d",
       "type": "rectangle",
       "x": 150,
       "y": 640,
@@ -580,7 +580,7 @@
       "locked": false
     },
     {
-      "id": "20dc0918-ea77-41ed-8f82-33282aaa9809",
+      "id": "84360305-c85d-46db-9615-28620e932bff",
       "type": "text",
       "x": 521.0,
       "y": 664,
@@ -614,11 +614,11 @@
       "baseline": 16
     },
     {
-      "id": "0bf8adb8-67fb-4f03-9663-ef0d3b62ebbe",
+      "id": "889c47ec-eae7-4fe9-9af8-8f5e3353b177",
       "type": "text",
-      "x": 417.5,
+      "x": 421.5,
       "y": 684,
-      "width": 475,
+      "width": 467,
       "height": 16,
       "angle": 0,
       "strokeColor": "#495057",
@@ -639,16 +639,16 @@
       "locked": false,
       "fontSize": 12,
       "fontFamily": 1,
-      "text": "no monolith example \u2014 interaction only through messages (ch.14\u201326)",
+      "text": "no monolith example: interaction only through messages (ch.14\u201326)",
       "textAlign": "center",
       "verticalAlign": "top",
       "containerId": null,
-      "originalText": "no monolith example \u2014 interaction only through messages (ch.14\u201326)",
+      "originalText": "no monolith example: interaction only through messages (ch.14\u201326)",
       "lineHeight": 1.25,
       "baseline": 12
     },
     {
-      "id": "0359cb7a-1a33-4d0f-9563-d667df5071e2",
+      "id": "53c61da7-34d8-4f9c-b4a4-9284672cebd1",
       "type": "rectangle",
       "x": 150,
       "y": 746,
@@ -676,7 +676,7 @@
       "locked": false
     },
     {
-      "id": "ecabce58-2892-4110-bb93-20c37f75c5e8",
+      "id": "5450d2c4-e378-4aea-8004-b0d2a5600860",
       "type": "text",
       "x": 511.0,
       "y": 770,
@@ -710,11 +710,11 @@
       "baseline": 16
     },
     {
-      "id": "59018762-6928-4bb6-9aa4-7dba14ae43e9",
+      "id": "ed365439-a136-430c-9c25-1e3beb1adb41",
       "type": "text",
-      "x": 446.5,
+      "x": 450.0,
       "y": 790,
-      "width": 417,
+      "width": 410,
       "height": 16,
       "angle": 0,
       "strokeColor": "#495057",
@@ -735,16 +735,16 @@
       "locked": false,
       "fontSize": 12,
       "fontFamily": 1,
-      "text": "no monolith example \u2014 a versioned contract at the boundary",
+      "text": "no monolith example: a versioned contract at the boundary",
       "textAlign": "center",
       "verticalAlign": "top",
       "containerId": null,
-      "originalText": "no monolith example \u2014 a versioned contract at the boundary",
+      "originalText": "no monolith example: a versioned contract at the boundary",
       "lineHeight": 1.25,
       "baseline": 12
     },
     {
-      "id": "07ad16eb-536b-4aba-9d6d-a858699b8928",
+      "id": "50fdd086-a80f-4f92-956b-5cf19ab7e1e1",
       "type": "arrow",
       "x": 90,
       "y": 130,
@@ -784,7 +784,7 @@
       "endArrowhead": "arrow"
     },
     {
-      "id": "f1e061be-cee3-40dd-8aee-8bdcec52ae24",
+      "id": "0c9e042e-4bb0-45b4-8e70-91aca9423b75",
       "type": "text",
       "x": 52.0,
       "y": 108,
@@ -818,7 +818,7 @@
       "baseline": 12
     },
     {
-      "id": "6ce579a8-8a31-4037-b8ef-5e7b51e611b6",
+      "id": "9a7036e4-8882-472e-9a52-413890f862d8",
       "type": "text",
       "x": 56.0,
       "y": 828,
@@ -852,11 +852,11 @@
       "baseline": 12
     },
     {
-      "id": "bcc8d130-696c-437c-8fb6-4395bce9008b",
+      "id": "6ffc1de7-bf86-462f-bb1d-6acfdd2fbf67",
       "type": "text",
       "x": 150,
       "y": 627,
-      "width": 435,
+      "width": 429,
       "height": 15,
       "angle": 0,
       "strokeColor": "#5A5A5A",
@@ -877,11 +877,11 @@
       "locked": false,
       "fontSize": 11,
       "fontFamily": 1,
-      "text": "no monolith example below rung 5 \u2014 the extractions build toward it",
+      "text": "no monolith example below rung 5: the extractions build toward it",
       "textAlign": "left",
       "verticalAlign": "top",
       "containerId": null,
-      "originalText": "no monolith example below rung 5 \u2014 the extractions build toward it",
+      "originalText": "no monolith example below rung 5: the extractions build toward it",
       "lineHeight": 1.25,
       "baseline": 11
     }

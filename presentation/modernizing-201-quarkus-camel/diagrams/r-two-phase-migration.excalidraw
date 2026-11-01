@@ -4,11 +4,11 @@
   "source": "dgen.py",
   "elements": [
     {
-      "id": "5470b66c-8a2f-4860-ad9d-b16316b4b063",
+      "id": "ca0d7516-5259-452c-9e2f-2a7ea321e88e",
       "type": "text",
-      "x": 283.5,
+      "x": 290.0,
       "y": 14,
-      "width": 633,
+      "width": 620,
       "height": 26,
       "angle": 0,
       "strokeColor": "#4A4A4A",
@@ -29,16 +29,16 @@
       "locked": false,
       "fontSize": 22,
       "fontFamily": 1,
-      "text": "The two-phase migration \u2014 the per-service recipe",
+      "text": "The two-phase migration: the per-service recipe",
       "textAlign": "center",
       "verticalAlign": "top",
       "containerId": null,
-      "originalText": "The two-phase migration \u2014 the per-service recipe",
+      "originalText": "The two-phase migration: the per-service recipe",
       "lineHeight": 1.25,
       "baseline": 22
     },
     {
-      "id": "dd32e561-b13f-4dd4-b77c-b4787ddee488",
+      "id": "bca7c9b6-cd3d-47f6-b45f-721f33bf1a14",
       "type": "text",
       "x": 184.5,
       "y": 50,
@@ -72,7 +72,7 @@
       "baseline": 14
     },
     {
-      "id": "156093c5-0148-4c39-a4f2-ca050d845aa5",
+      "id": "2b3951d8-fa7d-4425-b01a-77e5313aafe2",
       "type": "rectangle",
       "x": 70,
       "y": 120,
@@ -100,11 +100,11 @@
       "locked": false
     },
     {
-      "id": "cd899902-afdf-4e57-8326-34412d0d4e2b",
+      "id": "4a6ddf83-82ca-458e-b222-9cc522847f12",
       "type": "text",
-      "x": 100.5,
+      "x": 105.5,
       "y": 144,
-      "width": 259,
+      "width": 249,
       "height": 20,
       "angle": 0,
       "strokeColor": "#343a40",
@@ -125,16 +125,16 @@
       "locked": false,
       "fontSize": 16,
       "fontFamily": 1,
-      "text": "Phase A \u2014 lift onto Quarkus",
+      "text": "Phase A: lift onto Quarkus",
       "textAlign": "center",
       "verticalAlign": "top",
       "containerId": null,
-      "originalText": "Phase A \u2014 lift onto Quarkus",
+      "originalText": "Phase A: lift onto Quarkus",
       "lineHeight": 1.25,
       "baseline": 16
     },
     {
-      "id": "7ef136a4-e4f5-47ec-9a15-b78a5c20bcd3",
+      "id": "8a336ce8-099e-436f-88eb-918944f75a3f",
       "type": "text",
       "x": 144.0,
       "y": 164,
@@ -168,7 +168,7 @@
       "baseline": 12
     },
     {
-      "id": "95d2eb7a-b76d-4ae5-bec9-2c98a87f37c5",
+      "id": "afa95051-a512-40f8-8aa5-e45d6945d67f",
       "type": "text",
       "x": 129.5,
       "y": 180,
@@ -202,7 +202,7 @@
       "baseline": 12
     },
     {
-      "id": "28d332de-2e6d-4f13-a561-2201371361c7",
+      "id": "7c0fbdc3-2aef-43d7-b82a-3ce9bc2ea439",
       "type": "text",
       "x": 169.0,
       "y": 196,
@@ -236,7 +236,7 @@
       "baseline": 12
     },
     {
-      "id": "811cec0b-0505-4c1d-9f9a-40df02ce7f8e",
+      "id": "dcbff9dc-7d79-4403-82c6-c82b64c7725d",
       "type": "rectangle",
       "x": 440,
       "y": 120,
@@ -264,11 +264,11 @@
       "locked": false
     },
     {
-      "id": "e5149ca2-bc96-47a8-ba39-29cf1c5bbd13",
+      "id": "52d1ce18-4c7f-46f7-bf2b-5e8baa597849",
       "type": "text",
-      "x": 470.5,
+      "x": 475.5,
       "y": 144,
-      "width": 259,
+      "width": 249,
       "height": 20,
       "angle": 0,
       "strokeColor": "#343a40",
@@ -289,16 +289,16 @@
       "locked": false,
       "fontSize": 16,
       "fontFamily": 1,
-      "text": "Phase B \u2014 idiomatic Quarkus",
+      "text": "Phase B: idiomatic Quarkus",
       "textAlign": "center",
       "verticalAlign": "top",
       "containerId": null,
-      "originalText": "Phase B \u2014 idiomatic Quarkus",
+      "originalText": "Phase B: idiomatic Quarkus",
       "lineHeight": 1.25,
       "baseline": 16
     },
     {
-      "id": "99b07cb9-c2bd-48be-a36f-0c11706fa8b9",
+      "id": "e4f1f823-a6cc-4a67-b3a5-584d2a72f9e5",
       "type": "text",
       "x": 499.5,
       "y": 164,
@@ -332,7 +332,7 @@
       "baseline": 12
     },
     {
-      "id": "5cda0765-f2f2-4646-83c5-b6a72e079149",
+      "id": "a70fc96a-bb97-474d-8fd0-1b17a58700f8",
       "type": "text",
       "x": 532.0,
       "y": 180,
@@ -366,7 +366,7 @@
       "baseline": 12
     },
     {
-      "id": "35a784ee-2a52-4e5b-829a-79303cba812b",
+      "id": "80ad6a54-0930-4a39-908b-6e97039a7219",
       "type": "rectangle",
       "x": 810,
       "y": 120,
@@ -394,11 +394,11 @@
       "locked": false
     },
     {
-      "id": "77353d9b-af8c-4d6f-82ed-7f8b520a9333",
+      "id": "81c950b2-26ae-4357-b8f9-814c8123f977",
       "type": "text",
-      "x": 864.5,
+      "x": 869.5,
       "y": 144,
-      "width": 211,
+      "width": 201,
       "height": 20,
       "angle": 0,
       "strokeColor": "#343a40",
@@ -419,16 +419,16 @@
       "locked": false,
       "fontSize": 16,
       "fontFamily": 1,
-      "text": "Phase B \u2014 native image",
+      "text": "Phase B: native image",
       "textAlign": "center",
       "verticalAlign": "top",
       "containerId": null,
-      "originalText": "Phase B \u2014 native image",
+      "originalText": "Phase B: native image",
       "lineHeight": 1.25,
       "baseline": 16
     },
     {
-      "id": "03d2e85c-238b-496a-965d-420a4be7d275",
+      "id": "a9a3ffae-3c51-4627-95e7-3e6eb29123d1",
       "type": "text",
       "x": 887.5,
       "y": 164,
@@ -462,7 +462,7 @@
       "baseline": 12
     },
     {
-      "id": "7d876841-12bf-465a-a2aa-bef5a74c521d",
+      "id": "76de9507-bb57-4aef-af0c-fb4b5334a6db",
       "type": "text",
       "x": 894.5,
       "y": 180,
@@ -496,7 +496,7 @@
       "baseline": 12
     },
     {
-      "id": "0625994c-13c4-4b1b-89aa-9bd744ec813a",
+      "id": "b074f65f-c39e-4277-b367-18e157a63d4f",
       "type": "arrow",
       "x": 390,
       "y": 195,
@@ -536,7 +536,7 @@
       "endArrowhead": "arrow"
     },
     {
-      "id": "8cd6faa5-b9d2-4f8e-b23a-09ea7b5774ee",
+      "id": "df326a58-ecef-432a-a058-44979279dd48",
       "type": "text",
       "x": 389.0,
       "y": 177.0,
@@ -570,7 +570,7 @@
       "baseline": 11
     },
     {
-      "id": "5a011d0f-c265-48cf-9d43-28a3ac2c0faa",
+      "id": "b1fcafda-fd0c-4d35-8d0e-3a16eb4bcf5d",
       "type": "arrow",
       "x": 760,
       "y": 195,
@@ -610,7 +610,7 @@
       "endArrowhead": "arrow"
     },
     {
-      "id": "ab35a691-c947-4318-be97-c208437ebbef",
+      "id": "1d2799a3-c049-47a9-9baf-4e1a574ac931",
       "type": "text",
       "x": 732.5,
       "y": 177.0,
@@ -644,7 +644,7 @@
       "baseline": 11
     },
     {
-      "id": "f36ed2ca-b9de-4e3f-a697-819acc383886",
+      "id": "6289c10d-c9fe-4826-9989-4eb5e7b92002",
       "type": "rectangle",
       "x": 70,
       "y": 330,
@@ -672,7 +672,7 @@
       "locked": false
     },
     {
-      "id": "c43abe89-7c62-4532-bc1a-b0c75299dbc8",
+      "id": "0bae4bde-d91d-44fb-9164-9adc2e087384",
       "type": "text",
       "x": 100,
       "y": 351,
@@ -706,7 +706,7 @@
       "baseline": 14
     },
     {
-      "id": "7659d1d6-2959-4c4f-b6a4-bf3f0756c65a",
+      "id": "59a2986c-2bc2-43df-911d-444483aa1e6d",
       "type": "text",
       "x": 110,
       "y": 392.5,
@@ -740,7 +740,7 @@
       "baseline": 12.5
     },
     {
-      "id": "a5a2552e-a5a4-4323-9d1b-8d6a2c504b70",
+      "id": "643db28e-125e-41c9-bd2b-e1b770049404",
       "type": "text",
       "x": 640,
       "y": 392.5,
@@ -774,7 +774,7 @@
       "baseline": 12.5
     },
     {
-      "id": "d0ded979-d9ff-4cab-901d-198ae142ccf1",
+      "id": "71b0b5c6-4c87-4960-820a-c264e00f18e3",
       "type": "text",
       "x": 880,
       "y": 392.5,
@@ -808,11 +808,11 @@
       "baseline": 12.5
     },
     {
-      "id": "af03ffe6-c294-4106-84b5-83c35109d690",
+      "id": "88819bfd-da96-4dcf-bf85-178605bcd9b1",
       "type": "text",
       "x": 110,
       "y": 427.5,
-      "width": 217,
+      "width": 210,
       "height": 16.5,
       "angle": 0,
       "strokeColor": "#4A4A4A",
@@ -833,16 +833,16 @@
       "locked": false,
       "fontSize": 12.5,
       "fontFamily": 1,
-      "text": "Phase A \u2014 JVM (spring-compat)",
+      "text": "Phase A: JVM (spring-compat)",
       "textAlign": "left",
       "verticalAlign": "top",
       "containerId": null,
-      "originalText": "Phase A \u2014 JVM (spring-compat)",
+      "originalText": "Phase A: JVM (spring-compat)",
       "lineHeight": 1.25,
       "baseline": 12.5
     },
     {
-      "id": "0113e165-fcf7-4ea3-9cf3-f450dbf37a73",
+      "id": "45db3105-1b51-4f43-ae3b-6825b0421607",
       "type": "text",
       "x": 640,
       "y": 427.5,
@@ -876,7 +876,7 @@
       "baseline": 12.5
     },
     {
-      "id": "25aeb1fb-90f1-4a10-9ba7-ddfb758beccb",
+      "id": "aa9d4dd6-3166-4517-94c7-93cd0069f7c4",
       "type": "text",
       "x": 880,
       "y": 427.5,
@@ -910,11 +910,11 @@
       "baseline": 12.5
     },
     {
-      "id": "f1a60c94-1ff6-4166-93c8-bcb63e4503e7",
+      "id": "a4703c44-669e-45cd-bd5f-5e230c67ce29",
       "type": "text",
       "x": 110,
       "y": 467.5,
-      "width": 187,
+      "width": 180,
       "height": 16.5,
       "angle": 0,
       "strokeColor": "#4A4A4A",
@@ -935,16 +935,16 @@
       "locked": false,
       "fontSize": 12.5,
       "fontFamily": 1,
-      "text": "Phase B \u2014 JVM (idiomatic)",
+      "text": "Phase B: JVM (idiomatic)",
       "textAlign": "left",
       "verticalAlign": "top",
       "containerId": null,
-      "originalText": "Phase B \u2014 JVM (idiomatic)",
+      "originalText": "Phase B: JVM (idiomatic)",
       "lineHeight": 1.25,
       "baseline": 12.5
     },
     {
-      "id": "c3caf518-7b60-420c-bc46-dcf043256167",
+      "id": "0fd402cc-c6e1-491b-ad7d-09ec3e755a00",
       "type": "text",
       "x": 640,
       "y": 467.5,
@@ -978,7 +978,7 @@
       "baseline": 12.5
     },
     {
-      "id": "fc23b386-8636-407e-bc62-5c5d7590ea35",
+      "id": "f59b1b6e-bcfe-44b7-9ae5-366fbed8774d",
       "type": "text",
       "x": 880,
       "y": 467.5,
@@ -1012,11 +1012,11 @@
       "baseline": 12.5
     },
     {
-      "id": "332fce05-aedc-42dc-926f-a5e89ad5970c",
+      "id": "8be8da08-56f6-4be2-84ac-d5ae49bacf64",
       "type": "text",
       "x": 110,
       "y": 507.5,
-      "width": 165,
+      "width": 157,
       "height": 16.5,
       "angle": 0,
       "strokeColor": "#006E6E",
@@ -1037,16 +1037,16 @@
       "locked": false,
       "fontSize": 12.5,
       "fontFamily": 1,
-      "text": "Phase B \u2014 native image",
+      "text": "Phase B: native image",
       "textAlign": "left",
       "verticalAlign": "top",
       "containerId": null,
-      "originalText": "Phase B \u2014 native image",
+      "originalText": "Phase B: native image",
       "lineHeight": 1.25,
       "baseline": 12.5
     },
     {
-      "id": "00b88e00-667b-4b0b-92dd-26cc5d908b84",
+      "id": "8871e95a-225a-4719-b508-54ca69a5a5b8",
       "type": "text",
       "x": 640,
       "y": 507.5,
@@ -1080,7 +1080,7 @@
       "baseline": 12.5
     },
     {
-      "id": "934666d0-53c8-4e33-8dc7-15908afb62fc",
+      "id": "d2eb477f-fa5e-4651-9d05-f5ff1a5bc5df",
       "type": "text",
       "x": 880,
       "y": 507.5,
@@ -1114,11 +1114,11 @@
       "baseline": 12.5
     },
     {
-      "id": "f36461fc-ba7e-441f-8463-23c5f514ff0c",
+      "id": "bebe855e-fb3e-450d-9f35-f355ff7f4d53",
       "type": "text",
       "x": 100,
       "y": 607.5,
-      "width": 637,
+      "width": 630,
       "height": 16.5,
       "angle": 0,
       "strokeColor": "#006E6E",
@@ -1139,11 +1139,11 @@
       "locked": false,
       "fontSize": 12.5,
       "fontFamily": 1,
-      "text": "~30x faster startup, ~4.2x less resident memory, JVM to native \u2014 same idiomatic code.",
+      "text": "~30x faster startup, ~4.2x less resident memory, JVM to native: same idiomatic code.",
       "textAlign": "left",
       "verticalAlign": "top",
       "containerId": null,
-      "originalText": "~30x faster startup, ~4.2x less resident memory, JVM to native \u2014 same idiomatic code.",
+      "originalText": "~30x faster startup, ~4.2x less resident memory, JVM to native: same idiomatic code.",
       "lineHeight": 1.25,
       "baseline": 12.5
     }

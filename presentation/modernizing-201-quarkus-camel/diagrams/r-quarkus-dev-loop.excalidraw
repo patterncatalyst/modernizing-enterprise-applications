@@ -4,7 +4,7 @@
   "source": "dgen.py",
   "elements": [
     {
-      "id": "bf19e964-1ad0-4096-91c1-3c220d7f4505",
+      "id": "da6d47c2-c997-4788-906b-acd60d37631b",
       "type": "text",
       "x": 481.5,
       "y": 14,
@@ -38,11 +38,11 @@
       "baseline": 22
     },
     {
-      "id": "64e88e22-f6b2-459a-a228-85173eda0078",
+      "id": "ff6acf9d-0961-48e5-aa87-90e9a840431d",
       "type": "text",
-      "x": 151.0,
+      "x": 155.0,
       "y": 50,
-      "width": 898,
+      "width": 890,
       "height": 18,
       "angle": 0,
       "strokeColor": "#5A5A5A",
@@ -63,16 +63,16 @@
       "locked": false,
       "fontSize": 14,
       "fontFamily": 1,
-      "text": "mvn quarkus:dev \u2014 live reload, continuous testing, and Dev Services with no infrastructure to start by hand",
+      "text": "mvn quarkus:dev: live reload, continuous testing, and Dev Services with no infrastructure to start by hand",
       "textAlign": "center",
       "verticalAlign": "top",
       "containerId": null,
-      "originalText": "mvn quarkus:dev \u2014 live reload, continuous testing, and Dev Services with no infrastructure to start by hand",
+      "originalText": "mvn quarkus:dev: live reload, continuous testing, and Dev Services with no infrastructure to start by hand",
       "lineHeight": 1.25,
       "baseline": 14
     },
     {
-      "id": "c11cdb83-4e64-4ec5-bd0f-5819dfc50553",
+      "id": "4cba3dd2-5911-491b-b5e7-9b9c52c988f2",
       "type": "rectangle",
       "x": 460,
       "y": 250,
@@ -100,7 +100,7 @@
       "locked": false
     },
     {
-      "id": "c20b2ab4-d7aa-4377-871e-4b2c8c40858f",
+      "id": "b65823ec-6e68-42bf-a20c-ce9bcb4b6e56",
       "type": "text",
       "x": 528.0,
       "y": 274,
@@ -134,7 +134,7 @@
       "baseline": 16
     },
     {
-      "id": "6f0ff73b-363d-4ee8-ab88-b34c13bdc739",
+      "id": "f964b2fc-881c-44f6-8bd5-e51ad62f5a07",
       "type": "text",
       "x": 560.5,
       "y": 294,
@@ -168,7 +168,7 @@
       "baseline": 12
     },
     {
-      "id": "44ee31e0-3a73-491a-9ae4-ae90ac72d40d",
+      "id": "b0d51234-8174-42ab-a056-9df2b20c113a",
       "type": "text",
       "x": 524.5,
       "y": 310,
@@ -202,7 +202,7 @@
       "baseline": 12
     },
     {
-      "id": "0b001ad5-53a8-4929-807e-99d9257c6581",
+      "id": "4b5d42e1-559c-4298-8b34-73ff3d7978d8",
       "type": "rectangle",
       "x": 80,
       "y": 110,
@@ -230,7 +230,7 @@
       "locked": false
     },
     {
-      "id": "2f0da815-307b-4af3-9951-7f08f0b00544",
+      "id": "15fcdfa0-f1e8-4ea0-83af-6a8671cb1e5e",
       "type": "text",
       "x": 187.0,
       "y": 134,
@@ -264,7 +264,7 @@
       "baseline": 16
     },
     {
-      "id": "8be4c2c1-ec63-440e-ac8f-e7cba007536b",
+      "id": "d6b5eafb-111e-499c-9e1b-cec1f475f66f",
       "type": "text",
       "x": 136.5,
       "y": 154,
@@ -298,7 +298,7 @@
       "baseline": 12
     },
     {
-      "id": "b9c6bfe8-12c7-4547-a383-cbdf65747c78",
+      "id": "d6dd7880-47d9-4bf9-a57d-7005541ff141",
       "type": "rectangle",
       "x": 820,
       "y": 110,
@@ -326,7 +326,7 @@
       "locked": false
     },
     {
-      "id": "97977c0c-9fe0-447a-b000-41437b835954",
+      "id": "c114b52d-c460-48c0-8786-f91f42842d6f",
       "type": "text",
       "x": 917.5,
       "y": 134,
@@ -360,7 +360,7 @@
       "baseline": 16
     },
     {
-      "id": "1bbc5826-c98e-4335-ad0f-e7b8ae9c0894",
+      "id": "eb5e8ce1-0a13-4fb8-93e1-65eb3af88c87",
       "type": "text",
       "x": 887.5,
       "y": 154,
@@ -394,7 +394,7 @@
       "baseline": 12
     },
     {
-      "id": "1becbc92-e1ea-4374-978f-fc31a4fb5afe",
+      "id": "7014a688-33e6-4bbe-a61b-8ecdaebca2ec",
       "type": "text",
       "x": 891.0,
       "y": 170,
@@ -428,7 +428,7 @@
       "baseline": 12
     },
     {
-      "id": "a63fdef5-262c-4f55-a548-807304893e51",
+      "id": "8f2ecbcf-3ffe-473d-a860-a3119ecbf339",
       "type": "rectangle",
       "x": 820,
       "y": 400,
@@ -456,7 +456,7 @@
       "locked": false
     },
     {
-      "id": "b13ef507-1193-4900-89fa-baded42d8a27",
+      "id": "c7d8a9ca-d2ab-4348-8422-d4011b1300a9",
       "type": "text",
       "x": 884.0,
       "y": 424,
@@ -490,7 +490,7 @@
       "baseline": 16
     },
     {
-      "id": "e390c60d-c316-40dc-a2e2-223755836036",
+      "id": "65e8efa2-0eaa-4fbd-9a40-af1c9187f6e9",
       "type": "text",
       "x": 866.0,
       "y": 444,
@@ -524,7 +524,7 @@
       "baseline": 12
     },
     {
-      "id": "3096ac12-2732-4bc9-86cc-3e4d12e46957",
+      "id": "b6c8a4ec-f4e9-4e76-9100-8ffef9d808be",
       "type": "text",
       "x": 902.0,
       "y": 460,
@@ -558,7 +558,7 @@
       "baseline": 12
     },
     {
-      "id": "75581455-3fac-4582-bb6c-fde0199af723",
+      "id": "8d5153bb-d2a0-40c0-9688-a04915206ef0",
       "type": "rectangle",
       "x": 80,
       "y": 400,
@@ -586,7 +586,7 @@
       "locked": false
     },
     {
-      "id": "adaeec58-6c8c-4546-8244-324f3e98c157",
+      "id": "09f240f2-119a-46a9-bd1a-54cb0fb5b224",
       "type": "text",
       "x": 172.5,
       "y": 424,
@@ -620,7 +620,7 @@
       "baseline": 16
     },
     {
-      "id": "e2fca9f7-5182-444e-a26e-0a767d974c76",
+      "id": "2df80f33-c47e-49f9-b60e-33cafe2c0607",
       "type": "text",
       "x": 133.0,
       "y": 444,
@@ -654,7 +654,7 @@
       "baseline": 12
     },
     {
-      "id": "78f81e34-071a-4428-ac7d-4a1a05240068",
+      "id": "43143c4e-6306-4279-a87d-7dbeda3a3d57",
       "type": "text",
       "x": 147.5,
       "y": 460,
@@ -688,7 +688,7 @@
       "baseline": 12
     },
     {
-      "id": "02129c63-c3c2-4bc7-a823-1f34835afcfd",
+      "id": "0be731a7-bf51-4fc3-8f36-c0247202c740",
       "type": "arrow",
       "x": 380,
       "y": 152,
@@ -728,7 +728,7 @@
       "endArrowhead": "arrow"
     },
     {
-      "id": "39ee97a5-584c-4989-bbdd-e56a0669af42",
+      "id": "4e4a29f7-2974-4832-8f27-0e551c05f07b",
       "type": "arrow",
       "x": 740,
       "y": 270,
@@ -768,7 +768,7 @@
       "endArrowhead": "arrow"
     },
     {
-      "id": "46fd3f73-8041-4089-9bdc-d0288e8b9672",
+      "id": "898c190e-3ffd-487c-ba86-f44d09c7ac5c",
       "type": "arrow",
       "x": 740,
       "y": 326,
@@ -808,7 +808,7 @@
       "endArrowhead": "arrow"
     },
     {
-      "id": "7daad8e8-390b-4da7-adc8-e0de3d9591fb",
+      "id": "eb48fedf-e314-44dd-93e5-d2da9e8c0540",
       "type": "arrow",
       "x": 380,
       "y": 442,
@@ -848,7 +848,7 @@
       "endArrowhead": "arrow"
     },
     {
-      "id": "4551afad-6e64-4752-a169-93c280153bff",
+      "id": "f3460441-129a-4290-a4b1-808bdd63acf8",
       "type": "text",
       "x": 357.5,
       "y": 366.0,

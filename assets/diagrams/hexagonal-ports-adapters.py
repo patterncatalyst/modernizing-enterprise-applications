@@ -61,7 +61,7 @@ outbound_port = node(950, 260, 190, 100,
 # ---- driving adapters, left column -----------------------------------------
 rest_adapter = node(50, 90, 260, 110,
                      ["REST controller",
-                      "e.g. ReviewResource (ch.11 excerpt)",
+                      "e.g. ReviewResource",
                       "translates an HTTP request into a port call"],
                      style="sub")
 grpc_adapter = node(50, 255, 260, 110,
@@ -77,7 +77,7 @@ consumer_adapter = node(50, 420, 260, 110,
 # ---- driven adapters, right column -----------------------------------------
 repo_adapter = node(1190, 160, 260, 130,
                      ["Database repository",
-                      "e.g. ReviewRepository (ch.11 excerpt)",
+                      "e.g. ReviewRepository",
                       "implements the outbound port"],
                      style="sub")
 publisher_adapter = node(1190, 360, 260, 130,
@@ -105,7 +105,7 @@ edges = [
 ]
 
 notes = [
-    {"x": W / 2, "y": 32, "text": "ch.11 -- Hexagonal architecture: ports and adapters, dependencies pointing inward",
+    {"x": W / 2, "y": 32, "text": "Hexagonal architecture: ports and adapters, dependencies pointing inward",
      "anchor": "middle", "bold": True, "size": 17},
     {"x": W / 2, "y": 56,
      "text": "driving adapters translate a protocol into an inbound-port call; driven adapters implement the outbound port the core declared",
@@ -116,7 +116,7 @@ notes = [
      "anchor": "middle", "size": 10.5, "color": "#2f5f3d"},
 
     {"x": 40, "y": H - 60,
-     "text": "Caveat (ch.11's own): examples/02-review-service's ReviewRepository is a concrete class, not a declared Port interface the core",
+     "text": "Caveat: examples/02-review-service's ReviewRepository is a concrete class, not a declared Port interface the core",
      "anchor": "start", "size": 10.5, "color": "#555555"},
     {"x": 40, "y": H - 46,
      "text": "programs against -- what made Review cheap to extract was zero outbound edges to other contexts, not a textbook-perfect hexagon.",

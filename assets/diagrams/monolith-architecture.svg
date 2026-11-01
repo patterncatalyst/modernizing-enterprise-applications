@@ -9,7 +9,7 @@
 <text x="140.0" y="152.5" font-size="11.5" fill="#555555" text-anchor="middle">order context</text>
 <rect x="40" y="180" width="200" height="55" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
 <text x="140.0" y="205.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">OrderService</text>
-<text x="140.0" y="222.5" font-size="11.5" fill="#555555" text-anchor="middle">(SMELL[ch.26]: god service)</text>
+<text x="140.0" y="222.5" font-size="11.5" fill="#555555" text-anchor="middle">(SMELL: god service)</text>
 <rect x="40" y="250" width="200" height="55" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
 <text x="140.0" y="283.0" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">OrderRepository</text>
 <rect x="264" y="110" width="200" height="55" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
@@ -76,12 +76,12 @@
 <path d="M1260.0,165.0 L1260.0,180.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
 <path d="M1260.0,235.0 L1260.0,250.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
 <path d="M240.0,207.5 L264.0,207.5" fill="none" stroke="#2f5f3d" stroke-width="2" marker-end="url(#am)"/>
-<text x="258.0" y="201.5" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">direct call, no ACL (ch.16)</text>
-<text x="258.0" y="201.5" font-size="11" fill="#2f5f3d" text-anchor="middle">direct call, no ACL (ch.16)</text>
+<text x="258.0" y="201.5" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">direct call, no ACL</text>
+<text x="258.0" y="201.5" font-size="11" fill="#2f5f3d" text-anchor="middle">direct call, no ACL</text>
 <path d="M240,207.5 L240,400" fill="none" stroke="#2f5f3d" stroke-width="2" marker-end="url(#am)"/>
 <path d="M240,400 L936,400" fill="none" stroke="#2f5f3d" stroke-width="2" marker-end="url(#am)"/>
-<text x="594.0" y="394.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">god service -- direct calls into other contexts (ch.26)</text>
-<text x="594.0" y="394.0" font-size="11" fill="#2f5f3d" text-anchor="middle">god service -- direct calls into other contexts (ch.26)</text>
+<text x="594.0" y="394.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">god service -- direct calls into other contexts</text>
+<text x="594.0" y="394.0" font-size="11" fill="#2f5f3d" text-anchor="middle">god service -- direct calls into other contexts</text>
 <path d="M488,400 L488,207.5" fill="none" stroke="#2f5f3d" stroke-width="2" marker-end="url(#am)"/>
 <path d="M712,400 L712,207.5" fill="none" stroke="#2f5f3d" stroke-width="2" marker-end="url(#am)"/>
 <path d="M936,400 L936,207.5" fill="none" stroke="#2f5f3d" stroke-width="2" marker-end="url(#am)"/>
@@ -109,13 +109,13 @@
 <path d="M1249.0,520 L1249.0,545" fill="none" stroke="#2f5f3d" stroke-width="2" marker-end="url(#am)"/>
 <path d="M1249.0,545 L601.0,545" fill="none" stroke="#2f5f3d" stroke-width="2" marker-end="url(#am)"/>
 <path d="M601.0,545 L601.0,520" fill="none" stroke="#2f5f3d" stroke-width="2" marker-end="url(#am)"/>
-<text x="730.0" y="30" font-size="17" fill="#1d1d1d" text-anchor="middle" font-weight="700">ch.08 -- The reference monolith (before): six bounded contexts, one deployable, one shared schema</text>
+<text x="730.0" y="30" font-size="17" fill="#1d1d1d" text-anchor="middle" font-weight="700">The reference monolith (before): six bounded contexts, one deployable, one shared schema</text>
 <text x="730.0" y="56" font-size="12" fill="#555555" text-anchor="middle">one REST API surface, documented by springdoc OpenAPI</text>
-<text x="1420" y="420" font-size="10.5" fill="#555555" text-anchor="end">SMELL[ch.22]/[ch.23]/[ch.24]: OrderService#placeOrder wraps inventory + order + payment + shipment + notification in ONE @Transactional spanning five contexts (ACID -&gt; ACD).</text>
-<text x="40" y="598" font-size="10.5" fill="#555555" text-anchor="start">SMELL[ch.18]: FK joins cross bounded-context boundaries freely inside the one shared schema -- order_items-&gt;inventory_items, payments/shipments/notifications-&gt;orders, reviews-&gt;customers+inventory_items, orders-&gt;customers.</text>
+<text x="1420" y="420" font-size="10.5" fill="#555555" text-anchor="end">SMELL: OrderService#placeOrder wraps inventory + order + payment + shipment + notification in ONE @Transactional spanning five contexts (ACID -&gt; ACD).</text>
+<text x="40" y="598" font-size="10.5" fill="#555555" text-anchor="start">SMELL: FK joins cross bounded-context boundaries freely inside the one shared schema -- order_items-&gt;inventory_items, payments/shipments/notifications-&gt;orders, reviews-&gt;customers+inventory_items, orders-&gt;customers.</text>
 <text x="40" y="614" font-size="10.5" fill="#555555" text-anchor="start">common.Customer is a shared-kernel entity (not its own bounded context) FK&#x27;d directly from order, notification, and review.</text>
-<text x="1260.0" y="95" font-size="11.5" fill="#2f5f3d" text-anchor="middle" font-weight="700">review: first context extracted (ch.15)</text>
-<text x="1260.0" y="323" font-size="9.5" fill="#555555" text-anchor="middle">SMELL[ch.15]: REST-only, no runtime collaborator -- yet governed by the</text>
+<text x="1260.0" y="95" font-size="11.5" fill="#2f5f3d" text-anchor="middle" font-weight="700">review: first context extracted</text>
+<text x="1260.0" y="323" font-size="9.5" fill="#555555" text-anchor="middle">SMELL: REST-only, no runtime collaborator -- yet governed by the</text>
 <text x="1260.0" y="335" font-size="9.5" fill="#555555" text-anchor="middle">monolith&#x27;s one global SecurityFilterChain alongside every other context.</text>
-<text x="40" y="684" font-size="10.5" fill="#555555" text-anchor="start">SMELL[ch.17]: the order-confirmation notification is sent synchronously, in-process, inside the checkout transaction.</text>
+<text x="40" y="684" font-size="10.5" fill="#555555" text-anchor="start">SMELL: the order-confirmation notification is sent synchronously, in-process, inside the checkout transaction.</text>
 </svg>

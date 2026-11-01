@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
-"""ch.25 figure: resilience-scorecard — the two-column scorecard
+"""ch.25 figure: resilience-scorecard: the two-column scorecard
 `_docs/25-failure-modes-and-resilience.md` closes on in its own
 "## The resilience scorecard" section: "here is exactly what this project
 has built against the canonical resilience chassis, and exactly what it has
 left for a reader's own production traffic to justify." Every row quotes
 that section's two paragraphs directly; nothing here is inferred.
 
-LEFT column — "Implemented, real, and proven by a negative check": the gRPC
+LEFT column: "Implemented, real, and proven by a negative check": the gRPC
 deadline, at-least-once delivery paired with two-layer idempotent
 consumption, the explicit compensating action, transparent failure
 propagation at the proxy, and MicroProfile Health on both Quarkus services.
 
-RIGHT column — "Deferred by design, with a stated reason": the circuit
+RIGHT column: "Deferred by design, with a stated reason": the circuit
 breaker, the bulkhead, retry backoff/jitter/cap on the outbox relay, the
 dead-letter path, platform-level health consumption, and an idempotency key
 on the compensating `Release` call.
@@ -66,16 +66,16 @@ DEFERRED = [
      "no observed starvation of the rest of the monolith's I/O"],
     ["Retry backoff, jitter, cap",
      "on the outbox relay's retry",
-     "ch.20's own named gap"],
+     "a named gap"],
     ["Dead-letter path",
      "for a message that can never successfully process",
-     "ch.20's poison-message gap, generalized"],
+     "the poison-message gap, generalized"],
     ["Platform-level health consumption",
      "liveness/readiness gating traffic or restarts",
-     "Part 9's subject, not this chapter's"],
+     "a platform concern, not this figure's"],
     ["Idempotency key on Release",
      "the compensating call itself",
-     "named in its own javadoc; inherited by ch.23/24"],
+     "named in its own javadoc; inherited by the sagas"],
 ]
 
 nodes = []
@@ -89,14 +89,14 @@ for i, lines in enumerate(DEFERRED):
 
 notes = [
     {"x": W / 2, "y": 32,
-     "text": "ch.25 — the resilience scorecard: what this project built, and what it left for measured traffic to justify",
+     "text": "the resilience scorecard: what this project built, and what it left for measured traffic to justify",
      "anchor": "middle", "bold": True, "size": 16},
     {"x": W / 2, "y": 56,
-     "text": "every implemented row was proven by a negative check (kill it, watch RED, restart it, watch GREEN) — every deferred row has a stated reason, not a silent gap",
+     "text": "every implemented row was proven by a negative check (kill it, watch RED, restart it, watch GREEN): every deferred row has a stated reason, not a silent gap",
      "anchor": "middle", "size": 11.5, "color": "#555555"},
 
     {"x": 50, "y": H - 40,
-     "text": "Chapter 3's discipline, restated: microservices are not the goal, and neither is a resilience pattern catalog completed for its own sake.",
+     "text": "The discipline, restated: microservices are not the goal, and neither is a resilience pattern catalog completed for its own sake.",
      "anchor": "start", "size": 10.5, "color": "#555555"},
     {"x": 50, "y": H - 16,
      "text": "Sourced verbatim from _docs/25-failure-modes-and-resilience.md (\"## The resilience scorecard\").",

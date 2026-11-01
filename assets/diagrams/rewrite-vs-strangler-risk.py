@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
-"""ch.03 figure: rewrite-vs-strangler-risk — [SIDE] a risk-shape contrast
+"""ch.03 figure: rewrite-vs-strangler-risk: [SIDE] a risk-shape contrast
 between the big-bang rewrite and the strangler fig, per the diagram plan's
 one explicitly-combined figure for this chapter.
 
-LEFT — the big-bang rewrite makes three bets simultaneously, quoted
+LEFT: the big-bang rewrite makes three bets simultaneously, quoted
 directly from "Why big-bang rewrites fail": it bets the team "correctly
 understood every piece of behavior the old system had accumulated"; it
 bets "a system of comparable scope can be built faster in the new stack
 than the old system decayed"; and it bets "the business can tolerate a
 long stretch... where almost no new value ships to users." All three bets
 have to land before a single irreversible cutover, and "a rewrite that is
-not yet feature-complete cannot be partially shipped" — risk concentrated
+not yet feature-complete cannot be partially shipped": risk concentrated
 into one moment, payoff (if any) arriving only at the end.
 
-RIGHT — the strangler fig "distributes the risk across many small,
+RIGHT: the strangler fig "distributes the risk across many small,
 independently reversible steps instead of concentrating all of it into one
 irreversible moment at the end." The chapter's own concrete anchor is the
 first step: "the first extraction in this book, the review service in
@@ -21,7 +21,7 @@ Chapter 15, is a small slice of the system, and it is in production,
 behind a flag, before any other context has been touched." Because "the
 monolith and the new service run side by side behind a flag until the new
 service is proven equivalent, the project can pause, slow down, or reverse
-a single extraction without threatening anything else in flight" — risk
+a single extraction without threatening anything else in flight": risk
 spread across steps, payoff shipping continuously.
 
 Sourced from _docs/03-modernization-as-engineering.md ("Why big-bang
@@ -71,7 +71,7 @@ left_edges = [
 STEP_W, STEP_GUTTER = 150, 18
 STEP_X0, STEP_Y = 800, 150
 steps_meta = [
-    ("Step 1", "review (ch.15) --", "ships behind a flag"),
+    ("Step 1", "review --", "ships behind a flag"),
     ("Step 2", "next context,", "same pattern"),
     ("Step 3", "next context,", "same pattern"),
     ("Step 4", "next context,", "same pattern"),
@@ -103,7 +103,7 @@ right_edges.append(connect(reversible, payoff_r))
 
 notes = [
     {"x": W / 2, "y": 32,
-     "text": "ch.03 -- same migration, two risk shapes: one irreversible bet versus many reversible steps",
+     "text": "same migration, two risk shapes: one irreversible bet versus many reversible steps",
      "anchor": "middle", "bold": True, "size": 16},
 
     {"x": STEP_X0 + (STEP_W * 4 + STEP_GUTTER * 3) / 2, "y": STEP_Y - 16,
