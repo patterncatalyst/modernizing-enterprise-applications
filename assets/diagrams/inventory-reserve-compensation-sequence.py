@@ -49,11 +49,11 @@ band_old = {"x": 20, "y": 60, "w": 1360, "h": 230,
 client1 = node(40, 130, 150, 100, ["Client", "checkout request"], style="sub")
 begin1 = node(220, 130, 210, 100, ["OrderService.placeOrder()", "BEGIN @Transactional"], style="user")
 reserve1 = node(460, 130, 230, 100, ["Inventory reserve", "local in-JVM, pessimistic lock",
-                                     "decrement in the SAME txn"], style="box")
+                                     "decrement in the same txn"], style="box")
 pay1 = node(720, 130, 190, 100, ["Payment charge", "same txn"], style="box")
 outcome1 = node(940, 130, 360, 100, ["COMMIT or ROLLBACK",
                                      "Postgres undoes the decrement",
-                                     "automatically on ANY failure -- FREE"], style="ink")
+                                     "automatically on any failure: free"], style="ink")
 
 old_nodes = [client1, begin1, reserve1, pay1, outcome1]
 old_edges = [
@@ -67,7 +67,7 @@ old_edges = [
 # BOTTOM band: NEW: cross-seam saga-lite, explicit compensation
 # ============================================================================
 band_new = {"x": 20, "y": 340, "w": 1360, "h": 500,
-            "label": "NEW (current) -- cross-seam saga-lite: explicit compensation replaces the free rollback",
+            "label": "NEW (current), cross-seam saga-lite: explicit compensation replaces the free rollback",
             "fill": "#eaf4ec"}
 
 client2 = node(40, 400, 150, 90, ["Client", "checkout request"], style="sub")
@@ -76,9 +76,9 @@ checkout2 = node(220, 400, 220, 90, ["OrderService.placeOrder()",
                                      "(no longer spans inventory)"], style="user")
 reserve_rpc = node(470, 400, 250, 90, ["gRPC Reserve :9004",
                                        "atomic conditional decrement",
-                                       "inventory service's OWN DB"], style="accent")
+                                       "inventory service's own DB"], style="accent")
 pay2 = node(750, 400, 190, 90, ["Payment charge", "monolith, same local txn"], style="box")
-confirm2 = node(990, 400, 350, 90, ["SUCCESS -- order CONFIRMED",
+confirm2 = node(990, 400, 350, 90, ["SUCCESS: order CONFIRMED",
                                     "stock stays decremented",
                                     "(committed in inventory service)"], style="ink")
 
@@ -88,7 +88,7 @@ insufficient = node(470, 560, 250, 90, ["reservation_ok = false",
 release_rpc = node(750, 560, 250, 90, ["gRPC Release :9004",
                                        "compensating re-increment",
                                        "first taste of saga"], style="accent")
-restored2 = node(1030, 560, 310, 90, ["DECLINE -- stock RESTORED",
+restored2 = node(1030, 560, 310, 90, ["DECLINE: stock RESTORED",
                                       "best-effort, no idempotency key yet",
                                       "(full saga ledger deferred)"], style="box")
 
@@ -112,11 +112,11 @@ notes = [
      "anchor": "start", "size": 11, "color": "#555555"},
 
     {"x": 40, "y": 400 - 10,
-     "text": "Once inventory owns its own database, that automatic rollback cannot cross the service boundary -- compensation must be explicit.",
+     "text": "Once inventory owns its own database, that automatic rollback cannot cross the service boundary; compensation must be explicit.",
      "anchor": "start", "size": 11, "color": "#1d1d1d", "bold": True},
 
     {"x": 470, "y": 680,
-     "text": "Limitation: Release is an UNCONDITIONAL increment with no dedupe key -- a retried Release after an",
+     "text": "Limitation: Release is an unconditional increment with no dedupe key; a retried Release after an",
      "anchor": "start", "size": 10.5, "color": "#555555"},
     {"x": 470, "y": 694,
      "text": "at-least-once redelivery could over-restore stock; a full fix (idempotency key / saga ledger) is deferred.",

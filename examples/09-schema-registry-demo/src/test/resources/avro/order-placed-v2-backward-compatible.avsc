@@ -11,6 +11,6 @@
     { "name": "paymentMethod", "type": "string", "doc": "The checkout request's payment method." },
     { "name": "confirmationMessage", "type": "string", "doc": "The order-confirmation message text." },
     { "name": "placedAt", "type": { "type": "long", "logicalType": "timestamp-millis" }, "doc": "When the order was placed." },
-    { "name": "giftMessage", "type": ["null", "string"], "default": null, "doc": "NEW in v2 — an optional gift message, defaulted to null so v1-written data (which has no such field) deserializes cleanly under this schema." }
+    { "name": "giftMessage", "type": ["null", "string"], "default": null, "doc": "NEW in v2: an optional gift message, defaulted to null so v1-written data (which has no such field) deserializes cleanly under this schema." }
   ]
 }

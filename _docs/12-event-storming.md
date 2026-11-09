@@ -2,216 +2,72 @@
 title: "Event Storming the Monolith"
 order: 12
 part: "Finding the Seams"
-description: "Discovering seams from behavior, not schema; the decomposition backlog this produces, run as an ADLC reconnaissance step."
+description: "Discovering seams from behavior instead of schema, and the decomposition backlog a process-level storm of checkout produces."
 ---
 
 ## Learning objectives
 
 By the end of this chapter you can:
 
-- Explain why event storming finds seams from behavior (a timeline of past-tense domain events) rather than from schema, and what schema hides that behavior reveals.
-- Name and apply the event-storming color grammar (domain event, command, actor, aggregate, policy/reaction, read model, external system) in the order a real session introduces each one.
-- Distinguish the three storming altitudes (big-picture, process-level, design-level) and explain why conflating them produces a wall that's either too shallow or too narrow to act on.
-- Run a process-level storm of the checkout flow and produce its six-event timeline: `OrderPlaced`, `StockReserved`, `PaymentCaptured`/`PaymentDeclined`, `ShipmentDispatched`, `OrderConfirmed`, `NotificationSent`.
-- Explain how storming catches a conceptual-versus-technical ordering gap that a straight code read misses: checkout's business order ("place, then reserve") versus the code's execution order ("reserve, then place").
-- Map each event-boundary gap on the wall to the specific extraction chapter and mechanism that cuts it (CDC backfill, choreographed saga, orchestrated saga, transactional outbox).
-- Explain why a finished wall only answers *where* a seam is, not *in what order* to cut it, setting up Chapter 13's coupling analysis.
+- Explain why event storming finds seams from a timeline of past-tense domain events, and what schema hides that behavior reveals.
+- Apply the color grammar (domain event, command, actor, aggregate, policy, read model, external system) in the order a session introduces it.
+- Choose between big-picture, process-level and design-level altitudes.
+- Storm the checkout flow into its six-event timeline: `OrderPlaced`, `StockReserved`, `PaymentCaptured`/`PaymentDeclined`, `ShipmentDispatched`, `OrderConfirmed`, `NotificationSent`.
+- Spot the gap between checkout's business order ("place, then reserve") and its code order ("reserve, then place").
+- Map each event boundary to the extraction that cuts it, and explain why a wall gives *where* but not *in what order*.
 
 ## Why this matters
 
-Chapter 11 gave you the vocabulary (subdomain, bounded context, aggregate,
-ubiquitous language) and the promise that goes with it: if you can name the
-boundaries correctly, extraction becomes mechanical instead of archaeological.
-What it didn't give you is a *method* for finding those boundaries in a system
-that never wrote them down. This chapter is that method. Event storming is a
-facilitation technique for discovering bounded contexts and aggregates by
-narrating what a system *does*: the facts it produces, in the order
-it produces them, rather than by reading its schema, its class diagram, or
-its package structure. Applied to `examples/00-monolith/`, it turns one
-paragraph of prose ("a customer places an order, we check stock, charge the
-card, ship the box, and tell them") into a timeline of domain events whose gaps
-are exactly the seams the next twenty chapters cut along.
+Subdomains and bounded contexts name the boundaries, but they don't say how to find them in a system that never wrote them down. Event storming is a facilitation technique that discovers bounded contexts and aggregates by narrating what a system does, as facts in the order they occur, instead of reading its schema, class diagram or packages. Applied to `examples/00-monolith/`, it turns one paragraph ("a customer places an order, we check stock, charge the card, ship the box, and tell them") into a timeline whose gaps are the seams to cut.
 
-The code is in `examples/00-monolith/`; nothing new has been scaffolded for
-this chapter. Every event name below either already exists as a reserved
-constant in `common/Topics.java` or is the natural companion this chapter adds
-to that set, and every call this chapter storms is quoted verbatim from
-`order/OrderService.java#placeOrder`, the same method Chapter 9 tagged with
-three of its five remaining smells.
+Every event name below is either a reserved constant in `common/Topics.java` or a natural companion to that set. Every call quoted is from `order/OrderService.java#placeOrder`, the method that carries three of the monolith's deliberate smells. The extractions removed the context packages from the current `examples/00-monolith` tree; the monolith as designed, with `common/`, `order/` and the other contexts, is on the `reference/monolith-before` branch (`git checkout reference/monolith-before`).
 
-{% include excalidraw.html file="event-storm-checkout" alt="Two stacked readings of the checkout flow: the top band shows today's OrderService#placeOrder as one synchronous call chain inside a single @Transactional across inventory, payment, shipping, and notification; the bottom band shows the same business process re-read with the event-storming grammar: an actor and command producing an Order aggregate, a timeline of domain events (OrderPlaced, StockReserved, PaymentCaptured or PaymentDeclined, ShipmentDispatched, OrderConfirmed, NotificationSent) separated by policies and reactions, an external payment gateway, and an Order Status read model fed by the events." caption="Figure 12.1: The checkout flow, read two ways: one call chain today, a timeline of domain events once it's event-stormed" %}
+{% include excalidraw.html file="event-storm-checkout" alt="Two readings of the checkout flow. Top: today's OrderService#placeOrder as one synchronous call chain inside a single @Transactional across inventory, payment, shipping and notification. Bottom: the same process with the event-storming grammar: an actor and command producing an Order aggregate, a timeline of domain events separated by policies, an external payment gateway, and an Order Status read model fed by the events." caption="Figure 12.1: The checkout flow, read two ways: one call chain today, a timeline of domain events once it's event-stormed" %}
 
-## Why behavior beats schema for finding seams
+## Why behavior beats schema
 
-Every monolith accumulates a second, unofficial map of itself: the one
-implied by its tables, its foreign keys, and its service dependency graph.
-That map is seductive because it's concrete: you can query it, diagram it,
-even generate it automatically. It is also, reliably, the wrong map to
-use when deciding where a system should be cut. `V1__init_schema.sql`
-tells you that `order_items` has a foreign key into `inventory_items`. It does
-not tell you *why* that relationship exists, whether it reflects something
-the business actually cares about or just the cheapest way one engineer found
-to express "these rows are related" in 2019, or whether it is one of this
-book's five remaining deliberate smells rather than a real invariant. Schema
-is implementation residue. It encodes decisions, but it doesn't encode the
-decisions' reasons, and reasons are exactly what you need to tell a
-critical boundary from an accidental one.
+A monolith carries a second, unofficial map of itself in its tables, foreign keys and service dependency graph. It's concrete, so you can query and diagram it, and it's the wrong map for deciding where to cut. `V1__init_schema.sql` says `order_items` has a foreign key into `inventory_items`. It doesn't say why, whether the business cares or an engineer found the cheapest way to say "these rows are related," or whether it's one of the monolith's deliberate smells rather than a real invariant. Schema records decisions without their reasons, and reasons separate a critical boundary from an accidental one.
 
-Event storming, a facilitation technique introduced by Alberto Brandolini,
-inverts the question. Instead of "what tables exist and how are they joined,"
-it asks "what *happened*, in what order, and who or what made it happen."
-A session starts with nothing but a long roll of paper (or, in an ADLC
-context, a shared document) and a pile of orange sticky notes, and the only
-rule for the first pass is: write down a domain event (a fact, named in the
-past tense, that someone in the business would recognize and care about)
-every time one occurs in the story you're narrating. `OrderPlaced`. `StockReserved`.
-`PaymentDeclined`. Not `createOrder()`, not `UPDATE orders SET status = ...`:
-the business fact those operations are trying to record. That single
-discipline (past tense, business-recognizable, one note per fact) is what
-makes the technique fast: a room full of domain experts and engineers can
-timeline an entire checkout flow in twenty minutes, because naming what
-happened requires no familiarity with how the code currently implements it.
-You do not need to have read `OrderService.java` to know that a customer's
-order gets placed, their card gets charged, and their package gets shipped.
-You need to have *used* the system, or sold it, or supported it.
+Event storming, introduced by Alberto Brandolini, asks instead what happened, in what order, and who or what caused it. A session starts with a long roll of paper (or, for an agent, a shared document) and orange stickies. The first-pass rule: write down a **domain event**, a past-tense fact someone in the business would recognize, each time one occurs. `OrderPlaced`. `StockReserved`. `PaymentDeclined`. Not `createOrder()` and not `UPDATE orders SET status = ...`. Naming what happened needs no knowledge of the code, so a room of domain experts and engineers can timeline checkout in twenty minutes. You need to have used, sold or supported the system, not read `OrderService.java`.
 
-That is the property this chapter leans on hardest: event storming surfaces
-seams from the *outside in*. A bounded-context boundary, properly found,
-is a place where the vocabulary changes: where "reserve" stops meaning
-"decrement a quantity column" and starts meaning "authorize a charge," or
-where "confirm" stops being about an order's status and starts being about a
-message reaching a customer's inbox. Those vocabulary shifts are visible in
-the timeline of events almost immediately, because each shift is usually
-where one orange sticky hands off to a different kind of actor, a different
-external system, or a different part of the business that would staff a
-different team if this were drawn as an org chart instead of a sequence
-diagram. The schema, by contrast, actively hides those shifts: a shared
-Postgres instance makes every context's tables look like equally valid
-neighbors, FK joins and all, which is precisely Smell 1 from Chapter 9. Event
-storming doesn't care what database a fact is persisted to. It only cares
-whether the fact happened and what happened next.
+That makes storming an outside-in method. A bounded-context boundary is a place where vocabulary changes: "reserve" stops meaning "decrement a quantity column" and starts meaning "authorize a charge," or "confirm" stops describing an order's status and starts describing a message reaching an inbox. In the timeline each shift is where one sticky hands off to a different actor, external system or team. The schema hides those shifts: a shared Postgres instance makes every context's tables look like equal neighbors, which is the shared-schema smell. Storming doesn't care where a fact is persisted.
 
-This is also why event storming is the right reconnaissance tool for a book
-built around an agentic development lifecycle rather than a liability unique
-to in-person workshops. The ADLC's Map phase (introduced in Chapter 5,
-exercised end to end in Chapter 7) is exactly the kind of investigative pass
-a storm produces: before an agent generates a single line of extraction code,
-something has to establish what the system actually does, in what order, with
-what failure modes, independent of how the current implementation happens to
-be wired. A human-facilitated workshop with sticky notes on a wall and an
-agent narrating a known code path onto a structured timeline are the same
-technique at two different scales: the artifact either way is a sequence of
-named facts, and that artifact is what Plan consumes next. Nothing about this
-chapter asks you to adopt new tooling to get that artifact; the timeline this
-chapter builds is written in prose and a diagram, the same way the rest of
-this book records decisions.
+It also fits the agentic lifecycle. The Map phase must establish what the system does, in what order and with what failure modes, before an agent generates extraction code. A workshop with stickies and an agent narrating a known code path onto a structured timeline produce the same artifact, a sequence of named facts, and Plan consumes it. No new tooling is needed.
 
 ## The grammar of a session
 
-A real event-storming wall accumulates more than orange stickies, and the
-order in which colors get added is deliberate: each new color answers a
-question the previous pass left open.
+Each color answers a question the previous pass left open.
 
-**Domain events (orange)** come first, and only first. The initial pass is
-*chaotic exploration*: write down every fact you can think of, out of order,
-duplicated, contradicted: the goal is coverage, not correctness. Once the
-events for a process exist, the group lines them up into a timeline, which
-is itself the first real modeling act: disagreements about ordering are where
-hidden assumptions surface, often the same assumptions a single ACID
-transaction has been quietly enforcing without anyone noticing.
+- **Domain events (orange)** come first. The first pass is chaotic: every fact, out of order, duplicated, contradicted. Lining them up into a timeline is the first modeling act, and ordering disagreements expose assumptions a single ACID transaction has been enforcing silently.
+- **Commands (blue)**, one per event, are the imperative that triggered the fact. `PlaceOrder` triggers `OrderPlaced`. `CapturePayment` triggers `PaymentCaptured` or `PaymentDeclined`, a branch invisible in the orange-only pass.
+- **Actors** (a small yellow figure left of the command) issue commands. A customer issues `PlaceOrder`. A scheduled job, a payment-gateway webhook or a policy can issue a command just as validly, and naming the actor tells you which seam needs an authenticated human-facing API and which needs a service account on an internal topic.
+- **Aggregates (large yellow)** come from grouping: which cluster of data had to exist, enforce an invariant and decide whether the command was valid. `Order` decides whether `PlaceOrder` is well-formed (does the customer exist, are the items non-empty). `InventoryItem` decides whether `ReserveStock` can succeed (is there enough on hand). A boundary found this way is a behavioral claim, independently checkable against the tactical aggregate boundaries.
+- **Policies (lilac)** are "whenever X, then Y" rules that chain events to commands with no human in the loop: whenever `OrderPlaced`, issue `ReserveStock`; whenever `StockReserved`, issue `CapturePayment`. A policy is the shape a message consumer takes once the system is distributed, and the shape of one step in a choreographed saga.
+- **Read models (green)** are views projected forward from events. "What's the status of order #4412" needs an `Order Status` read model fed by several events, not a live join across five tables.
+- **External systems (pink)** sit outside the team's control: a card network, a carrier's dispatch API. Naming them forces the question "what if this is slow, down or ambiguous," instead of assuming every collaborator is as reliable as an in-process call, which is what `OrderService#placeOrder` assumes of all four of its collaborators.
 
-**Commands (blue)** come next, one per event: the imperative that triggered
-the fact. `PlaceOrder` triggers `OrderPlaced`. `CapturePayment` triggers
-`PaymentCaptured` or `PaymentDeclined`: note that one command can produce
-either of two events, a branch that is invisible in the orange-only pass and
-immediately obvious once you ask "what triggered this?" for every sticky on
-the wall.
+{% include excalidraw.html file="event-storming-legend" alt="A seven-row legend of event-storming note types in the order a session introduces them: domain event (orange, a past-tense fact), command (blue, the imperative that triggered it), actor (small yellow figure), aggregate (large yellow, the data cluster enforcing an invariant), policy (lilac, whenever X then issue Y), read model (green, a view projected from events), and external system (pink, outside the team's control)." caption="Figure 12.2: The event-storming note-type legend: the wall's color grammar" %}
 
-**Actors** (conventionally a small yellow figure, not a box) sit to the
-left of each command: who or what issued it. A human customer issues
-`PlaceOrder`. A scheduled job, a webhook from a payment gateway, or a policy
-reacting to an earlier event can issue a command just as validly as a person
-clicking a button, and naming the actor is what tells you later which seam
-needs an authenticated human-facing API and which needs a service account on
-an internal topic.
+A session runs at three altitudes, and conflating them produces a wall too shallow to act on or too narrow to show the seams.
 
-**Aggregates (yellow, large)** come from grouping: for each command/event
-pair, which cluster of data had to exist, enforce an invariant, and decide
-whether the command was even valid? `Order` is the aggregate that decides
-whether `PlaceOrder` is well-formed (does this customer exist, are the line
-items non-empty); `InventoryItem` is the aggregate that decides whether
-`ReserveStock` can succeed (is there enough quantity on hand). An aggregate
-boundary found this way is a *behavioral* claim: "this cluster of data is
-where this invariant is checked," which lines up with, but is independently
-verifiable from, the tactical-DDD aggregate boundaries Chapter 11 named.
+| Altitude | Scope | Output |
+|---|---|---|
+| Big-picture | A whole business, orange stickies only | Candidate bounded contexts; places where one word means two things |
+| Process-level | One process end to end with the full grammar | The decomposition backlog |
+| Design-level | Inside one aggregate | Its commands, validation rules and events, handed to tactical DDD |
 
-**Policies and reactions (lilac)** are the "whenever/then" rules that chain
-events to the next command automatically, with no human actor in the loop:
-*whenever* `OrderPlaced`, *then* issue `ReserveStock`; *whenever*
-`StockReserved`, *then* issue `CapturePayment`. A policy sticky is the exact
-shape a message consumer takes once the system is distributed. It is, not
-coincidentally, also the exact shape of one step in a choreographed saga,
-which is why this chapter's wall and Chapter 23's saga are the same diagram
-read at two points in the book.
+## Storming checkout
 
-**Read models (green)** are the views built by projecting events forward for
-some later question to be answered cheaply: "what's the status of order
-#4412" needs an `Order Status` read model that several of this flow's events
-feed, not a live join across five tables each time someone asks. **External
-systems (pink)** are the boxes outside the team's control that a policy has
-to call through: a card network, a carrier's dispatch API. Naming them
-explicitly is what stops a modeling session from quietly assuming every
-collaborator is as reliable and as fast as an in-process method call, which
-is exactly the assumption `OrderService#placeOrder` makes today, for all
-four of its collaborators, with no exception.
-
-{% include excalidraw.html file="event-storming-legend" alt="A seven-row legend card listing the event-storming note types in the order a session introduces them: domain event (orange sticky, a past-tense fact, e.g. OrderPlaced), command (blue sticky, the imperative that triggered it, e.g. Place Order), actor (small yellow figure left of its command, e.g. Customer), aggregate (large yellow sticky, the data cluster enforcing an invariant, e.g. Order), policy/reaction (lilac sticky, 'whenever X then issue command Y', no human actor), read model (green sticky, a view projected forward from events, e.g. Order Status), and external system (pink sticky, outside the team's control, e.g. the card network). Each row also names this book's house-style box type that stands in for the real sticky color." caption="Figure 12.2: The event-storming note-type legend: the wall's color grammar, named as the chapter calls it" %}
-
-A session runs at three altitudes, and conflating them is the most common way
-a storm produces a useless wall. **Big-picture** storming surveys an entire
-business (weeks of activity across every process a company runs) to find
-candidate bounded contexts and spot where two groups use the same word to
-mean different things; it stays at the orange-only, no-detail level
-because its job is breadth, not depth. **Process-level** storming
-picks one process (checkout, in this chapter) and works it end to end with
-the full grammar: events, commands, actors, policies, external systems, read
-models. This is the altitude that produces a decomposition backlog, and
-process-level storming is this chapter's focus. **Design-level** storming goes
-one layer deeper still, inside a single aggregate, to work out the exact
-commands, validation rules, and events needed to implement it. This is where
-a storm hands off directly to the tactical DDD vocabulary Chapter 11 already
-gave you, and where the aggregate's own API gets drafted before a line of
-extraction code exists.
-
-## Storming checkout: the process-level pass
-
-Run the process-level pass on checkout and the actor/command opening is the
-easiest sticky on the wall: a **Customer** issues **Place Order**, carrying a
-customer id, a shipping address, and a list of line items. This is the
-payload `OrderCreate` already carries in `order/OrderService.java#placeOrder`.
-The **Order** aggregate receives that command and, if it's well-formed, the
-first domain event goes up: **OrderPlaced**. This is not a sticky this book
-has to invent a name for; it is already sitting, unused, as a public
-constant:
+A **Customer** issues **Place Order** with a customer id, shipping address and line items, the payload `OrderCreate` carries. The **Order** aggregate accepts a well-formed command and the first event goes up: **OrderPlaced**. It already exists, unused, as a constant:
 
 ```java
 // common/Topics.java
 public static final String ORDER_PLACED = "order.placed";
 ```
 
-That line is the clearest evidence in this
-codebase that the event-storming questions this chapter is asking were
-already being asked by whoever wrote `Topics.java`. The javadoc on that
-class says so directly: the names are reserved
-"for the future event-driven extractions," kept aligned with the sibling
-target services' Kafka topics, with zero messaging infrastructure wired up
-yet. An event-storming wall and a reserved-topic-names file are the same
-artifact at two different levels of formality.
+The class javadoc reserves the names "for the future event-driven extractions," aligned with the sibling services' Kafka topics, with no messaging infrastructure wired up. A storm wall and a reserved-topic file are the same artifact at two levels of formality.
 
-The next policy on the wall is *whenever OrderPlaced, then reserve stock*.
-Here storming proves its value by catching something a straight code read
-can miss. In `placeOrder`, the inventory check-and-reserve loop runs *before*
-the order is even persisted:
+Next is the policy *whenever OrderPlaced, then reserve stock*, and here storming catches what a code read can miss. In `placeOrder` the reserve loop runs before the order is persisted:
 
 ```java
 // order/OrderService.java#placeOrder
@@ -223,174 +79,57 @@ for (OrderCreate.Line line : command.items()) {
 order = orderRepository.save(order);
 ```
 
-Read literally, the technical execution order is "reserve, then place." Read
-as a business process, the conceptual order is "place, then reserve": a
-customer's intent to buy is the triggering fact, and stock reservation is
-something that *happens because of* that intent, not something that has to
-precede it in wall-clock time. `InsufficientStockException`'s own javadoc
-half-admits this tension: it's raised "BEFORE any writes happen, so no
-rollback is needed for this path," which is true and also a tell that the
-current code is using synchronous validation as a stand-in for what should be
-an asynchronous reaction to a fact that already happened. This is exactly the
-kind of gap a storm is built to surface and a code read alone tends to paper
-over, because code reads naturally follow call-stack order, and call-stack
-order is an implementation detail, not a business one. The event the wall
-needs next is **StockReserved**: a fact this system doesn't currently name
-anywhere, because today "stock got reserved" is indistinguishable from "a
-method returned without throwing."
+The code order is "reserve, then place." The business order is "place, then reserve": the customer's intent is the triggering fact and reservation happens because of it. `InsufficientStockException`'s javadoc half-admits this by saying it is raised "BEFORE any writes happen, so no rollback is needed for this path." Synchronous validation is standing in for an asynchronous reaction to a fact that already happened. Call-stack order is an implementation detail, which is why a code read papers over the gap. The event the wall needs next, **StockReserved**, isn't named anywhere today, because "stock got reserved" is indistinguishable from "a method returned without throwing."
 
-**StockReserved** feeds the next policy: *whenever StockReserved, then
-capture payment*, issued to an **external system** (the card network sitting
-outside this codebase's control), modeled on the wall as a pink box so
-the question "what if this is slow, or down, or ambiguous" gets asked out
-loud instead of assumed away. The command produces one of two events, and the
-branch is where `PaymentDeclinedException`'s own javadoc names the mechanism
-this book is retiring:
+*Whenever StockReserved, then capture payment*, issued to a pink **external system**, the card network. The command yields one of two events, and `PaymentDeclinedException`'s javadoc names the mechanism the migration retires:
 
 ```java
 // common/exception/PaymentDeclinedException.java (javadoc)
 // Because OrderService#placeOrder wraps inventory decrement + order
 // persistence + payment + shipment + notification in ONE @Transactional
 // (SMELL[ch.22]), raising this mid-method rolls back everything already
-// written in this request — including the inventory decrement.
+// written in this request, including the inventory decrement.
 ```
 
-On the wall, **PaymentCaptured** and **PaymentDeclined** are two separate
-orange stickies coming off one blue command, and the question the facilitator
-asks at exactly this point, "when payment is declined, what undoes the
-stock reservation?," is the question this monolith currently answers with
-"nothing has to; Postgres's rollback does it by default." That answer is
-Smell 3 stated out loud, by the wall itself, before Chapter 22 ever names ACID
-versus ACD. A storm doesn't just find seams; it finds the exact question
-whose current answer, "the database handles it," stops being true the
-instant either side of the seam gets its own database, which is the premise
-every remaining extraction in this book depends on.
+**PaymentCaptured** and **PaymentDeclined** are two orange stickies off one blue command. At this point the facilitator asks "when payment is declined, what undoes the stock reservation?" and today's answer is "nothing has to; Postgres's rollback does it." That is the single-transaction smell stated by the wall itself. The answer stops being true the moment either side of the seam gets its own database, which is the premise of every remaining extraction.
 
-Successfully captured payment triggers *dispatch shipment*, which
-`ShippingService.dispatch` performs. Its own doc comment already
-flags the call as synchronous and in-transaction, producing
-**ShipmentDispatched**, the third name already reserved in `Topics.java`
-(`SHIPMENT_DISPATCHED = "shipment.dispatched"`). The final policy, *whenever
-ShipmentDispatched, then notify customer*, is where this chapter's wall
-converges exactly with Chapter 9's fourth smell. `NotificationService`'s own
-javadoc states the cost: a confirmation send happening synchronously,
-inside checkout's own transaction, means checkout latency is coupled to
-however long "sending" takes, and a thrown exception there rolls the entire
-order back over a concern the customer's confirmed order doesn't actually
-depend on. On the wall, this policy produces two events worth keeping
-separate even though the current code conflates them into one method call:
-**OrderConfirmed** (the business fact that checkout succeeded, independent
-of whether the customer has been told yet) and **NotificationSent**, the
-narrower fact that a message left the system. (Today's code calls
-`order.confirm()` mid-flow, right after `paymentService.charge(...)` and
-before `shippingService.dispatch(...)`. The wall's placement of
-`OrderConfirmed` at the end of the timeline is a deliberate business-order
-reading, checkout-succeeded-as-of-dispatch-and-notify, not a transcription
-of the call stack.) Splitting them matters because
-Chapter 17's extraction needs exactly this seam: checkout can commit
-`OrderConfirmed` and move on, while `NotificationSent` becomes a fact an
-entirely separate, asynchronous consumer produces on its own schedule. An
-**Order Status** read model, the wall's one green sticky for this process,
-is fed by `OrderPlaced`, `PaymentCaptured`, `ShipmentDispatched`, and
-`OrderConfirmed`, the projection a customer-facing "where's my order" screen
-needs, built by folding events forward instead of joining five
-contexts' live tables on every page load.
+Captured payment triggers *dispatch shipment*, performed by `ShippingService.dispatch`. Its doc comment flags the call as synchronous and in-transaction, and it produces **ShipmentDispatched**, the third name reserved in `Topics.java` (`SHIPMENT_DISPATCHED = "shipment.dispatched"`) after `ORDER_PLACED` and `PAYMENT_CAPTURED`. The last policy, *whenever ShipmentDispatched, then notify customer*, meets the synchronous-notification smell. `NotificationService`'s javadoc states the cost: a send inside checkout's transaction couples checkout latency to however long sending takes, and an exception there rolls back the order over something the confirmed order doesn't depend on.
+
+This policy yields two events the code conflates in one call. **OrderConfirmed** is the business fact that checkout succeeded, independent of whether the customer has been told. **NotificationSent** is the narrower fact that a message left the system. Today's code calls `order.confirm()` right after `paymentService.charge(...)` and before `shippingService.dispatch(...)`. The wall places `OrderConfirmed` at the end of the timeline as a business-order reading, not a transcription of the call stack. Splitting the two lets checkout commit `OrderConfirmed` and move on while `NotificationSent` is produced by a separate asynchronous consumer on its own schedule. The **Order Status** read model, the wall's one green sticky, folds `OrderPlaced`, `PaymentCaptured`, `ShipmentDispatched` and `OrderConfirmed` forward, so a "where's my order" screen doesn't join five contexts' live tables on every load.
 
 ## From the wall to the backlog
 
-A finished process-level wall is not decoration; read left to right, it *is*
-the decomposition backlog, and the mapping from event boundary to extraction
-chapter is close to direct. Every place on the timeline where one policy's
-reaction currently crosses into another context's service as a plain Java
-method call is a synchronous call today and a published event once that
-boundary is cut, which is exactly the shape `common/Topics.java` was
-already anticipating with zero infrastructure attached. The wall built in
-this chapter maps onto the decomposition roadmap as follows: the `OrderPlaced` → `StockReserved` boundary is inventory's seam,
-cut with CDC backfill and a decomposed database in Chapter 19; the
-`StockReserved` → `PaymentCaptured`/`PaymentDeclined` boundary is payment's
-seam, cut as a choreographed saga in Chapter 23, where the lilac policy
-sticky *whenever StockReserved, then capture payment* becomes, almost
-unchanged, a Kafka consumer reacting to `payment.captured`'s sibling topic;
-the `PaymentCaptured` → `ShipmentDispatched` boundary is shipping's seam, cut
-in Chapter 24 as an orchestrated saga using the Camel Saga EIP instead of
-peer-to-peer events, the same wall, driven by one coordinating definition
-rather than each service discovering the next event for itself; and the
-`ShipmentDispatched` → `OrderConfirmed`/`NotificationSent` boundary is
-notification's seam, cut first, in Chapter 17, as a transactional outbox
-feeding an asynchronous consumer. Chapter 16's anti-corruption layer (the
-missing translation step this chapter's wall silently assumes exists every
-time it draws an arrow between two different-colored stickies) is what has
-to exist at each of these boundaries before the event can safely carry
-contract-shaped data instead of a raw JPA entity, which is Smell 5 from
-Chapter 9 stated as a precondition rather than a complaint.
+Read left to right, a finished process-level wall is the decomposition backlog. Everywhere a policy's reaction crosses into another context as a plain Java call, the boundary is a synchronous call today and a published event once cut.
 
-{% include excalidraw.html file="storm-wall-to-backlog" alt="A four-row table mapping each event boundary this chapter's storm found to its extraction chapter and mechanism: OrderPlaced to StockReserved (inventory's seam) to Chapter 19, CDC backfill plus a decomposed database; StockReserved to PaymentCaptured/PaymentDeclined (payment's seam) to Chapter 23, a choreographed saga; PaymentCaptured to ShipmentDispatched (shipping's seam) to Chapter 24, an orchestrated saga using the Camel Saga EIP; and ShipmentDispatched to OrderConfirmed/NotificationSent (notification's seam, cut first) to Chapter 17, a transactional outbox. A footnote box notes OrderService itself is cut last in Chapter 26, after all four boundaries already fire events, and that Chapter 16's anti-corruption layer is the precondition at every row." caption="Figure 12.3: From the storm wall to the extraction backlog: each boundary, its chapter, and its mechanism" %}
+| Boundary | Seam | Mechanism |
+|---|---|---|
+| `OrderPlaced` to `StockReserved` | Inventory | CDC backfill and a decomposed database |
+| `StockReserved` to `PaymentCaptured`/`PaymentDeclined` | Payment | Choreographed saga: the lilac policy becomes, almost unchanged, a Kafka consumer |
+| `PaymentCaptured` to `ShipmentDispatched` | Shipping | Orchestrated saga with the Camel Saga EIP: one coordinating definition instead of each service discovering the next event |
+| `ShipmentDispatched` to `OrderConfirmed`/`NotificationSent` | Notification (cut first) | Transactional outbox feeding an asynchronous consumer |
 
-Notice what the wall does *not* tell you: it tells you *where* a boundary
-exists, not *which order is safest to cut them in*. That ordering question
-(given five seams, which one has the least coupling pulling against it, which
-one's volatility and change-frequency make it most urgent, which one's
-distance from the others bounds the blast radius of getting it wrong) is a
-different kind of analysis, and it's the subject of the next chapter.
-Chapter 13 takes this exact wall and applies coupling theory to it, which is
-why event storming and coupling analysis are taught back to back in this
-part: storming answers "where," coupling answers "in what sequence," and the
-decomposition roadmap you've already seen cited throughout this book is the
-product of running both passes, not just one. Every cut the roadmap makes
-from Chapter 15 onward is also gated the same way: an equivalence gate runs
-the behavior-equivalence suite against both the monolith and the newly
-extracted service before that service's old code is decommissioned, which is
-the same discipline Chapter 7 demonstrated on Review and Chapter 9 named as
-this method's existence proof.
+{% include excalidraw.html file="storm-wall-to-backlog" alt="A four-row table mapping each event boundary the storm found to its seam and mechanism: OrderPlaced to StockReserved is inventory, CDC backfill plus a decomposed database; StockReserved to PaymentCaptured or PaymentDeclined is payment, a choreographed saga; PaymentCaptured to ShipmentDispatched is shipping, an orchestrated saga using the Camel Saga EIP; ShipmentDispatched to OrderConfirmed or NotificationSent is notification, cut first, a transactional outbox. A footnote notes OrderService is cut last, and that an anti-corruption layer is the precondition at every row." caption="Figure 12.3: From the storm wall to the extraction backlog: each boundary and its mechanism" %}
 
-The god `OrderService` itself deserves one more look through the wall's lens,
-because it explains something Chapter 9 stated as a roadmap fact without
-fully justifying it: why order is extracted last. On the wall, `OrderService`
-is not one box. It is the aggregate that issues *every* policy's triggering
-command in this flow: it calls reserve, calls capture,
-calls dispatch, calls notify, all directly, all synchronously, all inside one
-transaction. A service occupying that many command-issuing positions on one
-timeline cannot be extracted until each of those positions has already been
-rewired to fire an event instead of a direct call, which is precisely what
-Chapters 17, 19, 23, and 24 each do, one boundary at a time, before Chapter
-26 ever touches `OrderService` itself. The wall doesn't just locate the god
-service's smell; it enumerates, in order, the exact edges that have to be
-cut before the hardest extraction in this book becomes possible at all.
+An anti-corruption layer has to exist at each boundary before the event can carry contract-shaped data instead of a raw JPA entity. The wall silently assumes one every time it draws an arrow between two stickies.
 
-## What you learned
+The wall says where a boundary exists, not which to cut first. Given five seams, which has the least coupling pulling against it, which is most urgent, and which has a blast radius that mistakes won't escape are questions for coupling analysis. Storming answers "where," coupling answers "in what sequence," and the decomposition order is the product of both. Each cut is then gated: the behavior-equivalence suite runs against both the monolith and the extracted service before the old code is decommissioned.
 
-- Event storming finds bounded-context seams by narrating what a system
-  *does*: a timeline of past-tense domain events, each with a triggering
-  command and actor, grouped into aggregates, chained by policies/reactions,
-  projected into read models, and bounded by external systems, instead of
-  inspecting its schema, which encodes implementation accidents rather than
-  business meaning.
-- A session runs at three altitudes: big-picture (breadth, across a whole
-  business), process-level (depth, one process end to end, the backlog-producing
-  altitude), and design-level (depth inside one aggregate, handing off to
-  tactical DDD). Conflating them produces a wall that's either too shallow
-  to act on or too narrow to show the seams.
-- Storming checkout surfaced six events this chapter needed:
-  `OrderPlaced`, `StockReserved`, `PaymentCaptured`/`PaymentDeclined`,
-  `ShipmentDispatched`, `OrderConfirmed`, `NotificationSent`; three of which
-  (`OrderPlaced`, `PaymentCaptured`, `ShipmentDispatched`) were already
-  reserved, unused, in `common/Topics.java`, confirming the wall and the
-  codebase were already asking the same questions.
-- Each event boundary maps directly onto a later chapter's extraction seam:
-  inventory (ch.19), payment's choreographed saga (ch.23), shipping's
-  orchestrated saga (ch.24), notification's outbox (ch.17). But the wall
-  only answers *where* to cut; *in what order* is Chapter 13's question.
+The wall also explains why order is extracted last. `OrderService` isn't one box on it. It's the aggregate that issues every policy's triggering command in this flow: reserve, capture, dispatch and notify, all direct, synchronous and in one transaction. It can't be extracted until each of those positions fires an event instead of a call. The wall enumerates, in order, the edges to cut before the hardest extraction becomes possible.
 
-Chapter 13 takes this wall and asks the question it deliberately leaves open:
-given five seams, which one is safest to cut first, measured by how strongly
-coupled it is to everything around it, the modular-monolith and
-decomposed-database-monolith alternatives included, for the seams that turn
-out not to be worth cutting at all.
+> **Decision**
+>
+> Storm the process-level behavior before choosing seams. Every place a policy crosses a context as a direct call is a seam; every place the code order differs from the business order is a hidden assumption to resolve before you cut.
+
+> **🤖 Explore with your agent**
+>
+> "Check out the reference/monolith-before branch, read examples/00-monolith/src/main/java/dev/patterncatalyst/monolith/order/OrderService.java#placeOrder and produce a process-level event-storm timeline for checkout: domain events in past tense, the command and actor for each, the policies between them, and the external systems. Mark every place the code order differs from the business order, and map each event boundary to the seam it cuts. Don't edit any file."
+>
+> Check: the timeline contains `OrderPlaced`, `StockReserved`, `PaymentCaptured`/`PaymentDeclined`, `ShipmentDispatched`, `OrderConfirmed` and `NotificationSent`, and flags that `order.confirm()` is called before shipping is dispatched.
 
 ## For deeper coverage
 
-- Alberto Brandolini, [EventStorming](https://www.eventstorming.com/): the canonical reference for the facilitation technique and the color grammar this chapter applies directly to checkout.
-- Eric Evans, *Domain-Driven Design* (Addison-Wesley, 2003): domain events and aggregates, the tactical vocabulary this chapter's wall produces independently and cross-checks against; see the [Reading List](/bibliography/).
-- Gregor Hohpe & Bobby Woolf, *Enterprise Integration Patterns* (Addison-Wesley, 2003): the message-based choreography this chapter's "whenever X then issue Y" policy stickies anticipate.
-- Chris Richardson, *Microservices Patterns* (Manning, 2018): the saga patterns the wall's policy stickies become once payment's and shipping's seams are cut.
-- Cloud Native Design Patterns, [Event-Driven](https://github.com/patterncatalyst/cloud-native-design-patterns/blob/main/_docs/05-event-driven.md): the companion book's treatment of event-driven architecture, the target shape this storm's policies move toward.
+- Alberto Brandolini, [EventStorming](https://www.eventstorming.com/): the canonical reference for the facilitation technique and color grammar.
+- Eric Evans, *Domain-Driven Design* (Addison-Wesley, 2003): domain events and aggregates, the tactical vocabulary the wall produces independently; see the [Reading List](/bibliography/).
+- Gregor Hohpe & Bobby Woolf, *Enterprise Integration Patterns* (Addison-Wesley, 2003): the message-based choreography the "whenever X then issue Y" policies anticipate.
+- Chris Richardson, *Microservices Patterns* (Manning, 2018): the saga patterns the policies become once payment's and shipping's seams are cut.
+- Cloud Native Design Patterns, [Event-Driven](https://github.com/patterncatalyst/cloud-native-design-patterns/blob/main/_docs/05-event-driven.md): the target shape the storm's policies move toward.

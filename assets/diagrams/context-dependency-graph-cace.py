@@ -39,7 +39,7 @@ W, H = 1300, 900
 # TOP band -- current dependency graph, Ca/Ce per context
 # ============================================================================
 band_top = {"x": 20, "y": 60, "w": 1260, "h": 480,
-            "label": "Dependency graph, current monolith -- Ca/Ce per context",
+            "label": "Dependency graph, current monolith: Ca/Ce per context",
             "fill": "#fafafa"}
 
 review = node(560, 90, 200, 80,
@@ -65,18 +65,18 @@ top_edges = [
     connect(payment, order_n, label="Payment.order_id FK", ly=18),
     connect(shipping, order_n, label="Shipment.order_id FK", ly=18),
     connect(notification, order_n, label="Notification.order_id FK", ly=18),
-    connect(shipping, payment, dashed=True, label="future -- after payment extracted"),
+    connect(shipping, payment, dashed=True, label="future: after payment extracted"),
 ]
 
 # ============================================================================
 # BOTTOM band -- resolved extraction order
 # ============================================================================
 band_bottom = {"x": 20, "y": 560, "w": 1260, "h": 260,
-               "label": "Resolved extraction order -- build-plan.md Section E, lowest coupling first",
+               "label": "Resolved extraction order: lowest coupling first",
                "fill": "#eaf4ec"}
 
 SEQ = [
-    ("1. Review", "Ca~ 0, Ce~ 0 -- lowest score", "ghost"),
+    ("1. Review", "Ca~ 0, Ce~ 0: lowest score", "ghost"),
     ("2. Notification", "low Ca, low Ce", "box"),
     ("3. Inventory", "moderate Ca, Ce~ 0", "box"),
     ("4. Payment", "moderate Ca, Ce~ 0", "box"),
@@ -101,11 +101,11 @@ notes = [
      "anchor": "middle", "bold": True, "size": 16},
 
     {"x": 40, "y": 554,
-     "text": "Order's own extraction can't complete until each of the other five has removed one of its four outbound edges -- which is why order goes last, not first.",
+     "text": "Order's own extraction can't complete until each of the other five has removed one of its four outbound edges, which is why order goes last, not first.",
      "anchor": "start", "size": 10.5, "color": "#555555"},
 
     {"x": 40, "y": H - 16,
-     "text": "Sourced from _docs/13-coupling-and-modular-monolith.md (\"Afferent and efferent coupling: the metric that produces a ranking\") and build-plan.md Section E.",
+     "text": "Sourced from _docs/13-coupling-and-modular-monolith.md (\"Afferent and efferent coupling: the metric that produces a ranking\").",
      "anchor": "start", "size": 10.5, "color": "#555555"},
 ]
 

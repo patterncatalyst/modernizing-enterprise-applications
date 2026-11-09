@@ -1,8 +1,8 @@
-# order-service — event contract (ch.26 S3, DRQ-073)
+# order-service: event contract (ch.26 S3, DRQ-073)
 
 This service's event/DTO vocabulary is authored **field-for-field** against
 the established wire shapes (DRQ-038: plain JSON, not shared code between
-Maven reactors — each reactor authors a structurally identical record
+Maven reactors, each reactor authors a structurally identical record
 against the same agreed JSON shape). `common/Topics.java` in the monolith
 stays the registry of record for topic names until the monolith is frozen
 at S10; this file documents how this service, specifically, produces and
@@ -10,7 +10,7 @@ consumes those topics.
 
 **Scope of this step (ch.26 S3):** records only. No `@Incoming`/
 `@Outgoing`/`@Channel`, outbox relay, consumer, or projection code exists
-yet — those land in S5 (lifted saga reactions + own outbox) and S6 (CQRS
+yet, those land in S5 (lifted saga reactions + own outbox) and S6 (CQRS
 read-model projection). The channel→topic `application.properties`
 mapping is likewise deferred to S5, mirroring how `examples/05-payment-
 service` and `examples/06-shipping-service` only added their
@@ -27,8 +27,8 @@ are reacted to by `OrderSagaListener`'s `@Incoming` consumers
 
 **Updated at S6 (DRQ-067/074):** the read-model projection now IS wired.
 Every one of the four reactions above calls `OrderViewProjector#project` in
-the SAME `@Transactional` reaction, after mutating the `Order` aggregate —
-see `MIGRATION.md`'s "S6 — CQRS read model" section for the full
+the SAME `@Transactional` reaction, after mutating the `Order` aggregate,
+see `MIGRATION.md`'s "S6, CQRS read model" section for the full
 write-path/read-path story.
 
 ## Produces
@@ -53,7 +53,7 @@ All four consumed records are field-for-field identical to the monolith's
 `common.events.*` copies and to the producing services' own copies
 (`examples/05-payment-service/.../PaymentCaptured.java` and
 `PaymentDeclined.java`; `examples/06-shipping-service/.../
-ShipmentDispatched.java` and `ShipmentFailed.java`) — JSON fields bind by
+ShipmentDispatched.java` and `ShipmentFailed.java`), JSON fields bind by
 name, not position, so the independently-authored records interoperate
 across the wire without shared code.
 

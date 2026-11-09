@@ -75,7 +75,7 @@ band_new = {"x": 20, "y": 340, "w": 1840, "h": 500,
             "label": "NEW (current): transactional outbox + async event-driven consumer",
             "fill": "#eaf4ec"}
 band_txn = {"x": 190, "y": 430, "w": 1320, "h": 150,
-            "label": "ONE @Transactional: atomic, all-or-nothing commit",
+            "label": "One @Transactional: atomic, all-or-nothing commit",
             "fill": "#ffffff"}
 
 client2 = node(40, 450, 150, 100, ["Client", "POST /api/orders"], style="sub")
@@ -84,9 +84,9 @@ inv2 = node(420, 450, 190, 100, ["Inventory reserve +", "Order persist"], style=
 pay2 = node(630, 450, 170, 100, ["Payment charge"], style="box")
 ship2 = node(820, 450, 170, 100, ["Shipping dispatch"], style="box")
 outboxwrite = node(1010, 450, 250, 100,
-                    ["Write outbox row", "order.placed: SAME txn"], style="accent")
+                    ["Write outbox row", "order.placed: same txn"], style="accent")
 commit2 = node(1280, 450, 230, 100,
-               ["COMMIT", "order + outbox: ONE atomic write"], style="ink")
+               ["COMMIT", "order + outbox: one atomic write"], style="ink")
 
 relay = node(1010, 680, 250, 120,
              ["OutboxRelay", "@Scheduled poller (2000ms)",
@@ -137,7 +137,7 @@ notes = [
      "text": "redelivered event a safe no-op.", "anchor": "start", "size": 10, "color": "#555555"},
 
     {"x": 40, "y": 955,
-     "text": "Same business steps, same transaction boundary for order + outbox: only the LAST write before commit changed (a call -> a row).",
+     "text": "Same business steps, same transaction boundary for order + outbox: only the last write before commit changed (a call -> a row).",
      "anchor": "start", "size": 11, "color": "#555555"},
 ]
 

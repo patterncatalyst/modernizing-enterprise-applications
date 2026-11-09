@@ -71,16 +71,16 @@ cdc_consumer = node(990, 370, 320, 60, ["InventoryCdcConsumer", "RETIRED post-cu
 
 # ---- CDC backfill band (bottom, RETIRED) ---------------------------------
 cdc_band = {"x": 40, "y": 480, "w": 1300, "h": 200,
-            "label": "Debezium CDC -- ONE-TIME BACKFILL during transition, RETIRED post-cutover",
+            "label": "Debezium CDC: one-time backfill during transition, RETIRED post-cutover",
             "fill": "#f4f4f4"}
 
 old_table = node(80, 530, 300, 100, ["public.inventory_items", "monolith's OLD local inventory table",
                                      "same Postgres instance as monolith_pg",
                                      "REMOVED (SMELL #5 cured)"], style="ghost")
 debezium = node(440, 530, 260, 100, ["Debezium Postgres connector", "Kafka Connect, pgoutput",
-                                     "RETIRED -- scripts/retire-debezium.sh"], style="ghost")
+                                     "RETIRED: scripts/retire-debezium.sh"], style="ghost")
 kafka_topic = node(760, 530, 240, 100, ["Kafka topic", "mea.public.inventory_items",
-                                        "RETIRED -- no new events"], style="ghost")
+                                        "RETIRED: no new events"], style="ghost")
 
 nodes = [client, proxy, monolith, monolith_pg,
          rest_api, grpc_server, own_schema, cdc_consumer,
@@ -92,9 +92,9 @@ edges = [
     {"x1": 560, "y1": 225, "x2": 620, "y2": 225, "label": "/api/orders"},
     {"x1": 560, "y1": 120, "x2": 990, "y2": 120, "label": "/api/inventory", "amber": True},
     {"x1": 880, "y1": 205, "x2": 990, "y2": 205,
-     "label": "gRPC Reserve / Release -- :9004", "amber": True, "bidir": True, "lx": -66, "ly": -72},
+     "label": "gRPC Reserve / Release: :9004", "amber": True, "bidir": True, "lx": -66, "ly": -72},
     {"x1": 1150, "y1": 250, "x2": 1150, "y2": 270, "label": "atomic conditional UPDATE (own schema)"},
-    {"x1": 1150, "y1": 370, "x2": 1150, "y2": 350, "label": "upsert (idempotent) -- historical", "dashed": True},
+    {"x1": 1150, "y1": 370, "x2": 1150, "y2": 350, "label": "upsert (idempotent): historical", "dashed": True},
     {"x1": 750, "y1": 280, "x2": 750, "y2": 300, "label": "orders, customers (own schema)"},
     {"x1": 380, "y1": 580, "x2": 440, "y2": 580, "label": "WAL (pgoutput), replication slot", "dashed": True},
     {"x1": 700, "y1": 580, "x2": 760, "y2": 580, "label": "publish", "dashed": True},
@@ -106,7 +106,7 @@ notes = [
      "anchor": "middle", "bold": True, "size": 17},
 
     {"x": 300, "y": 414,
-     "text": "The checkout SEAM: gRPC Reserve atomically decrements stock in the inventory service's OWN schema; a post-reserve failure",
+     "text": "The checkout SEAM: gRPC Reserve atomically decrements stock in the inventory service's own schema; a post-reserve failure",
      "anchor": "start", "size": 11, "color": "#555555"},
     {"x": 300, "y": 428,
      "text": "(insufficient stock on a later line, a payment decline, a shipping failure) triggers the compensating gRPC Release.",
@@ -116,11 +116,11 @@ notes = [
      "text": "The ACL: inventory.proto's wire vocabulary (stock_keeping_unit/on_hand_qty/reservation_ok) is kept distinct from the",
      "anchor": "start", "size": 11, "color": "#555555"},
     {"x": 40, "y": 458,
-     "text": "monolith's internal StockDto (sku/priceCents/quantityOnHand) -- RemoteInventoryClient and InventoryGrpcServiceImpl are the ACL's two sides.",
+     "text": "monolith's internal StockDto (sku/priceCents/quantityOnHand); RemoteInventoryClient and InventoryGrpcServiceImpl are the ACL's two sides.",
      "anchor": "start", "size": 11, "color": "#555555"},
 
     {"x": 50, "y": 660,
-     "text": "CDC never sat in the checkout path -- it only ever moved data sideways to seed/sync the inventory service's own copy while the monolith was still the writer.",
+     "text": "CDC never sat in the checkout path, it only ever moved data sideways to seed/sync the inventory service's own copy while the monolith was still the writer.",
      "anchor": "start", "size": 11, "color": "#1d1d1d", "bold": True},
 
     {"x": 40, "y": 712,

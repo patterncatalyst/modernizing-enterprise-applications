@@ -137,7 +137,7 @@ band_c_edges = [
     connect(stepBook, stepEmit, label="no exception -> continue"),
 ]
 
-coordinator_note = {"x": 810, "y": 790, "text": "ONE visible place owns the sequence AND the compensation decision",
+coordinator_note = {"x": 810, "y": 790, "text": "One visible place owns the sequence AND the compensation decision",
                      "anchor": "middle", "size": 11, "color": "#2f5f3d", "bold": True}
 
 # ============================================================================
@@ -195,7 +195,7 @@ band_e_edges = [
     connect(relayFailE, kafkaFailedE, label="publish"),
     connect(kafkaFailedE, onFailed, label="@KafkaListener(shipment.failed)"),
     connect(onFailed, shippingFailedState, label="AWAITING_SHIPMENT -> SHIPPING_FAILED"),
-    connect(onFailed, release, label="delegated Release: shipping service NEVER calls Release directly",
+    connect(onFailed, release, label="delegated Release: shipping service never calls Release directly",
             amber=True),
     connect(release, netzero, label="stock restored"),
 ]

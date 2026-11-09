@@ -62,7 +62,7 @@ client_a = node(730, 110, 240, 80, ["Client", "POST /api/orders"], style="sub")
 reserve_a = node(730, 220, 240, 70, ["gRPC Reserve (sync)", "UNCHANGED, :9004"], style="accent")
 pending_a = node(730, 320, 240, 90,
                   ["Persist PENDING", "no in-line charge; outbox row in same txn"], style="user")
-resp_a = node(730, 450, 240, 80, ["202 Accepted", "+ Location: IMMEDIATELY"], style="ink")
+resp_a = node(730, 450, 240, 80, ["202 Accepted", "+ Location: immediately"], style="ink")
 poll_a = node(1010, 450, 320, 80, ["Client polls", "GET /api/orders/{id}"], style="sub")
 confirmed_a = node(1010, 560, 150, 50, ["CONFIRMED", "(eventually)"], style="accent")
 declined_a = node(1190, 560, 150, 50, ["PAYMENT_DECLINED", "(eventually)"], style="accent")

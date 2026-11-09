@@ -56,7 +56,7 @@ writeStore = node(890, 110, 280, 80,
                    ["Write model", "Order + OrderItem (PostgreSQL)", "persisted PENDING"], style="box")
 
 resp = node(260, 210, 300, 80, ["202 response", "order status = PENDING"], style="ink")
-outboxRow = node(600, 210, 250, 80, ["order.placed outbox row", "SAME @Transactional as persist"], style="sub")
+outboxRow = node(600, 210, 250, 80, ["order.placed outbox row", "Same @Transactional as persist"], style="sub")
 relay = node(890, 210, 280, 80, ["OrderOutboxRelay", "@Scheduled poller"], style="box")
 kafkaPlaced = node(1180, 210, 240, 80, ["Kafka topic", "order.placed"], style="ink")
 
@@ -103,7 +103,7 @@ band_c = {"x": 20, "y": 690, "w": 1410, "h": 320,
           "label": "Query path: reads EXCLUSIVELY from the read model (no aggregate fallback)", "fill": "#fafafa"}
 
 clientHttp = node(40, 740, 220, 90, ["Client", "GET /api/orders(/{id})"], style="sub")
-getById = node(1180, 740, 240, 90, ["OrderService.getById()/listAll()", "orderViewRepository ONLY"], style="user")
+getById = node(1180, 740, 240, 90, ["OrderService.getById()/listAll()", "orderViewRepository only"], style="user")
 
 clientGraphQL = node(40, 860, 220, 90, ["Client", "GraphQL order(id) query"], style="sub")
 gatewayNode = node(1180, 860, 240, 90, ["GraphQL gateway :8090", "order(id): see fig. 2"], style="accent")
@@ -122,7 +122,7 @@ notes = [
      "anchor": "middle", "bold": True, "size": 17},
 
     {"x": W / 2, "y": 378,
-     "text": "write model and read model are two DISTINCT tables in the SAME order-service PostgreSQL schema: never joined at read time",
+     "text": "write model and read model are two distinct tables in the same order-service PostgreSQL schema: never joined at read time",
      "anchor": "middle", "size": 11, "color": "#2f5f3d", "bold": True},
 
     {"x": 40, "y": 1060,

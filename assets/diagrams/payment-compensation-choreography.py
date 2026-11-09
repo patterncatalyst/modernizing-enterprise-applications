@@ -48,11 +48,11 @@ band_old = {"x": 20, "y": 60, "w": 1320, "h": 260,
 
 checkout1 = node(40, 130, 260, 90,
                   ["OrderService.placeOrder()", "reserve (ok) -> persist -> charge"], style="user")
-decline1 = node(340, 130, 230, 90, ["Payment charge declines", "in-process, SAME request"], style="box")
+decline1 = node(340, 130, 230, 90, ["Payment charge declines", "in-process, same request"], style="box")
 catch1 = node(610, 130, 260, 90,
                ["catch (RuntimeException ex)", "compensateRemoteReservations()"], style="ink")
 release1 = node(910, 130, 250, 90,
-                 ["gRPC Release :9004", "SAME request thread, no event involved"], style="accent")
+                 ["gRPC Release :9004", "Same request thread, no event involved"], style="accent")
 netzero1 = node(1190, 130, 130, 90, ["NET-ZERO", "stock restored"], style="ink")
 
 old_nodes = [checkout1, decline1, catch1, release1, netzero1]
@@ -76,7 +76,7 @@ resp2 = node(40, 520, 230, 70, ["202 Accepted", "request already returned"], sty
 
 paymentsvc = node(340, 420, 250, 80,
                    ["PaymentService", "processOrderPlaced() declines"], style="box")
-outbox2 = node(340, 520, 250, 70, ["payment.declined", "payment service's OWN outbox"], style="sub")
+outbox2 = node(340, 520, 250, 70, ["payment.declined", "payment service's own outbox"], style="sub")
 
 hop1 = node(650, 470, 90, 50, ["HOP 1", "emit"], style="ghost")
 

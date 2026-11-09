@@ -2,107 +2,46 @@
 title: "The Outbox Pattern, Done Right"
 order: 20
 part: "Data Across the Seam"
-description: "Transactional outbox vs. dual-write; idempotent consumers; ordering and deduplication."
+description: "Transactional outbox versus dual write: idempotent consumers, ordering by aggregate key, relay latency, and when to move from polling to log-based CDC."
 ---
 
 ## Learning objectives
 
 By the end of this chapter you can:
 
-- Explain the dual-write problem structurally: two independent writes to two independent systems, with no sequencing that closes the gap between them, and why "exactly-once" is marketing language for at-least-once delivery paired with idempotent processing.
-- Trace all four pieces of an outbox pipeline (the row, the transactional write, the polling relay, and the idempotent consumer) and explain why `published_at` must be stamped only after the broker acknowledges the send, never before.
-- Implement two independent layers of consumer idempotency: an application-level check-then-insert and a database partial unique index, and justify why neither layer alone is sufficient.
-- Key outbox events by aggregate id to get in-order delivery within one aggregate without sacrificing a broker's ability to parallelize across aggregates.
-- Tune a relay's poll interval as an explicit latency-versus-read-load trade-off, and name the retention and poison-message gaps this project leaves open as future hardening rather than solved problems.
-- Decide between a polling relay and a log-based CDC relay based on a specific, named latency or read-load requirement, rather than defaulting to the more sophisticated-looking mechanism.
+- Explain the dual-write problem and why "exactly-once" means at-least-once delivery plus idempotent processing.
+- Trace the four pieces of an outbox pipeline (row, transactional write, polling relay, idempotent consumer) and say why `published_at` is stamped only after the broker acknowledges.
+- Implement two layers of consumer idempotency, an application check-then-insert and a partial unique index, and say why neither is enough alone.
+- Key outbox events by aggregate id to get per-aggregate ordering while the broker still parallelizes across aggregates.
+- Tune a relay's poll interval as a latency versus read-load trade-off, and name the retention and poison-message gaps that remain.
+- Choose between a polling relay and a log-based CDC relay from a named latency or load requirement.
 
 ## Why this matters
 
-Chapter 17 introduced the transactional outbox at the exact moment the
-monolith needed it: the Notification extraction had to stop running a
-third-party-adjacent side effect inside checkout's own `@Transactional`, and
-the outbox was the mechanism that let the write survive without smuggling a
-second system into that transaction's blast radius. That was the right
-amount of outbox for a chapter whose real subject was event-driven
-extraction. This chapter's subject is the outbox itself: not what it is, but
-what it costs to run correctly once checkout depends on it in production
-rather than a one-paragraph aside. Every concern below is a concern a team actually
-hits running this exact mechanism in production: what happens when delivery
-duplicates (it will), what happens when two events for the same order arrive
-out of order (they can, if you key wrong), how fast "eventually" really is,
-when to stop polling a table and start tailing a log instead. None of this is
-new code. It is the same `examples/00-monolith/` outbox and the same
-`examples/03-notification-service/` consumer Chapter 17 already built,
-read again at the depth a reader needs before they'd trust this pattern with
-their own checkout flow.
+The Notification extraction needed the outbox to stop running a side effect inside checkout's own `@Transactional`. The subject here is what the outbox costs to run correctly once checkout depends on it: what happens when delivery duplicates (it will), when two events for one order arrive out of order (they can, if you key wrong), how fast "eventually" really is, and when to stop polling a table and tail a log. The code is the `examples/00-monolith/` outbox and the `examples/03-notification-service/` consumer, read at the depth you need before trusting the pattern with your own checkout. The order extraction later moved the outbox into `examples/07-order-service` (`OrderOutboxRelay`) and deleted the monolith's copy; the monolith code quoted below is at the `stage/02-notification-extracted` tag (`git checkout stage/02-notification-extracted`).
 
-The code is in `examples/00-monolith/` and `examples/03-notification-service/`,
-the same two example directories Chapter 17 built. There is no new run
-script for this chapter; the run scripts already there build/set up and run
-the outbox write, the relay, and the consumer exactly as described below,
-and each directory's `README.md` covers how to drive them.
+{% include excalidraw.html file="dual-write-vs-outbox" alt="The dual-write hazard versus the transactional outbox, stacked for contrast: on top, saving to the database and publishing to Kafka as two independent writes with a gap nothing closes; on the bottom, the business write and the outbox row committing together in the same transaction, with the second hop to Kafka made explicit and owned by the relay." caption="Figure 20.1: Dual-write versus the transactional outbox" %}
 
-## The dual-write problem: two systems, one guarantee you don't have
+## Pattern: Transactional Outbox
 
-Here is the version of "save to the database, then publish to Kafka" that
-looks correct and isn't:
+### The dual-write problem
+
+This version of "save to the database, then publish to Kafka" looks correct and isn't:
 
 ```java
-// NOT what this project does — the pattern this chapter explains the cure for
+// NOT what this project does: the pattern the outbox is the cure for
 orderRepository.save(order);                      // write 1: Postgres
 kafkaTemplate.send("order.placed", event);         // write 2: Kafka
 return toDto(order);
 ```
 
-It looks correct because, read top to bottom on the happy path, it does
-exactly what the business wants: persist the order, then tell the world
-about it. The problem is that these are two independent writes to two
-independent systems over two independent network paths, and nothing anywhere
-in that snippet makes them succeed or fail together. Kleppmann's *Designing
-Data-Intensive Applications* names this precisely as the **dual-write
-problem**: whenever an application needs to keep two systems in sync by
-issuing two separate writes from its own code, there is a window, however
-small, in which one write has landed and the other has not, and the
-application has no way to make that window disappear just by writing careful
-code around it. The failure modes are not exotic. The process can crash
-between the two lines. The Kafka client can time out while Postgres already
-committed. The pod can be rescheduled by the orchestrator mid-method. Every
-one of these leaves the order persisted with no event ever published for it,
-silently, because nothing downstream is watching for an order that exists
-with no corresponding event, only for an event that failed to send. The
-inverse ordering (publish first, then save) is not a fix, only a relocation
-of the same hole: now a customer can receive a notification for an order
-that was never actually persisted, because the save failed after the publish
-already succeeded. There is no sequencing of two independent writes to two
-independent systems that closes this gap. You can retry, you can log, you
-can add a circuit breaker; none of it changes that the two writes are not
-one operation, and "the two writes are not one operation" is the entire
-problem.
+These are two independent writes to two systems over two network paths, and nothing makes them succeed or fail together. Kleppmann calls this the **dual-write problem**: there is a window in which one write has landed and the other hasn't, and careful code around it can't close it. The process can crash between the lines, the Kafka client can time out after Postgres committed, the pod can be rescheduled mid-method. Each leaves the order persisted with no event, and nothing downstream notices, because it watches for events that failed to send, not for orders with no event. Publishing first only relocates the hole: a customer is notified about an order whose save then failed. Retries, logging and circuit breakers don't change that the two writes are not one operation.
 
-It is worth being precise about the vocabulary here, because marketing copy
-for message brokers throws around "exactly-once" in a way Kleppmann's
-treatment of stream processing is careful to puncture. No distributed system
-spanning an unreliable network can deliver a message *exactly* once end to
-end: the sender can never be certain the receiver got it without an
-acknowledgment, and the acknowledgment itself can be lost, which forces a
-retry, which is a duplicate. What a well-built pipeline can actually promise
-is **at-least-once delivery** paired with **idempotent processing** on the
-receiving end, and the combination of the two is what the literature calls
-*effectively-once*: duplicates may arrive, but processing them twice produces
-the same observable state as processing them once. That phrase,
-at-least-once plus idempotent, is this chapter's spine. The outbox supplies
-the first half. The consumer you'll see below supplies the second. Neither
-half alone is the pattern; the pattern is the pair.
+No distributed system over an unreliable network delivers a message exactly once end to end. The sender can't be sure the receiver got it without an acknowledgment, the acknowledgment can be lost, and that forces a retry, which is a duplicate. What a pipeline can promise is **at-least-once delivery** with **idempotent processing**, which Kleppmann calls effectively-once: duplicates may arrive, but processing them twice leaves the same state as once. The outbox supplies the first half and the consumer the second. The pattern is the pair.
 
-## The transactional outbox: moving the guarantee inside one transaction
+### Moving the guarantee inside one transaction
 
-The outbox's fix for the dual-write problem is to stop treating "persist the
-order" and "record that an event needs publishing" as two writes to two
-systems, and instead make the second write a write to the *same* system as
-the first: the same Postgres database, the same transaction, the same
-commit. `OutboxEvent` is the entity that row becomes, and `OrderService`
-writes it in the identical `@Transactional` method that persists the order,
-charges the card, and dispatches the shipment:
+The outbox makes the second write a write to the same system as the first: the same Postgres database, transaction and commit. `OrderService` writes the `OutboxEvent` row in the same `@Transactional` method that persists the order, charges the card and dispatches the shipment:
 
 ```java
 // examples/00-monolith/.../order/OrderService.java#placeOrder (excerpt)
@@ -111,50 +50,22 @@ order.confirm();
 shippingService.dispatch(order, order.getShippingAddress());
 
 // write the event to the outbox, atomically, in THIS transaction. No Kafka
-// client is touched here — the @Scheduled OutboxRelay is the only thing
+// client is touched here. The @Scheduled OutboxRelay is the only thing
 // that talks to Kafka, on its own schedule, after this transaction has
 // committed (or not).
 writeOrderPlacedOutboxEvent(customer, order);
 return toDto(order);
 ```
 
-Nothing about this is exotic: `writeOrderPlacedOutboxEvent` is an ordinary
-`outboxRepository.save(...)` call, the same kind of write `orderRepository`
-already made two lines earlier. That ordinariness is exactly the point: the
-outbox row is not infrastructure glued on beside the business transaction,
-it is one more row written by that transaction, subject to the identical
-commit-or-rollback behavior as every other row it touches. A payment decline
-that throws from `paymentService.charge(...)` unwinds the whole method:
-the order row, the inventory reservation, *and* the outbox write, because
-none of them has committed yet. There is no interval, however narrow, in
-which the order exists and the outbox row doesn't, or the reverse; that is
-precisely the guarantee a dual-write across two systems structurally cannot
-offer, no matter how its two calls are ordered or wrapped.
+`writeOrderPlacedOutboxEvent` is an ordinary `outboxRepository.save(...)`, one more row under the same commit-or-rollback as every other row. A payment decline that throws from `charge` unwinds the order row, the inventory reservation and the outbox write together. There is no interval in which the order exists and the outbox row doesn't, which no ordering of a dual write can offer.
 
-What the outbox does **not** do is make the second hop, outbox row to
-Kafka, atomic with anything. That hop is a separate, asynchronous
-`OutboxRelay`, and the gap between "the business fact is durable" and "the
-world has been told" is now explicit, bounded, and owned by one piece of
-infrastructure instead of hidden inside application code that pretends it
-isn't there. Closing the first gap (business-fact atomicity) by accepting a
-second, smaller, well-understood gap (publish latency) is the
-trade this pattern makes, and the remainder of this chapter is about running
-that second gap correctly.
-
-{% include excalidraw.html file="dual-write-vs-outbox" alt="The dual-write hazard versus the transactional outbox, stacked for contrast: on top, saving to the database and publishing to Kafka as two independent writes with a gap nothing closes; on the bottom, the business write and the outbox row committing together in the same transaction, with the second hop to Kafka made explicit and owned by the relay." caption="Figure 20.1: Dual-write versus the transactional outbox" %}
-
-## How the code works
-
-Four pieces carry this pattern end to end: the row, the relay that publishes
-it, the write that creates it, and the consumer that absorbs its
-at-least-once delivery. Each is real, already-running code.
+The second hop, outbox row to Kafka, is not atomic with anything. It belongs to a separate asynchronous `OutboxRelay`, so the gap between "the fact is durable" and "the world has been told" is bounded and owned by one component instead of hidden in application code. You close the business-fact gap by accepting a second, smaller, well-understood one: publish latency.
 
 {% include excalidraw.html file="outbox-four-piece-pipeline" alt="The outbox pattern's four pieces as one labeled flow: the write that persists the outbox row inside placeOrder's transaction, the relay that polls for unpublished rows and publishes them to Kafka, the broker topic the relay blocks on for acknowledgment, and the idempotent consumer that checks before inserting." caption="Figure 20.2: The outbox pattern's four pieces: write, relay, broker, consumer" %}
 
-**The row: `OutboxEvent`.** Its columns are the minimum needed to answer
-the relay's one question ("what is unpublished, and in what order should I
-send it?") and the consumer's one question ("what happened, and to which
-aggregate?"):
+### The four pieces
+
+**The row: `OutboxEvent`.** Its columns answer the relay's question ("what is unpublished, and in what order?") and the consumer's ("what happened, to which aggregate?"):
 
 ```java
 // examples/00-monolith/.../common/outbox/OutboxEvent.java
@@ -175,22 +86,9 @@ public class OutboxEvent {
 }
 ```
 
-`aggregateId` exists for one reason only, and it drives two different
-downstream behaviors you'll meet below: it becomes the Kafka message key
-(ordering), and it's the field the consumer dedupes on (idempotency).
-`payload` is stored as `jsonb` and the relay never parses it: it only ever
-forwards the string byte-for-byte to Kafka, which is deliberate: the relay's
-job is "move bytes reliably," not "understand bytes," and keeping it ignorant
-of the payload's shape means a new event type never requires touching the
-relay. `createdAt`/`publishedAt` are the two timestamps that turn "is this
-row done" into a one-column `WHERE` clause (`published_at IS NULL`) instead
-of a join or a separate status table, the simplest state machine that
-could possibly work, with exactly two states.
+`aggregateId` drives two behaviors: it becomes the Kafka message key (ordering) and the field the consumer dedupes on (idempotency). `payload` is `jsonb` and the relay forwards it byte for byte without parsing, so a new event type never touches the relay. `createdAt` and `publishedAt` reduce "is this row done" to `WHERE published_at IS NULL`, a state machine with two states.
 
-**The write: `OrderService#writeOrderPlacedOutboxEvent`.** This is a plain
-method, called from inside `placeOrder`'s `@Transactional`, that builds the
-JSON payload and persists the row through the same `OutboxRepository` the
-relay reads from:
+**The write: `OrderService#writeOrderPlacedOutboxEvent`.** A plain method called inside `placeOrder`'s transaction:
 
 ```java
 // examples/00-monolith/.../order/OrderService.java (excerpt)
@@ -210,21 +108,9 @@ private void writeOrderPlacedOutboxEvent(Customer customer, Order order) {
 }
 ```
 
-Two decisions here matter more than they look. First, `String.valueOf(order.getId())`
-becomes the outbox row's `aggregateId`: the order's own primary key, not a
-synthetic event id, which is what lets the consumer dedupe by the business
-entity rather than by an opaque message identifier it would otherwise have
-to invent and track. Second, the `catch` block does not swallow a
-serialization failure and move on: it rethrows as an unchecked exception,
-which rolls back the whole transaction. That looks harsh (a JSON
-serialization bug now fails checkout, not just the notification), but it's
-the correct failure mode for an outbox: silently dropping the write would
-mean the order commits with *no* event ever recorded for it, the exact
-failure the entire pattern exists to prevent. A loud failure here is strictly
-better than a quiet one.
+Two decisions matter. The order's own primary key becomes the `aggregateId`, not a synthetic event id, so the consumer dedupes by business entity instead of tracking an opaque message id. And a serialization failure rethrows unchecked and rolls back the whole transaction. A JSON bug now fails checkout, which is the correct failure mode: swallowing it would commit an order with no event recorded, the failure the pattern exists to prevent.
 
-**The relay: `OutboxRelay`.** A `@Scheduled` method polls on a fixed delay,
-pulls a bounded batch of unpublished rows oldest-first, and publishes each:
+**The relay: `OutboxRelay`.** A `@Scheduled` method polls on a fixed delay, pulls a bounded batch of unpublished rows oldest first and publishes each:
 
 ```java
 // examples/00-monolith/.../common/outbox/OutboxRelay.java
@@ -248,30 +134,9 @@ private void publishOne(OutboxEvent event) {
 }
 ```
 
-Walk this call by call. `findTop50ByPublishedAtIsNullOrderByCreatedAtAsc()`
-is backed by the partial index `idx_outbox_unpublished` from
-`V3__outbox.sql` (`CREATE INDEX ... ON outbox (created_at) WHERE
-published_at IS NULL`), so this query stays a cheap index scan over the
-*unpublished* rows only, regardless of how many published rows have piled up;
-the published rows simply never enter the index. The cap at fifty exists
-so one scheduled tick can never hold an unbounded amount of work if the
-relay falls behind; a backlog of ten thousand unpublished rows gets drained
-across two hundred ticks instead of one enormous one. `kafkaTemplate.send(topic,
-event.getAggregateId(), event.getPayload())` passes the aggregate id as the
-Kafka record key, not `null`, not the outbox row's own surrogate `id`,
-and that one argument is what makes partitioning-by-aggregate work at all,
-covered in its own section below. `.get(5, TimeUnit.SECONDS)` is the single
-most consequential line in the method: it turns an asynchronous Kafka send
-into a blocking call the relay waits on, and it is what makes
-`event.markPublished()` on the next line trustworthy: by the time that line
-runs, the broker has already acknowledged the write. The `catch` block
-does nothing but log: it does not rethrow, it does not mark the
-row in any special failed state, it just lets the loop continue to the next
-event, and leaves this one for the next tick to retry.
+The query is backed by the partial index `idx_outbox_unpublished` from `V3__outbox.sql` (`CREATE INDEX ... ON outbox (created_at) WHERE published_at IS NULL`), so it stays a cheap scan over unpublished rows however many published rows pile up. The cap of fifty bounds a tick's work: a backlog of ten thousand drains across two hundred ticks. The aggregate id goes in as the Kafka record key, not `null` and not the row's surrogate `id`. `.get(5, TimeUnit.SECONDS)` turns the asynchronous send into a blocking call, so `markPublished()` runs only after the broker has acknowledged. The `catch` logs and continues, without rethrowing or marking the row failed, leaving it for the next tick.
 
-**The consumer: `NotificationService#recordOrderPlaced`.** On the far side
-of Kafka, this is the method that has to assume the relay's at-least-once
-guarantee will occasionally mean the same event arrives twice:
+**The consumer: `NotificationService#recordOrderPlaced`.** It must assume the relay's at-least-once guarantee means the same event occasionally arrives twice:
 
 ```java
 // examples/03-notification-service/.../NotificationService.java
@@ -286,47 +151,18 @@ public void recordOrderPlaced(OrderPlacedEvent event) {
 }
 ```
 
-`findByOrderId` first, insert second: check-then-insert, keyed on the exact
-`aggregateId` the outbox row carried across the wire as `orderId`. For the
-ordinary case (a single consumer replica, redeliveries arriving one at a
-time, which is the common case for a batch size of fifty and a two-second
-poll) this is the entire idempotency story, and it is cheap: a redelivered
-event costs one indexed `SELECT` and a no-op return, not a thrown exception
-caught somewhere upstream.
-
-**The fragile bit this walkthrough has to name:** the check and the
-insert above are two separate statements, not one atomic operation, so two
-deliveries of the same event landing concurrently (two consumer replicas,
-or a redelivery racing a still-in-flight first attempt) can both pass the
-`findByOrderId` check before either one's insert commits. The application
-code alone cannot close that window; only the database can, which is exactly
-why the next section exists as a second, independent layer rather than a
-nice-to-have.
+Check, then insert, keyed on the `aggregateId` that crossed the wire as `orderId`. With one consumer replica and redeliveries arriving one at a time, a redelivery costs one indexed `SELECT` and a no-op return. The weakness is that check and insert are two statements: two deliveries of the same event arriving concurrently (two replicas, or a redelivery racing an in-flight first attempt) can both pass the check before either insert commits. Only the database can close that window.
 
 {% include excalidraw.html file="transactional-outbox-sequence" alt="The transactional-outbox guarantee contrasted with the smell it replaces: the old flow where checkout called notification synchronously inside the same transaction, any failure rolling back every other write; and the new flow where the last write before commit is an outbox row, published later by the relay to a consumer that is idempotent by construction." caption="Figure 20.3: The old synchronous call versus the new outbox-and-relay flow" %}
 
 ## Done right, concern by concern
 
-### At-least-once delivery means the consumer must own idempotency, in two layers
+### Two layers of idempotency
 
-The relay's own class-level comment states its guarantee without softening
-it: "the Kafka send and the `published_at` stamp are two separate
-operations, not one atomic unit." If the process dies in the gap between
-them, broker acked, stamp never committed, the row still reads as
-unpublished on the next poll and gets sent again, byte-for-byte identical.
-This is not a bug to be engineered away; it is the one guarantee a polling
-relay (or, as the next section shows, a log-tailing one) cannot offer on its
-own, because "write to Postgres" and "write to Kafka" remain two different
-systems even after the outbox has made the *first* write, order plus event
-row, atomic. Accepting at-least-once at the relay is only safe because the
-consumer is idempotent, and this project's consumer is idempotent by two
-independent layers, not one:
+The relay's own class comment says it outright: the Kafka send and the `published_at` stamp are two operations, not one atomic unit. If the process dies in between, the broker has acked but the stamp never committed, so the row reads as unpublished on the next poll and is sent again, byte for byte. A log-tailing relay has the same property, because Postgres and Kafka remain two systems after the outbox makes the first write atomic. At-least-once is safe only because the consumer is idempotent twice over:
 
-- **Layer one: the application check-then-insert** shown above. This is
-  the cheap, common-case path: an ordinary redelivery costs a read and a
-  no-op, never a thrown exception.
-- **Layer two: a database constraint that holds even when layer one
-  races and loses:**
+- **Layer one: the application check-then-insert** above. The cheap common-case path; a redelivery costs a read, never an exception.
+- **Layer two: a database constraint that holds when layer one loses a race.**
 
 ```sql
 -- examples/03-notification-service/.../V3__idempotent_order_id.sql
@@ -335,240 +171,82 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_notifications_order_id
     WHERE order_id IS NOT NULL;
 ```
 
-A partial unique index, scoped to rows where `order_id IS NOT NULL` so a
-future notification type that doesn't originate from an order is never
-forced into the same constraint, is the backstop Postgres itself enforces
-regardless of what the application code believed when it ran its own check.
-The two layers answer different questions rather than duplicating
-one answer: the application check is the fast path that keeps the common
-case from ever touching a constraint violation; the unique index is the
-guarantee that holds in the one case application logic structurally cannot
-close on its own: two writers racing past the same read at nearly the same
-instant. Either layer alone leaves a gap: the application check alone has
-the race condition above; the unique index alone would work, but every
-ordinary redelivery would pay for a thrown-and-caught constraint violation
-instead of a cheap no-op read. Running both is not belt-and-suspenders
-paranoia: it matches each layer to the specific failure it, and only it,
-prevents.
+The partial index is scoped to rows with an `order_id`, so a future notification type that doesn't originate from an order isn't forced into the constraint. The layers answer different questions. The check keeps ordinary redeliveries from ever hitting a constraint violation; the index guarantees correctness when two writers race past the same read. The check alone has the race; the index alone works but charges every ordinary redelivery a thrown-and-caught violation.
 
-### Ordering: partition by aggregate key, not by none and not by everything
+### Ordering: partition by aggregate key
 
-A Kafka topic's ordering guarantee is per-partition, not per-topic: the
-broker promises that messages within one partition are delivered to a
-consumer in the order they were produced, and promises nothing about
-ordering *across* partitions. That single fact decides how an outbox relay
-must choose its message key. `OutboxRelay` calls
-`kafkaTemplate.send(topic, event.getAggregateId(), event.getPayload())`:
-the second argument is the record key, and Kafka's default partitioner
-hashes that key to select a partition, meaning every event sharing one
-`aggregateId` (one order) lands in the same partition every time and is
-therefore delivered to any given consumer in the exact order the relay sent
-them. That is the only ordering guarantee this pattern needs: a reader of
-the notification service never requires that order #41's event be processed
-before order #42's: those are independent aggregates whose events can
-interleave freely, but it does require that, if a single order ever
-produces more than one event in its lifetime (this chapter's single
-`order.placed` topic doesn't yet, but a future `order.cancelled` alongside it
-would), those events arrive in the sequence they were written. Keying by
-`null` would scatter even one order's own events across every partition at
-random, destroying that guarantee for no benefit; keying by a constant
-would force every event through one partition regardless of which order it
-describes, destroying Kafka's ability to parallelize consumption across
-partitions for no benefit either. Keying by the aggregate id is the one
-choice that buys ordering exactly where it's needed and nowhere it isn't,
-and it's a design decision made once, at the relay, rather than something
-each future consumer has to reconstruct. In this project's development and
-CI setup the `order.placed` topic auto-creates with a single partition, so
-every event is trivially ordered regardless of key; the keying choice is
-what makes it safe to grow the topic to many partitions later without
-silently breaking per-order ordering the day someone bumps the partition
-count for throughput.
+Kafka orders messages within a partition, not across a topic. `OutboxRelay` passes `event.getAggregateId()` as the record key, and the default partitioner hashes it, so every event for one order lands in the same partition and reaches a consumer in the order the relay sent it. That is all the ordering this pattern needs. Order 41's events never need to precede order 42's, but if one order ever emits more than one event (a future `order.cancelled` beside `order.placed`), those must arrive in write order.
 
-### The relay's poll-interval and the latency it buys
+| Key | Effect |
+|---|---|
+| `null` | One order's events scatter across partitions at random; per-order ordering is lost. |
+| A constant | Every event goes through one partition; consumption can't parallelize. |
+| Aggregate id | Ordering exactly where it's needed, parallelism everywhere else. |
 
-`outbox.relay.poll-interval-ms` defaults to two thousand milliseconds, and
-that single number is the whole latency-versus-load trade-off in one place.
-Shorten it and a customer's order confirmation arrives sooner after
-checkout, at the direct cost of the relay running its unpublished-rows query
-more often against the same table every other request is also writing to.
-Lengthen it and that read load drops, at the direct cost of a customer
-waiting longer, on average half the interval and up to the full interval in
-the worst case, before their event is even picked up for publishing, before
-any of the broker round-trip or consumer processing time is added on top.
-Chapter 17's own cutover evidence puts a number on the composed effect:
-observed checkout-to-notification latency around five seconds end to end
-against this exact two-second poll interval, batch size, and broker
-round-trip. Nothing about two seconds is a law of nature: it is a tuned
-constant, chosen to be fast enough to feel reasonably responsive in a demo
-without hammering Postgres with a sub-second poll loop, and it's exactly the
-kind of fragile, environment-specific number the depth standard asks a
-chapter to name rather than bury: a reader deploying this relay under
-real load should expect to retune it against their own table size, their own
-write volume, and their own tolerance for "eventually."
+In development and CI the `order.placed` topic auto-creates with a single partition, so everything is trivially ordered. The key is what makes it safe to add partitions later without breaking per-order ordering.
 
-### `published_at` is stamped only after the broker acknowledges
+### Poll interval and the latency it buys
 
-It bears restating as its own concern, because getting the order of these
-two lines wrong is the single easiest way to quietly break the at-least-once
-guarantee into something worse: `.get(5, TimeUnit.SECONDS)` blocks until the
-broker has acknowledged the send, and only then does `event.markPublished()`
-run, followed by the `save` that commits the stamp. If those two lines were
-reversed (mark published first, send second), a crash between them would
-leave a row permanently stamped as published whose event was never
-sent, and nothing in the system would ever notice or retry it, because the
-relay's own query explicitly excludes published rows. That failure mode is
-strictly worse than a duplicate: a duplicate is merely redundant work for an
-idempotent consumer to absorb, while a falsely-stamped row is a silently
-lost event, which is the exact failure the entire outbox pattern exists to
-rule out. "Publish, then stamp" is not a stylistic preference; it's the line
-that decides whether this mechanism's failure mode is "occasionally
-redundant" or "occasionally silent," and those are not close to equally bad.
+`outbox.relay.poll-interval-ms` defaults to 2000, and that one number is the latency versus load trade-off. Shorten it and confirmations arrive sooner, at the cost of the unpublished-rows query running more often against a table the application is also writing. Lengthen it and read load drops, but an event waits on average half the interval and up to the whole interval before it is picked up, before broker and consumer time. The Notification cutover evidence recorded roughly five seconds checkout-to-notification end to end at the two-second interval. Two seconds is a tuned constant, not a law; retune it against your own table size, write volume and tolerance for "eventually."
 
-### Cleanup and retention: the gap this project leaves open
+### Stamp `published_at` only after the ack
 
-Here is a fragile bit this chapter names rather than glosses over: nothing in
-`examples/00-monolith/` deletes, archives, or partitions published outbox
-rows. `idx_outbox_unpublished`'s partial condition means the relay's own hot
-query never slows down as published rows accumulate, because that index
-never indexes them, but the table itself still grows forever, and an
-unbounded table is eventually a problem for autovacuum, for backup size, and
-for anyone who has to run an unindexed diagnostic query against `outbox`
-someday. A production deployment of this exact pattern needs a retention
-policy this codebase does not yet implement: a second scheduled job, running
-far less often than the publishing relay, that deletes (or moves to cold
-storage) rows where `published_at` is older than some retention window,
-long enough to outlive any plausible redelivery or audit need, short enough
-to keep the table bounded. This chapter is naming the gap rather than
-closing it, in keeping with the standing of every example in this book:
-credit the code with exactly what it does, and no more.
+`.get(5, TimeUnit.SECONDS)` blocks until the broker acknowledges, and only then does `markPublished()` run and the `save` commit the stamp. Reverse them and a crash between the two leaves a row stamped as published whose event was never sent. The relay's query excludes published rows, so nothing ever retries it. A duplicate is redundant work an idempotent consumer absorbs; a falsely stamped row is a silently lost event, the failure the outbox exists to rule out. "Publish, then stamp" decides whether the failure mode is occasionally redundant or occasionally silent.
 
-### Poison messages: the retry this relay doesn't yet bound
+### Retention: a gap left open
 
-`publishOne`'s `catch` block leaves a failed row unpublished unconditionally,
-for *any* `ExecutionException` or `TimeoutException`, with no retry counter
-and no circuit breaker. For a transient failure, the broker briefly
-unreachable, a timeout under load, that is exactly the right behavior: the
-next tick tries again, and it eventually succeeds once the broker recovers.
-But the same code path handles a permanently failing event identically to a
-transiently failing one: a payload the broker consistently rejects (an
-oversized message past `max.request.size`, say) will be re-attempted,
-fail, and get re-attempted again, forever, on every single poll, since it
-keeps sorting to the front of "oldest unpublished first." It never blocks
-other events in that batch; the `for` loop continues past a caught
-exception to the next row, but it does consume one of the batch's fifty
-slots on every tick indefinitely, and a handful of such rows would
-eventually crowd out fresh events from ever being selected. A
-hardened version of this relay would track an attempt count per row (one
-more column), cap retries, and move a row that exceeds the cap into a
-separate dead-letter table or topic for a human or an automated remediation
-process to inspect: the event is never silently lost, but it also stops
-competing with healthy events for the relay's limited per-tick attention.
-That hardening is not present in `examples/00-monolith/` today; naming it
-here is this chapter doing exactly what the depth standard asks of a
-fragile bit, not waving it away as solved.
+Nothing in `examples/00-monolith/` deletes, archives or partitions published outbox rows. The partial index keeps the relay's hot query fast as they accumulate, but the table grows forever, which eventually costs autovacuum, backup size and any unindexed diagnostic query. A production deployment needs a second, far less frequent scheduled job that deletes or archives rows whose `published_at` is older than a retention window, long enough to outlive any plausible redelivery or audit need and short enough to keep the table bounded. This code does not implement it.
 
-## Two relay strategies: polling versus log-based CDC
+### Poison messages: retries the relay doesn't bound
 
-Everything above describes one way to read an outbox table: have a
-scheduled process poll it. That is not the only way, and the choice between
-them depends on what a given extraction needs.
+`publishOne` leaves a failed row unpublished for any `ExecutionException` or `TimeoutException`, with no retry counter and no circuit breaker. For a transient failure, a briefly unreachable broker or a timeout under load, that is right: the next tick succeeds. A permanently failing event is treated the same way. A payload the broker always rejects (an oversized message past `max.request.size`) is retried on every poll, and because it sorts to the front of "oldest unpublished first" it takes one of the batch's fifty slots each tick. It never blocks other rows, since the loop continues, but a handful of such rows would crowd fresh events out. A hardened relay would add an attempt-count column, cap retries and move a row over the cap to a dead-letter table or topic for inspection. That hardening is not present in `examples/00-monolith/`.
 
-A **polling relay**, which is what this project's notification pipeline
-uses, is a scheduled job that periodically issues an ordinary `SELECT`
-against the outbox table, looking for rows matching some "not yet
-published" predicate. Its cost model is straightforward: it adds a
-recurring read against a table your application is also writing to, and its
-latency is bounded below by the poll interval: an event can never be
-published faster than the next scheduled tick notices it, no matter how
-fast the broker itself responds. Its operational footprint is close to
-zero: it is a method in the application's own process, with no new
-infrastructure to run, patch, or monitor beyond the application itself.
+## Polling relay or log-based CDC
 
-A **log-based CDC relay**, the kind a connector like Debezium implements,
-takes a structurally different approach: instead of asking the table "what's
-new" on a schedule, it attaches to the database's write-ahead log (the same
-log Postgres uses internally for crash recovery and streaming replication)
-and is pushed every row-level change the instant it's written, in commit
-order, with no polling interval to wait out. Latency drops to roughly the
-time it takes the WAL record to reach the connector, commonly tens to a
-few hundred milliseconds rather than a multi-second poll cadence, and there
-is no periodic table scan competing with application traffic at all,
-because the mechanism is push-based rather than pull-based. That latency
-and read-load win carries its own cost. Reading the WAL requires a **replication
-slot**, a durable bookmark the database keeps so it knows how much WAL
-history it must retain until the connector has consumed it, and a connector
-that falls behind or disappears can cause that retained WAL to grow
-unboundedly, a failure mode a polling relay simply cannot produce because it
-never asks the database to retain anything on its behalf. It also typically
-means standing up **Kafka Connect** (or an equivalent CDC runtime) as a new
-piece of infrastructure, with its own deployment, its own monitoring, its
-own upgrade cadence, and its own connector-specific configuration surface:
-real, ongoing operational weight that a two-line `@Scheduled` method inside
-an existing Spring process does not carry.
+A **polling relay** is a scheduled job that issues an ordinary `SELECT` for unpublished rows. It adds a recurring read against a table the application also writes, and its latency is bounded below by the poll interval. Its operational footprint is near zero: a method in the application's process.
 
-This project avoids paying that weight on the very first extraction to need
-an outbox: Notification's event volume and latency tolerance don't demand
-sub-second delivery, so a polling relay teaches the outbox's real
-guarantee, atomic write, at-least-once publish, without pulling a
-connector and a replication slot into the stack a chapter early, purely to
-look more sophisticated than the problem requires. That calculus changes for
-the Inventory extraction. Stock levels are read on nearly every product page
-and checkout attempt across the whole system; a multi-second lag between a
-reservation committing and that fact becoming visible downstream is a much
-more direct cost there than a few extra seconds before a confirmation email
-is queued. The Inventory extraction (covered in *Transaction Log Tailing,
-CDC & Extraction 3: Inventory*) is exactly where this project adopts
-Debezium-style CDC, not because CDC is categorically superior to polling,
-but because that extraction's latency and read-load requirements are
-different enough from Notification's to justify the connector and the
-replication slot the polling relay above got to avoid. The general rule this
-pair of chapters is teaching: reach for a polling relay first, because it is
-the plain, low-ceremony default; reach for log-based CDC only once a
-specific, named latency or load requirement can't be met by shortening the
-poll interval, because that connector is infrastructure you now operate
-forever, not a line of configuration you tune once.
+A **log-based CDC relay**, such as Debezium, attaches to the database's write-ahead log and is pushed every row change in commit order, with no interval to wait out. Latency drops to roughly the time the WAL record takes to reach the connector, commonly tens to a few hundred milliseconds, and no periodic scan competes with application traffic. The costs:
 
-## What you learned
+- A **replication slot**, a durable bookmark that makes the database retain WAL until the connector consumes it. A connector that falls behind or disappears lets retained WAL grow without bound, a failure a polling relay can't produce.
+- **Kafka Connect** (or an equivalent CDC runtime) as new infrastructure with its own deployment, monitoring, upgrades and connector configuration.
 
-- The **dual-write problem** is structural, not a matter of careless
-  sequencing: two independent writes to two independent systems can never be
-  made atomic by application code alone, and Kleppmann's framing of
-  "effectively-once" (at-least-once delivery plus idempotent processing) is
-  the realistic target, not the marketing fiction of "exactly-once."
-- The **transactional outbox** closes that gap for the *first* hop only: the
-  business write and the event row commit or roll back together, because
-  they're the same transaction on the same database, and leaves the second
-  hop (table to broker) at-least-once, a trade this project's relay
-  documents rather than hides.
-- At-least-once delivery is only safe paired with a consumer that is
-  idempotent on **two independent layers**: a cheap application-level
-  check-then-insert for the common case, and a database constraint as the
-  backstop for the race the application layer alone cannot close.
-- **Keying by aggregate id**, not by nothing and not by a constant, is what
-  gives an outbox event stream the one ordering guarantee it needs: order
-  within an aggregate, without sacrificing a broker's ability to
-  parallelize across aggregates.
-- A **polling relay** is the right default: simple, low-ceremony, predictably
-  bounded by its poll interval, right up until a specific latency or
-  read-load requirement can't be met by tuning that interval, at which point
-  **log-based CDC** (Debezium reading the WAL via a replication slot) trades
-  a lower latency floor for a connector you now operate permanently; this
-  project makes that trade for the first time in the Inventory extraction.
+| | Polling relay | Log-based CDC relay |
+|---|---|---|
+| Latency floor | The poll interval | Tens to hundreds of ms |
+| Read load | Recurring query on the outbox | None on the table |
+| New infrastructure | None | Kafka Connect, replication slot |
+| Failure mode | Lag | Unbounded retained WAL |
 
-*Event Sourcing & CQRS* picks up directly from the event stream this
-chapter hardened: once `order.placed` (and the events the Inventory and
-Payment extractions add beside it) can be trusted to arrive at-least-once,
-in order per aggregate, and to be processed exactly-effectively-once, that
-stream becomes a credible source from which a read model can be built and
-kept current, which is precisely the CQRS read side that chapter
-constructs. *Transaction Log Tailing, CDC & Extraction 3: Inventory*
-is the chapter that puts log-based CDC into production in this
-project, the alternative relay strategy previewed above.
+Notification's volume and latency tolerance don't demand sub-second delivery, so polling teaches the outbox's real guarantee, atomic write and at-least-once publish, without a connector and a slot. The calculus changes for Inventory. Stock is read on nearly every product page and checkout, and multi-second lag between a reservation committing and becoming visible downstream costs far more than a delayed confirmation email. That extraction adopts Debezium-style CDC, not because CDC is categorically better but because its requirements justify the connector and the slot.
+
+> **Decision**
+>
+> Start with a polling relay. Move to log-based CDC only when a named latency or read-load requirement can't be met by shortening the poll interval, because the connector is infrastructure you operate permanently. Whichever relay you use, deliver at least once, stamp after the ack, key by aggregate id, and make the consumer idempotent in the application and in the database.
+
+> **🤖 Explore with your agent**
+>
+> "In `examples/03-notification-service`, write a test that delivers the same `order.placed` event to `NotificationService#recordOrderPlaced` from two threads at once. Show which of the check-then-insert and the `uq_notifications_order_id` index each outcome depends on, then add an attempt-count column to `examples/07-order-service`'s `OrderOutboxRelay` that stops retrying a row after five failures."
+>
+> Check: run `./mvnw test` in both modules; exactly one `notifications` row exists for the order, and a row that fails five times stops being selected.
+
+## Build, run, observe
+
+On the current tree the order service's `OrderOutboxRelay` feeds the notification service, and the notification demo exercises the whole pipeline through the edge router:
+
+```bash
+demos/demo-notification-cutover.sh
+```
+
+To run the monolith's own relay, check out `stage/02-notification-extracted`, bring up the compose stack (Postgres, Kafka), start the monolith on `:8080` (the outbox is its only notification path there) and the notification service on `:8083`. A checkout (`POST :8080/api/orders`) writes an `order.placed` outbox row, the `OutboxRelay` publishes it to Kafka, and `GET :8083/api/notifications?customerId=1` shows the notification within about five seconds, consistent with the two-second poll. Each example's `README.md` covers driving them by hand.
+
+Experiments:
+
+- Reset an outbox row's `published_at` to null to simulate a redelivery: the relay publishes a second Kafka message and the service consumes it, but the notification count stays at one.
 
 ## For deeper coverage
 
-- Martin Kleppmann, *Designing Data-Intensive Applications* (O'Reilly, 2017): the dual-write problem and the effectively-once (at-least-once plus idempotent) framing this entire chapter is built on.
-- Chris Richardson, *Microservices Patterns* (Manning, 2018): the transactional outbox pattern this chapter hardens past Chapter 17's introduction into a production-grade treatment.
-- Gregor Hohpe & Bobby Woolf, *Enterprise Integration Patterns* (Addison-Wesley, 2003): the idempotent-receiver pattern and the message-key-driven ordering discipline behind this chapter's two-layer dedupe and aggregate-id keying.
-- [Debezium: Connector documentation](https://debezium.io/documentation/): the canonical reference for the log-based CDC relay this chapter compares against the polling relay it implements.
-- [Apache Kafka: Message Delivery Semantics](https://kafka.apache.org/documentation/#semantics): the canonical definition of at-least-once and exactly-once delivery this chapter's "effectively-once" framing refines.
+- Martin Kleppmann, *Designing Data-Intensive Applications* (O'Reilly, 2017): the dual-write problem and the effectively-once (at-least-once plus idempotent) framing the whole pattern is built on.
+- Chris Richardson, *Microservices Patterns* (Manning, 2018): the transactional outbox pattern covering the pattern in production depth.
+- Gregor Hohpe & Bobby Woolf, *Enterprise Integration Patterns* (Addison-Wesley, 2003): the idempotent-receiver pattern and the message-key-driven ordering discipline behind two-layer dedupe and aggregate-id keying.
+- [Debezium: Connector documentation](https://debezium.io/documentation/): the canonical reference for the log-based CDC relay compared here against the polling relay.
+- [Apache Kafka: Message Delivery Semantics](https://kafka.apache.org/documentation/#semantics): the canonical definition of at-least-once and exactly-once delivery that the effectively-once framing refines.

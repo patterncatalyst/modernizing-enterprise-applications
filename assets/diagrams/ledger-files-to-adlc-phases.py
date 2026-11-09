@@ -72,17 +72,17 @@ for i, (key, name, gloss, style) in enumerate(PHASES):
     nodes.append(n)
 
 phase_band = {"x": 20, "y": 68, "w": W - 40, "h": 112,
-              "label": "ADLC phases -- the cycle (Frame -> Map -> Plan -> Generate -> Verify -> Operate -> Reconcile)",
+              "label": "ADLC phases: the cycle (Frame -> Map -> Plan -> Generate -> Verify -> Operate -> Reconcile)",
               "fill": "#ffffff"}
 
 # ---- tier 2: the ledger files this project actually keeps -----------------
 LEDGER_Y, LEDGER_H = 235, 110
 LEDGER = [
-    ("build_plan", 40, 288, ["_plans/build-plan.md", "chapters A-M, phase table,", "iteration backlog"], "box"),
-    ("r02_plan", 348, 288, ["_plans/iterations/ plan file", "numbered, acceptance-gated steps,", "written before any step starts"], "box"),
-    ("r02_status", 656, 288, ["_plans/iterations/ status file", "updated as each step completes --", "the iteration's resume record"], "box"),
-    ("decisions", 964, 288, ["_plans/decisions.md", "append decision outcomes --", "DRQ rows: fixed / accepted / proposed"], "box"),
-    ("reconciliation", 1272, 288, ["_plans/reconciliation.md", "record drift vs. cited sources --", "scoped, not yet written"], "ghost"),
+    ("build_plan", 40, 288, ["build-plan.md", "chapters A-M, phase table,", "iteration backlog"], "box"),
+    ("r02_plan", 348, 288, ["iteration plan file", "numbered, acceptance-gated steps,", "written before any step starts"], "box"),
+    ("r02_status", 656, 288, ["iteration status file", "updated as each step completes;", "the iteration's resume record"], "box"),
+    ("decisions", 964, 288, ["decisions.md", "append decision outcomes;", "decision rows: fixed / accepted / proposed"], "box"),
+    ("reconciliation", 1272, 288, ["reconciliation.md", "record drift vs. cited sources;", "scoped, not yet written"], "ghost"),
 ]
 ledger_nodes = {}
 for key, x, w, lines, style in LEDGER:
@@ -91,7 +91,7 @@ for key, x, w, lines, style in LEDGER:
     nodes.append(n)
 
 ledger_band = {"x": 20, "y": 186, "w": W - 40, "h": 174,
-               "label": "This project's own `_plans/` files -- checkable against the repository as you read",
+               "label": "This project's own planning files: checkable against the repository as you read",
                "fill": "#fafafa"}
 
 # ---- phase -> file edges (clear space between the two bands) --------------
@@ -102,7 +102,7 @@ edges = [
     connect(phase_nodes["verify"], ledger_nodes["r02_status"], label="equivalence-gate result recorded", ly=14),
     connect(phase_nodes["reconcile"], ledger_nodes["decisions"], amber=True, label="append decision outcomes", ly=-16),
     connect(phase_nodes["reconcile"], ledger_nodes["reconciliation"], amber=True, dashed=True,
-            label="record drift -- not yet written", ly=12),
+            label="record drift, not yet written", ly=12),
 ]
 
 # ---- feedback bus: Reconcile also updates build-plan.md's status line -----
@@ -114,7 +114,7 @@ bp_x = bp["x"] + bp["w"] / 2
 edges += [
     {"x1": dec_x, "y1": dec["y"] + dec["h"], "x2": dec_x, "y2": BUS_Y, "dashed": True, "amber": True},
     {"x1": dec_x, "y1": BUS_Y, "x2": bp_x, "y2": BUS_Y, "dashed": True, "amber": True,
-     "label": "Reconcile also appends a build-plan.md status line -- same file, same discipline"},
+     "label": "Reconcile also appends a build-plan.md status line: same file, same discipline"},
     {"x1": bp_x, "y1": BUS_Y, "x2": bp_x, "y2": bp["y"] + bp["h"], "dashed": True, "amber": True},
 ]
 
@@ -123,7 +123,7 @@ RESUME_Y, RESUME_H = 430, 120
 resume = node(270, RESUME_Y, 1060, RESUME_H, [
     "Resume mechanism: the status file, read again",
     "\"Saved before a user break/possible reboot.\"",
-    "\"Remaining (resume here)\" -- names the next steps",
+    "\"Remaining (resume here)\": names the next steps",
     "Next session reads this one file plus the plan file's step definitions and continues",
 ], style="ink")
 nodes.append(resume)
@@ -133,7 +133,7 @@ edges.append(connect(status_n, resume, dashed=True, amber=True,
                       label="written before stopping; read again to resume", lx=260, ly=-6))
 
 resume_band = {"x": 150, "y": 400, "w": 1300, "h": 180,
-               "label": "Interruption and resume -- not hypothetical; this project's own checkpoint",
+               "label": "Interruption and resume, not hypothetical; this project's own checkpoint",
                "fill": "#eaf4ec"}
 
 notes = [

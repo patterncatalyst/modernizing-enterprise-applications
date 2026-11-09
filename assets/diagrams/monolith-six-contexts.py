@@ -89,7 +89,7 @@ notes = [
      "anchor": "middle", "size": 12, "color": "#555555"},
 
     {"x": 40, "y": PG_Y + PG_H + 24,
-     "text": "every context reads and writes the SAME schema directly: no context owns its tables exclusively (detail in monolith-shared-schema-er).",
+     "text": "every context reads and writes the same schema directly: no context owns its tables exclusively (detail in monolith-shared-schema-er).",
      "anchor": "start", "size": 10.5, "color": "#555555"},
 
     {"x": 40, "y": H - 16,

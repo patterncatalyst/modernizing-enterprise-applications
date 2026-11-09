@@ -1,9 +1,9 @@
-# Example 10 — The supply-chain gate (SBOM + CVE scan + policy-as-code)
+# Example 10: The supply-chain gate (SBOM + CVE scan + policy-as-code)
 
-This example is the runnable companion to **Chapter 31**. It is an *isolated,
+This example is the runnable companion to [CI/CD, GitOps, Progressive Delivery & Supply Chain](https://patterncatalyst.github.io/modernizing-enterprise-applications/docs/31-cicd-gitops-supply-chain/). It is an *isolated,
 additive* demonstrator: it does not change any service. It takes two artifacts
-this repository already builds — the Spring Boot **monolith** (the "before") and
-the extracted Quarkus **order-service** (the "after") — generates a software
+this repository already builds, the Spring Boot **monolith** (the "before") and
+the extracted Quarkus **order-service** (the "after"), generates a software
 bill of materials (SBOM) for each, scans each SBOM against the current
 vulnerability database, and applies a committed policy-as-code threshold.
 
@@ -14,11 +14,11 @@ fails the gate; the modernized service passes it.
 
 For each target in [`policy.yaml`](policy.yaml), `demo.sh` runs three steps:
 
-1. **SBOM** — `syft` produces a CycloneDX JSON bill of materials (the complete
+1. **SBOM**: `syft` produces a CycloneDX JSON bill of materials (the complete
    list of components and versions actually inside the artifact).
-2. **Scan** — `grype` scans that SBOM against its vulnerability DB and reports
+2. **Scan**: `grype` scans that SBOM against its vulnerability DB and reports
    every match with a severity.
-3. **Policy** — the `fail-on` threshold in `policy.yaml` decides pass/fail. The
+3. **Policy**: the `fail-on` threshold in `policy.yaml` decides pass/fail. The
    same file, the same three steps, run here and in
    `.github/workflows/supply-chain.yml`.
 
@@ -42,7 +42,7 @@ cd examples/10-supply-chain
 ```
 
 Expected output (component counts and the monolith's CVE tally move as the
-vulnerability DB updates daily — the *shape* is the point):
+vulnerability DB updates daily, the *shape* is the point):
 
 ```
 monolith       [before] components=78   Critical=4  High=6  Medium=8  FAIL
@@ -51,7 +51,7 @@ GATE: FAIL -- at least one artifact breaches policy (fail-on: High).
 ```
 
 `demo.sh` exits non-zero when any target breaches policy. That non-zero exit is
-exactly what fails a CI job — the monolith's `FAIL` is the gate *working*, not a
+exactly what fails a CI job, the monolith's `FAIL` is the gate *working*, not a
 bug. Evidence is written to `evidence/`: the grype findings JSON per target and
 a `summary.txt`. The full SBOMs are regenerated each run and git-ignored.
 
@@ -77,9 +77,9 @@ and exited `1`: the monolith artifact tripped `fail-on: High` (4 Critical / 6
 High), the order-service runtime closure passed (0 / 0). The committed
 `evidence/*.grype.json` files are that run's findings snapshots. The CI
 incarnation in `.github/workflows/supply-chain.yml` was also **run green on a live
-GitHub Actions runner** (PR #14, 2026-10-06) — it builds order-service on JDK 25,
+GitHub Actions runner** (PR #14, 2026-10-06), it builds order-service on JDK 25,
 generates the SBOM, and scans it with `severity-cutoff: high`; the `sbom-scan`
-check passed. CVE counts will drift as the grype DB updates — re-run `demo.sh` to
+check passed. CVE counts will drift as the grype DB updates, re-run `demo.sh` to
 refresh the snapshot.
 </content>
 </invoke>

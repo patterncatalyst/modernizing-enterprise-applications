@@ -82,7 +82,7 @@ bus_targets = ["payment", "shipping", "notification"]
 farthest_x = cols[bus_targets[-1]]["svc"]["x"]
 edges.append({"x1": order_edge_x, "y1": order_mid_y, "x2": order_edge_x, "y2": BUS_Y, "amber": True})
 edges.append({"x1": order_edge_x, "y1": BUS_Y, "x2": farthest_x, "y2": BUS_Y, "amber": True,
-              "label": "god service -- direct calls into other contexts"})
+              "label": "god service: direct calls into other contexts"})
 for ctx in bus_targets:
     svc = cols[ctx]["svc"]
     bx = svc["x"]
@@ -92,7 +92,7 @@ for ctx in bus_targets:
 # ---- PostgreSQL: one shared schema -------------------------------------
 PG_BAND_Y, PG_BAND_H = 440, 150
 pg_band = {"x": 20, "y": PG_BAND_Y, "w": W - 40, "h": PG_BAND_H,
-           "label": "PostgreSQL -- one shared schema (Flyway V1 + V2)", "fill": "#fafafa"}
+           "label": "PostgreSQL: one shared schema (Flyway V1 + V2)", "fill": "#fafafa"}
 
 TABLE_Y, TABLE_H = 470, 50
 TABLE_W, TABLE_GUTTER = 150, 12
@@ -153,7 +153,7 @@ edges += fk_edges
 
 bands = [
     {"x": 20, "y": 70, "w": W - 40, "h": 310,
-     "label": "Spring Boot monolith -- one deployable JAR (JDK 25)", "fill": "#ffffff"},
+     "label": "Spring Boot monolith: one deployable JAR (JDK 25)", "fill": "#ffffff"},
     pg_band,
 ]
 
@@ -165,11 +165,11 @@ notes = [
 
     {"x": W - 40, "y": 420,
      "text": "SMELL: OrderService#placeOrder wraps inventory + order + payment + shipment + "
-             "notification in ONE @Transactional spanning five contexts (ACID -> ACD).",
+             "notification in one @Transactional spanning five contexts (ACID -> ACD).",
      "anchor": "end", "size": 10.5, "color": "#555555"},
 
     {"x": 40, "y": 598,
-     "text": "SMELL: FK joins cross bounded-context boundaries freely inside the one shared schema -- "
+     "text": "SMELL: FK joins cross bounded-context boundaries freely inside the one shared schema; "
              "order_items->inventory_items, payments/shipments/notifications->orders, reviews->customers+inventory_items, orders->customers.",
      "anchor": "start", "size": 10.5, "color": "#555555"},
     {"x": 40, "y": 614,
@@ -180,7 +180,7 @@ notes = [
      "text": "review: first context extracted", "anchor": "middle", "bold": True, "size": 11.5,
      "color": "#2f5f3d"},
     {"x": cols["review"]["x"] + COL_W / 2, "y": REPO_Y + ROW_H + 18,
-     "text": "SMELL: REST-only, no runtime collaborator -- yet governed by the",
+     "text": "SMELL: REST-only, no runtime collaborator, yet governed by the",
      "anchor": "middle", "size": 9.5, "color": "#555555"},
     {"x": cols["review"]["x"] + COL_W / 2, "y": REPO_Y + ROW_H + 30,
      "text": "monolith's one global SecurityFilterChain alongside every other context.",

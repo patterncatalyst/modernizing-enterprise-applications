@@ -65,7 +65,7 @@ monolith = node(650, 70, 280, 120,
                   "one @Transactional checkout"], style="box")
 pg = node(1000, 70, 260, 120,
           ["PostgreSQL (shared instance)", "orders table",
-           "outbox table", "written in the SAME txn"], style="sub")
+           "outbox table", "written in the same txn"], style="sub")
 relay = node(1000, 230, 260, 90,
              ["OutboxRelay", "@Scheduled poller (2000ms)",
               "publishes unpublished rows"], style="box")
@@ -89,7 +89,7 @@ consumer2 = node(1240, 530, 260, 110,
 
 wsclient = node(1240, 750, 260, 100,
                 ["Client", "WebSocket /ws/notifications",
-                 "direct: NOT proxied (outside /api)"], style="user")
+                 "direct: not proxied (outside /api)"], style="user")
 
 nodes = [suite, client, proxy, monolith, pg, relay, kafka,
          ownschema, consumer1, consumer2, wsclient]
@@ -116,7 +116,7 @@ notes = [
      "text": "Write side: checkout writes order + outbox atomically; a scheduled relay is the only thing that talks to Kafka",
      "anchor": "start", "bold": True, "size": 12.5, "color": "#1d1d1d"},
     {"x": 630, "y": 478,
-     "text": "Read + consume side: two independent consumers off the SAME topic: persistence (shared group) and WebSocket push (unique group)",
+     "text": "Read + consume side: two independent consumers off the same topic: persistence (shared group) and WebSocket push (unique group)",
      "anchor": "start", "bold": True, "size": 12, "color": "#1d1d1d"},
 
     {"x": 40, "y": 940,

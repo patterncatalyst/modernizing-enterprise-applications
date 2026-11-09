@@ -50,7 +50,7 @@ builds = [
 ]
 
 startup_vals = [1.492, 1.434, 0.0485]          # midpoints used only to size bars
-startup_labels = ["1.492 s", "1.431–1.437 s", "0.048–0.049 s"]
+startup_labels = ["1.492 s", "1.431 to 1.437 s", "0.048 to 0.049 s"]
 
 memory_vals = [316, 304, 73]
 memory_labels = ["~316 MB", "~304 MB", "~73 MB"]
@@ -87,7 +87,7 @@ band_memory = {"x": 20, "y": band2_y, "w": 1460, "h": band2_h,
 nodes1, notes1, bottom1 = bars_for_band(band1_y, startup_vals, startup_labels)
 nodes2, notes2, bottom2 = bars_for_band(band2_y, memory_vals, memory_labels)
 
-callout1 = {"x": LABEL_X, "y": bottom1 + 30, "text": "~31x faster: 1.492 s -> 0.048–0.049 s (Phase A to native)",
+callout1 = {"x": LABEL_X, "y": bottom1 + 30, "text": "~31x faster: 1.492 s -> 0.048 to 0.049 s (Phase A to native)",
             "anchor": "start", "bold": True, "size": 12.5, "color": "#2f5f3d"}
 callout2 = {"x": LABEL_X, "y": bottom2 + 30, "text": "~4x smaller: ~316 MB -> ~73 MB (Phase A to native)",
             "anchor": "start", "bold": True, "size": 12.5, "color": "#2f5f3d"}

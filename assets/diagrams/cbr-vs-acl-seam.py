@@ -67,7 +67,7 @@ inventory_svc = node(W - 360, H / 2 - 55, 300, 110,
 # ---- VERTICAL axis: anti-corruption layer: WHAT is safe to carry back ----
 raw_reply = node(W / 2 - 190, 110, 380, 110,
                   ["resource exchange: the raw reply", "monolith JSON today / StockReply",
-                   "the shape the ACL must NOT pass through"],
+                   "the shape the ACL must not pass through"],
                   style="box")
 stock_dto = node(W / 2 - 190, H - 210, 380, 110,
                   ["StockDto", "the one contract order may hold,",

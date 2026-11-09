@@ -1,15 +1,15 @@
-# deploy/k8s — kustomize manifests (ch.29)
+# deploy/k8s: kustomize manifests
 
 Kubernetes manifests for the full 8-service running topology
 (`examples/01-strangler-proxy` through `examples/08-graphql-gateway`;
-`examples/09-schema-registry-demo` is excluded — it is not part of the
+`examples/09-schema-registry-demo` is excluded, it is not part of the
 running topology). Adapted from the house layout at
 `~/Dev/datamesh-reference-arch-quarkus/k8s/` (`base/` per-service
 Deployment+Service, a shared ConfigMap, `kustomization.yaml`,
 `overlays/minikube`), stripped of that repo's `datamesh` namespace/codenames
 and its 4-service scope.
 
-This tree is additive only — it does not change any Java code,
+This tree is additive only, it does not change any Java code,
 `application.properties`, `pom.xml`, the Newman suite, CI, or any existing
 demo. It has been verified **headlessly** (no live cluster): the gate is
 `kubectl kustomize ... | kubectl apply --dry-run=client -f -`, not a real
@@ -21,8 +21,8 @@ demo. It has been verified **headlessly** (no live cluster): the gate is
 deploy/k8s/
   base/
     namespace.yaml              # Namespace "mea"
-    app-config.yaml             # ConfigMap mea-app-config — shared %prod env contract
-    app-secret.yaml             # Secret mea-postgres-app — dev-only DB credential
+    app-config.yaml             # ConfigMap mea-app-config, shared %prod env contract
+    app-secret.yaml             # Secret mea-postgres-app, dev-only DB credential
     strangler-proxy.yaml        # Deployment + Service (edge router, :8888)
     review-service.yaml         # Deployment + Service (:8081, shared `public` schema)
     notification-service.yaml   # Deployment + Service (:8083, `notification` schema)
@@ -46,7 +46,7 @@ deploy/k8s/
 
 The minikube path runs on **Docker Engine** (docker-ce, docker context
 `default`) on a Fedora or RHEL host, with minikube's `docker` driver and the
-`containerd` runtime inside the node (DRQ-077, superseding the original podman
+`containerd` runtime inside the node (replacing the original podman
 driver). Docker Desktop is never required. Every script names its target
 explicitly (`minikube -p mea`, `kubectl --context mea`) and never touches
 kubectl's current-context or `minikube config`.
@@ -89,9 +89,9 @@ adding it to `deploy/k8s/scripts/lib.sh` and recreating the profile
 
 `examples/04-inventory-service` and `examples/05-payment-service` did not
 previously have a `src/main/docker/` directory (04) or had an empty one
-(05) — both `Dockerfile.jvm`/`Dockerfile.native` pairs were added verbatim
+(05), both `Dockerfile.jvm`/`Dockerfile.native` pairs were added verbatim
 from `examples/03-notification-service/src/main/docker/` (generic Quarkus
-UBI templates, byte-identical — confirmed via `diff`/`sha256sum` at authoring
+UBI templates, byte-identical, confirmed via `diff`/`sha256sum` at authoring
 time) so every one of the 8 services has the same two build paths.
 
 ## Headless verification (no live cluster)
@@ -108,15 +108,15 @@ kubectl kustomize deploy/k8s/overlays/minikube | kubectl --context mea apply --d
 
 Step 2 needs a reachable Kubernetes API server for its RESTMapping
 discovery step (`kubectl apply`, unlike `kubectl kustomize`, has to resolve
-each `kind` to a REST resource before it can validate) — a sandbox with
+each `kind` to a REST resource before it can validate), a sandbox with
 *zero* reachable apiserver (no current `kubectl config current-context`, no
 cached discovery, no local control plane) will fail at that discovery step
 with a `dial tcp ...: connection refused` error, not a manifest-validity
-error. Any real target — a running `minikube`, `kind`, or a cached
-discovery doc from a previous connection — lets step 2 complete and report
+error. Any real target, a running `minikube`, `kind`, or a cached
+discovery doc from a previous connection, lets step 2 complete and report
 the client-side-valid object count (24: 1 Namespace, 2 ConfigMaps, 1 Secret,
 10 Services, 8 Deployments, 2 StatefulSets). Do **not** substitute
-`--dry-run=server` for this — that performs real server-side admission and
+`--dry-run=server` for this, that performs real server-side admission and
 needs a live cluster, which this step is explicitly scoped to avoid.
 
 ## Apply (once a real minikube cluster is up)
@@ -146,23 +146,23 @@ authoritative mapping. Summary:
 Every Deployment pulls the whole ConfigMap via `envFrom`; a service
 harmlessly receives keys it has no matching property for.
 
-## Deferred to ch.30 / demo-only
+## Deferred and demo-only
 
-- **Connect/CDC** — `compose.yaml`'s `connect` service (Debezium Postgres
+- **Connect/CDC**: `compose.yaml`'s `connect` service (Debezium Postgres
   connector, `infra/debezium/`) has no k8s equivalent here. `postgres`'s
   `wal_level=logical` is still enabled so a future Connect deployment can
   tail the WAL without a Postgres restart; `inventory-service`'s
   `inventory-service-cdc` consumer group just sits idle until that lands.
-- **Apicurio Schema Registry** — used only by the excluded
+- **Apicurio Schema Registry**: used only by the excluded
   `examples/09-schema-registry-demo`; no k8s resource here.
-- **LGTM observability stack** (Loki/Grafana/Tempo/Mimir + OTel Collector)
-  — `compose.yaml`'s `lgtm` service has no k8s equivalent here.
-- **Istio / mesh** — `deploy/k8s/overlays/minikube/kustomization.yaml`
+- **LGTM observability stack** (Loki/Grafana/Tempo/Mimir + OTel Collector):
+  `compose.yaml`'s `lgtm` service has no k8s equivalent here.
+- **Istio / mesh**: `deploy/k8s/overlays/minikube/kustomization.yaml`
   leaves a commented `resources:` seam (`../../istio`, `../../observability`)
   for exactly this, mirroring how
   `~/Dev/datamesh-reference-arch-quarkus/k8s/istio` composes on top of that
   repo's `base` as a sibling overlay rather than editing `base` in place.
-- **Health on strangler-proxy / review-service** — neither carries
-  `quarkus-smallrye-health` (ch.27's six-of-eight note), so both use
+- **Health on strangler-proxy / review-service**: neither carries
+  `quarkus-smallrye-health` (six of the eight services have it), so both use
   `tcpSocket` probes instead of `httpGet /q/health/*`; see the comment block
   at the top of each manifest for the upgrade path.

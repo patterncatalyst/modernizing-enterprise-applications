@@ -2,535 +2,111 @@
 title: "Coupling, the Modular Monolith & When Not to Split"
 order: 13
 part: "Finding the Seams"
-description: "Khononov's three dimensions of coupling; the modular monolith and decomposed-DB monolith as legitimate destinations; the distributed-monolith trap."
+description: "Constantine's coupling ladder, afferent and efferent coupling as an extraction ranking, Khononov's balancing model, and the modular monolith as a legitimate destination."
 ---
 
 ## Learning objectives
 
 By the end of this chapter you can:
 
-- State Constantine's cohesion/coupling pairing and explain why coupling, not cohesion, is the dimension this book builds a sequencing strategy on.
-- Place each of Chapter 9's five remaining smells on the Constantine coupling ladder (content, common, control, stamp, data) with its concrete code example.
-- Compute afferent (Ca) and efferent (Ce) coupling for a context from its dependency graph and explain why low-Ca, low-Ce contexts should extract first.
-- Reconstruct the six-context extraction ranking (review, notification, inventory, payment/shipping, order) purely from Ca/Ce scores, independent of narrative preference.
-- Explain Khononov's strength/distance/volatility balancing-coupling model and why splitting strong, volatile coupling across a network produces a distributed monolith instead of a fix.
-- Describe the three disciplines of a modular monolith (package/build-module isolation, no cross-module entity references, module-owned schemas) and when that destination is preferable to further distribution.
-- Recognize the distributed-monolith trap and state the precondition every extraction in this book satisfies before cutting a seam: an ACL, an outbox, a CDC pipeline, or a saga already in place.
+- Place each remaining smell in the monolith on the Constantine coupling ladder (content, common, control, stamp, data).
+- Compute afferent (Ca) and efferent (Ce) coupling for a context from its dependency graph and rank contexts for extraction.
+- Explain Khononov's strength, distance and volatility model and why splitting strong, volatile coupling across a network produces a distributed monolith.
+- Describe the three disciplines of a modular monolith: module isolation, no cross-module entity references, module-owned schemas.
+- Name the precondition for cutting a seam: an anti-corruption layer, an outbox, a CDC pipeline or a saga is already in place.
 
 ## Why this matters
 
-Chapter 11 gave you bounded contexts and aggregates as the *conceptual*
-vocabulary for a seam, and Chapter 12 gave you event storming as a *process*
-for discovering where those seams sit in a system that never shipped with a
-map. Both chapters answer the question "where could this system be cut?" by
-pointing at behavior: the verbs on the sticky notes, the domain language
-that changes meaning as you cross a boundary. Neither chapter answers a
-second, equally important question: given several legitimate candidate
-seams, which one do you cut *first*? Nor do they answer the question any
-decomposition plan has to answer before a single extraction ships: is
-cutting any of them, right now, actually the right call? This chapter
-supplies the metric that answers both: **coupling**, measured precisely
-enough to rank candidates rather than merely describe them, and precisely
-enough to reveal when the correct answer is not to cut at all. The five
-smells Chapter 9 catalogued in `examples/00-monolith/` are, every
-one of them, a coupling problem wearing a different costume: a shared
-schema, a god service, a synchronous call, a leaky entity, a transaction
-that spans contexts it shouldn't. This chapter gives you the vocabulary to
-see that they are the same problem, scored on the same scale, and the scale
-is what turns an extraction order into a defensible sequence
-instead of an argument settled by whoever spoke last in the planning
-meeting.
+Bounded contexts and event storming tell you where the system could be cut. They don't say which seam to cut first, or whether to cut at all. Coupling answers both, because you can count it. The five smells planted in the monolith (a shared schema, a god service, a synchronous call, a leaky entity, a transaction that spans contexts, numbered 1 to 5 in `examples/00-monolith/SMELLS.md`) are all coupling problems, and scoring them on one scale turns an extraction order into something you can defend instead of an argument won by whoever spoke last.
 
-This chapter adds no new code. `examples/00-monolith/` is unchanged
-from Chapter 10, and the extraction order it motivates is realized starting
-in Chapter 15. What this chapter adds is the measurement that makes the plan
-*checkable*: given the real dependency graph of a real codebase, you can
-compute which context has the smallest blast radius, and that computation,
-not intuition, is why review went first and order went last.
+Nothing here changes code. The ranking is computed from the monolith's real dependency graph, and it is why Review goes first and Order goes last. The extractions have since removed the context packages from the current `examples/00-monolith` tree; the monolith as designed, with every class named below, is on the `reference/monolith-before` branch (`git checkout reference/monolith-before`).
 
-## Coupling and cohesion as the structural property, not a vibe
+## Coupling and cohesion
 
-Larry Constantine's original formulation, from the structured-design
-literature this book's whole vocabulary descends from, is a single sentence
-worth keeping in exactly its plain form: **a structure is stable if
-cohesion is high and coupling is low.** Cohesion measures how tightly the
-*elements inside one module* belong together: do they share a single,
-nameable purpose, or did they end up in the same file because that was
-convenient the day someone wrote them. Coupling measures the opposite
-direction: how much one module's internals leak into, or depend on, another
-module's internals. The two are not independent axes you can optimize in
-isolation. In practice they trade against each other, because the usual
-way to raise cohesion inside a module is to pull in everything that module
-needs to do its one job, which simultaneously *reduces* that module's
-coupling to its neighbors, since it no longer needs to reach outside itself
-to get the job done. `OrderService` is the demonstration case run
-backwards: its cohesion is low ("places an order by checking stock,
-persisting the order, charging payment, dispatching shipment, and sending a
-notification" needs five verbs and four "and"s to describe accurately, which
-Chapter 9 already pointed out as the plain-English tell for a god service),
-and its coupling is correspondingly high, because a class with no single
-purpose has no natural boundary keeping it from reaching into everyone
-else's business.
+Larry Constantine's formulation: **a structure is stable if cohesion is high and coupling is low.** Cohesion is how tightly the elements inside one module belong together. Coupling is how much one module's internals depend on another's. The two trade against each other: pulling everything a module needs for its one job inside it raises cohesion and lowers coupling at once, because it no longer reaches outside itself. `OrderService` shows both failing: "places an order by checking stock, persisting the order, charging payment, dispatching shipment and sending a notification" takes four "and"s to describe, and a class with no single purpose has no natural boundary stopping it from reaching into everyone else's business.
 
-What makes coupling the right word to build an entire decomposition
-strategy around, rather than just one more code-smell synonym, is that it
-is *measurable* in a way cohesion mostly isn't. You can count the edges in a
-dependency graph. You cannot, in the same mechanical way, count how
-"cohesive" a class feels: cohesion stays a judgment call applied to one
-module at a time, while coupling is a relationship between two or more
-modules that a static analysis tool, or a disciplined `grep`, can actually
-enumerate. That asymmetry is why this chapter spends most of its time on
-coupling: it is the dimension you can turn into a ranking, and a ranking is
-what an extraction *order* requires. Conway's observation sits underneath
-all of this as the organizational mirror of the same idea: "organizations
-which design systems are constrained to produce designs which are copies of
-the communication structures of these organizations." That is why a
-coupling edge in the code is so often also, quietly, a coordination
-requirement between two teams. A foreign key between `order_items` and
-`inventory_items` is not just a database constraint; it is a standing
-requirement that whoever owns inventory's schema coordinate with whoever
-owns order's queries before touching it, whether or not an org chart ever
-wrote that requirement down.
+Coupling is the dimension to build a strategy on because it is countable. You can enumerate the edges in a dependency graph with a static analysis tool or a disciplined `grep`. Cohesion stays a per-module judgment call. Conway's observation is the organizational mirror ("organizations which design systems are constrained to produce designs which are copies of the communication structures of these organizations"): a coupling edge in the code is usually a coordination requirement between two teams. A foreign key between `order_items` and `inventory_items` means whoever owns inventory's schema must coordinate with whoever owns order's queries, whether or not an org chart says so.
 
-## The Constantine coupling taxonomy, applied to the monolith
+## The Constantine coupling ladder
 
-Constantine and Yourdon's original structured-design work ranked module
-coupling on a ladder from worst to best, and the ladder is worth walking in
-full because every rung has a live example sitting in
-`examples/00-monolith/` today. This is not a taxonomy imported from a
-textbook and left abstract; it is a taxonomy that scores the actual code
-the previous four chapters built.
+Constantine and Yourdon ranked coupling from worst to best. Every rung has a live example in the monolith.
 
-**Content coupling** is the worst rung: one module reaches inside another
-and directly modifies or relies on its internal data, bypassing whatever
-interface that module exposes. The monolith's closest approach to content
-coupling is `OrderService#placeOrder` receiving a live, JPA-managed
-`InventoryItem` entity straight from `InventoryService#findBySkuOrThrow` and
-reading its internal fields (`inventoryItem.getPriceCents()`,
-`inventoryItem.getSku()`) rather than a contract type built for external
-consumption, Chapter 9's Smell 5. It falls just short of the textbook
-definition of content coupling only because Java's access modifiers still
-gate direct field access; everything else about the relationship
-(depending on the producer's exact internal representation, with no
-translation layer absorbing change) is content coupling's spirit if not
-its letter, which is exactly why an anti-corruption layer (Chapter 16) is
-the cure rather than a milder fix.
+| Rung | Meaning | Where it is in the monolith |
+|---|---|---|
+| Content | One module relies on another's internal data, bypassing its interface | `OrderService#placeOrder` receives a live, JPA-managed `InventoryItem` from `InventoryService#findBySkuOrThrow` and reads `getPriceCents()` and `getSku()`. Java's access modifiers keep it short of the letter of the definition, not the spirit |
+| Common | Modules share a widely visible data store | One Postgres schema holds `order`, `inventory`, `payment`, `shipping`, `notification` and the `customers` shared kernel, with no enforced ownership |
+| Control | A parameter's value dictates the receiver's control flow | `OrderCreate.paymentMethod()` travels from the REST controller into `PaymentService#charge`, where it selects the approve or decline path |
+| Stamp | A whole composite crosses a boundary when the receiver needs part, so any change to its shape can break the receiver | `OrderItem`'s constructor takes a full `InventoryItem` for three fields: sku, name and price at order time. Passing the whole `StockDto` after the entity leak is fixed would still be stamp coupling |
+| Data | Only simple, purpose-built parameters cross | `OrderService.listAll()` returns `List<OrderDto>` built by `toDto`, already done right, a few lines from the content-coupling violation in the same class: `toDto` was written for the REST controller, `findBySkuOrThrow` for a Java caller's convenience |
 
-**Common coupling** is two or more modules sharing the same global or
-widely-visible data store, where any of them can change state the others
-depend on without the others knowing it happened. The monolith's single
-Postgres schema is common coupling at the data-tier scale: `order`,
-`inventory`, `payment`, `shipping`, `notification`, and the `customers`
-shared kernel all read and write tables in one schema that nothing
-enforces ownership boundaries on, so a migration that `inventory` runs for
-its own reasons can silently break a query `order` wrote against the same
-table. This is Smell 1, and it is the smell this chapter treats as the
-single worst offender in the monolith; the section after this one explains
-why.
+Message coupling and API contract coupling have no example in the monolith. They are what the extracted services look like, and you need the whole ladder to measure how far they've moved.
 
-**Control coupling** is one module passing another a flag or parameter
-whose *value* dictates the receiving module's internal control flow: the
-caller has to know something about the callee's internal branching logic to
-use it correctly. The monolith's checkout flow brushes against this in a
-narrower form: `OrderCreate.paymentMethod()` is threaded from the REST
-controller all the way into `PaymentService#charge`, where its value
-selects a code path (approve vs. decline) that the order-placement flow's
-own success or failure then depends on. The caller doesn't just pass data;
-it passes a value whose meaning only makes sense in terms of payment's
-internal decision logic.
+{% include excalidraw.html file="coupling-ladder" alt="The Constantine coupling ladder drawn as seven stacked rungs, worst to best, each paired with its monolith example. Content coupling: OrderService#placeOrder reading a live, JPA-managed InventoryItem's priceCents and sku straight from findBySkuOrThrow. Common coupling: one shared Postgres schema across order, inventory, payment, shipping, notification, and customers. Control coupling: OrderCreate.paymentMethod() threaded into PaymentService#charge, selecting an approve-or-decline code path. Stamp coupling: OrderItem's constructor taking the full InventoryItem entity for the three fields it needs. Data coupling: OrderService.listAll() returning List<OrderDto> via toDto, already done right. Message coupling and API/data-structure coupling have no monolith example: they are the target architecture the extracted services build." caption="Figure 13.1: The Constantine coupling ladder, worst to best, each rung pinned to its monolith example" %}
 
-**Stamp coupling** is passing a whole composite data structure across a
-boundary when the receiver only needs part of it. The receiver becomes
-implicitly dependent on the structure's full shape, including fields it
-never touches, so any change to that shape is a potential breaking change
-even to callers using a fraction of it. `OrderItem`'s constructor taking a
-full `InventoryItem` entity, when all it actually needs is three of that
-entity's fields (sku, name, price-at-time-of-order: the exact fields
-Chapter 9's Smell 1 annotation names as what a denormalized copy should
-carry), is stamp coupling layered on top of Smell 5's leaked-entity problem:
-even once Chapter 16 fixes the "raw entity" half of that smell, passing the
-whole `StockDto` instead of the three fields order actually needs would
-still be stamp coupling, just a milder version of it.
+## The two worst offenders
 
-**Data coupling** is the best rung reachable while still passing anything
-at all: modules communicate only through simple, well-defined parameters,
-primitives or small, purpose-built value types with no incidental fields
-riding along. `OrderService.listAll()` returning `List<OrderDto>` built by
-`toDto`, rather than returning the `Order` JPA entities directly, is the
-monolith's own data coupling, already done right, sitting a few lines away
-from Smell 5's violation of exactly the same principle at a different seam.
-The contrast is instructive on its own: the codebase already demonstrates
-both ends of the same ladder, in the same class, because `toDto` was
-written for the REST controller's benefit while `findBySkuOrThrow` was
-written for a Java caller's convenience, and nobody applied the same
-discipline to both call sites.
+**Shared-database coupling** (`SMELL[ch.18]`, smell 1) is common and content coupling at once. `order_items` joins `inventory_items`; `payments`, `shipments` and `notifications` each hold a foreign key back into `orders`; `order` and `notification` both join `customers`. `order/OrderItem.java`, `payment/Payment.java`, `shipping/Shipment.java`, `notification/Notification.java` and `common/Customer.java` carry the `SMELL[ch.18]` tag on exactly these relationships. A foreign key isn't a negotiated contract. The database enforces a promise ("this row can't exist without that row") that neither context's code declares and neither can relax alone. It is invisible at the point of use: nothing in `OrderService` says it depends on inventory's schema, so the coupling announces itself only when a migration three deploys later, owned by another team, drops a column and breaks a query `order` never knew it leaned on.
 
-Two of Constantine's rungs, **message coupling** (interaction only through
-message passing, no shared state at all) and well-defined API/contract
-coupling, don't have a live example in the monolith for the obvious
-reason: they're what the *target* architecture looks like once Chapters 14
-through 26 are done, which is exactly the point of walking the ladder now.
-You cannot evaluate how far the extracted services have moved without
-knowing the full span of the ladder you started on.
+On Khononov's balancing model this is the maximal case: intrusive strength, on data that changes constantly, at zero distance today. It stays survivable only because distance is zero. The moment a context gets its own database, distance jumps while strength stays put, and the distributed monolith arrives unless strength drops first.
 
-{% include excalidraw.html file="coupling-ladder" alt="The Constantine coupling ladder drawn as seven stacked rungs, worst to best, each paired with its monolith example. Content coupling: OrderService#placeOrder reading a live, JPA-managed InventoryItem's priceCents and sku straight from findBySkuOrThrow (Smell 5). Common coupling: one shared Postgres schema across order, inventory, payment, shipping, notification, and customers (Smell 1). Control coupling: OrderCreate.paymentMethod() threaded into PaymentService#charge, selecting an approve-or-decline code path. Stamp coupling: OrderItem's constructor taking the full InventoryItem entity for the three fields it needs. Data coupling: OrderService.listAll() returning List<OrderDto> via toDto, already done right. Message coupling and API/data-structure coupling have no monolith example: they are the target architecture chapters 14 through 26 build." caption="Figure 13.1: The Constantine coupling ladder, worst to best, each rung pinned to its monolith example" %}
+**God-service orchestration coupling** (`SMELL[ch.26]`, smell 2) is control coupling multiplied by four. `OrderService` calls inventory, payment, shipping and notification as a synchronous in-process sequence, and a caller needs all four callees' exception behavior (`InsufficientStockException`, `PaymentDeclinedException`) to use any one of them correctly. Its efferent coupling is four and its afferent coupling is near zero, so its instability `I = Ce / (Ca + Ce)` is close to 1: it depends on everything and nothing depends on it. Shared-database coupling is dangerous because it is invisible; god-service coupling is dangerous because it is a single point of maximum fan-out: each of the four callees has to stay behavior-compatible with `OrderService`'s expectations or checkout breaks. That is why Order is extracted last: each other extraction removes one of its four edges, and only when little is left can it be cut.
 
-## The two worst offenders, scored
+## Afferent and efferent coupling as a ranking
 
-Two of the five Chapter 9 smells dominate every other consideration in this
-book's own extraction plan, and it's worth being explicit about *why* those
-two specifically, using the taxonomy just built rather than gut feeling.
+The taxonomy says what kind of coupling each smell is. A number says which context to cut first. **Afferent coupling (Ca)** is how many components depend on a component. **Efferent coupling (Ce)** is how many components it depends on. Both are countable from an import graph today, without an architect's opinion.
 
-**Shared-database coupling** (`SMELL[ch.18]`) is content-and-common coupling
-at the same time, which is what makes it the worst single offender in the
-system. It is common coupling because every context reads and writes
-tables in one shared Postgres schema with no enforced ownership boundary:
-`order_items` joins `inventory_items`, `payments` and `shipments` and
-`notifications` each hold a direct foreign key back into `orders`, and
-`order`/`notification` both join `customers` (`order/OrderItem.java`,
-`payment/Payment.java`, `shipping/Shipment.java`,
-`notification/Notification.java`, and `common/Customer.java` all carry the
-`SMELL[ch.18]` tag on exactly this relationship). And it edges toward
-content coupling because a foreign key is not a negotiated contract; it is
-the database enforcing a promise ("this row cannot exist without that row")
-that neither context's own code declared and neither context's own code can
-unilaterally relax. The reason this smell outranks the others in sheer
-structural damage is that it is invisible at the point of use: nothing in
-`OrderService`'s source code says "I depend on inventory's schema," the
-database says it, silently, which means the coupling only announces itself
-when someone tries to break it: a migration three deploys later, owned by
-a different team, drops a column inventory no longer needs and breaks
-a query `order` never knew it was leaning on. Measured against Khononov's
-balancing-coupling model (Appendix E), this is the textbook maximal-strength
-case: intrusive coupling, at zero distance today, on data that changes
-constantly. Every one of the three dimensions reads high, and the smell
-only stays survivable because distance is currently zero. The instant any
-one context gets its own database, distance jumps to its maximum while
-strength stays exactly where it was, which is the distributed-monolith
-trap arriving on schedule unless something changes strength *before*
-distance changes.
+The rule: **extract low-Ca, low-Ce contexts first and save high-Ca, high-Ce contexts for last.** Ca is the number of dependents you must migrate alongside you, Ce the number of dependencies you must sever or bridge before you leave. Together they are the blast radius. A context nobody calls and that calls nothing can be lifted out in an afternoon. One that everyone calls and that calls everyone can't move until both directions of traffic are rerouted.
 
-**God-service orchestration coupling** (`SMELL[ch.26]`) is a different
-failure mode on the same scale: it is primarily *control* coupling stacked
-across four separate relationships at once, because `OrderService` doesn't
-just call `inventoryService`, `paymentService`, `shippingService`, and
-`notificationService`; it calls them as a synchronous, in-process sequence
-where the entire checkout operation's control flow is dictated by whether
-each call throws, and a caller needing to know all four callees' internal
-exception behavior (`InsufficientStockException`,
-`PaymentDeclinedException`) to use any one of them correctly is control
-coupling by definition, multiplied by four. It also layers in instability
-in the Robert Martin sense that Appendix E's afferent/efferent table names
-directly: a class with four outbound dependencies on other contexts'
-services has an efferent coupling (`Ce`) of four and, being a leaf of the
-checkout flow rather than something other contexts call into, an afferent
-coupling (`Ca`) near zero: an instability score `I = Ce/(Ca+Ce)` close to
-1, meaning `OrderService` depends on everything and nothing depends back on
-it, which is exactly backwards from where you want your most
-business-critical orchestration logic to sit on the stability spectrum.
-Where shared-database coupling is dangerous because it's invisible, god-
-service coupling is dangerous because it's a single point with maximum
-fan-out: every one of the four services it reaches into has to stay
-behavior-compatible with `OrderService`'s expectations forever, or checkout
-breaks, which is why Chapter 9 already named it as the reason order has to
-be extracted *last*, not as a narrative convenience but because each of
-the other five extractions literally cannot complete until it has removed
-one of `OrderService`'s four edges, shrinking its efferent coupling by one
-each time until there's finally little enough left to cut.
+| Order | Context | Ca / Ce | What the cut has to sever |
+|---|---|---|---|
+| 1 | Review | Ca ≈ 0, Ce ≈ 0 | Nothing. It has no runtime dependency on order, inventory, payment, shipping or notification, so the first extraction exercises the mechanism (strangler proxy, equivalence gate, flag-gated cutover) with no coupling risk competing for attention |
+| 2 | Notification | low / low | One inbound edge from `OrderService`, the synchronous in-transaction call. An outbox has to replace it first, set up by the anti-corruption layer and content-based routing |
+| 3 | Inventory | moderate / ≈ 0 | `OrderService` reads it at checkout and `OrderItem` holds a foreign key into it, where the shared-schema and leaked-entity smells both land. Needs CDC backfill before the database can split |
+| 4, 5 | Payment, shipping | moderate / moderate | One inbound edge each from `OrderService`, both inside the same spanning transaction. Splitting either removes the free rollback they get from sharing a database, so the cut needs a saga. Shipping gains a dependency on payment once payment is extracted |
+| 6 | Order | highest / highest | `Payment`, `Shipment` and `Notification` all carry an `order_id` join, and `OrderService`'s constructor injects four other services |
 
-## Afferent and efferent coupling: the metric that produces a ranking
-
-The taxonomy above tells you *what kind* of coupling each smell embodies.
-It does not, by itself, tell you *which context to cut first*. For that
-you need a number, not a category, and the number this book's planning used
-is the same one Appendix E introduces formally: **afferent coupling (Ca)**,
-how many other components depend on a given component, and **efferent
-coupling (Ce)**, how many other components a given component depends on.
-Both are mechanically countable from an import graph or a dependency
-analysis, which is what makes them useful for sequencing rather than merely
-descriptive: you can compute them today, on the actual codebase, without
-waiting for an architect's opinion.
-
-The rule that falls out of these two numbers is: **extract low-Ca,
-low-Ce contexts first, and save high-Ca, high-Ce contexts for last**,
-because the number of dependents you have to migrate alongside you (Ca) and
-the number of dependencies you have to sever or bridge before you can leave
-(Ce) are both, directly, the size of the extraction's blast radius. A
-context nobody calls into and that calls into nothing else can be lifted
-out whole, in an afternoon, with nothing left behind that notices. A
-context everyone calls into, that itself calls into everyone, cannot move
-until both directions of that traffic have been rerouted, which is exactly
-describing the god service from the opposite direction.
-
-Walk the six contexts with this lens and the extraction order stops looking
-like a narrative choice and starts
-looking like a sorted list:
-
-- **Review** has `Ca ≈ 0` (nothing in the monolith calls into review) and
-  `Ce ≈ 0` (review has no runtime dependency on order, inventory, payment,
-  shipping, or notification; Chapter 9's sixth, already-cured smell names
-  this explicitly: "Review had no runtime dependency on
-  order/inventory/payment/shipping/notification"). That is the *lowest*
-  possible coupling score a context in this system can have, and it is
-  exactly why it was extracted first, in Chapter 15, and why that extraction
-  is anticlimactic rather than impressive: a context with
-  nothing calling in and nothing calling out has no blast radius to manage,
-  so the extraction exercises the *mechanism* (the strangler proxy, the
-  equivalence gate, the flag-gated cutover) without any coupling risk
-  competing for attention.
-- **Notification** has low `Ca` (only `OrderService` calls into it) and low
-  `Ce` (it reaches into nothing else), but its one inbound edge is the
-  synchronous, in-transaction call that is Smell 4, so its extraction
-  (Chapter 17) is slightly harder than review's not because of fan-out, but
-  because that single edge currently sits inside `OrderService`'s ACID
-  transaction and has to be replaced by an outbox before the edge can be
-  safely cut, which Chapter 16's anti-corruption layer and content-based
-  routing set up first.
-- **Inventory** has moderate `Ca` (called by `OrderService`, read at
-  checkout time, and joined by `OrderItem`'s foreign key, the point where
-  Smell 1's data coupling *and* Smell 5's leaked-entity coupling both land)
-  and essentially zero `Ce` of its own. Its extraction (Chapter 19)
-  is harder than notification's because severing the *data*-level coupling
-  requires a mechanism notification never needed, CDC backfill, before
-  the owning database can split.
-- **Payment** and **shipping** each have moderate `Ca` (one inbound edge
-  from `OrderService`; today nothing calls payment from shipping, but
-  shipping will gain that outbound dependency once payment is extracted),
-  and both are read and written inside the same spanning transaction,
-  Smell 3, so splitting either one forces the
-  question Chapter 22 answers of what replaces the free rollback they
-  currently get from sharing a database with the rest of checkout. Their
-  extractions (Chapters 23 and 24) are harder again because severing this
-  edge means building a saga, not just an outbox or a CDC pipeline: the
-  compensating-action machinery neither review, notification, nor inventory
-  needed.
-- **Order** has the highest `Ca` of any context (it is the thing every other
-  context's entities point back to via foreign key: `Payment`, `Shipment`,
-  and `Notification` all carry a direct `order_id` join) and by far the
-  highest `Ce` (`OrderService`'s constructor alone injects four other
-  contexts' services). That is the single worst coupling score on both axes
-  simultaneously, which is exactly why it is extracted last, in Chapter 26,
-  and exactly why Chapter 9 already told you the other five extractions
-  each have to remove one of this context's outbound edges before order's
-  own extraction becomes tractable at all. An extraction order that put
-  order first would have had to solve every other context's severance
-  problem *at the same time*, with no smaller extraction's lessons to carry
-  forward, which is precisely the "biggest cut first" failure mode a
-  blast-radius ranking exists to prevent.
+Putting Order first would mean solving every other context's severance problem at once with no smaller extraction's lessons to carry forward, the "biggest cut first" failure a blast-radius ranking exists to prevent. Rank by Ca and Ce, cut the lowest first, and let each extraction lower the score of what remains until the hardest context is the smallest remaining problem.
 
 {% include excalidraw.html file="context-dependency-graph-cace" alt="A directed dependency graph of the six contexts. Order sits at the center with four outbound edges (OrderService's calls into inventory, payment, shipping, and notification, its efferent coupling of four) and three inbound foreign-key edges from payment, shipment, and notification back to order, its afferent coupling. Inventory also carries a data-level edge from order via OrderItem's foreign key into InventoryItem. Review has no edges in or out. A dashed edge from shipping to payment marks the dependency shipping only gains once payment is extracted. Below, the same six contexts sorted into the resolved extraction order: review, notification, inventory, payment, shipping, then order, lowest Ca/Ce first." caption="Figure 13.2: The six contexts' dependency graph, scored by Ca/Ce, resolving into the extraction order" %}
 
-That is the whole method: rank contexts by `Ca` and `Ce`,
-cut the lowest-scoring context first, and let each completed extraction
-reduce the score of whatever remains until the hardest context is also the
-smallest remaining problem. It is the same discipline Part 1 argued for in
-the abstract (risk distributed across many small, reversible steps instead
-of concentrated into one large one), made concrete as an actual number you
-can compute from the import graph sitting in front of you.
+## The modular monolith
 
-## The modular monolith: most of the benefit, none of the distribution tax
+Khononov's model says distance multiplies cost: splitting strong, volatile coupling across a network adds distance without removing strength. Most of coupling's damage (invisible cross-context writes, god objects with unbounded fan-out, leaked internal types) comes from module boundaries, not process boundaries, and module boundaries can be enforced inside one deployable for a fraction of the operational cost.
 
-Everything so far has described coupling as a problem to reduce by
-splitting a deployable into more deployables. That is not, on its own,
-license to split everything. Khononov's balancing-coupling model
-(Appendix E) already supplied the reason why not, as a single
-formula: **distance is a cost
-multiplier, and splitting strong, volatile coupling across a network adds
-distance without removing strength**, which produces a *distributed*
-monolith: the same tangle as before, now paying for network calls,
-partial failures, and multi-team deploy coordination on top of coupling
-that was never actually addressed. The uncomfortable fact underneath that
-formula is that most of coupling's actual damage (invisible cross-context
-writes, god objects with unbounded fan-out, leaked internal types) is a
-property of **module boundaries**, not of **process boundaries**, and
-module boundaries can be enforced inside a single deployable just as
-rigorously as across a network, for a fraction of the operational cost.
+A **modular monolith** is one build, one JVM and one release train with the three disciplines a distributed system gets automatically, enforced by tooling instead:
 
-This is what makes the **modular monolith** a legitimate destination in its
-own right, not merely a waypoint on the way to microservices. A modular
-monolith is one deployable (one build, one JVM, one release train, exactly
-like the monolith this book built in Chapter 8) with the three
-disciplines a distributed system gets automatically, enforced by tooling
-and convention instead:
+- **Package or build-module isolation.** The compiler, the build's module graph or an ArchUnit rule refuses to compile code that imports another context's internal package. The leaked `InventoryItem` becomes a build failure the moment `order` imports it instead of `inventory.StockDto`, which is earlier and cheaper than an incident.
+- **No cross-module entity references.** `@ManyToOne` and `@JoinColumn` from `OrderItem` to `InventoryItem`, from `Payment`, `Shipment` and `Notification` to `Order`, and from everything to `Customer`, are disallowed across a module boundary. A module persists only its own entities and refers to others by plain identifier (`Long customerId`, not `Customer customer`) plus a published in-process method to resolve it. It is the discipline of an anti-corruption layer applied before the seam crosses a network.
+- **Module-owned schemas.** Each module gets its own schema in the same Postgres instance (`order.orders`, `inventory.inventory_items`), so a foreign key physically can't cross modules, while a second database, connection pool and credential set wait until a decomposition need justifies them. This is the midpoint between one undifferentiated schema and one database per service.
 
-- **Package or build-module isolation**, where the compiler (or the build
-  tool's module graph: Java's module system, or simply a convention
-  enforced by a linter like ArchUnit) refuses to compile code in one
-  context's package that imports a class from another context's internal
-  package. This turns Smell 5's leaked `InventoryItem` entity from a
-  runtime discovery into a *build failure*: the moment `order` tries to
-  import `inventory.InventoryItem` instead of `inventory.StockDto`, the
-  build stops, which is strictly earlier and cheaper feedback than
-  discovering the coupling during an incident three deploys later.
-- **No cross-module entity references**, meaning the JPA `@ManyToOne`/`@JoinColumn`
-  pattern this chapter has spent its whole walkthrough pointing at
-  (`OrderItem` → `InventoryItem`, `Payment`/`Shipment`/`Notification` →
-  `Order`, everything → `Customer`) is simply disallowed across a module
-  boundary, even though every module still lives in the same schema and the
-  same database connection pool. Each module is only permitted to persist
-  its own entities and to reference other modules' data by a plain
-  identifier (a `Long customerId`, not a `Customer customer`) plus a
-  published, in-process contract method to resolve it. That is the same
-  discipline Chapter 16's anti-corruption layer teaches for a *distributed*
-  seam, enforced here for a boundary that hasn't crossed a network yet.
-- **Module-owned schemas** names the destination at this depth; ch.18/19
-  build the actual migration mechanics. Each
-  module gets its own schema namespace inside the same Postgres instance
-  (`order.orders`, `inventory.inventory_items`), so a foreign key *physically
-  cannot* cross module boundaries even by accident, while the operational
-  cost of a second database, a second connection pool, and a second set of
-  credentials to rotate is deferred until a real decomposition need
-  justifies paying it. This is "own your data" practiced at the lightest
-  weight the idea supports. The full shared-data-to-owned-data story,
-  including replication and CDC, is Chapter 18's and 19's subject, not
-  this one's; this chapter's job is only to name decomposed-database
-  monoliths as the midpoint between "one undifferentiated schema" and "one
-  database per service."
+Doing all three first separates two questions a premature microservices migration conflates. "Do these boundaries track real bounded contexts?" is cheap to answer and fix inside one deployable, where moving a class between packages is a refactor. "Is coupling low enough, and is this context's operational profile different enough, to justify a second deployable, database and on-call rotation?" should be asked only after the first has a confident answer.
 
-The pedagogical payoff of doing all three inside a monolith first, before
-distributing anything, is that it isolates two problems that a premature
-microservices migration conflates. "Are these module boundaries actually
-correct: do they track real bounded contexts, or did we guess wrong about
-where the seams are?" is a question you can answer and *cheaply fix* inside
-a single deployable, where moving a class between packages is a refactor,
-not a cross-team, cross-database migration. "Is this coupling now low
-enough, and this context's operational profile different enough from its
-neighbors', to justify the cost of a second deployable, a second database,
-a second on-call rotation, and a network between them?" is an entirely
-separate question, and it should only be asked (per this book's own
-Chapter 3 argument that microservices are not themselves the goal) once
-the first question already has a confident answer. A modular monolith lets
-you get that confident answer, and most of coupling's actual damage fixed,
-without placing a single bet on distribution you might later have to
-reverse at much higher cost than renaming a package.
+The reference monolith doesn't stop at this stage; its extraction goes straight from the shared schema to services with their own databases, to demonstrate the whole journey with measured before and after. For your own system the modular monolith is frequently the correct destination. If the problem is lead time and change-failure rate inside one team's release train, and not independent scaling or independent team ownership, module boundaries, banned entity references and split schemas can retire most of the smells' damage with no second deployable, broker or mesh. Distribute only for a named, measured need: independent scaling, independent deployment cadence or independent team ownership.
 
-None of this contradicts this book's own strangler-fig sequence.
-This book's own reference monolith is not taken to the modular-
-monolith stage as an intermediate step before Chapter 15. Its extraction
-sequence goes straight from "one undifferentiated shared schema" to "owned
-service with its own database," because the book's pedagogical goal is
-demonstrating the full strangler-to-microservices journey end to end on a
-system with a measured before/after. A reader applying this chapter to
-their *own* system, however, should read the modular-monolith option as a
-live, frequently-correct destination: if your organization's actual
-problem is lead time and change-failure rate inside a single team's
-release train, and not independent scaling or independent team ownership
-across multiple teams, enforcing module boundaries, banning cross-module
-entity references, and splitting schemas by module can retire most of
-Chapter 9's five smells' *damage* without ever standing up a second
-deployable, a message broker, or a service mesh. Distribute only where the
-business case (a named, measured need for independent scaling, independent
-deployment cadence, or independent team ownership) actually justifies the
-operational tax a network boundary imposes. That is Chapter 3's argument
-("microservices are not the goal") made concrete at the exact decision
-point where a team chooses how far to carry a refactor.
+## The distributed-monolith trap
 
-## The distributed-monolith trap, named precisely
+A team sees coupling, concludes "microservices fix coupling," and distributes a system whose coupling it never reduced. The result has every operational cost of distribution (latency, partial failure, deploys that still have to be coordinated, tracing standing in for a stack trace) and none of the monolith's simplicity, because calls that were in-process methods are now network calls making the same synchronous demands. In Khononov's terms distance went up, strength didn't go down, and volatility on the core domain was already high: all three dimensions high at once, which is the model's definition of maximum pain.
 
-It is worth closing the loop on the failure mode this chapter has gestured
-at twice already, because it is the single most common outcome of getting
-this chapter's lesson backwards: a team sees coupling, concludes
-"microservices fix coupling," and distributes a system whose coupling they
-never actually reduced. The result has every operational cost of a
-distributed system (network latency, partial failure, independent
-deploys that still have to be coordinated because nothing was actually
-decoupled, distributed tracing standing in for what used to be a stack
-trace) and none of a monolith's redeeming simplicity, because the calls
-that used to be in-process method invocations are now network calls making
-exactly the same synchronous, tightly-coupled demands of each other that
-they always did. Khononov's formula names the mechanism precisely:
-distance went up, strength did not go down, and volatility on the core
-domain was already high. All three dimensions landed high at once, which
-is the model's own definition of maximum coupling pain. A hypothetical
-version of this monolith that split into six services *without* first
-addressing Smell 1 (the shared schema) and Smell 2 (the god service) is the
-distributed monolith this chapter warns against by name: six deployables,
-each reaching across the network into tables and services it does not own,
-paying every operational cost of distribution while keeping every coupling
-problem Chapter 9 catalogued, which is exactly why this book's actual
-extraction sequence does not do that. Each chapter from 15 onward only cuts
-a context once the specific coupling standing in its way has an answer
-(an ACL, an outbox, a CDC pipeline, a saga), and the equivalence gate exists
-precisely to prove that answer actually held, rather than discovering in
-production that it didn't.
+Splitting this monolith into six services without first addressing the shared schema and the god service would produce exactly that: six deployables reaching across the network into tables and services they don't own. So each extraction cuts a context only once the coupling in its way has an answer (an ACL, an outbox, a CDC pipeline, a saga), and the equivalence gate proves that answer held instead of discovering in production that it didn't.
 
-## Part 4, consolidated: the extraction plan
+## From three lenses to an extraction plan
 
-Part 4 has now supplied three lenses, in this order, and here is how they
-combine into the one plan the rest of the
-book runs. Chapter 11's domain-driven design gave you *where the
-conceptual boundaries are*: the bounded contexts, the aggregates, the
-rule that protocols stay out of the domain core so a later extraction is
-mechanical rather than a rewrite. Chapter 12's event storming gave you *how
-to find those boundaries from behavior* when no one has drawn them for you:
-watching where domain events cluster, where one team's vocabulary stops
-making sense to the next, producing the decomposition backlog as a
-reconnaissance artifact rather than an architect's guess. This chapter has
-given you *the order to cut them in*: coupling, scored precisely enough by
-the Constantine taxonomy and the Ca/Ce metric to rank six already-identified
-candidate boundaries from cheapest to most expensive to extract, and
-precise enough to also say when the right answer for a given
-boundary is a modular monolith rather than a network call.
+Domain-driven design gives the conceptual boundaries: bounded contexts, aggregates, and the rule that protocols stay out of the domain core so extraction is mechanical rather than a rewrite. Event storming finds those boundaries from behavior when nobody has drawn them, by watching where domain events cluster and where one team's vocabulary stops making sense to the next. Coupling gives the order. The output is one artifact: a list of bounded contexts, each annotated with the behavioral evidence that the boundary is real and each scored for blast radius. Review is first because its score is the floor, Order last because its score is the ceiling, and each remaining extraction executes one row of the ranked list.
 
-Put the three together and Part 4's output is a single artifact, not three
-separate ones: a list of bounded contexts (Chapter 11), each annotated with
-the behavioral evidence that the boundary is real (Chapter 12), each scored
-for coupling and ranked by blast radius (this chapter). The result is review
-first because its score
-is the floor, order last because its score is the ceiling, with
-notification, inventory, payment, and shipping sorted in between by exactly
-how much coupling each one's extraction has to sever. Every chapter from
-here forward executes one row of that ranked list. **Part 5, "The Strangler
-Fig in Practice,"** opens immediately after this chapter with the mechanism
-that makes a ranked list executable one row at a time without ever
-requiring a big-bang cutover: Fowler's strangler fig pattern, the proxy
-that lets old and new code serve traffic side by side, and the first
-extraction, review, run end to end exactly where this chapter's coupling
-score said it belonged: first, because there was nothing in its way.
+> **Decision**
+>
+> Rank candidate seams by Ca and Ce and cut the lowest first. Cut a seam only when the coupling in its way (shared schema, synchronous call, spanning transaction) already has an answer. If the problem is lead time inside one team, stop at a modular monolith.
 
-## What you learned
-
-- Coupling and cohesion are Constantine's structural pair: "a structure is
-  stable if cohesion is high and coupling is low." Coupling is the
-  dimension this book builds a sequencing strategy on because it is
-  measurable, while cohesion stays a per-module judgment call.
-- The Constantine taxonomy (content → common → control → stamp → data,
-  worst to best) scores every one of Chapter 9's five remaining smells on
-  the same scale: Smell 5 reads as content coupling, Smell 1 as common
-  coupling, the checkout flow's payment-method threading as control
-  coupling, the raw-entity-to-`OrderItem` handoff as stamp coupling on top
-  of its leaked-entity problem, and `toDto`'s DTO-returning methods as the
-  data coupling the rest of the codebase should match.
-- Shared-database coupling (Smell 1) and god-service orchestration coupling
-  (Smell 2) are the two worst offenders because they combine multiple rungs
-  of the ladder at once (common-plus-content for the schema, control
-  coupling multiplied across four outbound edges for the service), and
-  Khononov's strength/distance/volatility model explains precisely why
-  distributing either one without first weakening it produces a
-  distributed monolith rather than a fix.
-- Afferent coupling (Ca, who depends on you) and efferent coupling (Ce,
-  what you depend on) turn "which seam first?" into a number: review's
-  near-zero Ca and Ce put it first in Chapter 15; order's maximal Ca and Ce
-  (every other context's foreign key points at it, and its own service
-  injects four others) put it last in Chapter 26, with the four middle
-  extractions sorted by how much coupling each one's cut has to sever.
-- The modular monolith (package/build-module isolation, no cross-module
-  entity references, module-owned schemas) captures most of coupling's
-  fix inside a single deployable, at a fraction of a network boundary's
-  operational cost, and distributing further is justified only by a named
-  business case for independent scaling, deployment cadence, or team
-  ownership, per Chapter 3's "microservices are not the goal."
-
-Part 5, "The Strangler Fig in Practice," begins immediately after this
-chapter with the mechanism (Fowler's strangler fig, the proxy, and the
-feature-flagged cutover) that turns this ranked extraction plan into six
-real, individually reversible migrations, starting with the context this
-chapter's own scoring already named as the obvious first cut.
+> **🤖 Explore with your agent**
+>
+> "Check out the reference/monolith-before branch. In `examples/00-monolith/src/main/java/dev/patterncatalyst/monolith/`, build the import graph between the order, inventory, payment, shipping, notification and review packages, compute Ca, Ce and instability for each, and rank the contexts for extraction. List every `@ManyToOne` or `@JoinColumn` that crosses a package boundary and name the Constantine rung of each. Propose an ArchUnit rule that would fail the build on the `InventoryItem` leak, without changing any behavior."
+>
+> Check: the ranking should put review first and order last, and the ArchUnit rule should fail when `order` imports `inventory.InventoryItem`.
 
 ## For deeper coverage
 
-- Sam Newman, *Building Microservices* (2nd ed., O'Reilly, 2021): service boundaries and the distributed-monolith failure mode this chapter names precisely; see the [Reading List](/bibliography/).
-- Martin Kleppmann, *Designing Data-Intensive Applications* (O'Reilly, 2017): the data-ownership tradeoffs behind module-owned schemas, this chapter's lightest-weight version of "own your data."
-- Eric Evans, *Domain-Driven Design* (Addison-Wesley, 2003): bounded contexts as the conceptual boundaries this chapter's coupling metric scores.
-- Cloud Native Design Patterns, [Anti-Patterns](https://github.com/patterncatalyst/cloud-native-design-patterns/blob/main/_docs/13-anti-patterns.md): the companion book's catalogue of the distributed-monolith failure mode this chapter warns against by name.
-- Chris Richardson, *Microservices Patterns* (Manning, 2018): the saga and API-composition patterns that have to exist before any of this chapter's ranked extractions can safely distribute.
+- Sam Newman, *Building Microservices* (2nd ed., O'Reilly, 2021): service boundaries and the distributed-monolith failure mode named precisely; see the [Reading List](/bibliography/).
+- Martin Kleppmann, *Designing Data-Intensive Applications* (O'Reilly, 2017): the data-ownership tradeoffs behind module-owned schemas, the lightest-weight version of "own your data."
+- Eric Evans, *Domain-Driven Design* (Addison-Wesley, 2003): bounded contexts as the conceptual boundaries that a coupling metric scores.
+- Cloud Native Design Patterns, [Anti-Patterns](https://github.com/patterncatalyst/cloud-native-design-patterns/blob/main/_docs/13-anti-patterns.md): the companion book's catalogue of the distributed-monolith failure mode in the same terms.
+- Chris Richardson, *Microservices Patterns* (Manning, 2018): the saga and API-composition patterns that have to exist before a ranked extraction can safely distribute.

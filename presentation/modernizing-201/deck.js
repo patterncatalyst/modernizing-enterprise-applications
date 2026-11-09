@@ -9,8 +9,8 @@ const {
   addStatusTable, addCaption, addCodeSlide, addSectionDivider, addNotes,
 } = H;
 
-const OUT = "Modernizing-201-r1.1.pptx";
-const REV = "r1.1";
+const OUT = "Modernizing-201-r1.2.pptx";
+const REV = "r1.2";
 
 const pres = newDeck();
 pres.title = "Modernizing Enterprise Applications: 201 implementation deep-dive";
@@ -77,7 +77,7 @@ function diagramBulletsSlide(eyebrow, title, png, items, notes) {
     { x: 6.00, y: 5.15, w: 6.80, h: 1.10, fontFace: FONT.body, fontSize: 17, italic: true, color: COLOR.caption, align: "left", valign: "top" });
   s.addText(REV, { x: 11.85, y: 6.10, w: 0.95, h: 0.30, fontFace: FONT.mono, fontSize: 11, color: COLOR.caption, align: "right", valign: "middle" });
   try { s.addImage({ path: `${ASSETS}/logo-candidate-2.png`, x: 11.10, y: 6.78, w: 1.55, h: 0.37 }); } catch (e) {}
-  addNotes(s, "This is the 201 deep-dive. The 101 deck makes the conceptual case: why modernize, the ADLC, the strangler idea, the pattern map; this deck is the running system and how it is built: the six extractions in detail, real code where the code carries the lesson, the demos behind the system, and a reference appendix. No prior Quarkus or Camel experience is assumed; each capability is introduced where it comes up. Everything here traces to a running reference system: six services, a strangler proxy, a behaviour-equivalence suite, a Kubernetes deploy tree, and a supply-chain gate, and every figure and number traces to running code. It states what works, what is opt-in, and what is deferred.");
+  addNotes(s, "This is the 201 deep-dive. The 101 deck makes the conceptual case: why modernize, the ADLC, the strangler idea, the pattern map; this deck is the running system and how it is built: the six extractions in detail, real code where the code carries the lesson, the demos behind the system, and a deck appendix. No prior Quarkus or Camel experience is assumed; each capability is introduced where it comes up. Everything here traces to a running reference system: six services, a strangler proxy, a behaviour-equivalence suite, a Kubernetes deploy tree, and a supply-chain gate, and every figure and number traces to running code. It states what works, what is opt-in, and what is deferred.");
 }
 
 // ===== AGENDA ================================================================
@@ -87,7 +87,7 @@ function diagramBulletsSlide(eyebrow, title, png, items, notes) {
   addTwoColBullets(s,
     ["01 · Why modernize, and when not to", "02 · The ADLC: the method that drives it", "03 · The reference monolith", "04 · Finding the seams", "05 · The strangler fig in practice", "06 · Data across the seam"],
     ["07 · Coordinating across services", "08 · Communication, contracts & the chassis", "09 · Operating & delivering", "10 · The pattern language, revisited", { text: "Appendix · demo matrix, examples, contracts,", muted: true }, { text: "CI gates, stack, glossary, figures", muted: true }]);
-  addNotes(s, "The deck follows the book, one section per part, and goes deep: diagram-forward, with code slides where the code is the lesson and a slide per key demo. The first two sections are the case for change and the method; the middle sections are the migration itself, seam by seam, with the real Quarkus and Camel code each one produced; the last two operate the result and review which patterns earned their place. The appendix is reference material to keep open in another window: the demo matrix, the runnable-examples catalog, the context contracts, the CI gates, the stack and versions, a glossary, and background figures. Any section stands alone as a shorter talk.");
+  addNotes(s, "The deck has one section per theme and goes deep: diagram-forward, with code slides where the code is the lesson and a slide per key demo. The first two sections are the case for change and the method; the middle sections are the migration itself, seam by seam, with the real Quarkus and Camel code each one produced; the last two operate the result and review which patterns earned their place. The appendix is reference material to keep open in another window: the demo matrix, the runnable-examples catalog, the context contracts, the CI gates, the stack and versions, a glossary, and background figures. Any section stands alone as a shorter talk.");
 }
 
 // ===== 01 · WHY MODERNIZE ====================================================
@@ -97,9 +97,9 @@ divider("01", "Why Modernize", "The case for change, and the discipline to leave
 leadSlide("WHY MODERNIZE · THE CASE", "Modernize because change got expensive",
   [{ lead: "The monolith is often where the value is", text: "a working system encodes years of business rules; the problem is when every change is slow and coupled to everything else." },
    { lead: "The target is independent deployability", text: "not a service count; ship the parts that change at different rates without redeploying the whole." },
-   { lead: "Sam Newman's playbook drives this book", text: "incremental decomposition over a big-bang rewrite; Monolith to Microservices, one seam at a time." },
+   { lead: "Sam Newman's playbook drives this migration", text: "incremental decomposition over a big-bang rewrite; Monolith to Microservices, one seam at a time." },
    { lead: "A rewrite bets the company on a flag day", text: "it discards encoded rules and replaces a known system with an unproven one in a single cutover. We never take that bet." }],
-  "The opening argument. Modernization earns its cost only when the rate of change the business needs exceeds what the current architecture absorbs safely. The target to keep in view is independent deployability, not a service count: that distinction returns at the very end, in over-decomposition. The governing voice through the whole book is Sam Newman: decompose incrementally, keep the system serving traffic the entire time, and never stake the business on one rewrite cutover. Everything that follows is a way to make that incremental path safe.");
+  "The opening argument. Modernization earns its cost only when the rate of change the business needs exceeds what the current architecture absorbs safely. The target to keep in view is independent deployability, not a service count: that distinction returns at the very end, in over-decomposition. The governing voice through the whole migration is Sam Newman: decompose incrementally, keep the system serving traffic the entire time, and never stake the business on one rewrite cutover. Everything that follows is a way to make that incremental path safe.");
 
 leadSlide("WHY MODERNIZE · RESTRAINT", "And when not to modernize at all",
   [{ lead: "Stable and low-value", text: "a system that rarely changes and carries little strategic weight is cheapest left exactly as it is." },
@@ -112,7 +112,7 @@ diagramBulletsSlide("WHY MODERNIZE · STRATEGY", "Pick a strategy by value and r
   "r01-modernization-2x2",
   [{ lead: "Retain / encapsulate", text: "low value, low risk; leave it running, wrap it behind an API." },
    { lead: "Rehost / replatform", text: "high value, low risk; quick wins: containerize, move onto Kubernetes." },
-   { lead: "Refactor / re-architect", text: "high value, high change; the strangler fig, done incrementally. This book lives here." },
+   { lead: "Refactor / re-architect", text: "high value, high change; the strangler fig, done incrementally. This migration lives here." },
    { lead: "Retire / replace", text: "low value, high risk; sunset it, or rebuild only if the value justifies it." }],
   "The six Rs are not a single choice for the whole system; you score each capability by business value against the change and risk of modernizing it. Low-value, low-risk components you encapsulate and leave alone. High-value, low-risk ones are quick replatform wins. The strangler fig lives in the top-right quadrant: high value and high change, the parts worth refactoring carefully and incrementally. That quadrant is where the migration happens. The grid is a triage tool: run it over a real portfolio and most components sort themselves into leave-alone or quick-win, leaving a handful that deserve the strangler treatment.");
 
@@ -155,11 +155,11 @@ leadSlide("THE ADLC · THE SAFETY NET", "The behaviour-equivalence suite is the 
    { lead: "Green across every cutover", text: "each extraction kept it green through the proxy, in both flag positions, before the old module was removed." },
    { lead: "Run on every push, in CI", text: "which turns agent-generated change into something as reviewable as any other change; the gate is objective." },
    { lead: "Remove it and the method collapses", text: "without the suite, every later step is a leap of faith. With it, the whole migration is safe." }],
-  "The net itself. The suite asserts behaviour (the observable contract), not implementation, which is exactly why a service can be rebuilt underneath it and the suite still proves nothing broke for the caller. It ran across every cutover, in both flag positions, and in CI on every push. The claim the whole book rests on: agent-driven change is safe to the degree that its verification is automated and behavioural. The investment that makes the ADLC work is not a better model; it is a behavioural gate good enough to make a red result mean 'do not merge'.");
+  "The net itself. The suite asserts behaviour (the observable contract), not implementation, which is exactly why a service can be rebuilt underneath it and the suite still proves nothing broke for the caller. It ran across every cutover, in both flag positions, and in CI on every push. The claim the whole migration rests on: agent-driven change is safe to the degree that its verification is automated and behavioural. The investment that makes the ADLC work is not a better model; it is a behavioural gate good enough to make a red result mean 'do not merge'.");
 
 // ===== 03 · THE MONOLITH ====================================================
 divider("03", "The Reference Monolith", "Six bounded contexts, one shared schema, and planted coupling smells.",
-  "You cannot teach a cure without a disease. The book ships a fresh Spring Boot monolith with real coupling smells, each planted to demonstrate the pattern that later removes it.");
+  "You cannot teach a cure without a disease. The repository ships a fresh Spring Boot monolith with real coupling smells, each planted to demonstrate the pattern that later removes it.");
 
 diagramBulletsSlide("THE MONOLITH · SHAPE", "A monolith built to be taken apart",
   "r03-monolith-contexts",
@@ -188,14 +188,14 @@ leadSlide("THE MONOLITH · THE DOMAIN", "The checkout, end to end",
     { code: "In-proc calls", name: "gRPC / REST seam", purpose: "Direct method calls across contexts: resolved by explicit seams (Part 5/7)." },
     { code: "ACID everywhere", name: "ACID -> ACD", purpose: "One cross-context transaction: relaxed to per-service consistency (Part 6)." },
   ], { colW: [2.60, 2.90, 6.59] });
-  addNotes(s, "The smells are planted, and each is tagged to the pattern that removes it, which keeps the book's cause and effect legible. A shared schema is resolved by database-per-service; dual-write by the transactional outbox; the synchronous in-process checkout chain by sagas; cross-context method calls by explicit gRPC or REST seams; and the single cross-context ACID transaction by relaxing to per-service consistency, ACID to ACD. Read this table as the migration backlog: every row is a later chapter, and the order roughly follows the coupling ladder. Nothing in the migration appears without a smell on this table that motivates it.");
+  addNotes(s, "The smells are planted, and each is tagged to the pattern that removes it, which keeps cause and effect legible. A shared schema is resolved by database-per-service; dual-write by the transactional outbox; the synchronous in-process checkout chain by sagas; cross-context method calls by explicit gRPC or REST seams; and the single cross-context ACID transaction by relaxing to per-service consistency, ACID to ACD. Read this table as the migration backlog: every row is a later extraction, and the order roughly follows the coupling ladder. Nothing in the migration appears without a smell on this table that motivates it.");
 }
 
 {
   const s = S();
   addCodeSlide(s, "THE MONOLITH · THE GATE", "The equivalence suite pins observable behaviour", "newman · postman",
     [
-      "// the contract a user sees — asserted on the monolith and on every service",
+      "// the contract a user sees: asserted on the monolith and on every service",
       "pm.test('checkout returns 202 + a pending order', () => {",
       "  pm.response.to.have.status(202);",
       "  const o = pm.response.json();",
@@ -225,7 +225,7 @@ leadSlide("FINDING THE SEAMS · COUPLING", "Rank the seams by how hard they will
    { lead: "The coupling ladder", text: "orders the extractions so each one is only as hard as it needs to be, and earlier cuts de-risk later ones." },
    { lead: "review first", text: "low coupling, a true walking skeleton that proves the whole loop on the easiest seam." },
    { lead: "order last", text: "the core aggregate, extracted only once everything it depends on already stands alone." }],
-  "Finding seams is half the job; sequencing them is the other half. The coupling ladder ranks contexts by inbound dependency and rate of change, so you extract the gentle ones first and the load the system turns on last. Review is the walking skeleton (read-mostly, few dependencies), which makes it the right place to prove the entire Frame-to-Reconcile loop before the stakes rise. Order is the central aggregate, so it comes last, once inventory, payment, and shipping already stand on their own. The sequence is a design decision, and it also fixes the order in which the book introduces each data and coordination pattern.");
+  "Finding seams is half the job; sequencing them is the other half. The coupling ladder ranks contexts by inbound dependency and rate of change, so you extract the gentle ones first and the load the system turns on last. Review is the walking skeleton (read-mostly, few dependencies), which makes it the right place to prove the entire Frame-to-Reconcile loop before the stakes rise. Order is the central aggregate, so it comes last, once inventory, payment, and shipping already stand on their own. The sequence is a design decision, and it also fixes the order in which each data and coordination pattern.");
 
 // ===== 05 · STRANGLER FIG ===================================================
 divider("05", "The Strangler Fig in Practice", "A proxy in front, one seam out at a time, always reversible.",
@@ -237,14 +237,14 @@ diagramBulletsSlide("STRANGLER · THE MECHANISM", "Route each path to old or new
    { lead: "A flag per context", text: "off routes the path to the monolith module; on routes it to the extracted Quarkus service." },
    { lead: "Flip on green, revert on drift", text: "cut over only when the suite is green with the flag on; flip back instantly if anything moves." },
    { lead: "Six extractions, one order", text: "review, notification, inventory, payment, shipping, order; each following the same recipe." }],
-  "The mechanism. A Camel proxy with a content-based router sits in front of everything, and the client's API never changes through the whole migration. For each context there is a flag: off, the path reaches the monolith module; on, it reaches the extracted Quarkus service. You flip a flag only once the suite is green with it on, and you can flip it back the instant anything drifts, which is what makes each cutover reversible rather than a commitment. The ladder along the bottom is the order the book follows. The proxy is also where content-based routing and the anti-corruption layer live, the subject of the next slide.");
+  "The mechanism. A Camel proxy with a content-based router sits in front of everything, and the client's API never changes through the whole migration. For each context there is a flag: off, the path reaches the monolith module; on, it reaches the extracted Quarkus service. You flip a flag only once the suite is green with it on, and you can flip it back the instant anything drifts, which is what makes each cutover reversible rather than a commitment. The ladder along the bottom is the order of the extractions. The proxy is also where content-based routing and the anti-corruption layer live, the subject of the next slide.");
 
 {
   const s = S();
   addCodeSlide(s, "STRANGLER · THE CODE", "The edge router is one Camel choice()", "java · camel",
     [
       "from(\"platform-http:/api?matchOnUriPrefix=true\")",
-      "  // the client's API never changes — method, path, query, body pass through",
+      "  // the client's API never changes: method, path, query, body pass through",
       "  .choice()",
       "    .when(simple(\"${header.CamelHttpPath} startsWith '/api/reviews'\"))",
       "      .to(reviewServiceBaseUrl + \"?bridgeEndpoint=true\")",
@@ -297,7 +297,7 @@ diagramBulletsSlide("DATA · THE OUTBOX", "One transaction, then relay",
   const s = S();
   addCodeSlide(s, "DATA · THE CODE", "Relay the outbox; consume idempotently", "java · quarkus",
     [
-      "// producer side — a scheduled relay drains the outbox table to Kafka",
+      "// producer side: a scheduled relay drains the outbox table to Kafka",
       "@Scheduled(every = \"${payment.outbox.relay.poll-interval:2s}\")",
       "@Transactional",
       "void publishUnpublishedEvents() {",
@@ -307,7 +307,7 @@ diagramBulletsSlide("DATA · THE OUTBOX", "One transaction, then relay",
       "    }",
       "}",
       "",
-      "// consumer side — SmallRye Reactive Messaging; handler tolerates duplicates",
+      "// consumer side: SmallRye Reactive Messaging; handler tolerates duplicates",
       "@Incoming(\"order-placed\")",
       "public void consume(OrderPlacedEvent event) { service.record(event); }",
     ],
@@ -352,9 +352,9 @@ diagramBulletsSlide("COORDINATING · SAGAS", "Choreography and orchestration, si
       "    .timeout(SAGA_TIMEOUT_SECONDS, TimeUnit.SECONDS)",
       "    .compensation(\"direct:ship-compensate\")   // runs once, on any step's failure",
       "  .to(\"direct:ship-enrich\")         // step 1",
-      "  .to(\"direct:ship-dispatch\")       // step 2 — persists before the fail point",
-      "  .to(\"direct:ship-book-carrier\")   // step 3 — may throw",
-      "  .to(\"direct:ship-emit-dispatched\")// step 4 — only on success",
+      "  .to(\"direct:ship-dispatch\")       // step 2: persists before the fail point",
+      "  .to(\"direct:ship-book-carrier\")   // step 3: may throw",
+      "  .to(\"direct:ship-emit-dispatched\")// step 4: only on success",
       "  .end();",
     ],
     "examples/06-shipping-service · ShipmentSagaRoute: the coordinator calls the compensation leg exactly once on any failure.");
@@ -398,7 +398,7 @@ leadSlide("CHASSIS · OPT-IN", "Capability arrives when you declare it",
   const s = S();
   addCodeSlide(s, "CHASSIS · THE CODE", "Config, profiles, and tracing: all declarative", "properties · java",
     [
-      "# application.properties — typed config, per-profile, no loader to write",
+      "# application.properties: typed config, per-profile, no loader to write",
       "quarkus.application.name=order-service",
       "quarkus.http.port=8087",
       "%dev.quarkus.datasource.jdbc.url=jdbc:postgresql://localhost:5432/monolith?currentSchema=order_service",
@@ -455,13 +455,13 @@ leadSlide("OPERATING · MESH & OBSERVABILITY", "Istio for identity, OpenTelemetr
    { lead: "Strict mTLS, after proof", text: "flipped from permissive to strict only once traffic was confirmed encrypted; verified on the cluster." },
    { lead: "OpenTelemetry + LGTM", text: "Loki, Grafana, Tempo, Mimir collect the signals; one real trace spans five hops across services." },
    { lead: "Deferred, and marked", text: "node-level log shipping into Loki and Kafka saga-hop tracing are not wired up yet." }],
-  "Operability's two layers, both exercised on the minikube cluster. Istio's sidecar gives every meshed pod mutual TLS and request-level telemetry with no application code; mTLS was moved from permissive to strict only after confirming traffic was already encrypted. OpenTelemetry feeding the LGTM stack (Loki, Grafana, Tempo, Mimir) collects the signals, and the chapter captures one real request tracing across five hops. Two gaps are marked rather than papered over: node-level log shipping into Loki is not wired up, and the Kafka saga hops are not traced end to end yet. The subtle point: the mesh produces a span per hop, but it only amplifies a trace the application already started, so context propagation stays the application's job.");
+  "Operability's two layers, both exercised on the minikube cluster. Istio's sidecar gives every meshed pod mutual TLS and request-level telemetry with no application code; mTLS was moved from permissive to strict only after confirming traffic was already encrypted. OpenTelemetry feeding the LGTM stack (Loki, Grafana, Tempo, Mimir) collects the signals, and one real request is captured tracing across five hops. Two gaps are marked rather than papered over: node-level log shipping into Loki is not wired up, and the Kafka saga hops are not traced end to end yet. The subtle point: the mesh produces a span per hop, but it only amplifies a trace the application already started, so context propagation stays the application's job.");
 
 leadSlide("DELIVERING · CI/CD", "Gates on every push; progressive delivery by flag",
   [{ lead: "CI is behaviour gates", text: "seven jobs run the equivalence and contract suites per seam on every push; a separate job builds and publishes the site." },
    { lead: "Progressive delivery", text: "the strangler's flag-gated cutover; reversible, gated on a green suite, retired once every seam was extracted." },
    { lead: "Named, not built", text: "a GitOps operator (Argo/Flux), an image-registry push, and Istio weighted canary are the next steps, not yet in the repo." },
-   { lead: "No speculative infrastructure", text: "the same rule the whole book holds; build the machinery when the load calls for it." }],
+   { lead: "No speculative infrastructure", text: "the same rule the whole migration holds; build the machinery when the load calls for it." }],
   "Delivery, stated precisely. The CI that exists is a set of behaviour gates: seven jobs running the equivalence and contract suites per seam on every push, plus the job that builds and publishes the documentation site. Progressive delivery in this project was the strangler's flag-gated cutover: reversible, gated on a green suite, and retired once every seam was extracted. Three pieces are named but not built: a GitOps operator reconciling the cluster to git, an image-registry push, and Istio weighted canary for traffic-level rollout. They are the next steps, not a pipeline this repo pretends to have. The rule is to build operational machinery when a real load calls for it.");
 
 diagramBulletsSlide("DELIVERING · SUPPLY CHAIN", "The gate that measures the modernization",
@@ -470,16 +470,16 @@ diagramBulletsSlide("DELIVERING · SUPPLY CHAIN", "The gate that measures the mo
    { lead: "Policy as code", text: "the threshold lives in a committed file; the same steps run locally and in CI." },
    { lead: "monolith (fails)", text: "4 Critical and 6 High, across spring-webmvc, tomcat, jackson, and the postgresql driver." },
    { lead: "order-service (passes)", text: "0 Critical, 0 High, against the same database the same day." }],
-  "The supply-chain gate, and the most direct result in the book. Three steps: syft generates a CycloneDX software bill of materials, grype scans it against the current vulnerability database, and a committed policy file fails the build on a High-or-worse finding: policy as code, the same steps on a laptop and in CI. Run it over the before and the after on the same day, against the same database: the Spring Boot monolith's fat jar fails on four Critical and six High findings, across spring-webmvc, tomcat, jackson, and the postgresql driver; the extracted Quarkus order-service passes at zero and zero. The scan is a moving target as new CVEs are disclosed, which is exactly why the gate runs on every push rather than once.");
+  "The supply-chain gate, and the most direct result in the project. Three steps: syft generates a CycloneDX software bill of materials, grype scans it against the current vulnerability database, and a committed policy file fails the build on a High-or-worse finding: policy as code, the same steps on a laptop and in CI. Run it over the before and the after on the same day, against the same database: the Spring Boot monolith's fat jar fails on four Critical and six High findings, across spring-webmvc, tomcat, jackson, and the postgresql driver; the extracted Quarkus order-service passes at zero and zero. The scan is a moving target as new CVEs are disclosed, which is exactly why the gate runs on every push rather than once.");
 
 {
   const s = S();
   addCodeSlide(s, "DELIVERING · THE CODE", "The supply-chain gate is three tools and a file", "yaml · bash",
     [
-      "# policy.yaml — the threshold is committed, reviewed, versioned",
+      "# policy.yaml: the threshold is committed, reviewed, versioned",
       "fail-on: High          # fail on any High or Critical finding",
       "",
-      "# demo.sh — the same three steps run locally and in CI",
+      "# demo.sh: the same three steps run locally and in CI",
       "syft \"$artifact\" -o cyclonedx-json=sbom.json          # 1. bill of materials",
       "grype sbom:sbom.json -o json > findings.json          # 2. scan vs CVE DB",
       "crit=$(jq '[.matches[]|select(.severity==\"Critical\")]|length' findings.json)",
@@ -505,8 +505,8 @@ diagramBulletsSlide("DELIVERING · SUPPLY CHAIN", "The gate that measures the mo
       "# the end state: all six extracted, the monolith decommissioned",
       "./demos/demo-final-topology.sh",
     ],
-    "demos/: nine scripts; the full matrix is in the appendix. Each one is a runnable proof you can re-run.");
-  addNotes(s, "The system is meant to be driven, not just described, and the demos are how. demo-equivalence runs the behaviour-equivalence suite against the current topology through the proxy: the same gate CI runs, on your machine. The cutover demos flip a seam from monolith to service and show the suite staying green across the flip, reversibly; the per-seam scripts each exercise one extraction, including the choreographed payment saga and the orchestrated shipping saga. demo-final-topology brings up the end state with all six services extracted and the monolith decommissioned. The full nine-script matrix, with what each one proves and which infrastructure tier it needs, is in the appendix. The point of shipping demos rather than screenshots is that every claim in this deck is one command away from being re-checked.");
+    "demos/: nine scripts; the full matrix is in the deck appendix. Each one is a runnable proof you can re-run.");
+  addNotes(s, "The system is meant to be driven, not just described, and the demos are how. demo-equivalence runs the behaviour-equivalence suite against the current topology through the proxy: the same gate CI runs, on your machine. The cutover demos flip a seam from monolith to service and show the suite staying green across the flip, reversibly; the per-seam scripts each exercise one extraction, including the choreographed payment saga and the orchestrated shipping saga. demo-final-topology brings up the end state with all six services extracted and the monolith decommissioned. The full nine-script matrix, with what each one proves and which infrastructure tier it needs, is in the deck appendix. The point of shipping demos rather than screenshots is that every claim in this deck is one command away from being re-checked.");
 }
 
 // ===== 10 · REFLECTION ======================================================
@@ -551,7 +551,7 @@ function twoUp(eyebrow, title, pngL, pngR, capL, capR, notes) {
 }
 
 divider("A", "Appendix", "Reference material: keep it open in another window.",
-  "The appendix is reference, not narrative: the demo matrix, the runnable-examples catalogue, the six extractions at a glance, the behaviour-equivalence contracts, the CI gates, the stack and versions, a glossary, and a few background figures from the book. Pull it up alongside the repository rather than reading it front to back.");
+  "The appendix is reference, not narrative: the demo matrix, the runnable-examples catalogue, the six extractions at a glance, the behaviour-equivalence contracts, the CI gates, the stack and versions, a glossary, and a few background figures. Pull it up alongside the repository rather than reading it front to back.");
 
 {
   const s = S();
@@ -586,21 +586,21 @@ divider("A", "Appendix", "Reference material: keep it open in another window.",
     { code: "09-schema-registry-demo", name: "Quarkus", purpose: "Avro + Apicurio schema registry, contract-first events." },
     { code: "10-supply-chain", name: "syft+grype", purpose: "SBOM + CVE scan + policy-as-code gate (verified live)." },
   ], { colW: [3.20, 1.95, 6.94], rowH: 0.38, fontSize: 11.5 });
-  addNotes(s, "The eleven runnable examples, which are the spine of the book: each chapter's claims live in one of these directories. The first two are the starting point and the proxy; the next six are the extractions in order, each demonstrating a specific Quarkus or Camel strength as well as a decomposition pattern; the last three are the aggregation gateway, the schema-registry demonstrator, and the supply-chain gate. Every example has its own README and runs with mvn quarkus:dev, or mvn spring-boot:run for the monolith. Read this table as a map from a pattern you care about to the smallest runnable thing that shows it. The numbering is also the rough reading order through the book.");
+  addNotes(s, "The eleven runnable examples, which are the spine of the project: every claim lives in one of these directories. The first two are the starting point and the proxy; the next six are the extractions in order, each demonstrating a specific Quarkus or Camel strength as well as a decomposition pattern; the last three are the aggregation gateway, the schema-registry demonstrator, and the supply-chain gate. Every example has its own README and runs with mvn quarkus:dev, or mvn spring-boot:run for the monolith. Read this table as a map from a pattern you care about to the smallest runnable thing that shows it. The numbering is also the rough reading order.");
 }
 
 {
   const s = S();
   addContentTitle(s, "APPENDIX · EXTRACTIONS", "The six extractions at a glance");
   addStatusTable(s, [
-    { code: "1 · Review", name: "Strangler, first seam", purpose: "Walking skeleton; two-phase Spring->Quarkus. (ch.15)   DONE" },
-    { code: "2 · Notification", name: "Async outbox -> Kafka", purpose: "Transactional outbox, SmallRye consumer, WebSocket. (ch.17)   DONE" },
-    { code: "3 · Inventory", name: "gRPC seam + CDC", purpose: "Debezium backfill, retired at cutover; saga-lite compensation. (ch.19)   DONE" },
-    { code: "4 · Payment", name: "Choreographed saga", purpose: "Event choreography; compensation via choreography. (ch.23)   DONE" },
-    { code: "5 · Shipping", name: "Orchestrated saga", purpose: "Camel Saga EIP; explicit compensation leg. (ch.24)   DONE" },
-    { code: "6 · Order", name: "CQRS; monolith gone", purpose: "Write/read split; the last and hardest; decommission. (ch.26)   DONE" },
+    { code: "1 · Review", name: "Strangler, first seam", purpose: "Walking skeleton; two-phase Spring->Quarkus.   DONE" },
+    { code: "2 · Notification", name: "Async outbox -> Kafka", purpose: "Transactional outbox, SmallRye consumer, WebSocket.   DONE" },
+    { code: "3 · Inventory", name: "gRPC seam + CDC", purpose: "Debezium backfill, retired at cutover; saga-lite compensation.   DONE" },
+    { code: "4 · Payment", name: "Choreographed saga", purpose: "Event choreography; compensation via choreography.   DONE" },
+    { code: "5 · Shipping", name: "Orchestrated saga", purpose: "Camel Saga EIP; explicit compensation leg.   DONE" },
+    { code: "6 · Order", name: "CQRS; monolith gone", purpose: "Write/read split; the last and hardest; decommission.   DONE" },
   ], { colW: [2.75, 3.05, 6.29], rowH: 0.52, fontSize: 12.5 });
-  addNotes(s, "The six extractions, in the order the coupling ladder set. Review first, because it is read-mostly and low-coupling: the right seam to prove the whole loop on. Then notification, inventory, payment, and shipping, each raising the bar and introducing its data or coordination pattern. Order last, because it is the core aggregate everything else depends on, extracted only once inventory, payment, and shipping already stood alone, and its cutover is what finally decommissioned the monolith. Every row is DONE: all six bounded contexts are now their own service, the strangler is complete, and the monolith is frozen in the repository as the permanent 'before'. The chapter numbers point at the full write-up for each.");
+  addNotes(s, "The six extractions, in the order the coupling ladder set. Review first, because it is read-mostly and low-coupling: the right seam to prove the whole loop on. Then notification, inventory, payment, and shipping, each raising the bar and introducing its data or coordination pattern. Order last, because it is the core aggregate everything else depends on, extracted only once inventory, payment, and shipping already stood alone, and its cutover is what finally decommissioned the monolith. Every row is DONE: all six bounded contexts are now their own service, the strangler is complete, and the monolith is frozen in the repository as the permanent 'before'.");
 }
 
 leadSlide("APPENDIX · CONTRACTS", "The behaviour-equivalence suite",
@@ -658,7 +658,7 @@ leadSlide("APPENDIX · CONTRACTS", "The behaviour-equivalence suite",
      { text: "Chassis: the cross-cutting foundation (config/health/metrics/tracing) you opt into." },
      { text: "SBOM: software bill of materials; the component list a scanner reads." }],
     { fontSize: 12.5 });
-  addNotes(s, "A glossary for the terms this deck leans on, so nobody has to infer them from context. The decomposition terms (bounded context, strangler fig, anti-corruption layer) come from the seam-finding and strangler sections. The data terms (transactional outbox, change data capture, CQRS, ACID-to-ACD) come from the data section. The coordination terms (saga, choreography and orchestration, compensation) come from the coordinating section. Chassis and SBOM come from the operating and delivering sections. These are the vocabulary of the field as much as of this project; the book's own index carries fuller definitions, and each term is introduced where it first appears in the deck.");
+  addNotes(s, "A glossary for the terms this deck leans on, so nobody has to infer them from context. The decomposition terms (bounded context, strangler fig, anti-corruption layer) come from the seam-finding and strangler sections. The data terms (transactional outbox, change data capture, CQRS, ACID-to-ACD) come from the data section. The coordination terms (saga, choreography and orchestration, compensation) come from the coordinating section. Chassis and SBOM come from the operating and delivering sections. These are the vocabulary of the field as much as of this project; each term is introduced where it first appears in the deck.");
 }
 
 twoUp("APPENDIX · FIGURES", "Background figures (1 of 2)",
@@ -674,25 +674,25 @@ twoUp("APPENDIX · FIGURES", "Background figures (2 of 2)",
 // ===== CLOSING ==============================================================
 {
   const s = S();
-  addContentTitle(s, "CLOSING", "The book, in one arc");
+  addContentTitle(s, "CLOSING", "The migration, in one arc");
   leadBullets(s, [
     { lead: "One monolith to six services", text: "a Spring Boot monolith, strangled one seam at a time into Quarkus services that own their data and coordinate without a conductor." },
     { lead: "A method that verifies itself", text: "the ADLC is safe because an automated behavioural gate runs on every push." },
     { lead: "Clear about its limits", text: "every deferral is named and every 'verified' is backed by a run." },
     { lead: "Fit over fashion", text: "patterns were used where they solved a real pain, and the migration stopped when it ran out of real seams." },
   ], { fontSize: 17 });
-  addNotes(s, "The one-paragraph recap. A coupled monolith became six Quarkus services that own their data and coordinate through sagas, built incrementally behind a strangler proxy with a behavioural gate green the whole way, driven by the ADLC. Each chapter states what was verified and what was deferred. The through-line is discipline in three forms: incremental change behind a reversible flag, automated behavioural verification on every push, and restraint about which patterns and how many services the system needed. That combination is what makes agent-driven modernization something you can defend in a review rather than something you hope works.");
+  addNotes(s, "The one-paragraph recap. A coupled monolith became six Quarkus services that own their data and coordinate through sagas, built incrementally behind a strangler proxy with a behavioural gate green the whole way, driven by the ADLC. Each extraction states what was verified and what was deferred. The through-line is discipline in three forms: incremental change behind a reversible flag, automated behavioural verification on every push, and restraint about which patterns and how many services the system needed. That combination is what makes agent-driven modernization something you can defend in a review rather than something you hope works.");
 }
 {
   const s = S();
   addContentTitle(s, "CLOSING · GO DEEPER", "Where to go from here");
   leadBullets(s, [
-    { lead: "The book", text: "the full 32-chapter tutorial site; every chapter with a runnable example and a verification footer." },
+    { lead: "The tutorial site", text: "thirty-two chapters, each with a runnable example and a verification footer." },
     { lead: "The repo", text: "the monolith, the six services, the proxy, the equivalence suite, and the deploy tree; runnable on Docker Engine and minikube." },
     { lead: "Start where your pain is", text: "a smell in the monolith section, the seam-finding method, or the supply-chain gate you can run today." },
   ], { fontSize: 17 });
   addCaption(s, "Modernizing Enterprise Applications: 201 implementation deep-dive · " + REV);
-  addNotes(s, "Where to go next. The book site carries all thirty-two chapters, each with a runnable example and a verification footer that states how far to trust it. The repository runs on Docker Engine and minikube: the monolith, the six services, the proxy, the equivalence suite, and the Kubernetes deploy tree. The most useful entry point is wherever your own pain is: pick a smell from the monolith section, apply the seam-finding method to your own domain, or run the supply-chain gate against your own artifacts this afternoon and see what it reports. Thank you.");
+  addNotes(s, "Where to go next. The tutorial site carries thirty-two chapters, each with a runnable example and a verification footer that states how far to trust it. The repository runs on Docker Engine and minikube: the monolith, the six services, the proxy, the equivalence suite, and the Kubernetes deploy tree. The most useful entry point is wherever your own pain is: pick a smell from the monolith section, apply the seam-finding method to your own domain, or run the supply-chain gate against your own artifacts this afternoon and see what it reports. Thank you.");
 }
 
 

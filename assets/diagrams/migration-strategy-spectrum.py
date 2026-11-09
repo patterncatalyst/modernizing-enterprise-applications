@@ -64,7 +64,7 @@ notes = [
 
     {"x": 40, "y": H - 16,
      "text": "Sourced from _docs/04-strategies-and-assessment.md (\"The strategy menu\", \"Why this book commits to "
-             "incremental strangler-fig re-architecting\") -- Sam Newman's incremental-vs-rewrite risk-shape case, cited directly.",
+             "incremental strangler-fig re-architecting\"): Sam Newman's incremental-vs-rewrite risk-shape case, cited directly.",
      "anchor": "start", "size": 10.5, "color": "#555555"},
 ]
 

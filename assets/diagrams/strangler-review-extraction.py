@@ -83,7 +83,7 @@ notes = [
      "anchor": "start", "bold": True, "size": 14},
 
     {"x": 40, "y": 70 + PANEL_H + 60 + 420,
-     "text": "proxy predicate fixed post-S10: matches the FULL CamelHttpPath "
+     "text": "proxy predicate fixed after the cutover: matches the FULL CamelHttpPath "
              "(startsWith '/api/reviews'), not a path relative to the /api consumer prefix",
      "anchor": "start", "size": 11, "color": "#555555"},
 

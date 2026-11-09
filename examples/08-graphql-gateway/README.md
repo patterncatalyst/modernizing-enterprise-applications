@@ -1,21 +1,20 @@
 # graphql-gateway
 
-**ch.26 S7 (DRQ-069) — a new, additive, data-less SmallRye GraphQL
-aggregation gateway.** Adapted from
-`~/Dev/datamesh-reference-arch-quarkus/examples/graphql-gateway` (DRQ-032)
+**A new, additive, data-less SmallRye GraphQL aggregation gateway.**
+Adapted from the graphql-gateway example in `datamesh-reference-arch-quarkus`
 with attribution, widened from order+stock to the full cross-context view:
 `order → payments/shipments/reviews/stock` across the five already-extracted
 services.
 
 **This module OWNS NO DATA.** It answers one GraphQL query by federating
 reads from order-service (REST), payment-service (REST), shipping-service
-(REST), review-service (REST), and inventory-service (gRPC) — each field is
+(REST), review-service (REST), and inventory-service (gRPC), each field is
 resolved by a `@Source` field resolver calling the service that owns it, the
 same protocol that service's other consumers use. It sits ALONGSIDE the REST
-surface and the strangler proxy, not replacing either — its own front door,
+surface and the strangler proxy, not replacing either, its own front door,
 port `8090`.
 
-- `type Query { order(id: ID!): OrderView }` — `OrderView` carries the order
+- `type Query { order(id: ID!): OrderView }`: `OrderView` carries the order
   read-model fields (`id`, `customerId`, `status`, `totalCents`,
   `createdAt`, `shippingAddress`) plus `items: [OrderItemView]`, `payments:
   [PaymentView]`, `shipments: [ShipmentView]`. Each `OrderItemView` carries
@@ -26,14 +25,14 @@ port `8090`.
   `OrderView`; `stock`/`reviews` are `@Source` resolvers on `OrderItemView`.
 - **Unknown-id handling:** `order(id:)` for an id order-service 404s on
   raises `OrderNotFoundException` (`@ErrorCode("ORDER_NOT_FOUND")`) from the
-  resolver rather than returning `null` directly — the GraphQL response is
+  resolver rather than returning `null` directly, the GraphQL response is
   `data.order: null` WITH a populated `errors[]`, never a silent null with
-  no error (the GraphQL Gateway Contract's GG-b envelope).
-- **Secure-by-design (DRQ-069):** query depth/complexity are bounded
+  no error (the gateway contract's error envelope).
+- **Secure by design:** query depth/complexity are bounded
   (`smallrye.graphql.instrumentation.queryDepth`/`queryComplexity` in
   `application.properties`) so the aggregation can't be turned into an
   amplification vector, and every downstream target (the four REST client
-  base URLs, the inventory gRPC host/port) is FIXED operator config —
+  base URLs, the inventory gRPC host/port) is FIXED operator config,
   never derived from the incoming request.
 - `src/main/proto` carries a verbatim copy of inventory-service's
   `.proto` (the same `GetStock` RPC `examples/07-order-service`'s
@@ -41,9 +40,9 @@ port `8090`.
 
 ## Endpoints
 
-- `POST /graphql` — the aggregation query.
-- `GET /graphql/schema.graphql` — the generated SDL.
-- `/q/graphql-ui` — GraphiQL (dev mode).
+- `POST /graphql`: the aggregation query.
+- `GET /graphql/schema.graphql`: the generated SDL.
+- `/q/graphql-ui`: GraphiQL (dev mode).
 - `/q/health`, `/q/health/live`, `/q/health/ready`.
 
 ## Configuration
@@ -56,7 +55,7 @@ Downstream targets (all overridable via env var, see
 (`localhost`/`9004`).
 
 Port `8090` (test port `8092`); the vestigial gRPC *server* quarkus-grpc
-always starts (this module has no `@GrpcService` of its own in `main` — only
+always starts (this module has no `@GrpcService` of its own in `main`, only
 a `@GrpcClient`) is pinned to `9093` to avoid colliding with the extension's
 default `9000`.
 
@@ -64,18 +63,18 @@ default `9000`.
 
 `GatewayApiTest` (`@QuarkusTest`) mocks the four REST downstreams with
 `@InjectMock @RestClient` and serves inventory-service's gRPC `GetStock` from
-an in-process `@GrpcService` test double (`MockInventoryGrpcService` — the
+an in-process `@GrpcService` test double (`MockInventoryGrpcService`, the
 same pattern datamesh's `MockInventoryService` uses, since a `@GrpcClient`
 blocking stub is a `@Singleton` and can't be `@InjectMock`-ed):
 
-- `aggregatesOrderAcrossAllFiveServices` — the GG-a shape, field-for-field.
-- `unknownOrderIdProducesErrorEnvelope` — the GG-b error envelope.
-- `downstreamUnavailableProducesPartialDataNotACrash` — one failing
+- `aggregatesOrderAcrossAllFiveServices`: the aggregated shape, field by field.
+- `unknownOrderIdProducesErrorEnvelope`: the error envelope.
+- `downstreamUnavailableProducesPartialDataNotACrash`: one failing
   downstream nulls only its own field; siblings still resolve, no 500.
 
 `GatewayDepthComplexityLimitTest` (`@TestProfile(StrictGraphQLLimitsProfile)`)
 proves the depth/complexity bound is actually wired and active, under a
-deliberately tiny test-only budget.
+tiny test-only budget.
 
 ## Related Guides
 

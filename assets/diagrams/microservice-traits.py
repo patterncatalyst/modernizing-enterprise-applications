@@ -57,13 +57,13 @@ TRAITS = [
     ("2. Modeled around a business domain",
      ["boundary matches a bounded", "context, not a technical layer"]),
     ("3. Communicate over the network",
-     ["not in-process calls --", "a stack trace becomes a network trace"]),
+     ["not in-process calls:", "a stack trace becomes a network trace"]),
     ("4. Opinionated SOA",
      ["SOA's integration ideas,", "stronger defaults on size + ownership"]),
     ("5. Technology agnostic",
      ["one team's language or framework", "needs no neighbor's coordination"]),
     ("6. A distributed system",
-     ["true of the set, not one service --", "partial failure is now possible"]),
+     ["true of the set, not one service:", "partial failure is now possible"]),
     ("7. API-focused",
      ["internals hidden behind the API,", "not a shared library or table"]),
     ("8. Decentralized governance",
@@ -71,7 +71,7 @@ TRAITS = [
     ("9. Decentralized data management",
      ["each service owns its own data,", "not shared across many services"]),
     ("10. Designed for failure",
-     ["any service can be down, any time --", "not: if the process is up, all is reachable"]),
+     ["any service can be down, any time:", "not: if the process is up, all is reachable"]),
 ]
 
 COLS, ROWS = 5, 2
@@ -91,14 +91,14 @@ notes = [
      "text": "the ten microservice traits: what the word is actually promising",
      "anchor": "middle", "bold": True, "size": 17},
     {"x": W / 2, "y": 56,
-     "text": "each service's boundary matches a bounded context -- the target this book's six extractions are built toward, one at a time",
+     "text": "each service's boundary matches a bounded context: the target this book's six extractions are built toward, one at a time",
      "anchor": "middle", "size": 12, "color": "#555555"},
 
     {"x": X0, "y": Y0 + 2 * ROW_H + GUTTER_Y + 36,
      "text": "None of these ten traits is this book's own goal in isolation. Together, they are the destination the strangler-fig",
      "anchor": "start", "size": 11, "color": "#555555"},
     {"x": X0, "y": Y0 + 2 * ROW_H + GUTTER_Y + 52,
-     "text": "sequence is aimed at -- each of the six extractions is a bet that one more bounded context can acquire them.",
+     "text": "sequence is aimed at; each of the six extractions is a bet that one more bounded context can acquire them.",
      "anchor": "start", "size": 11, "color": "#555555"},
 
     {"x": X0, "y": H - 16,

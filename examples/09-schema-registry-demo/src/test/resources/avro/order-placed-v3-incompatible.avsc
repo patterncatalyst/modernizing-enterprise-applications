@@ -7,7 +7,7 @@
     { "name": "orderId", "type": "long", "doc": "The saga correlation key — this order's identifier." },
     { "name": "customerId", "type": "long", "doc": "The customer who placed the order." },
     { "name": "customerEmail", "type": "string", "doc": "Denormalized customer email snapshot, carried on the wire so downstream consumers never need to look up the customer." },
-    { "name": "totalCents", "type": "string", "doc": "INCOMPATIBLE CHANGE: retyped from 'long' (v1/v2) to 'string' — no valid Avro promotion path, breaks BACKWARD compatibility." },
+    { "name": "totalCents", "type": "string", "doc": "INCOMPATIBLE CHANGE: retyped from 'long' (v1/v2) to 'string'; no valid Avro promotion path, breaks BACKWARD compatibility." },
     { "name": "paymentMethod", "type": "string", "doc": "The checkout request's payment method." },
     { "name": "confirmationMessage", "type": "string", "doc": "The order-confirmation message text." },
     { "name": "placedAt", "type": { "type": "long", "logicalType": "timestamp-millis" }, "doc": "When the order was placed." }
