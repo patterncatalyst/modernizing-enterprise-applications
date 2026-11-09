@@ -45,8 +45,8 @@ row0, row_gap = 345, 32
 rows = [
     ("Build", "Startup", "RSS", True),
     ("Phase A: JVM (spring-compat)", "1.492 s", "~316 MB", False),
-    ("Phase B: JVM (idiomatic)", "1.431–1.437 s", "~304 MB", False),
-    ("Phase B: native image", "0.048–0.049 s", "~73 MB", False),
+    ("Phase B: JVM (idiomatic)", "1.431 to 1.437 s", "~304 MB", False),
+    ("Phase B: native image", "0.048 to 0.049 s", "~73 MB", False),
 ]
 
 notes = [

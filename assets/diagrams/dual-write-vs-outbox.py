@@ -52,7 +52,7 @@ svc1 = node(210, 130, 220, 110, ["OrderService.placeOrder()", "no shared transac
 write1 = node(450, 130, 210, 110, ["write 1: Postgres", "orderRepository.save(order)"], style="box")
 write2 = node(680, 130, 210, 110, ["write 2: Kafka", "kafkaTemplate.send(order.placed)"], style="box")
 crash = node(910, 130, 200, 110, ["CRASH WINDOW", "process dies, client times out,", "or the pod is rescheduled"], style="ghost")
-outcome1 = node(1130, 130, 230, 110, ["NO SHARED OUTCOME", "order with no event: or an", "event for no order"], style="ink")
+outcome1 = node(1130, 130, 230, 110, ["No shared outcome", "order with no event: or an", "event for no order"], style="ink")
 
 old_nodes = [client1, svc1, write1, write2, crash, outcome1]
 old_edges = [
@@ -72,7 +72,7 @@ band_new = {"x": 20, "y": 380, "w": 1360, "h": 400,
 
 client2 = node(40, 450, 150, 100, ["Client", "POST /api/orders"], style="sub")
 svc2 = node(210, 450, 220, 100, ["OrderService.placeOrder()", "BEGIN @Transactional"], style="user")
-txnwrite = node(450, 450, 260, 100, ["order row + outbox row", "SAME transaction, SAME commit"], style="accent")
+txnwrite = node(450, 450, 260, 100, ["order row + outbox row", "Same transaction, same commit"], style="accent")
 commit2 = node(730, 450, 220, 100, ["COMMIT", "atomic: one write, not two"], style="ink")
 
 relay = node(450, 610, 220, 110, ["OutboxRelay", "@Scheduled poll, 2000ms"], style="box")
@@ -82,7 +82,7 @@ consumer2 = node(890, 610, 260, 110, ["NotificationService", "idempotent consume
 new_nodes = [client2, svc2, txnwrite, commit2, relay, kafka2, consumer2]
 new_edges = [
     connect(client2, svc2),
-    connect(svc2, txnwrite, label="order + outbox, SAME txn"),
+    connect(svc2, txnwrite, label="order + outbox, same txn"),
     connect(txnwrite, commit2),
     connect(txnwrite, relay, dashed=True, label="poll WHERE published_at IS NULL (after commit)"),
     connect(relay, kafka2, label="publish (blocks for broker ack)"),

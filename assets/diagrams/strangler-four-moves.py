@@ -39,7 +39,7 @@ W, H = 1400, 700
 # ---- the reversible / irreversible bands -----------------------------------
 band_reversible = {
     "x": 40, "y": 170, "w": 960, "h": 220,
-    "label": "reversible -- the flag can move either direction (config, not code)",
+    "label": "reversible: the flag can move either direction (config, not code)",
     "fill": "#fafafa",
 }
 band_irreversible = {
@@ -63,7 +63,7 @@ nodes = [box1, box2, box3, box4]
 
 edges = [
     connect(box1, box2, label="flag defaults to the old system"),
-    connect(box2, box3, label="repeat -- one piece at a time"),
+    connect(box2, box3, label="repeat: one piece at a time"),
     connect(box3, box4, amber=True,
             label="verified first, not just tested", lx=0, ly=-145),
 ]
@@ -71,7 +71,7 @@ edges = [
 # ---- the warning: what happens if "retire" jumps the queue -----------------
 ghost = node(460, 480, 560, 110,
              ["Retire before that check passes?",
-              "the fallback is gone -- \"incremental\"",
+              "the fallback is gone: \"incremental\"",
               "quietly becomes a big-bang rewrite"],
              style="ghost")
 nodes.append(ghost)
@@ -87,7 +87,7 @@ notes = [
      "anchor": "middle", "size": 12, "color": "#555555"},
 
     {"x": 60, "y": 375,
-     "text": "both backends still exist here -- the flag can flip either way, no redeploy required",
+     "text": "both backends still exist here: the flag can flip either way, no redeploy required",
      "anchor": "start", "size": 10.5, "color": "#555555"},
 
     {"x": 1020, "y": 352,

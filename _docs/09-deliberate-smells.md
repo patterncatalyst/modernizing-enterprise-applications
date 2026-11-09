@@ -9,109 +9,46 @@ description: "The coupling, god-service, shared-table, and transaction-scope sme
 
 By the end of this chapter you can:
 
-- Locate every `SMELL[ch.NN]` tag with `grep -rn 'SMELL\[ch\.' examples/00-monolith/src` and map each one to the chapter that cures it.
-- Explain why a "seam" is a conceptual boundary the implementation currently welds shut, not an arbitrary place where code could be split.
-- Diagnose shared-schema cross-context foreign-key coupling and explain why it is invisible until a migration from another team breaks it.
-- Diagnose the god `OrderService` using constructor-dependency counting and the "describe it in one sentence without 'and'" heuristic.
-- Explain why one `@Transactional` boundary spanning five contexts is correct only because of co-location, and what has to replace it once those contexts get separate databases.
+- Locate every `SMELL[ch.NN]` tag with `grep -rn 'SMELL\[ch\.' examples/00-monolith/src` and map each one to the extraction that cures it.
+- Explain why a seam is a conceptual boundary the implementation currently welds shut, not an arbitrary place where code could be split.
+- Diagnose shared-schema cross-context foreign-key coupling and why it stays invisible until another team's migration breaks it.
+- Diagnose the god `OrderService` by counting constructor dependencies and applying the "one sentence without 'and'" heuristic.
+- Explain why one `@Transactional` boundary spanning five contexts is correct only because of co-location, and what must replace it once the contexts get separate databases.
 - Diagnose the synchronous-notification and missing-anti-corruption-layer smells and name the pattern (transactional outbox, message translator) that cures each.
-- Use Review's already-cured sixth smell as the existence proof that "tag it, name the cure, cut it with an equivalence gate watching" survives contact with a real codebase.
+- Use Review's already-cured sixth smell as evidence that "tag it, name the cure, cut it with an equivalence check watching" works on a real codebase.
 
 ## Why this matters
 
-The previous chapter assembled `examples/00-monolith/` into one deployable,
-one database, one JVM, six bounded contexts living as six packages under a
-single Spring Boot application. That assembly was not an accident of
-convenience. Every coupling decision in that codebase was chosen, not
-overlooked, and six of those decisions are deliberately bad: planted the way a
-structural engineer plants a known weak point in a demonstration beam, so
-that when the beam is later cut at exactly that point, the cut makes sense to
-everyone watching. One of the six, Review's entanglement in a shared
-security filter chain despite having no runtime dependency on anything else,
-has already been cured; Chapter 7 walked that
-extraction end to end as the proof that the ADLC's loop actually holds up
-under real work. This chapter catalogues the five that remain, names exactly
-where each one lives in the real source tree, explains why each is a
-modernization liability rather than a cosmetic one, and tells you which later
-chapter cuts along it. It is also a bridge: Part 4, "Finding the Seams,"
-opens immediately after this chapter and spends three chapters teaching the
-method (domain-driven design, event storming, coupling theory) for finding
-cuts like these in a system that didn't come with a `SMELLS.md` file telling
-you where they are.
+Six coupling decisions in the monolith are planted flaws, like a known weak point in a demonstration beam. One of the six, Review's entanglement in a shared security filter chain despite having no runtime dependency on anything else, has been cured by the Review extraction. Each of the other five has an extraction that cuts along it.
 
-The code is in `examples/00-monolith/`; nothing new has been scaffolded for
-this chapter. Every excerpt below is quoted verbatim from files already in
-that module, and every one carries an in-code `SMELL[ch.NN]` tag you can find
-yourself:
+Every excerpt below is quoted from `examples/00-monolith/` as designed, on the `reference/monolith-before` branch, and carries an in-code `SMELL[ch.NN]` tag. On `main` the extractions deleted the context packages. The grep output is the authoritative index, and `examples/00-monolith/SMELLS.md` is the same index in table form, covering all six smells and their cures.
 
 ```sh
+git checkout reference/monolith-before
 grep -rn 'SMELL\[ch\.' examples/00-monolith/src
 ```
 
-That single command is worth running before you read any further, because it
-makes a claim this chapter depends on falsifiable rather than rhetorical: the
-smells are not described in prose and left for you to trust; they are
-comments sitting next to the exact line of code that embodies them, and the
-grep output is the authoritative index. `examples/00-monolith/SMELLS.md`
-mirrors that index in table form, mapping all six smells (including the
-cured one) to their curing chapters. This chapter is the narrative version of
-that table, for the five still standing.
-
 ## A seam is a line the system already wants to be cut along
 
-Before walking the five, it's worth being precise about the word this
-chapter keeps using: **seam**. A seam is not just "a place where the code
-could be split." You can split code almost anywhere by inserting an
-interface. A seam is a place where splitting the code *follows a boundary
-that already exists conceptually*, even though the implementation currently
-straddles it. Bounded contexts are conceptual seams: order, inventory,
-payment, shipping, and notification are different areas of responsibility
-with different reasons to change, different owners in a real organization,
-and different data lifecycles, even though right now they share one schema,
-one transaction manager, and one JVM. Each planted smell, in this monolith,
-is the specific *mechanism* by which a conceptual seam gets welded shut in
-the implementation: a foreign key where there should be a replicated field,
-a direct method call where there should be a published event, a shared
-transaction where there should be five independently committable ones.
+You can split code almost anywhere by inserting an interface. A **seam** is a place where splitting follows a boundary that already exists conceptually while the implementation straddles it. Order, inventory, payment, shipping and notification have different reasons to change, different owners and different data lifecycles, yet share one schema, one transaction manager and one JVM. Each planted smell is the mechanism that welds a seam shut: a foreign key where there should be a replicated field, a direct method call where there should be a published event, one shared transaction where there should be five independently committable ones.
 
-{% include excalidraw.html file="smell-map" alt="All six planted smells overlaid on the monolith's six-context structure: the shared schema, the god OrderService, the one-transaction checkout, the synchronous notification call, the missing anti-corruption layer between order and inventory, and review's already-cured tangled security, each annotated with the chapter that cures it." caption="Figure 9.1: The six planted smells, mapped onto the monolith's structure" %}
+{% include excalidraw.html file="smell-map" alt="All six planted smells overlaid on the monolith's six-context structure: the shared schema, the god OrderService, the one-transaction checkout, the synchronous notification call, the missing anti-corruption layer between order and inventory, and review's already-cured tangled security, each annotated with the extraction that cures it." caption="Figure 9.1: The six planted smells, mapped onto the monolith's structure" %}
 
-Each smell
-below is not "a bug to fix." Fixing a bug makes code that was wrong become
-right, in place. Cutting a seam makes code that was *one thing* become *two
-things*, each independently deployable, scalable, and owned, and that is a
-fundamentally larger, more consequential move than a bug fix, which is
-exactly why the book spends from here through Chapter 26 doing it five more
-times, each time at higher difficulty. Read each smell below with the
-question "what boundary does this weld shut, and what would have to exist
-on each side of it to unweld it." That is the question Part 4 teaches you to
-ask systematically, and the question every cut from Chapter 15 onward
-answers.
+A smell here is not a bug to fix. Fixing a bug makes wrong code right in place; cutting a seam turns one thing into two, each independently deployable, scalable and owned. Ask of each smell what boundary it welds shut and what has to exist on each side to unweld it.
 
 ## Smell 1: shared schema and cross-context foreign-key joins
 
-**The pattern.** In a system decomposed along bounded contexts, each context
-should own its data exclusively: no other context reads or writes it except
-through that context's published contract. The opposite pattern, common in
-monoliths that grew organically, is a **shared schema**: one database, one
-set of tables, and ordinary relational foreign keys connecting tables that
-belong to conceptually different contexts, because a foreign key is the
-cheapest way to express "these two rows are related" when everything already
-lives in the same database anyway.
+**The pattern.** Each bounded context should own its data exclusively, and nothing else reads or writes it except through the context's published contract. The opposite, common in monoliths that grew organically, is a **shared schema**: one database whose ordinary foreign keys connect tables belonging to different contexts, because a foreign key is the cheapest way to say two rows are related when everything lives in one database anyway.
 
-**Where it lives.** `examples/00-monolith/src/main/resources/db/migration/V1__init_schema.sql`
-is the root of this smell: one Flyway migration, one Postgres schema, every
-table in it. From there it surfaces as ordinary JPA `@ManyToOne` associations
-wherever a context's entity needs to reference another context's row.
-`order.OrderItem` is a clean example:
+**Where it lives.** `V1__init_schema.sql` under `db/migration` is the root: one Flyway migration, one Postgres schema, every table. It surfaces as JPA `@ManyToOne` associations wherever one context references another's row, as in `order.OrderItem`:
 
 ```java
 // order/OrderItem.java
 /**
  * SMELL[ch.18]: OrderItem holds a direct JPA @ManyToOne FK/join
- * onto inventory.InventoryItem — an order-context table referencing an
+ * onto inventory.InventoryItem. An order-context table references an
  * inventory-context table in the one shared schema. Once inventory owns its own
- * database (ch.19), this join is replaced by a denormalized copy of the fields the
+ * database, this join is replaced by a denormalized copy of the fields the
  * order context actually needs (sku, name, price-at-time-of-order), kept current
  * via CDC.
  */
@@ -120,69 +57,27 @@ wherever a context's entity needs to reference another context's row.
 private InventoryItem inventoryItem;
 ```
 
-`order.Order` does the same thing against `common.Customer`
-(`@JoinColumn(name = "customer_id")`), `payment.Payment` and
-`shipping.Shipment` each hold a direct FK back into `orders`, and
-`notification.Notification` joins to both `customers` and `orders`. The
-`SMELLS.md` table lists the full set; the shape repeats everywhere a checkout
-flow needs to relate one context's data to another's, because that was the
-cheapest thing to write at the time each table was added.
+`order.Order` joins `common.Customer`, `payment.Payment` and `shipping.Shipment` hold FKs into `orders`, and `notification.Notification` joins both `customers` and `orders`.
 
-**Why it's a liability.** A foreign key is a promise enforced by the
-database: this row cannot exist, or cannot be deleted, without that row also
-existing. That promise is exactly what makes independent deployability
-impossible. If `inventory` moves to its own database, Postgres can no longer
-enforce `order_items.inventory_item_id -> inventory_items.id`, so either the
-constraint has to be dropped, taking with it every guarantee the application
-was silently leaning on, or the two contexts have to stay on the same
-database forever, which means they were never independent contexts to
-begin with, just two packages with a shared table underneath pretending to
-be contexts. Worse, the coupling is invisible from either context's own code:
-`OrderService` doesn't declare "I depend on inventory's schema," the database
-does, which means the dependency shows up only when someone tries to change
-it: a migration that drops a column inventory no longer needs breaks
-order's queries three deploys later, in a different team's incident.
+**Why it's a liability.** A foreign key is a promise the database enforces: this row cannot exist, or be deleted, without that row. That promise is what blocks independent deployability. If `inventory` moves to its own database, Postgres can no longer enforce `order_items.inventory_item_id -> inventory_items.id`. Either the constraint is dropped, with every guarantee the application silently leaned on, or the two contexts stay on one database forever and were never independent. The coupling is also invisible from either context's code: `OrderService` does not declare a dependency on inventory's schema, the database does. A migration that drops a column inventory no longer needs breaks order's queries three deploys later, in a different team's incident.
 
-**How to recognize it in your own system.** Grep your schema migrations for
-foreign keys that cross a conceptual ownership line: not "does this table
-reference another table" (every normalized schema does that) but "does the
-team or capability that owns the referencing table differ from the team or
-capability that owns the referenced table." If the answer is yes and the
-join is enforced at the database level rather than through an API call, you
-have this smell. A second tell: can you truthfully say which service "owns"
-a given table, or does the answer involve the word "well, several
-things write to it"? Ownership that several contexts can plausibly claim is
-ownership nobody actually has.
+**How to recognize it.** Grep your migrations for foreign keys that cross an ownership line: the team that owns the referencing table differs from the team that owns the referenced one, and the database enforces the join instead of an API call. If "who owns this table?" gets the answer "several things write to it", nobody owns it.
 
-**Who cuts it.** Chapter 18, "Shared Data to Owned Data," is where each
-context stops reading another context's tables directly and starts holding
-only the fields it actually needs, kept current by replication rather than
-by a join. Chapter 19 is the mechanism for getting there without a
-stop-the-world cutover: change-data-capture (CDC) backfill from the shared
-schema into each newly-owned database, exercised concretely as the inventory
-extraction.
+**Who cuts it.** The shared-data-to-owned-data work stops each context reading another's tables and has it hold only the fields it needs, kept current by replication instead of a join. Change-data-capture (CDC) backfill from the shared schema into each newly owned database gets there without a stop-the-world cutover, exercised on the inventory extraction.
 
 ## Smell 2: the god `OrderService`
 
-**The pattern.** A "god object" (or god service, in a service-oriented
-codebase) is a single component that has taken on responsibility for
-orchestrating work that conceptually belongs to many different areas of the
-system. It forms by accretion: the first feature that needs to
-touch two contexts gets a method on whichever service is closest at hand,
-the next feature adds a third dependency, and nobody ever stops to ask
-whether the component accumulating all these dependencies is still doing one
-job.
+**The pattern.** A god service is one component that orchestrates work belonging to many areas. It forms by accretion: each feature that touches two contexts adds a method and a dependency to whichever service is closest.
 
-**Where it lives.** `order/OrderService.java`, carrying the tag directly on
-the class:
+**Where it lives.** `order/OrderService.java`, tagged on the class:
 
 ```java
 /**
- * SMELL[ch.26]: this is the "god service" — it is the single orchestration point
+ * SMELL[ch.26]: this is the "god service". It is the single orchestration point
  * for checkout and it reaches directly into inventory, payment, shipping, and
  * notification's services/repositories/entities instead of those contexts being
  * independently deployable collaborators reached over a stable contract. Order is
- * deliberately the HARDEST and LAST extraction in the roadmap (ch.26) precisely
+ * deliberately the HARDEST and LAST extraction in the roadmap precisely
  * because every other context's extraction has to first remove one of this
  * service's direct dependencies.
  */
@@ -197,82 +92,28 @@ public class OrderService {
     private final NotificationService notificationService;
 ```
 
-Count the constructor's dependencies: a repository for its own aggregate, a
-repository for a shared-kernel entity it doesn't own, and three *other
-contexts'* services injected directly. `placeOrder` then calls all three in
-sequence: `inventoryService.reserve(...)`, `paymentService.charge(...)`,
-`shippingService.dispatch(...)`, `notificationService.sendOrderConfirmation(...)`,
-as ordinary Java method calls on live Spring beans, in the same process,
-on the same call stack.
+Count the constructor: a repository for its own aggregate, a repository for a shared-kernel entity it does not own, and four other contexts' services injected directly. `placeOrder` calls `inventoryService.reserve(...)`, `paymentService.charge(...)`, `shippingService.dispatch(...)` and `notificationService.sendOrderConfirmation(...)` as ordinary method calls on live Spring beans, in one process, on one call stack.
 
-**Why it's a liability.** Every one of those four dependencies is a reach
-across a bounded-context boundary using the cheapest possible mechanism, a
-direct reference held by the caller, rather than a contract the callee
-publishes and the caller consumes at arm's length. That has two
-compounding consequences. First, `OrderService` cannot be deployed, tested,
-scaled, or reasoned about independently of the four contexts it reaches
-into: changing `PaymentService`'s method signature is, today, an
-`OrderService` compile error, which is a strong forcing function toward
-coordinated releases across what should be independently-owned services.
-Second, and this is the sharper pain for the modernization roadmap
-specifically, `OrderService` cannot be *extracted* until every one of those
-four dependencies has already been turned into something that isn't a
-direct in-process call. That is why order is the hardest and
-last extraction in the roadmap (Chapter 26): it is not extracted because it
-is interesting last, it is extracted last because nothing else can be
-extracted *around* it first: each of the five earlier extractions (review,
-notification, inventory, payment, shipping) has to remove one of this god
-service's direct edges before order can be cut free of the rest without
-dragging four other contexts along with it.
+**Why it's a liability.** Each of those four dependencies reaches across a context boundary by the cheapest mechanism, a direct reference, instead of a contract the callee publishes. `OrderService` cannot be deployed or scaled independently of the four contexts, and changing `PaymentService`'s signature is today an `OrderService` compile error, which forces coordinated releases. And `OrderService` cannot be extracted until every one of those edges has stopped being an in-process call. That is why order is the hardest and last extraction: the five earlier ones (review, notification, inventory, payment, shipping) each remove one of the god service's direct edges, so order can be cut free without dragging four other contexts along.
 
-**How to recognize it in your own system.** Pick the service with the most
-constructor-injected dependencies in your codebase; in a Spring application
-this is a literal, mechanical search, not a judgment call: count
-constructor parameters, or injected fields, per `@Service`. A service
-sitting meaningfully above the median, especially one whose dependencies
-span module or package boundaries that correspond to different business
-capabilities, is a god-service candidate. A second, behavioral tell: can you
-describe the service's single responsibility in one sentence without using
-the word "and"? `OrderService`'s one-sentence description is "places
-an order by checking stock, persisting the order, charging payment,
-dispatching shipment, *and* sending a notification": five verbs, five
-contexts, one class.
+**How to recognize it.** Count constructor parameters or injected fields per `@Service`. One well above the median, with dependencies spanning different business capabilities, is a candidate. The behavioral tell: describe its responsibility in one sentence without "and". `OrderService` places an order by checking stock, persisting the order, charging payment, dispatching shipment, *and* sending a notification: five verbs, five contexts, one class.
 
-**Who cuts it.** Chapter 26 is the extraction itself, but it is also the
-chapter that only becomes possible because Chapters 16, 17, 19, 23, and 24
-have each already removed one of `OrderService`'s direct edges (to
-inventory, to notification, to payment, to shipping), leaving a much
-smaller surface by the time order's own turn comes. The god service is also
-the single strongest argument, independent of any one extraction, for why
-this monolith needs sagas at all (Smell 3, next): a service can only
-orchestrate five contexts' worth of work in one synchronous call chain if
-something is willing to hold open a correspondingly large failure domain,
-which is exactly what Smell 3 is.
+**Who cuts it.** The order extraction itself, last, once the earlier extractions have removed its edges to inventory, notification, payment and shipping. The god service is also the strongest argument for sagas (Smell 3): one synchronous call chain can orchestrate five contexts only if something holds open an equally large failure domain.
 
 ## Smell 3: one ACID transaction spanning five bounded contexts
 
-**The pattern.** A relational database transaction gives you atomicity: all
-of its writes commit together, or none of them do. That is an enormously
-convenient property, and it is tempting to lean on it for correctness
-properties that have nothing to do with the database: "if payment fails,
-roll the inventory reservation back too" is true today only as a side
-effect of everything being one transaction against one database. The smell
-is depending on that side effect as if it were a designed distributed
-transaction mechanism, when it is just how far one `@Transactional`
-annotation happens to reach.
+**The pattern.** A transaction commits all its writes or none. "If payment fails, roll the inventory reservation back too" holds today only as a side effect of one transaction against one database. The smell is depending on that side effect as if it were a designed distributed-transaction mechanism, when it is only how far one `@Transactional` annotation reaches.
 
-**Where it lives.** `order/OrderService.java#placeOrder`, the same method
-responsible for Smell 2, wrapped in a single Spring `@Transactional`:
+**Where it lives.** `order/OrderService.java#placeOrder`, the method behind Smell 2:
 
 ```java
 /**
  * SMELL[ch.22]: one in-process ACID @Transactional spans FIVE bounded
- * contexts — order, inventory, payment, shipping, notification. It "works"
+ * contexts: order, inventory, payment, shipping, notification. It "works"
  * today because Postgres gives us atomic rollback for free across all of them.
  * The moment any one of these becomes its own service with its own database,
  * this rollback-everything behavior disappears and has to be rebuilt
- * explicitly as a saga with compensating actions (ch.23 choreographed,
- * ch.24 orchestrated) — that is the ACID -> ACD story told in ch.22.
+ * explicitly as a saga with compensating actions (choreographed or orchestrated). That is the ACID -> ACD story.
  */
 @Transactional
 public OrderDto placeOrder(OrderCreate command) {
@@ -286,65 +127,17 @@ public OrderDto placeOrder(OrderCreate command) {
 }
 ```
 
-`PaymentDeclinedException`'s own javadoc names the mechanism explicitly:
-"payment + shipment + notification in ONE `@Transactional`" rolls back
-"inventory decrement + order persistence" too, the instant the payment
-gateway declines a card: five contexts' worth of work, undone atomically,
-because Postgres's transaction log doesn't know or care that the rows it's
-rolling back belong to five different conceptual owners.
+`PaymentDeclinedException`'s Javadoc names the mechanism: "payment + shipment + notification in ONE `@Transactional`" rolls back "inventory decrement + order persistence" too when the gateway declines a card.
 
-**Why it's a liability.** The `checkoutFlowSpansAllFiveNonReviewContextsInOneTransaction`
-test in `SixContextsSmokeTest` proves this behavior works today, and that is
-precisely the trap: it works *because* one database is the actual mechanism,
-not because anyone designed a correctness protocol for it. The instant any
-one of inventory, payment, shipping, or notification gets its own database,
-which is the explicit goal of five of the next six extractions, Postgres
-can no longer roll back writes it doesn't hold the lock for, and "a payment
-decline undoes the inventory reservation" stops being true unless something
-new is built to make it true again. That something is a saga: an explicit
-sequence of local transactions, each independently committed, each paired
-with a compensating action that undoes its effect if a later step fails.
-Sagas are strictly harder to write and reason about than one `@Transactional`
-block, because the system now has to tolerate an *intermediate* state
-(stock reserved, no payment yet) that the current code never has to think
-about, since the database never lets that intermediate state become
-visible outside the transaction. This is the ACID-to-ACD story Chapter 22
-tells by name: atomicity, consistency, and durability survive the move to a
-distributed system; isolation does not, and the gap left behind is exactly
-where saga choreography and orchestration go.
+**Why it's a liability.** Checkout works across all five contexts in one transaction, and that is the trap: it works because one database is the mechanism, not because anyone designed a correctness protocol. Once inventory, payment, shipping or notification gets its own database, Postgres can no longer roll back writes it does not hold, and "a payment decline undoes the inventory reservation" stops being true unless something rebuilds it. That something is a saga: a sequence of local transactions, each committed independently, each paired with a compensating action that undoes its effect if a later step fails. Sagas are harder because the system must tolerate intermediate states (stock reserved, no payment yet) the database currently never exposes. This is the ACID-to-ACD shift: atomicity, consistency and durability survive distribution, isolation does not, and the gap is where saga choreography and orchestration go.
 
-**How to recognize it in your own system.** Look for `@Transactional`
-boundaries (or their equivalent in any framework with declarative
-transaction management) whose method body calls into more than one
-conceptual bounded context: not more than one repository, which is normal,
-but more than one *context's* repository or service. A second, sharper tell:
-ask "if this transaction's third database write failed right now, what
-would the correct behavior be, and does the code currently rely on the
-database to produce that behavior automatically?" If the answer is yes, the
-correctness of a cross-context rollback is resting entirely on co-location,
-and that rug gets pulled the moment any piece of this moves to its own
-datastore.
+**How to recognize it.** Look for `@Transactional` boundaries whose body calls into more than one bounded context's repository or service. Then ask: if the third write failed right now, what is the correct behavior, and does the code rely on the database to produce it? If yes, cross-context rollback rests on co-location.
 
-**Who cuts it.** Chapter 22 names the ACID-to-ACD shift conceptually.
-Chapters 23 and 24 build the two concrete mechanisms: a choreographed saga
-(payment reacts to an `order.placed` event and emits `payment.captured` or a
-compensating failure event; no orchestrator, each service reacts to the last
-one's event) and an orchestrated saga (shipping's extraction uses a Camel
-Saga EIP to drive the sequence from one coordinating definition instead of
-peer-to-peer events), giving the book both styles as working code
-rather than describing sagas only in the abstract.
+**Who cuts it.** Two concrete mechanisms. A choreographed saga: payment reacts to an `order.placed` event and emits `payment.captured` or a compensating failure event, with no orchestrator. An orchestrated saga: the shipping extraction uses the Camel Saga EIP to drive the sequence from one coordinating definition instead of peer-to-peer events.
 
 ## Smell 4: synchronous notification inside the checkout transaction
 
-**The pattern.** Not every piece of work a transaction touches needs to be
-part of that transaction's atomicity guarantee. Sending a confirmation email
-or push notification is a clear example: the customer's order is valid and
-confirmed whether or not the notification send succeeds, arrives promptly,
-or arrives at all: notification delivery is an *orthogonal concern*, not a
-correctness dependency of checkout. The smell is coupling an orthogonal
-concern's latency and failure mode to the transaction anyway, because
-calling it synchronously, in-process, was the path of least resistance when
-the line of code was written.
+**The pattern.** Not every piece of work a transaction touches belongs to its atomicity guarantee. A confirmation email is an example: the order is valid whether or not the send succeeds, arrives promptly or arrives at all. The smell is coupling that orthogonal concern's latency and failure mode to the transaction because a synchronous in-process call was the path of least resistance.
 
 **Where it lives.** The last line of `placeOrder`, and the method it calls:
 
@@ -363,8 +156,8 @@ notificationService.sendOrderConfirmation(customer, order);
  * checkout's own @Transactional. Two problems this plants on purpose:
  * (1) checkout latency is now coupled to however long "sending" a notification
  * takes, even though the customer doesn't need to wait for it; (2) if sending
- * ever threw, it would roll back the whole order along with it. ch.17
- * (notification extraction) replaces this with a transactional outbox + an
+ * ever threw, it would roll back the whole order along with it. The
+ * notification extraction replaces this with a transactional outbox + an
  * async event-driven consumer, decoupling both latency and failure domains.
  */
 public Notification sendOrderConfirmation(Customer customer, Order order) {
@@ -373,71 +166,26 @@ public Notification sendOrderConfirmation(Customer customer, Order order) {
 }
 ```
 
-`common/Topics.java` is the quiet half of this smell's evidence: it already
-declares `order.placed`, `payment.captured`, and `shipment.dispatched` as
-reserved topic names the monolith does not yet publish to, specifically so
-the event-driven extractions can adopt vocabulary that lines up 1:1 with the
-sibling target architectures without the monolith carrying speculative
-messaging infrastructure it doesn't use yet.
+`common/Topics.java` declares `order.placed`, `payment.captured` and `shipment.dispatched` as reserved topic names the monolith does not yet publish to, so the event-driven extractions can adopt them without the monolith carrying messaging infrastructure it does not use.
 
-**Why it's a liability.** This is a narrower, sharper version of Smell 3's
-problem, worth separating out because its fix is a named pattern of its own
-rather than a saga. Today, if `sendOrderConfirmation` were slow (a flaky
-downstream email provider, a notification service under load), every
-checkout request would be slow, because the caller is blocked inside the
-same transaction waiting for a call it did not need to wait for. And if it
-threw, the entire order would roll back over a notification failure, which
-is a strictly worse outcome for the customer than "order confirmed,
-notification will retry": the customer's payment was already captured, but
-the whole transaction, payment included, unwinds because an unrelated
-concern three lines later failed. Coupling an orthogonal concern's failure
-mode to a critical path's transaction is a liability independent of
-distribution: it's bad even while everything is still in one process, and it
-becomes actively untenable the moment notification becomes its own service
-reached over a network, where "slow" and "down" are now everyday occurrences
-rather than edge cases.
+**Why it's a liability.** This is a narrower version of Smell 3's problem with its own named fix. If `sendOrderConfirmation` were slow, say a flaky email provider, every checkout would be slow, because the caller is blocked in the transaction on a call it did not need to wait for. If it threw, the whole order would roll back over a notification failure, after the customer's payment was already captured. That is worse than "order confirmed, notification will retry", even in one process, and untenable once notification sits behind a network where slow and down are routine.
 
-**How to recognize it in your own system.** Ask, for any call inside a
-transactional method, "if this specific call failed or hung for ten
-seconds, would a reasonable person want the whole transaction to fail or
-hang with it?" If the answer is no, the work is a side effect the
-rest of the flow doesn't depend on for correctness, but the code currently
-makes it a blocking, in-transaction call anyway, that is this smell. The
-usual candidates are exactly what you'd guess: notifications, audit
-logging, analytics events, cache invalidation, anything whose job is to
-*react* to a fact that already happened rather than to help establish that
-fact.
+**How to recognize it.** For each call inside a transactional method, ask whether you would want the whole transaction to fail or hang for ten seconds because that call did. If not, it reacts to a fact already established. Typical candidates: notifications, audit logging, analytics events, cache invalidation.
 
-**Who cuts it.** Chapter 17 replaces the direct call with a **transactional
-outbox**: the checkout transaction writes an outbox row in the same
-commit it already makes (so there's no new atomicity problem to solve), and
-a separate, asynchronous consumer reads that outbox and performs the actual
-notification send, decoupling both the latency and the failure domain from
-checkout. Chapter 16, immediately before it, builds the content-based
-routing and anti-corruption layer that chapter needs at the seam, which is
-also exactly Smell 5.
+**Who cuts it.** The notification extraction replaces the direct call with a **transactional outbox**. The checkout transaction writes an outbox row in the commit it already makes, so there is no new atomicity problem, and a separate asynchronous consumer reads the outbox and sends the notification. It needs a stable event contract and a translation step at the seam, which is Smell 5.
 
 ## Smell 5: no anti-corruption layer; a raw JPA entity leaks across a seam
 
-**The pattern.** When one bounded context needs data from another, the
-textbook answer is for the producing context to publish a stable contract
-(a DTO, an event schema, an API response shape) that it controls and can
-evolve independently of its own internal representation. The anti-pattern is
-handing the *internal* representation straight across the boundary: the
-caller now holds a reference to the producer's actual persistence entity,
-with the producer's lazy-loading behavior, the producer's column names
-masquerading as field names, and the producer's migrations now silently
-becoming the caller's problem too.
+**The pattern.** When one context needs another's data, the producer should publish a stable contract (a DTO, an event schema, an API response shape) that it controls and evolves independently of its internal representation. The anti-pattern hands the caller the producer's persistence entity, with its lazy loading, its column names posing as field names and its migrations, which silently become the caller's problem.
 
-**Where it lives.** `inventory/InventoryService.java#findBySkuOrThrow`,
-called directly by `order/OrderService.java#placeOrder`:
+**Where it lives.** `inventory/InventoryService.java#findBySkuOrThrow`, called by `order/OrderService.java#placeOrder`:
 
 ```java
 // inventory/InventoryService.java
 /**
  * SMELL[ch.16]: returns the raw JPA entity, not a DTO/contract, to a caller
- * (order.OrderService) outside this context — there is no anti-corruption
- * layer at this seam. ch.16 introduces a Camel content enricher / message
+ * (order.OrderService) outside this context. There is no anti-corruption
+ * layer at this seam. The ACL work introduces a Camel content enricher / message
  * translator here instead.
  */
 public InventoryItem findBySkuOrThrow(String sku) {
@@ -457,115 +205,46 @@ for (OrderCreate.Line line : command.items()) {
 }
 ```
 
-Notice the type flowing across the boundary: `InventoryItem` is annotated
-`@Entity`, managed by inventory's own JPA `EntityManager`, and mapped
-directly to inventory's `inventory_items` table. `OrderService` doesn't
-receive a `StockDto` (the contract type `InventoryService` already builds
-for its own REST controller a few lines above `findBySkuOrThrow`); it
-receives the live entity, and goes on to store a reference to it inside
-`OrderItem` (Smell 1's FK join, reappearing here as the object-graph version
-of the same problem).
+`InventoryItem` is an `@Entity` managed by inventory's own `EntityManager` and mapped to `inventory_items`. `OrderService` does not receive a `StockDto`, the contract type `InventoryService` already builds for its own REST controller. It receives the live entity and stores a reference to it inside `OrderItem`, the object-graph version of Smell 1's FK join.
 
-**Why it's a liability.** This is the smell that makes the other four worse
-than they would be alone: it's the absence of exactly the layer that would
-otherwise contain the damage. An anti-corruption layer (ACL), meaning a
-Camel message translator, a content enricher, a hand-written mapping
-method, or any mechanism that sits at the seam and converts one side's
-model into the other side's contract, is what lets inventory change its
-internal entity shape (rename a column, split a table, move to a different persistence
-technology entirely) without `OrderService` ever noticing, because
-`OrderService` was never handed the internal shape in the first place. Without
-that layer, every internal change to `InventoryItem` is a potential breaking
-change to `OrderService`, silently, with no compiler error pointing at the
-dependency because Java happily lets a `@Service` from one package return
-an `@Entity` from another. It is also, concretely, the reason Smell 1's FK
-join and Smell 2's direct service call are even possible to write without
-anyone noticing something's wrong: a raw entity reference is the medium both
-of those other smells travel through.
+**Why it's a liability.** This smell makes the other four worse by removing the layer that would contain the damage. An anti-corruption layer (ACL) is a Camel message translator, a content enricher, a hand-written mapping method, or anything at the seam that converts one side's model into the other side's contract. It lets inventory rename a column, split a table or change persistence technology without `OrderService` noticing, because `OrderService` was never handed the internal shape. Without it, every internal change to `InventoryItem` is a potential silent breaking change to `OrderService`, with no compiler error, because Java lets a `@Service` in one package return an `@Entity` from another. The raw entity reference is also the medium Smell 1's FK join and Smell 2's direct call travel through, which is why both get written without anyone noticing.
 
-**How to recognize it in your own system.** Trace what type crosses a
-module or service boundary at each call site. If it's annotated as a
-persistence entity (`@Entity`, an ORM-managed class, an ActiveRecord model)
-rather than a plain data-transfer type the producing side built specifically
-to be read by others, that's this smell, independent of whether the call
-itself is synchronous or asynchronous: the same problem shows up just as
-easily in an event payload that serializes an entity directly instead of a
-versioned event schema.
+**How to recognize it.** Trace the type that crosses a boundary at each call site. If it is a persistence entity instead of a data-transfer type the producer built for others to read, that is this smell, synchronous or not. An event payload that serializes an entity instead of a versioned schema has the same problem.
 
-**Who cuts it.** Chapter 16, "Content-Based Routing & the ACL," builds a
-Camel message translator / content enricher at this exact seam: inventory
-starts publishing (and `OrderService` starts consuming) `StockDto`, the
-contract type that already existed unused a few lines above the leak, with
-a translation step in between that can absorb future changes to either
-side's internal shape. This chapter comes immediately before
-notification's extraction (Chapter 17) because the outbox pattern Chapter
-17 needs depends on having a stable event contract to put in the outbox,
-which is exactly what an ACL is for.
+**Who cuts it.** Content-based routing plus an ACL: a Camel message translator or content enricher at this seam, with inventory publishing and `OrderService` consuming `StockDto`, the contract type that already existed unused a few lines above the leak. It comes before the notification extraction because the outbox needs a stable event contract.
 
-## The proof this method works: Review, already cured
+## Evidence the method works: Review, already cured
 
-It would be reasonable to read five smells and five future chapters and
-wonder whether the whole exercise is theoretical: whether "tag it, name
-the cure, extract it later" survives contact with a real codebase.
-It already has, once. The sixth smell in `SMELLS.md`, Review tangled into
-the monolith's one global `SecurityFilterChain` despite having no runtime
-dependency on any other context, is marked **CURED**, not planned. Chapter
-7 walked that extraction's entire ADLC loop in detail: the Map phase
-confirming Review was independent before committing to cut it first,
-the Camel strangler proxy routing `/api/reviews` by URI, the two-phase lift
-to Quarkus, and the behavior-equivalence suite (the Newman collection
-captured against the monolith, re-run unchanged against the extracted
-service) catching two bugs along the way: a native-image reflection
-gap the JVM build never exposed, and a routing predicate that silently
-sent every request to the monolith regardless of the feature flag, caught
-only because two backends sharing the same `reviews` table made a passing
-suite insufficient evidence on its own. `security/SecurityConfig.java`
-still carries its `SMELL[ch.15]` tag today, harmlessly vacuous, because
-Review's controller, service, repository, and entity are gone from this
-module entirely, and `SixContextsSmokeTest#reviewIsNoLongerServedByTheMonolith`
-asserts the monolith now returns 404 where Review used to answer. That one
-cured smell is the existence proof for the five still standing in this
-chapter: the pattern of identifying a conceptual seam, tagging the mechanism
-welding it shut, naming the chapter that will cut it, then cutting it
-with an equivalence gate watching, is not a chapter-outline convenience.
-Chapter 7 produced an extraction from exactly this pattern.
+The sixth smell in `SMELLS.md`, Review tangled into the monolith's one global `SecurityFilterChain` despite no runtime dependency on any other context, is marked **CURED**, not planned. The Review extraction's Map phase confirmed that Review was independent before committing to cut it first, routed `/api/reviews` by URI through the Camel strangler proxy, lifted it to Quarkus in two phases, and re-ran the Newman equivalence collection captured against the monolith unchanged against the extracted service. That run caught two bugs: a native-image reflection gap the JVM build never exposed, and a routing predicate that silently sent every request to the monolith regardless of the feature flag. The second was found only because two backends sharing the `reviews` table made a passing collection insufficient evidence.
 
-## What you learned
+`security/SecurityConfig.java` on `main` still carries its `SMELL[ch.15]` tag, harmlessly vacuous, because Review's controller, service, repository and entity are gone from the module. The monolith now returns 404 where Review used to answer. Identify the seam, tag the mechanism, name the cure, cut with an equivalence check watching: that sequence has already produced one extraction.
 
-- Five smells remain in `examples/00-monolith/`, each tagged
-  in-code with `SMELL[ch.NN]` and catalogued in `SMELLS.md`: shared-schema
-  cross-context FK joins, the god `OrderService`, one ACID transaction
-  spanning five contexts, a synchronous notification call inside checkout,
-  and a raw JPA entity leaking across the order/inventory seam with no
-  anti-corruption layer.
-- Each smell is a seam: a line where a conceptual bounded-context boundary
-  already exists but the implementation currently welds it shut with the
-  cheapest available mechanism (a foreign key, a direct method call, a
-  shared transaction), not an arbitrary defect to patch in place.
-- Each smell names its own cure and chapter: ch.18/19 for shared data,
-  ch.26 for the god service, ch.22/23/24 for the transaction span, ch.17
-  for synchronous notification, ch.16 for the missing ACL; several
-  smells depend on earlier ones being cured first, which is why the
-  extraction order follows that dependency chain.
-- The sixth, already-cured smell (Review) is this method's existence proof:
-  tag the seam, name the cure, cut it with an equivalence gate watching,
-  and it works. Chapter 7 walks that extraction end to end.
+> **Decision**
+>
+> Cut only along a seam, and order the cuts so each earlier extraction removes one of the god service's direct edges; the god service goes last.
 
-Chapter 10 finishes Part 3 by building the test suite that proves all six
-smells behave the way this chapter claims: the JUnit layers, the
-Testcontainers integration tests, and the Newman behavior-equivalence suite
-that every one of the next six extractions will be gated on. Part 4,
-"Finding the Seams," then takes the five smells catalogued here and teaches
-the general method behind them: strategic and tactical domain-driven
-design, event storming, and coupling theory, so that by the time you reach
-Chapter 15 you are not just trusting this chapter's map of where to cut;
-you can draw that map yourself, on a system that never shipped with a
-`SMELLS.md` file at all.
+> **🤖 Explore with your agent**
+>
+> "On the `reference/monolith-before` branch, run `grep -rn 'SMELL\[ch\.' examples/00-monolith/src` and read `examples/00-monolith/SMELLS.md`. For each of the six smells name the file it lives in, the seam it welds shut and the extraction that cuts it. Then count the constructor dependencies of `order/OrderService.java`, say which belong to other contexts, and order the extractions so the order service goes last."
+>
+> Check: the reply cites `V1__init_schema.sql`, `security/SecurityConfig.java` and `inventory/InventoryService.java`, counts six constructor dependencies of which four (inventory, payment, shipping, notification services) belong to other contexts, and puts the order extraction last.
+
+## Build, run, observe
+
+```bash
+git checkout reference/monolith-before
+grep -rn 'SMELL\[ch\.' examples/00-monolith/src   # every tag, all six contexts live
+git checkout main
+grep -rn 'SMELL\[ch\.' examples/00-monolith/src   # what survives the extractions
+cat examples/00-monolith/SMELLS.md                  # all six smells and their cures
+```
+
+On `main` the grep finds only `SecurityConfig.java`'s `SMELL[ch.15]` and the comments in the applied Flyway migrations (`V1__init_schema.sql`, `V2__seed_data.sql`, `V3__outbox.sql`), which are never edited. Every other tag left with the file that carried it. Checking out the `stage/*` tags in order shows the tags disappearing one extraction at a time.
 
 ## For deeper coverage
 
-- Eric Evans, *Domain-Driven Design* (Addison-Wesley, 2003): the anti-corruption-layer and bounded-context vocabulary this chapter's five smells are named with; see the [Reading List](/bibliography/).
-- Gregor Hohpe & Bobby Woolf, *Enterprise Integration Patterns* (Addison-Wesley, 2003): the message translator and content enricher patterns Chapter 16 uses to cure Smell 5's missing ACL.
+- Eric Evans, *Domain-Driven Design* (Addison-Wesley, 2003): the anti-corruption-layer and bounded-context vocabulary the five smells are named with; see the [Reading List](/bibliography/).
+- Gregor Hohpe & Bobby Woolf, *Enterprise Integration Patterns* (Addison-Wesley, 2003): the message translator and content enricher that cure Smell 5.
 - Chris Richardson, *Microservices Patterns* (Manning, 2018): the saga and transactional-outbox patterns that replace Smell 3's single ACID transaction and Smell 4's synchronous call.
-- Martin Fowler, [*StranglerFigApplication*](https://martinfowler.com/bliki/StranglerFigApplication.html): the incremental cut-and-prove method behind this chapter's "tag it, name the cure, cut it later" discipline.
-- Martin Kleppmann, *Designing Data-Intensive Applications* (O'Reilly, 2017): why shared-schema coupling (Smell 1) turns dangerous the instant data ownership splits.
+- Martin Fowler, [*StranglerFigApplication*](https://martinfowler.com/bliki/StranglerFigApplication.html): the incremental cut-and-prove method behind "tag it, name the cure, cut it later".
+- Martin Kleppmann, *Designing Data-Intensive Applications* (O'Reilly, 2017): why shared-schema coupling turns dangerous the instant data ownership splits.

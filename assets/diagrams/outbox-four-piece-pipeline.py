@@ -53,7 +53,7 @@ W, H = 1440, 440
 band = {"x": 20, "y": 56, "w": 1400, "h": 300, "label": "", "fill": "#fafafa"}
 
 piece1 = node(40, 140, 300, 120,
-              ["PIECE 1: the write", "order row + outbox row,", "SAME @Transactional"], style="accent")
+              ["PIECE 1: the write", "order row + outbox row,", "Same @Transactional"], style="accent")
 piece2 = node(380, 140, 280, 120,
               ["PIECE 2: the relay", "@Scheduled poll, 2000ms,", "oldest-unpublished-first"], style="box")
 piece3 = node(700, 140, 220, 120,

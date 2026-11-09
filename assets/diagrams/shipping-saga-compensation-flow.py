@@ -53,7 +53,7 @@ band1 = {"x": 20, "y": 50, "w": 1660, "h": 260,
          "fill": "#fafafa"}
 
 checkout1 = node(40, 110, 260, 90, ["OrderService.placeOrder()", "reserve (ok) -> persist -> charge"], style="user")
-decline1 = node(340, 110, 230, 90, ["payment charge declines", "in-process, SAME request"], style="box")
+decline1 = node(340, 110, 230, 90, ["payment charge declines", "in-process, same request"], style="box")
 catch1 = node(610, 110, 260, 90, ["catch (RuntimeException)", "compensateRemoteReservations()"], style="ink")
 release1 = node(910, 110, 260, 90, ["gRPC Release :9004", "same request thread, no event involved"], style="accent")
 netzero1 = node(1210, 110, 180, 90, ["NET-ZERO", "stock restored"], style="ink")
@@ -74,7 +74,7 @@ band2 = {"x": 20, "y": 350, "w": 1660, "h": 280,
          "fill": "#fafafa"}
 
 paymentSvc2 = node(40, 410, 240, 90, ["PaymentService", "processOrderPlaced() declines"], style="box")
-outbox2 = node(320, 410, 230, 80, ["payment.declined outbox", "payment service's OWN outbox"], style="sub")
+outbox2 = node(320, 410, 230, 80, ["payment.declined outbox", "payment service's own outbox"], style="sub")
 hop2 = node(590, 440, 110, 50, ["2 HOPS", "emit -> react"], style="ghost")
 listener2 = node(740, 410, 300, 90,
                   ["OrderSagaListener.onPaymentDeclined()", "discovers the decline via the EVENT, idempotent"],
@@ -100,7 +100,7 @@ band3 = {"x": 20, "y": 680, "w": 1660, "h": 380,
 bookCarrier3 = node(40, 740, 240, 90, ["book-carrier step", "throws ShipFailException (SHIP-FAIL)"], style="accent")
 coordinator3 = node(320, 740, 280, 100,
                      ["Camel Saga EIP coordinator", "invokes direct:ship-compensate",
-                      "EXACTLY ONCE: NO EVENT needed to decide"],
+                      "Exactly once: no event needed to decide"],
                      style="ink")
 cancelEmit3 = node(640, 740, 250, 90, ["cancel shipment +", "emit shipment.failed", "same txn (local, shipping svc)"],
                     style="box")
@@ -115,11 +115,11 @@ netzero3 = node(1230, 890, 210, 90, ["NET-ZERO", "stock restored"], style="ink")
 
 band3_nodes = [bookCarrier3, coordinator3, cancelEmit3, kafkaFailed3, onFailed3, release3, netzero3]
 band3_edges = [
-    connect(bookCarrier3, coordinator3, label="throws -> coordinator reacts IMMEDIATELY, in-process", amber=True),
+    connect(bookCarrier3, coordinator3, label="throws -> coordinator reacts immediately, in-process", amber=True),
     connect(coordinator3, cancelEmit3, label="direct:ship-compensate"),
     connect(cancelEmit3, kafkaFailed3, label="outbox relay"),
     connect(kafkaFailed3, onFailed3, label="@KafkaListener(shipment.failed)"),
-    connect(onFailed3, release3, label="delegated Release: NOT called by shipping service"),
+    connect(onFailed3, release3, label="delegated Release: not called by shipping service"),
     connect(release3, netzero3, label="restored"),
 ]
 

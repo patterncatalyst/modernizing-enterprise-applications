@@ -10,8 +10,8 @@ const {
   addStatusTable, addCaption, addCodeSlide, addSectionDivider, addNotes,
 } = H;
 
-const OUT = "Modernizing_101-r1.1.pptx";
-const REV = "r1.1";
+const OUT = "Modernizing_101-r1.2.pptx";
+const REV = "r1.2";
 
 const pres = newDeck();
 pres.title = "Modernizing Enterprise Applications: 101 (the ideas)";
@@ -97,9 +97,9 @@ divider("A", "Why, and How", "The case for change, and the method that makes it 
 leadSlide("WHY MODERNIZE · THE CASE", "Modernize because change got expensive",
   [{ lead: "The monolith is usually where the value is", text: "a working system encodes years of business rules; the problem is that every change is slow and coupled to everything else." },
    { lead: "The target is independent deployability", text: "not a service count: ship the parts that change at different rates without redeploying the whole." },
-   { lead: "Sam Newman's playbook drives this book", text: "incremental decomposition over a big-bang rewrite: Monolith to Microservices, one seam at a time." },
+   { lead: "Sam Newman's playbook drives this migration", text: "incremental decomposition over a big-bang rewrite: Monolith to Microservices, one seam at a time." },
    { lead: "A rewrite bets the company on a flag day", text: "it discards encoded rules and swaps a known system for an unproven one in a single cutover. We never take that bet." }],
-  "The opening argument. Modernization earns its cost only when the rate of change the business needs exceeds what the current architecture can absorb safely. The target to keep in view is independent deployability: the ability to ship one part of the system without redeploying the rest, not a headcount of services. That distinction returns at the very end when we talk about over-decomposition. The governing voice through the whole book is Sam Newman: decompose incrementally, keep the system serving traffic the entire time, and never stake the business on a single rewrite cutover. Everything that follows is a way to make that incremental path safe.");
+  "The opening argument. Modernization earns its cost only when the rate of change the business needs exceeds what the current architecture can absorb safely. The target to keep in view is independent deployability: the ability to ship one part of the system without redeploying the rest, not a headcount of services. That distinction returns at the very end when we talk about over-decomposition. The governing voice through the whole migration is Sam Newman: decompose incrementally, keep the system serving traffic the entire time, and never stake the business on a single rewrite cutover. Everything that follows is a way to make that incremental path safe.");
 
 leadSlide("WHY MODERNIZE · RESTRAINT", "And when not to modernize at all",
   [{ lead: "Stable and low-value", text: "a system that rarely changes and carries little strategic weight is cheapest left exactly as it is." },
@@ -112,7 +112,7 @@ diagramBulletsSlide("WHY MODERNIZE · STRATEGY", "Pick a strategy by value and r
   "r01-modernization-2x2",
   [{ lead: "Retain / encapsulate", text: "low value, low risk: leave it running, wrap it behind an API." },
    { lead: "Rehost / replatform", text: "high value, low risk, quick wins: containerize, move onto Kubernetes." },
-   { lead: "Refactor / re-architect", text: "high value, high change: the strangler fig, done incrementally. This book lives here." },
+   { lead: "Refactor / re-architect", text: "high value, high change: the strangler fig, done incrementally. This migration lives here." },
    { lead: "Retire / replace", text: "low value, high risk: sunset it, or rebuild only if the value justifies it." }],
   "The strategy grid. The point is that modernization is not one decision for the whole system; you score each capability by business value against the change and risk of touching it. Low-value, low-risk components get encapsulated and left alone. High-value, low-risk ones are quick replatform wins. The strangler fig lives in the top-right quadrant: high value and high change, the parts worth refactoring carefully and incrementally. That is where the migration happens. Run this grid over a real portfolio and most components sort themselves into leave-alone or quick-win, leaving a handful that warrant the strangler treatment. That triage is the first idea.");
 
@@ -215,10 +215,10 @@ leadSlide("REFLECTION · WHERE TO STOP", "Over-decomposition is the seductive fa
   leadBullets(s, [
     { lead: "The claim held", text: "a coupled monolith became six Quarkus services that own their data and coordinate without a conductor, with the equivalence suite green the whole way." },
     { lead: "The method is why it was safe", text: "agent-driven change, gated by an automated behavioural check and reconciled against what actually ran, increment by increment." },
-    { lead: "For the running system, see the 201", text: "the service-by-service code, the capability tour, the demo matrix, and the full appendix live there." },
-    { lead: "Everything here is in the book and the repo", text: "every claim is grounded in a chapter and a runnable example you can drive yourself." },
+    { lead: "For the running system, see the 201", text: "the service-by-service code, the capability tour, the demo matrix, and the deck appendix live there." },
+    { lead: "Everything here is in the repo", text: "every claim is grounded in a runnable example you can drive yourself." },
   ]);
-  addNotes(s, "To close, bring it back to the one claim. A coupled Spring Boot monolith became six Quarkus and Camel services, each owning its data and coordinating without a central conductor, with the behaviour-equivalence suite green at every step, and the reason it was safe to do that with AI agents authoring the change is the method: an automated behavioural gate and a reconcile step that records what ran, repeated one increment at a time. This deck made the case at the level of ideas. The running system lives behind every idea: the service-by-service code, the capability tour, the nine demos, and the reference appendix. Point people at the 201 for that. And everything in both decks is grounded in the book and a repository of runnable examples anyone can drive themselves. That is the whole argument: modernization as incremental, verified, and measurable engineering.");
+  addNotes(s, "To close, bring it back to the one claim. A coupled Spring Boot monolith became six Quarkus and Camel services, each owning its data and coordinating without a central conductor, with the behaviour-equivalence suite green at every step, and the reason it was safe to do that with AI agents authoring the change is the method: an automated behavioural gate and a reconcile step that records what ran, repeated one increment at a time. This deck made the case at the level of ideas. The running system lives behind every idea: the service-by-service code, the capability tour, the nine demos, and the deck appendix. Point people at the 201 for that. And everything in both decks is grounded in a repository of runnable examples anyone can drive themselves. That is the whole argument: modernization as incremental, verified, and measurable engineering.");
 }
 
 

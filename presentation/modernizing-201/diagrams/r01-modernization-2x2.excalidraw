@@ -4,7 +4,7 @@
   "source": "dgen.py",
   "elements": [
     {
-      "id": "b95b83ca-bcfa-41b9-8909-1db775d3a183",
+      "id": "8f8e03f6-e4d9-4ffd-96ec-3bde6812cd67",
       "type": "text",
       "x": 310.0,
       "y": 14,
@@ -38,11 +38,11 @@
       "baseline": 22
     },
     {
-      "id": "f0003be6-c208-44b4-95bd-210a5c36e476",
+      "id": "c57b7e59-4693-4640-ab55-041ab926f1c3",
       "type": "text",
-      "x": 205.5,
+      "x": 184.5,
       "y": 50,
-      "width": 789,
+      "width": 831,
       "height": 18,
       "angle": 0,
       "strokeColor": "#5A5A5A",
@@ -63,16 +63,16 @@
       "locked": false,
       "fontSize": 14,
       "fontFamily": 1,
-      "text": "The six Rs on a value / change-risk grid; this book lives in the top-right, done incrementally",
+      "text": "The six Rs on a value / change-risk grid; this migration lives in the top-right, done incrementally",
       "textAlign": "center",
       "verticalAlign": "top",
       "containerId": null,
-      "originalText": "The six Rs on a value / change-risk grid; this book lives in the top-right, done incrementally",
+      "originalText": "The six Rs on a value / change-risk grid; this migration lives in the top-right, done incrementally",
       "lineHeight": 1.25,
       "baseline": 14
     },
     {
-      "id": "20d5fc29-1020-498b-bc43-f71fb4cc3b4c",
+      "id": "092f6549-f34c-402e-a20a-2e194137d240",
       "type": "text",
       "x": 137.0,
       "y": 119,
@@ -106,7 +106,7 @@
       "baseline": 11
     },
     {
-      "id": "1be22152-c1ed-4884-a35b-3fa333d0875f",
+      "id": "427a1623-9fd8-43d4-8568-1115de2ce4c7",
       "type": "text",
       "x": 140.0,
       "y": 555,
@@ -140,7 +140,7 @@
       "baseline": 11
     },
     {
-      "id": "cef46ce2-00e4-4b86-a6be-5dbc62d4c96d",
+      "id": "3ea2d9ea-4a81-4bc5-8a92-4a73b0008633",
       "type": "text",
       "x": 110,
       "y": 323,
@@ -174,7 +174,7 @@
       "baseline": 12
     },
     {
-      "id": "f9f15c28-785e-45f7-8bc8-e93b2906351a",
+      "id": "c28ada98-a8af-4dcc-80d1-38bbf24f4a39",
       "type": "text",
       "x": 110,
       "y": 341,
@@ -208,7 +208,7 @@
       "baseline": 12
     },
     {
-      "id": "b50b084a-ccd7-4423-80d6-f75c3e604bfb",
+      "id": "d9e13a96-192c-48b6-9cf9-27ebb57b7cda",
       "type": "rectangle",
       "x": 210,
       "y": 120,
@@ -236,7 +236,7 @@
       "locked": false
     },
     {
-      "id": "e65fbd28-e3b2-465a-86ed-5f84ae56660c",
+      "id": "214891e3-a451-45f3-a8e5-9eb8b7da6132",
       "type": "text",
       "x": 339.0,
       "y": 144,
@@ -270,7 +270,7 @@
       "baseline": 16
     },
     {
-      "id": "1df221d4-c2f9-4f0a-8aba-60ed103a8fa3",
+      "id": "7ef6ce61-d93a-4959-a91c-0fa4d2afe152",
       "type": "text",
       "x": 340.5,
       "y": 164,
@@ -304,7 +304,7 @@
       "baseline": 12
     },
     {
-      "id": "7181146e-cbb6-4d44-9e17-e0ee844a89db",
+      "id": "91d5758a-67e3-43f4-a0f0-db196cee97ff",
       "type": "text",
       "x": 358.0,
       "y": 180,
@@ -338,7 +338,7 @@
       "baseline": 12
     },
     {
-      "id": "14147c2c-08b3-4d27-aa57-168ec771a8aa",
+      "id": "9eb4dea9-8143-423b-89c5-90492ba975cf",
       "type": "rectangle",
       "x": 666,
       "y": 120,
@@ -366,7 +366,7 @@
       "locked": false
     },
     {
-      "id": "64b1e626-7b05-4b9d-8c8a-13291edff30f",
+      "id": "bd2d083a-ac78-4000-8201-4883c0eecda5",
       "type": "text",
       "x": 776.0,
       "y": 144,
@@ -400,7 +400,7 @@
       "baseline": 16
     },
     {
-      "id": "5bc5cfec-10cd-483f-b717-5efbeb3c449a",
+      "id": "345d37b9-8b42-4e79-999d-63fff9204830",
       "type": "text",
       "x": 789.0,
       "y": 164,
@@ -434,11 +434,11 @@
       "baseline": 12
     },
     {
-      "id": "91378bc9-fe25-4beb-bfbd-bd9a801c39af",
+      "id": "dba51c64-1a16-49f7-b8c5-d84ed8c15f8f",
       "type": "text",
-      "x": 807.0,
+      "x": 789.0,
       "y": 180,
-      "width": 158,
+      "width": 194,
       "height": 16,
       "angle": 0,
       "strokeColor": "#495057",
@@ -459,16 +459,16 @@
       "locked": false,
       "fontSize": 12,
       "fontFamily": 1,
-      "text": "at a time  (this book)",
+      "text": "at a time  (this migration)",
       "textAlign": "center",
       "verticalAlign": "top",
       "containerId": null,
-      "originalText": "at a time  (this book)",
+      "originalText": "at a time  (this migration)",
       "lineHeight": 1.25,
       "baseline": 12
     },
     {
-      "id": "1403a127-76f1-4e37-83f5-1c88d8ac6096",
+      "id": "3c68170f-1345-4d16-afcf-8eb264609a50",
       "type": "rectangle",
       "x": 210,
       "y": 351,
@@ -496,7 +496,7 @@
       "locked": false
     },
     {
-      "id": "2f3bbbfa-7052-40bd-a049-d9c0ab87c34b",
+      "id": "4b0d833e-7a4f-47bb-869e-7af55157c081",
       "type": "text",
       "x": 334.0,
       "y": 375,
@@ -530,7 +530,7 @@
       "baseline": 16
     },
     {
-      "id": "61787961-f37f-447b-bbeb-3afdce14f58b",
+      "id": "9557df70-d6fe-475a-8c91-8081d5bac952",
       "type": "text",
       "x": 369.0,
       "y": 395,
@@ -564,7 +564,7 @@
       "baseline": 12
     },
     {
-      "id": "e7c00310-03c1-42c5-a639-6b09fcca4100",
+      "id": "c86e6781-bd5c-42be-adc6-c6274b0955f0",
       "type": "text",
       "x": 354.5,
       "y": 411,
@@ -598,7 +598,7 @@
       "baseline": 12
     },
     {
-      "id": "76594a41-a3cb-494b-8d51-00b48732ac00",
+      "id": "4d88ea24-a65b-499c-9912-acc170e625c3",
       "type": "rectangle",
       "x": 666,
       "y": 351,
@@ -626,7 +626,7 @@
       "locked": false
     },
     {
-      "id": "add6806a-d01d-453f-a488-1860dabe1c26",
+      "id": "f099046e-4c89-423b-8702-51978eb50b40",
       "type": "text",
       "x": 809.5,
       "y": 375,
@@ -660,7 +660,7 @@
       "baseline": 16
     },
     {
-      "id": "ce96857c-669c-4a74-a0d2-47b82999818a",
+      "id": "7d1278e8-f428-41b2-96ba-2c6a0c6eb694",
       "type": "text",
       "x": 796.5,
       "y": 395,
@@ -694,7 +694,7 @@
       "baseline": 12
     },
     {
-      "id": "320c17f1-a5b8-4370-9de4-4cc5560bc9cd",
+      "id": "881b3d75-2e08-43a8-8074-df539514f843",
       "type": "text",
       "x": 792.5,
       "y": 411,
@@ -728,7 +728,7 @@
       "baseline": 12
     },
     {
-      "id": "54fc31b4-0064-4db3-8fd2-94686cf415c8",
+      "id": "5a11fc58-9502-4189-892a-ee35191c5db4",
       "type": "text",
       "x": 374.0,
       "y": 589,
@@ -762,7 +762,7 @@
       "baseline": 11
     },
     {
-      "id": "3e76d417-7fc5-433f-9222-0e1da030059c",
+      "id": "3088e891-275e-46d4-87d2-b439c2dec62a",
       "type": "text",
       "x": 827.0,
       "y": 589,

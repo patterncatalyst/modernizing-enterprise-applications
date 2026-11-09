@@ -96,7 +96,7 @@ edges = [
     connect(grpc_adapter, inbound_port, amber=True),
     connect(consumer_adapter, inbound_port, amber=True),
     connect(inbound_port, core, amber=True,
-            label="dependency points inward -- adapters are swappable", ly=130),
+            label="dependency points inward: adapters are swappable", ly=130),
 
     connect(repo_adapter, outbound_port, amber=True),
     connect(publisher_adapter, outbound_port, amber=True),
@@ -112,18 +112,18 @@ notes = [
      "anchor": "middle", "size": 11.5, "color": "#555555"},
 
     {"x": W / 2, "y": core["y"] - 14,
-     "text": "the core never imports a protocol -- a protocol can be swapped without the core noticing",
+     "text": "the core never imports a protocol: a protocol can be swapped without the core noticing",
      "anchor": "middle", "size": 10.5, "color": "#2f5f3d"},
 
     {"x": 40, "y": H - 60,
      "text": "Caveat: examples/02-review-service's ReviewRepository is a concrete class, not a declared Port interface the core",
      "anchor": "start", "size": 10.5, "color": "#555555"},
     {"x": 40, "y": H - 46,
-     "text": "programs against -- what made Review cheap to extract was zero outbound edges to other contexts, not a textbook-perfect hexagon.",
+     "text": "programs against; what made Review cheap to extract was zero outbound edges to other contexts, not a textbook-perfect hexagon.",
      "anchor": "start", "size": 10.5, "color": "#555555"},
 
     {"x": 40, "y": H - 16,
-     "text": "Sourced from _docs/11-ddd-and-hexagonal.md (\"Hexagonal architecture\", \"Why Review could leave first\") -- ReviewResource/ReviewService/ReviewRepository quoted verbatim from examples/02-review-service.",
+     "text": "Sourced from _docs/11-ddd-and-hexagonal.md (\"Hexagonal architecture\", \"Why Review could leave first\"); ReviewResource/ReviewService/ReviewRepository quoted verbatim from examples/02-review-service.",
      "anchor": "start", "size": 10, "color": "#777777"},
 ]
 

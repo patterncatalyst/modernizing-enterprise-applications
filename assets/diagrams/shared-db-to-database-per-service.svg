@@ -42,8 +42,8 @@
 <text x="1220.0" y="497.5" font-size="11.5" fill="#555555" text-anchor="middle">tails the shared schema&#x27;s write-ahead log,</text>
 <text x="1220.0" y="512.5" font-size="11.5" fill="#555555" text-anchor="middle">backfills inventory_items into its own database</text>
 <path d="M380.0,290.55555555555554 L420.0,289.44444444444446" fill="none" stroke="#2f5f3d" stroke-width="2" marker-end="url(#am)"/>
-<text x="406.0" y="284.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">@ManyToOne -- live join, read every time</text>
-<text x="406.0" y="284.0" font-size="11" fill="#2f5f3d" text-anchor="middle">@ManyToOne -- live join, read every time</text>
+<text x="406.0" y="284.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">@ManyToOne: live join, read every time</text>
+<text x="406.0" y="284.0" font-size="11" fill="#2f5f3d" text-anchor="middle">@ManyToOne: live join, read every time</text>
 <path d="M288.8235294117647,360.0 L341.7647058823529,410.0" fill="none" stroke="#555" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#a)"/>
 <text x="321.2941176470588" y="379.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">sku / product name read live, not captured</text>
 <text x="321.2941176470588" y="379.0" font-size="11" fill="#555" text-anchor="middle">sku / product name read live, not captured</text>
@@ -58,7 +58,7 @@
 <text x="800.0" y="32" font-size="17" fill="#1d1d1d" text-anchor="middle" font-weight="700">Shared database to database-per-service: one FK join, before and after</text>
 <text x="800.0" y="56" font-size="11.5" fill="#555555" text-anchor="middle">order_items -&gt; inventory_items: a live @ManyToOne today, a point-in-time snapshot plus a CDC event feed after cutover</text>
 <text x="40" y="740" font-size="11" fill="#555555" text-anchor="start">SMELL: order_items.inventory_item_id is one of nine FKs crossing a bounded-context line in this one schema.</text>
-<text x="860" y="740" font-size="11" fill="#2f5f3d" text-anchor="start" font-weight="700">Written once at order-placement, frozen forever -- a later SKU rename can no longer relabel a historical order.</text>
-<text x="860" y="756" font-size="10.5" fill="#555555" text-anchor="start">A live stock check at checkout still crosses the seam synchronously (gRPC) -- this snapshot is for history, not for &quot;in stock right now.&quot;</text>
+<text x="860" y="740" font-size="11" fill="#2f5f3d" text-anchor="start" font-weight="700">Written once at order-placement, frozen forever: a later SKU rename can no longer relabel a historical order.</text>
+<text x="860" y="756" font-size="10.5" fill="#555555" text-anchor="start">A live stock check at checkout still crosses the seam synchronously (gRPC), this snapshot is for history, not for &quot;in stock right now.&quot;</text>
 <text x="40" y="800" font-size="10" fill="#777777" text-anchor="start">Sourced from _docs/18-shared-data-to-owned-data.md; examples/00-monolith/.../db/migration/V1__init_schema.sql; OrderItem&#x27;s SMELL javadoc. Post-FK columns are an illustrative target, not existing code.</text>
 </svg>

@@ -1,9 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1460 700" font-family="'Red Hat Text', system-ui, sans-serif" role="img">
 <defs><marker id="a" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#555"/></marker><marker id="am" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2f5f3d"/></marker></defs>
 <rect x="20" y="70" width="1420" height="310" rx="12" fill="#ffffff" stroke="#ddd"/>
-<text x="32" y="90" font-size="12" font-weight="700" fill="#1d1d1d">Spring Boot monolith -- one deployable JAR (JDK 25)</text>
+<text x="32" y="90" font-size="12" font-weight="700" fill="#1d1d1d">Spring Boot monolith: one deployable JAR (JDK 25)</text>
 <rect x="20" y="440" width="1420" height="150" rx="12" fill="#fafafa" stroke="#ddd"/>
-<text x="32" y="460" font-size="12" font-weight="700" fill="#1d1d1d">PostgreSQL -- one shared schema (Flyway V1 + V2)</text>
+<text x="32" y="460" font-size="12" font-weight="700" fill="#1d1d1d">PostgreSQL: one shared schema (Flyway V1 + V2)</text>
 <rect x="40" y="110" width="200" height="55" rx="9" fill="#ffffff" stroke="#111111" stroke-width="2"/>
 <text x="140.0" y="135.5" font-size="13.5" font-weight="700" fill="#111111" text-anchor="middle">OrderController</text>
 <text x="140.0" y="152.5" font-size="11.5" fill="#555555" text-anchor="middle">order context</text>
@@ -80,8 +80,8 @@
 <text x="258.0" y="201.5" font-size="11" fill="#2f5f3d" text-anchor="middle">direct call, no ACL</text>
 <path d="M240,207.5 L240,400" fill="none" stroke="#2f5f3d" stroke-width="2" marker-end="url(#am)"/>
 <path d="M240,400 L936,400" fill="none" stroke="#2f5f3d" stroke-width="2" marker-end="url(#am)"/>
-<text x="594.0" y="394.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">god service -- direct calls into other contexts</text>
-<text x="594.0" y="394.0" font-size="11" fill="#2f5f3d" text-anchor="middle">god service -- direct calls into other contexts</text>
+<text x="594.0" y="394.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">god service: direct calls into other contexts</text>
+<text x="594.0" y="394.0" font-size="11" fill="#2f5f3d" text-anchor="middle">god service: direct calls into other contexts</text>
 <path d="M488,400 L488,207.5" fill="none" stroke="#2f5f3d" stroke-width="2" marker-end="url(#am)"/>
 <path d="M712,400 L712,207.5" fill="none" stroke="#2f5f3d" stroke-width="2" marker-end="url(#am)"/>
 <path d="M936,400 L936,207.5" fill="none" stroke="#2f5f3d" stroke-width="2" marker-end="url(#am)"/>
@@ -111,11 +111,11 @@
 <path d="M601.0,545 L601.0,520" fill="none" stroke="#2f5f3d" stroke-width="2" marker-end="url(#am)"/>
 <text x="730.0" y="30" font-size="17" fill="#1d1d1d" text-anchor="middle" font-weight="700">The reference monolith (before): six bounded contexts, one deployable, one shared schema</text>
 <text x="730.0" y="56" font-size="12" fill="#555555" text-anchor="middle">one REST API surface, documented by springdoc OpenAPI</text>
-<text x="1420" y="420" font-size="10.5" fill="#555555" text-anchor="end">SMELL: OrderService#placeOrder wraps inventory + order + payment + shipment + notification in ONE @Transactional spanning five contexts (ACID -&gt; ACD).</text>
-<text x="40" y="598" font-size="10.5" fill="#555555" text-anchor="start">SMELL: FK joins cross bounded-context boundaries freely inside the one shared schema -- order_items-&gt;inventory_items, payments/shipments/notifications-&gt;orders, reviews-&gt;customers+inventory_items, orders-&gt;customers.</text>
+<text x="1420" y="420" font-size="10.5" fill="#555555" text-anchor="end">SMELL: OrderService#placeOrder wraps inventory + order + payment + shipment + notification in one @Transactional spanning five contexts (ACID -&gt; ACD).</text>
+<text x="40" y="598" font-size="10.5" fill="#555555" text-anchor="start">SMELL: FK joins cross bounded-context boundaries freely inside the one shared schema; order_items-&gt;inventory_items, payments/shipments/notifications-&gt;orders, reviews-&gt;customers+inventory_items, orders-&gt;customers.</text>
 <text x="40" y="614" font-size="10.5" fill="#555555" text-anchor="start">common.Customer is a shared-kernel entity (not its own bounded context) FK&#x27;d directly from order, notification, and review.</text>
 <text x="1260.0" y="95" font-size="11.5" fill="#2f5f3d" text-anchor="middle" font-weight="700">review: first context extracted</text>
-<text x="1260.0" y="323" font-size="9.5" fill="#555555" text-anchor="middle">SMELL: REST-only, no runtime collaborator -- yet governed by the</text>
+<text x="1260.0" y="323" font-size="9.5" fill="#555555" text-anchor="middle">SMELL: REST-only, no runtime collaborator, yet governed by the</text>
 <text x="1260.0" y="335" font-size="9.5" fill="#555555" text-anchor="middle">monolith&#x27;s one global SecurityFilterChain alongside every other context.</text>
 <text x="40" y="684" font-size="10.5" fill="#555555" text-anchor="start">SMELL: the order-confirmation notification is sent synchronously, in-process, inside the checkout transaction.</text>
 </svg>

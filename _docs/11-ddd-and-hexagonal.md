@@ -2,137 +2,57 @@
 title: "Strategic & Tactical DDD + Hexagonal"
 order: 11
 part: "Finding the Seams"
-description: "Subdomains, bounded contexts, context mapping, aggregates, and domain events: keeping protocols out of the domain core so extraction is mechanical."
+description: "Subdomains, bounded contexts, context mapping, aggregates and domain events, and why ports and adapters make a decided boundary cheap to cut."
 ---
 
 ## Learning objectives
 
 By the end of this chapter you can:
 
-- Classify a subdomain as core, supporting, or generic and explain why that classification predicts this book's own extraction order before the roadmap ever states it.
-- Explain why the monolith's shared `common` package and single Postgres schema violate a bounded context's defining property: a private model and a public contract.
-- Use context-mapping vocabulary (shared kernel, customer/supplier, conformist, anti-corruption layer) to diagnose the order-to-inventory relationship as an undecided conformist coupling rather than a deliberate choice.
-- Distinguish a value-object snapshot from a live entity reference inside an aggregate, using `OrderItem`'s correct `priceCents` field and its incorrect `inventoryItem` reference.
-- Explain hexagonal architecture's ports-and-adapters discipline, and why it makes an already-decided boundary cheap to cut rather than substituting for the decision of where the boundary goes.
-- Read Review's Phase A/B diff and explain why zero outbound edges to sibling contexts, not a textbook port interface, is what actually made its extraction cheap.
-- Reconstruct the book's extraction order (review, notification, inventory, payment/shipping, order) from subdomain classification, context mapping, and outbound-edge counting alone.
+- Classify a subdomain as core, supporting or generic and predict the extraction order from that classification.
+- Explain why a shared `common` package and a single Postgres schema break a bounded context's defining property: a private model and a public contract.
+- Use context-mapping vocabulary (shared kernel, customer/supplier, conformist, anti-corruption layer) to diagnose the order-to-inventory relationship as an undecided conformist coupling.
+- Tell a value-object snapshot from a live entity reference inside an aggregate, using `OrderItem`'s `priceCents` and its `inventoryItem`.
+- Explain ports and adapters, and why they make an already-decided boundary cheap to cut without deciding where it goes.
+- Read Review's Phase A/B diff and explain why zero outbound edges to sibling contexts, not a textbook port interface, made its extraction cheap.
+- Reconstruct the extraction order (review, notification, inventory, payment and shipping, order) from subdomain classification, context mapping and outbound-edge counting alone.
 
 ## Why this matters
 
-Chapter 9 catalogued five smells still standing in `examples/00-monolith/` and
-named, for each one, the chapter that will cut it. Chapter 10 built the
-behavior-equivalence suite that will prove each cut preserved behavior. Both
-chapters used the word "seam" freely (a line where a conceptual boundary
-already exists but the implementation currently welds it shut) without ever
-explaining where that word's vocabulary comes from or how to find a seam in a
-system that didn't ship with a `SMELLS.md` file pointing at one. This chapter
-supplies that vocabulary. Domain-Driven Design (DDD) is not a styling choice
-for how you name your classes; it is a discipline for deciding where a system
-should be cut, and hexagonal architecture is the structural discipline for
-making a cut, once decided, cheap to execute. Together they are this book's
-seam-finding toolkit, and every smell Chapter 9 named turns out to be a DDD
-concept with its name filed off.
+"Seam" means a line where a conceptual boundary already exists but the implementation welds it shut. Finding a seam in a system with no `SMELLS.md` pointing at it takes vocabulary. Domain-Driven Design (DDD) decides where a system should be cut, and hexagonal architecture makes a decided cut cheap to execute. Every smell in the monolith is a DDD concept with its name filed off.
 
-The code is in `examples/00-monolith/` and, for contrast, in
-`examples/02-review-service/`. Nothing new has been scaffolded for this
-chapter. Every excerpt below is quoted verbatim from files already in those
-two modules, the same discipline Chapter 9 held itself to.
+The monolith code quoted here is `examples/00-monolith/` as designed, on the `reference/monolith-before` branch (`git checkout reference/monolith-before`); on `main` the extractions have deleted its context packages. The contrast is `examples/02-review-service/` on `main`.
 
 ## Strategic DDD: naming the lines that already exist
 
-Strategic DDD starts from a blunt question: not "how should we write this
-code," but "what are the different things this business does, and which of
-them deserve their own model." Evans calls the answer a **subdomain**, and
-classifies each one by how much competitive value it carries and how fast it
-changes. A **core** subdomain is where the business differentiates
-itself: complex, strategically important, worth your best engineering
-attention. A **supporting** subdomain is necessary but not a differentiator:
-build it simply, because nobody is choosing this business over a competitor
-because of how well it does this one thing. A **generic** subdomain is a
-solved problem elsewhere (notifications, ratings, authentication) that most
-systems need in roughly the same shape, which is exactly why it's usually
-fine to adopt an off-the-shelf answer rather than invent one.
+A **subdomain** is classified by competitive value and rate of change:
 
-Run that classification against the six contexts the monolith already has, and
-the answer falls out almost without effort. **Order** is core: it's the
-checkout aggregate, the one piece of the system whose correctness and
-responsiveness customers notice directly, and the one every other context
-exists to serve. **Inventory**, **payment**, and **shipping** are supporting:
-every e-commerce system needs stock levels, a way to capture a charge, and a
-way to get a package moving, but doing those three things is table stakes,
-not a competitive edge; build them correctly and move on. **Notification**
-and **review** are generic: sending a confirmation message and collecting a
-star rating are both solved problems with well-known shapes, which is
-precisely why Chapter 4's strategy discussion would file them under "buy or
-adopt a known pattern" rather than "invest heavily here."
+| Class | Meaning | Build stance |
+|---|---|---|
+| Core | Where the business differentiates; complex and strategic | Best engineering attention |
+| Supporting | Necessary, not a differentiator | Build simply |
+| Generic | Solved elsewhere in a well-known shape | Adopt an off-the-shelf answer |
 
-Notice what that classification predicts, before this book ever gets to the
-extraction roadmap: the two generic subdomains, notification and review,
-are also the first two services extracted (Chapters 15 and 17), and the core
-subdomain, order, is extracted last (Chapter 26). That is not a
-coincidence this chapter is pointing out after the fact; it's strategic DDD's
-own logic. A generic subdomain changes rarely, has few internal invariants
-worth agonizing over, and has the least organizational risk if its extraction
-goes imperfectly. A core subdomain is exactly the opposite on every axis,
-which is why you save it for last, once the ADLC loop and the extraction
-toolkit have both been proven on lower-stakes ground.
+Against the monolith's six contexts: **order** is core, the checkout aggregate customers notice and every other context serves. **Inventory**, **payment** and **shipping** are supporting: table stakes for e-commerce. **Notification** and **review** are generic.
 
-Each subdomain, in turn, becomes one or more **bounded contexts**: the scope
-within which one model and one **ubiquitous language** stay internally
-consistent, and outside of which the same word is allowed to mean something
-else entirely. This is the half of strategic DDD the monolith's design
-actively works against, and it's precise to say how. A bounded
-context's defining property is that it owns its model privately and exposes
-only a stated, public contract, which means two different contexts are
-*allowed*, even expected, to have two different ideas of what an "item" is.
-In the monolith today, `order`, `inventory`, `payment`, `shipping`, and
-`notification` share one `common` package of DTOs and enums, and, more to
-the point, one Postgres schema in which every table is a first-class citizen
-any context's JPA mappings can join against. That is not five bounded
-contexts; it is one context wearing five package names. A single shared
-vocabulary stretched across six conceptually distinct areas of responsibility
-is itself a symptom, not a convenience to take for granted,
-and it is the root condition every smell in Chapter 9 grows out of.
+That classification predicts the extraction order. The two generic subdomains, notification and review, change rarely, have few invariants and carry the least organizational risk, so they go first. Order, the core, is the opposite on every axis and goes last, once the extraction toolkit is proven on lower-stakes ground.
 
-## Context mapping: naming the relationship nobody decided
+Each subdomain becomes one or more **bounded contexts**: the scope in which one model and one **ubiquitous language** stay consistent, and outside which a word may mean something else. A context owns its model privately and exposes only a public contract, so two contexts may hold different ideas of an "item." The monolith works against that. `order`, `inventory`, `payment`, `shipping` and `notification` share one `common` package of DTOs and enums, and one Postgres schema whose tables any context's JPA mappings can join against. That is one context wearing five package names, and the root condition of every smell.
 
-Once you have candidate bounded contexts, the next strategic-DDD question is
-how they should relate to each other, and DDD's **context mapping** gives
-that question a fixed vocabulary instead of leaving it to whatever the
-cheapest line of code happened to do. Four of those patterns matter most for
-this book's purposes, and the order↔inventory seam the god `OrderService`
-reaches across is a worked example of nearly all of them at once.
+## Context mapping: the relationship nobody decided
 
-A **shared kernel** is a deliberate, narrow slice of model two bounded
-contexts agree to share explicitly: both teams know the kernel exists, both
-have to coordinate before changing it, and both accept the coupling as a
-conscious trade-off for a small, stable piece of shared vocabulary. That is
-not what the monolith has. One Postgres schema, readable and joinable by
-every context's JPA mappings, is a shared kernel with no edges, not a
-narrow, governed slice of shared model, but the entire database treated as if
-it belonged equally to all six contexts at once. Nobody decided this was a
-shared kernel; it is what you get by default when nobody decides
-anything, because a foreign key is the cheapest way to relate two rows that
-happen to live in the same schema.
+**Context mapping** gives the relationship between two contexts a fixed vocabulary instead of whatever the cheapest line of code produced.
 
-The relationship the order↔inventory seam *should* have is **customer/supplier**:
-order is the downstream consumer of inventory's stock data, inventory is the
-upstream supplier, and a well-formed customer/supplier relationship means the
-two sides negotiate a stable, versioned contract (a DTO or event schema the
-supplier commits to and the consumer builds against) with the downstream
-side carrying enough weight in that negotiation to actually shape what the
-contract contains, because it's the downstream side's business need driving
-the integration in the first place.
-
-Instead, what actually exists is **conformist**: `order.OrderService` accepts
-`inventory`'s internal representation wholesale, with no negotiation at all.
+- **Shared kernel:** a narrow slice of model two contexts agree to share, with coordinated changes. The monolith has the entire database shared by all six contexts with no governance. Nobody decided this; a foreign key is simply the cheapest way to relate two rows in one schema.
+- **Customer/supplier:** the downstream context consumes the upstream's data through a stable, versioned contract (a DTO or event schema) that the downstream side has enough weight to shape. This is what order and inventory should have.
+- **Conformist:** the downstream accepts the upstream's internal model wholesale. This is what they have:
 
 ```java
 // inventory/InventoryService.java
 /**
  * SMELL[ch.16]: returns the raw JPA entity, not a DTO/contract, to a caller
- * (order.OrderService) outside this context — there is no anti-corruption
- * layer at this seam. ch.16 introduces a Camel content enricher / message
+ * (order.OrderService) outside this context. There is no anti-corruption
+ * layer at this seam. The ACL work introduces a Camel content enricher / message
  * translator here instead.
  */
 public InventoryItem findBySkuOrThrow(String sku) {
@@ -150,173 +70,47 @@ for (OrderCreate.Line line : command.items()) {
 }
 ```
 
-Conformist is a legitimate choice *sometimes*: it's the right call when the
-upstream is clean, stable, and outside your influence, the way a
-small team integrating with a large vendor's API has no real leverage to
-negotiate a bespoke contract and is better off just accepting the vendor's
-shape. That is not this situation. `order` and `inventory` are siblings in
-the same codebase, owned by (eventually) the same organization, heading
-toward being two independently deployable services that absolutely could
-negotiate a contract: `inventory.InventoryService` even builds one already,
-a `StockDto`, for its own REST controller a few lines above
-`findBySkuOrThrow`, and doesn't hand it to `OrderService`. Conformism
-chosen as an explicit decision, with eyes open, is a strategy. Conformism that happens
-because nobody built the alternative and the live entity reference was
-sitting right there is what Chapter 9 calls a smell, and what this chapter
-can now name precisely: a missing **anti-corruption layer (ACL)**, the
-translation Evans prescribes specifically for a downstream context that
-needs to protect its own model from an upstream context's internal
-representation. An ACL would sit at exactly this seam and do exactly what
-the unused `StockDto` is already shaped to do: hand `OrderService` a stable,
-owned-by-inventory contract instead of inventory's live JPA entity. That
-translation layer, built in Chapter 16 as a Camel message translator and
-content enricher, is this chapter's conceptual gap turned into working code,
-two chapters from here.
+Conformism is legitimate when the upstream is clean, stable and outside your influence, such as a vendor API you have no leverage over. Here `order` and `inventory` are siblings in one codebase, heading to separate deployables that could negotiate. `InventoryService` already builds a `StockDto` for its own REST controller and doesn't hand it to `OrderService`. Conformism chosen with eyes open is a strategy; conformism that happens because the live entity was sitting right there is a smell. What's missing is an **anti-corruption layer (ACL)**, the translation Evans prescribes for a downstream context that must protect its model from an upstream's internals. It would sit at this seam and hand `OrderService` an inventory-owned contract instead of the live JPA entity. A Camel message translator and content enricher implement it in the content-based routing and ACL work, turning the conformist coupling into the customer/supplier contract it should have been.
 
-It is exact to say what was missing, because it is a
-specific, nameable thing and not a vague complaint about code quality:
-nobody ever decided what the order↔inventory relationship *should be*. No
-deliberate decision was made, no contract was drafted, no map was drawn;
-the relationship that exists today is whatever the cheapest
-implementation produced, which is a direct object reference, because that is
-always the cheapest thing a shared JVM and a shared schema can produce.
-Context mapping's real value isn't the four vocabulary words above; it's the
-discipline of forcing that decision to be made explicitly, for every seam, so
-the relationship between two contexts is something somebody chose rather
-than something nobody noticed.
+The gap is specific: nobody decided what the order-to-inventory relationship should be. No contract was drafted and no map was drawn; the relationship is whatever the cheapest implementation in a shared JVM and schema produced, a direct object reference. Context mapping's value is not the four words but the discipline of making that decision explicitly for every seam.
 
-{% include excalidraw.html file="context-map" alt="A context map of the monolith's six bounded contexts: order's edge into inventory is conformist, with no anti-corruption layer at the seam, even though inventory's own StockDto contract already exists unused; order's edges into payment, shipping, and notification are direct synchronous calls inside one transaction, with no port; review has zero outbound edges to any sibling context; and all six sit on one Postgres schema, a shared kernel with no governed edges." caption="Figure 11.1: Context map: six bounded contexts, one relationship nobody decided" %}
+{% include excalidraw.html file="context-map" alt="A context map of the monolith's six bounded contexts: order's edge into inventory is conformist with no anti-corruption layer, though inventory's StockDto already exists unused; order's edges into payment, shipping and notification are direct synchronous calls in one transaction with no port; review has zero outbound edges; all six sit on one Postgres schema, a shared kernel with no governed edges." caption="Figure 11.1: Context map: six bounded contexts, one relationship nobody decided" %}
 
-## Tactical DDD: modeling what lives inside a seam
+## Tactical DDD: what lives inside a seam
 
-Strategic DDD decides where the lines go. **Tactical DDD** decides what the
-model looks like on each side of a line, and three of its building blocks,
-aggregates, value objects versus entities, and domain events, are each,
-again, a name for something Chapter 9 already found broken.
+An **aggregate** is a cluster of objects treated as one consistency unit: the boundary inside which invariants hold together and a single transaction commits. `Order` and its `OrderItem`s are the clearest aggregate. `Order#addItem` appends an item and updates `totalCents` together inside the root, so no code path yields an order whose total disagrees with its items.
 
-An **aggregate** is a cluster of objects treated as one consistency unit: the
-boundary inside which invariants must hold together, and the unit a single
-transaction commits as a whole. `Order` and its `OrderItem`s are the
-monolith's clearest aggregate, and in one respect its design already shows
-good tactical instincts: `Order#addItem` doesn't let a caller append an item
-and separately, maybe, remember to update the running total. Appending an
-item and updating `totalCents` happen together, inside the aggregate root, so
-there is no code path that can produce an `Order` whose total doesn't match
-its items. That's exactly the discipline an aggregate root exists to enforce.
-
-But the same `OrderItem` that gets this right also gets a sibling rule wrong.
-DDD's standard guidance is that an aggregate should reference *other*
-aggregates by identity or by a small, copied value, never by
-holding a live reference to another aggregate's root object, because doing so
-silently extends your consistency boundary into a context you don't own and
-can't control. `OrderItem` holds exactly that live reference:
+The same `OrderItem` breaks the sibling rule. An aggregate should reference other aggregates by identity or a small copied value, never by a live reference to another root, because that silently extends the consistency boundary into a context you don't own. `OrderItem` holds exactly that reference:
 
 ```java
-// order/OrderItem.java — the SMELL[ch.18] join quoted in Chapter 9
+// order/OrderItem.java: the SMELL[ch.18] join
 @ManyToOne(optional = false)
 @JoinColumn(name = "inventory_item_id", nullable = false)
 private InventoryItem inventoryItem;
 ```
 
-The field two lines below it in the real checkout flow,
-`inventoryItem.getPriceCents()`, captured once at order time and stored as
-`OrderItem`'s own `priceCents`, is tactical DDD done correctly: a **value
-object** snapshot, a plain immutable fact about this specific line item at
-this specific moment, with no identity and no lifecycle of its own.
-`InventoryItem` itself, by contrast, is a legitimate **entity**: it has
-identity, it has a lifecycle (`decrement`/`restock`), and inventory's own
-code is right to model it as one. The problem isn't that either type is
-modeled wrong in isolation. The problem is that `OrderItem` holds one correct
-value-object snapshot (`priceCents`) sitting directly next to one incorrect
-live entity reference (`inventoryItem`) that should have been a second value
-snapshot: the SKU and name `order` needs, copied in, not joined
-to. Smell 1 from Chapter 9 is, in tactical-DDD terms, an aggregate boundary
-that leaked, one field at a time, because nobody drew the line between "data
-this aggregate owns a copy of" and "a reference to someone else's aggregate"
-consistently across the whole class.
+In the checkout flow, `inventoryItem.getPriceCents()` is captured once at order time and stored as `OrderItem`'s own `priceCents`. That is a **value object**: an immutable fact about this line at this moment, with no identity or lifecycle. `InventoryItem` is a legitimate **entity**, with identity and a lifecycle (`decrement`, `restock`). Neither type is wrong alone. The defect is one correct snapshot (`priceCents`) next to a live reference (`inventoryItem`) that should be a second snapshot: the SKU and name `order` needs, copied in, not joined to. The shared-schema smell is, in tactical terms, an aggregate boundary that leaked one field at a time.
 
-**Domain events** are tactical DDD's mechanism for aggregates in different
-contexts to react to each other's state changes without holding references
-to each other at all. `common/Topics.java` already names three,
-`order.placed`, `payment.captured`, `shipment.dispatched`, as reserved
-constants nothing in the monolith publishes to yet, specifically so the
-event-driven extractions later in this book can adopt this vocabulary
-unchanged. Today, `OrderService#placeOrder` fakes the effect those events
-should have by calling `paymentService.charge(...)` and
-`shippingService.dispatch(...)` directly, as ordinary synchronous method
-calls, inside the same transaction, which is Smell 3's one-ACID-transaction
-problem and Smell 4's synchronous-notification problem, both restated: a
-domain event is precisely what should exist in place of each of those direct
-calls, published once `Order` has confirmed, consumed independently by
-whichever context reacts to it. Chapters 17, 23, and 24 build that
-replacement.
+**Domain events** let aggregates in different contexts react to each other without holding references. `common/Topics.java` reserves three, `order.placed`, `payment.captured` and `shipment.dispatched`, and nothing publishes them yet. Today `OrderService#placeOrder` calls `paymentService.charge(...)` and `shippingService.dispatch(...)` as synchronous methods inside one transaction. That is the one-transaction smell and the synchronous-notification smell restated. A domain event published once `Order` is confirmed, consumed independently by whichever context reacts, should replace each of those calls; the outbox and saga extractions build that replacement.
 
-And **repositories** carry one rule tactical DDD is explicit about that the
-monolith also breaks in the same place: a repository belongs to exactly one
-aggregate, and only that aggregate's own context should call it directly.
-`InventoryRepository` is reached not just by `InventoryService` but, via
-`InventoryService.findBySkuOrThrow`, effectively by `OrderService` as well.
-A repository access crossing a context boundary is the same violation as the
-missing ACL, viewed from the data-access side rather than the domain-model
-side. These are not three separate problems with three separate causes; they
-are one absent seam, visible from three different tactical-DDD angles at
-once.
+A repository belongs to exactly one aggregate and only that context should call it. `InventoryRepository` is reached by `InventoryService` and, through `findBySkuOrThrow`, effectively by `OrderService`. That is the missing ACL again, seen from the data-access side. The conformist coupling, the leaked aggregate boundary and the cross-context repository are one absent seam seen from three angles.
 
-## Hexagonal architecture: ports that make a seam cheap to cut
+## Pattern: Hexagonal Architecture
 
-Strategic and tactical DDD tell you *where* a boundary should be and *what*
-should live on each side of it. **Hexagonal architecture** (ports and
-adapters) is the structural discipline that determines how expensive it is
-to actually act on that decision once you've made it. A domain core sits in
-the middle, holding entities, aggregates, and business logic, and depends on
-nothing: no web framework, no ORM, no message broker. It declares **ports**:
-inbound ports describing what it can be asked to do, outbound ports
-describing what it needs from the world. **Driving adapters** (a REST
-controller, a gRPC service, a message consumer) translate an incoming
-protocol into a call on an inbound port. **Driven adapters** (a database
-repository, an event publisher) implement the outbound ports the core
-declared. Every dependency arrow points inward, toward the core; the core
-never imports a protocol, and a protocol can be swapped without the core
-noticing.
+Hexagonal architecture (ports and adapters) sets how expensive it is to act on a boundary decision. A domain core holding entities, aggregates and business logic depends on nothing: no web framework, ORM or broker. It declares **ports**: inbound ports for what it can be asked to do, outbound ports for what it needs. **Driving adapters** (REST controller, gRPC service, message consumer) translate a protocol into an inbound-port call. **Driven adapters** (repository, event publisher) implement the outbound ports. Every dependency points inward, so a protocol can be swapped without the core noticing.
 
-Chapter 8 already told you that the monolith does not have this
-structure: "there are no ports, no interfaces separating a domain core from
-its Spring Data implementation, and a controller's request type flows
-straight through to a JPA entity's association graph." That absence is not
-incidental: it's deliberate, so that this chapter's introduction of
-ports-and-adapters discipline has a real gap to fill rather than a strawman
-nobody would build. `OrderService` is the sharpest example: it is
-constructor-injected not just with its own repository but with
-`InventoryService`, `PaymentService`, `ShippingService`, and
-`NotificationService` directly: four other contexts' concrete
-implementations, not four ports. Drawing a Java interface around
-`OrderService` today wouldn't buy you an extraction boundary; the interface
-would just have to declare the same five-context fan-out the class already
-has, because hexagonal architecture makes a *clean* boundary cheap to cut;
-it has no opinion on a boundary that was never drawn in the first place. That
-is exactly why Chapters 16, 17, 19, 23, and 24 each have to remove one of
-`OrderService`'s direct edges before Chapter 26 can extract order at all:
-ports-and-adapters discipline is a force multiplier on a boundary decision
-already made, not a substitute for making one.
+The monolith has no such structure: no interfaces separate a domain core from its Spring Data implementation, and a controller's request type flows to a JPA association graph. `OrderService` is constructor-injected with `InventoryService`, `PaymentService`, `ShippingService` and `NotificationService`: four other contexts' concrete classes, not four ports. An interface around it would only declare the same five-context fan-out. Ports make a clean boundary cheap to cut and have no opinion on a boundary never drawn. That is why each direct edge out of `OrderService` has to be removed before Order itself can be extracted.
 
-{% include excalidraw.html file="hexagonal-ports-adapters" alt="A hexagonal-architecture diagram: a domain core at center, holding entities, aggregates, and business logic, with no dependency on any web framework, ORM, or message broker; driving adapters (a REST controller, a gRPC service, a message consumer) each depending inward on an inbound port; driven adapters (a database repository, an event publisher) each depending inward on an outbound port the core declared." caption="Figure 11.2: Hexagonal architecture: ports and adapters, dependencies pointing inward" %}
+{% include excalidraw.html file="hexagonal-ports-adapters" alt="A hexagonal-architecture diagram: a domain core at center with no dependency on any web framework, ORM or broker; driving adapters (REST controller, gRPC service, message consumer) each depending inward on an inbound port; driven adapters (database repository, event publisher) each depending inward on an outbound port the core declared." caption="Figure 11.2: Hexagonal architecture: ports and adapters, dependencies pointing inward" %}
 
-## Why Review could leave first: ports, measured in a real diff
+## Why Review could leave first
 
-This chapter doesn't have to argue hexagonal's payoff only in the abstract;
-the contrast already exists in the examples. `examples/02-review-service`
-is the Review context after its full two-phase migration (Chapter 7, Chapter
-15): Phase A lifted it onto Quarkus nearly unchanged via the Quarkiverse
-Spring-compatibility extensions, and Phase B refactored it to idiomatic
-Quarkus (Spring Data JPA swapped for Panache, Spring MVC swapped for
-Jakarta REST) without the equivalence suite ever catching a behavioral
-regression in the business logic itself. Look at what changed and what
-didn't.
+`examples/02-review-service` is Review after both migration phases. Phase A lifted it onto Quarkus nearly unchanged through the Quarkiverse Spring-compatibility extensions. Phase B made it idiomatic: Spring Data JPA became Panache and Spring MVC became Jakarta REST. The equivalence suite caught no behavioral regression in the business logic.
 
 ```java
-// review/ReviewService.java (Phase B, idiomatic Quarkus) — no jakarta.ws.rs
-// import anywhere in this file; the business logic has no idea it is reached
-// over HTTP at all.
+// review/ReviewService.java (Phase B, idiomatic Quarkus). No jakarta.ws.rs
+// import anywhere in this file; the business logic doesn't know it is
+// reached over HTTP.
 @ApplicationScoped
 public class ReviewService {
 
@@ -339,8 +133,8 @@ public class ReviewService {
 ```
 
 ```java
-// review/ReviewResource.java — the driving adapter: a three-method
-// translation from HTTP to calls on ReviewService, nothing more.
+// review/ReviewResource.java: the driving adapter. A translation from HTTP
+// to calls on ReviewService, nothing more.
 @Path("/api/reviews")
 public class ReviewResource {
     private final ReviewService service;
@@ -354,8 +148,8 @@ public class ReviewResource {
 ```
 
 ```java
-// review/ReviewRepository.java — the driven adapter that changed. Phase A:
-// Spring Data's JpaRepository<Review, Long>. Phase B: a Panache repository.
+// review/ReviewRepository.java: the driven adapter that changed.
+// Phase A: Spring Data's JpaRepository<Review, Long>. Phase B: a Panache repository.
 @ApplicationScoped
 public class ReviewRepository implements PanacheRepository<Review> {
     public List<Review> findAllByInventoryItemSku(String sku) {
@@ -364,123 +158,37 @@ public class ReviewRepository implements PanacheRepository<Review> {
 }
 ```
 
-Two things are precise to call out, in both directions. First, the
-payoff: `ReviewResource` is a driving adapter in every sense that matters.
-It imports nothing `ReviewService` needs to know about, and it does nothing
-but translate a JAX-RS request into a method call. `ReviewRepository` is a
-driven adapter that was swapped (Spring Data's `JpaRepository` for a
-Panache `PanacheRepository`), and the business logic in `ReviewService`
-needed almost no change to accommodate it; the only adjustment was mechanical
-(`findById` returning a nullable reference instead of an `Optional`, and
-`persist` instead of `save`), not a rewrite of any invariant or decision
-`ReviewService` makes. That is the entire argument for ports and adapters,
-proved on a real diff instead of asserted in the abstract: when the only
-things depending on a context's internals are that context's own adapters,
-changing an adapter is cheap, and changing the protocol or the persistence
-technology never touches the business logic at all.
+`ReviewResource` only translates a JAX-RS request into a method call. `ReviewRepository` was swapped from `JpaRepository` to `PanacheRepository`, and `ReviewService` changed only mechanically (`findById` returns a nullable reference instead of an `Optional`, and `persist` replaces `save`). When only a context's own adapters depend on its internals, changing the protocol or persistence technology never touches the business logic.
 
-Second, the caveat: `ReviewRepository` is a concrete class, not a
-declared interface `ReviewService` programs against. This is not textbook
-hexagonal with an explicit `Port` interface the domain owns and an adapter
-implementing it elsewhere. What made Review cheap to extract wasn't a
-perfectly drawn hexagon; it was something more modest and, for this book's
-purposes, more important: `ReviewService` had **zero outbound edges to any
-other bounded context**. It reaches its own `CustomerRepository` and
-`InventoryRepository` for read-only lookups against the same shared schema
-`order` also uses, but it never calls `OrderService`, `PaymentService`,
-`ShippingService`, or `NotificationService`. Review has no synchronous
-dependency on anything else in the monolith, a property Chapter 9 named as
-the sixth, already-cured smell. A context with no outbound edges to its
-siblings is cheap to extract almost regardless of how disciplined its
-internal ports are, because there is nothing on the other side of the cut
-that has to be renegotiated. `OrderService`, by contrast, could have the most
-textbook-perfect port interfaces imaginable around its own aggregate and
-would still be the hardest extraction in this book, because the thing making
-it hard was never the shape of its internal wiring: it's the four live
-edges reaching into contexts it doesn't own.
+The caveat: `ReviewRepository` is a concrete class, not an interface the service programs against. This isn't textbook hexagonal. What made Review cheap was that `ReviewService` had **zero outbound edges to any other bounded context**. It reads `CustomerRepository` and `InventoryRepository` against the shared schema, but never calls `OrderService`, `PaymentService`, `ShippingService` or `NotificationService`. With nothing on the other side of the cut to renegotiate, extraction is cheap almost regardless of internal ports. `OrderService` could wear perfect port interfaces and still be the hardest extraction, because its four live edges into contexts it doesn't own are what make it hard.
 
-## The extraction order is a prediction, not a preference
+## The extraction order is a prediction
 
-Put strategic DDD's subdomain classification, context mapping's relationship
-audit, and hexagonal architecture's edge-counting together, and the
-extraction order stops looking like a
-pedagogical convenience and starts looking like something closer to a
-forecast. Review goes first because it is a generic subdomain with zero
-outbound edges: nothing to renegotiate, nothing to make asynchronous,
-nothing to backfill. Notification goes second because it has exactly one
-inbound edge (order calls it) and zero outbound edges of its own; turning
-that one edge from a synchronous call into an outbox-published event
-(Chapter 17) is the only renegotiation required, and it only has to happen
-once. Inventory is harder, because its context-mapping relationship with
-order isn't just synchronous, it's broken: a conformist
-relationship masquerading as a shared kernel through one schema, so its
-extraction (Chapter 19) has to repair the relationship itself via CDC
-backfill before a clean boundary can even exist to extract across. Payment
-and shipping (Chapters 23 and 24) are each reached as a synchronous call
-inside `placeOrder`'s single transaction, and extracting either one forces
-the ACID-to-ACD shift Chapter 22 names and the saga machinery Chapters 23
-and 24 build: domain events, for the first time in this book, doing the
-coordinating work tactical DDD always said they should. And order, the core
-subdomain, the god aggregate, the context with four live outbound edges and
-the most invariants worth protecting, goes last (Chapter 26), not as a
-narrative flourish but because strategic DDD's own logic makes it true:
-the context with the most relationships to everyone else cannot be cleanly
-cut until its neighbors already have standalone, negotiated boundaries of
-their own to be cut *against*.
+Combine the subdomain classification, the context-map audit and edge counting, and the extraction order becomes a forecast:
 
-That is the method this chapter hands you, and it generalizes past this
-one monolith. Classify each area of the system by value and rate of change.
-Draw a context map and ask, for every integration point, which of the
-possible relationships exists today and whether anyone chose it on
-purpose. Check what each aggregate holds: a value snapshot of what it needs,
-or a live reference to something it doesn't own. Count a service's outbound
-edges before you judge how hard it will be to cut free. None of those steps
-require inside knowledge of this book's specific domain; they are a
-repeatable audit you can run against any system, including one that never
-shipped a `SMELLS.md` file telling you where to look.
+| Context | Position | Why |
+|---|---|---|
+| Review | First | Generic, zero outbound edges: nothing to renegotiate |
+| Notification | Second | One inbound edge (order calls it), none outbound; one synchronous call becomes an outbox-published event |
+| Inventory | Third | The order relationship is a conformist coupling disguised as a shared kernel; extraction must repair it with a CDC backfill first |
+| Payment, shipping | Fourth | Each is a synchronous call inside `placeOrder`'s single transaction; extraction forces the shift from ACID to ACD and sagas, with domain events coordinating |
+| Order | Last | Core, four live outbound edges, the most invariants; it can't be cut until its neighbors have negotiated boundaries to be cut against |
 
-## What you learned
+The method generalizes. Classify each area by value and rate of change. Draw a context map and ask, for each integration point, which relationship exists and whether anyone chose it. Check whether each aggregate holds a value snapshot or a live reference to something it doesn't own. Count a service's outbound edges before judging how hard it is to cut.
 
-- Strategic DDD's subdomain classification (core/supporting/generic) predicts
-  this book's own extraction order before the roadmap ever states it: order
-  is core and extracted last; inventory, payment, and shipping are
-  supporting; notification and review are generic and extracted first.
-- A bounded context's defining property, a private model, a public contract,
-  is exactly what the monolith's shared `common` package and single
-  Postgres schema erase; context mapping gives the resulting, undecided
-  relationship a name (shared kernel with no edges, conformism instead of a
-  negotiated customer/supplier contract) instead of leaving it undiagnosed.
-- Smell 5's missing anti-corruption layer is precisely a context-mapping
-  decision nobody made: `order` should be inventory's customer, negotiating
-  a stable contract; instead it conforms wholesale to inventory's live JPA
-  entity, because that was the cheapest thing available, not because anyone
-  chose it.
-- Tactical DDD's aggregate, value-object, and repository rules each flag the
-  same leak from a different angle: `OrderItem` holding a live
-  `InventoryItem` reference instead of a value snapshot, domain events
-  (`order.placed`, `payment.captured`) reserved but unpublished, and
-  `InventoryRepository` reached across a context boundary it doesn't belong
-  to.
-- Hexagonal architecture doesn't create a clean boundary; it makes one that
-  already exists cheap to cut. Review's extraction proves the payoff on a
-  real diff: `ReviewService` never imported a protocol, and its repository
-  was swapped from Spring Data to Panache with no change to business logic,
-  precisely because Review had zero outbound edges to any other context, the
-  one property that mattered more than any port interface's literal shape.
+> **Decision**
+>
+> Cut a context first when it is generic and has zero outbound edges. Before cutting any seam, name its context-map relationship; if nobody chose it, choose it, and put an ACL where the downstream would otherwise conform. Don't add port interfaces around a context whose boundary isn't decided.
 
-Chapter 12, "Event Storming the Monolith," takes a complementary approach to
-everything this chapter just did by classification: instead of reading code
-and sorting it into subdomains, it discovers seams from *behavior*, walking
-the business process as a sequence of facts and decisions, and produces the
-decomposition backlog the rest of Part 4 and Part 5 draw from. Chapter 16
-then builds the concrete fix this chapter only named: a Camel message
-translator and content enricher sitting at exactly the order↔inventory seam,
-turning the conformist relationship diagnosed here into the customer/supplier
-contract it should have been from the start.
+> **🤖 Explore with your agent**
+>
+> "On the `reference/monolith-before` branch, in examples/00-monolith, count the outbound edges (injected services from other bounded contexts) of OrderService, InventoryService, PaymentService, ShippingService, NotificationService and the review package. Classify the order-to-inventory relationship as shared kernel, customer/supplier or conformist, and propose replacing the `InventoryItem` reference in OrderItem with a copied sku and name, without changing any code until I approve."
+>
+> Check: the reply reports four outbound edges for OrderService (inventory, payment, shipping, notification services), none for the review package (it reads `InventoryRepository` and `CustomerRepository` but calls no other context's service), and calls order-to-inventory conformist.
 
 ## For deeper coverage
 
-- Eric Evans, *Domain-Driven Design* (Addison-Wesley, 2003), subdomains, bounded contexts, context mapping, and the anti-corruption layer this entire chapter is built on; see the [Reading List](/bibliography/).
-- Sam Newman, *Building Microservices* (2nd ed., O'Reilly, 2021), service boundaries and integration styles, the operational counterpart to DDD's conceptual boundaries.
-- Cloud Native Design Patterns, [Appendix F: DDD & Hexagonal Architecture](https://github.com/patterncatalyst/cloud-native-design-patterns/blob/main/_docs/19-appendix-f-ddd-hexagonal.md), the companion book's treatment of ports and adapters, applied here to the monolith's own code.
-- Gregor Hohpe & Bobby Woolf, *Enterprise Integration Patterns* (Addison-Wesley, 2003), the message translator and content enricher, the concrete mechanism Chapter 16 uses to build the missing anti-corruption layer.
+- Eric Evans, *Domain-Driven Design* (Addison-Wesley, 2003): subdomains, bounded contexts, context mapping and the anti-corruption layer; see the [Reading List](/bibliography/).
+- Sam Newman, *Building Microservices* (2nd ed., O'Reilly, 2021): service boundaries and integration styles, the operational counterpart to DDD's conceptual boundaries.
+- Cloud Native Design Patterns, [Appendix F: DDD & Hexagonal Architecture](https://github.com/patterncatalyst/cloud-native-design-patterns/blob/main/_docs/19-appendix-f-ddd-hexagonal.md): the companion book's treatment of ports and adapters.
+- Gregor Hohpe & Bobby Woolf, *Enterprise Integration Patterns* (Addison-Wesley, 2003): the message translator and content enricher used to build the missing anti-corruption layer.

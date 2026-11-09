@@ -211,12 +211,12 @@
 <text x="695.6153846153846" y="1424.15625" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">AWAITING_SHIPMENT -&gt; SHIPPING_FAILED</text>
 <text x="695.6153846153846" y="1424.15625" font-size="11" fill="#555" text-anchor="middle">AWAITING_SHIPMENT -&gt; SHIPPING_FAILED</text>
 <path d="M843.0769230769231,1410.0 L836.9230769230769,1450.0" fill="none" stroke="#2f5f3d" stroke-width="2" marker-end="url(#am)"/>
-<text x="846.0" y="1424.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">delegated Release: shipping service NEVER calls Release directly</text>
-<text x="846.0" y="1424.0" font-size="11" fill="#2f5f3d" text-anchor="middle">delegated Release: shipping service NEVER calls Release directly</text>
+<text x="846.0" y="1424.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">delegated Release: shipping service never calls Release directly</text>
+<text x="846.0" y="1424.0" font-size="11" fill="#2f5f3d" text-anchor="middle">delegated Release: shipping service never calls Release directly</text>
 <path d="M960.0,1495.0 L1000.0,1495.0" fill="none" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
 <text x="986.0" y="1489.0" font-size="11" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke" text-anchor="middle">stock restored</text>
 <text x="986.0" y="1489.0" font-size="11" fill="#555" text-anchor="middle">stock restored</text>
 <text x="1000.0" y="30" font-size="17" fill="#1d1d1d" text-anchor="middle" font-weight="700">the orchestrated saga: one Camel Saga EIP coordinator sequences fulfilment and owns the compensation decision</text>
-<text x="810" y="790" font-size="11" fill="#2f5f3d" text-anchor="middle" font-weight="700">ONE visible place owns the sequence AND the compensation decision</text>
+<text x="810" y="790" font-size="11" fill="#2f5f3d" text-anchor="middle" font-weight="700">One visible place owns the sequence AND the compensation decision</text>
 <text x="40" y="1672" font-size="10.5" fill="#555555" text-anchor="start">Sourced from examples/06-shipping-service/.../{ShipmentSagaRoute,ShipmentSagaSteps,ShippingService}.java, examples/00-monolith/.../order/OrderSagaListener.java.</text>
 </svg>

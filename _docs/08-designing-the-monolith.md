@@ -9,404 +9,148 @@ description: "The six bounded contexts as one Spring Boot deployable: domain mod
 
 By the end of this chapter you can:
 
-- Explain why the monolith's six bounded contexts (order, inventory, payment, shipping, notification, review) are split along package lines, and name the conceptual boundary each one models.
-- Read the controller-service-repository layering shared across all five resident contexts and explain why it has no hexagonal ports yet.
-- Trace `OrderService#placeOrder` call by call and explain how the pessimistic write lock in `InventoryService#reserve` prevents two concurrent checkouts from overselling the same SKU.
-- Identify where cents-as-`long` currency representation, `@Enumerated(EnumType.STRING)`, and a cascading `@OneToMany` with `orphanRemoval` are used, and state the bug each one avoids.
-- Explain why `ddl-auto: validate` plus Flyway, not Hibernate, owning the schema is a deliberate choice that recurs throughout the book.
-- Recognize which Spring framework choices (Spring MVC, Spring Data JPA, Spring Security) were made specifically because of the Quarkiverse Spring-compatibility bridge, and what that buys a future Phase A lift.
-- Read the shared-schema ER diagram and name the cross-context foreign keys that Chapter 9 tags as smells and Chapters 18/19 later cut.
+- Name the six bounded contexts (order, inventory, payment, shipping, notification, review) and the boundary each one models.
+- Read the controller-service-repository layering shared by all six contexts and explain why it has no hexagonal ports yet.
+- Trace `OrderService#placeOrder` call by call and explain how the pessimistic write lock in `InventoryService#reserve` prevents overselling.
+- Identify where cents-as-`long` currency, `@Enumerated(EnumType.STRING)` and a cascading `@OneToMany` with `orphanRemoval` are used, and the bug each one avoids.
+- Explain why `ddl-auto: validate` plus Flyway, not Hibernate, owns the schema.
+- Recognize which Spring choices (Spring MVC, Spring Data JPA, Spring Security) were made because the Quarkiverse Spring-compatibility bridge can lift them unchanged.
+- Read the shared-schema ER diagram and name the cross-context foreign keys that later extractions have to cut.
 
 ## Why this matters
 
-Chapter 7 proved the loop by running it once, end to end, on a real
-extraction. This chapter builds the system that loop will spend the rest of
-this book strangling. Before anything can be modernized, it has to exist as
-something worth modernizing: a believable "before," a system a real team
-could have shipped, that does real work, that a customer would notice if it
-went down. That system is
-`examples/00-monolith/`, a plain Spring Boot application on JDK 25, one
-deployable JAR, one PostgreSQL schema, one JVM, built around a shipping and
-e-commerce domain split into six bounded contexts. This chapter walks its
-design (the domain, the layering, the schema, the API surface) and makes
-explicit a choice that will matter throughout the book: every framework
-API this monolith uses was picked because it has a clean bridge to Quarkus,
-not in spite of it.
+Before anything can be modernized it has to exist as something worth modernizing: a believable "before", a system a real team could have shipped and a customer would notice going down. That system is `examples/00-monolith/`, a plain Spring Boot application on JDK 25: one deployable JAR, one PostgreSQL schema, one JVM, a shipping and e-commerce domain split into six bounded contexts.
 
-The code is in `examples/00-monolith/`. There is no separate run script for
-this chapter: it is an ordinary Maven project. `mvn spring-boot:run` starts
-it against the local Postgres coordinates in `src/main/resources/application.yml`;
-`mvn verify` runs the full three-tier JUnit suite (unit, slice, and
-Testcontainers-backed integration tests) this chapter and the next two build
-on, and already passes green: 38 test executions today (45 before Review's
-tests were removed when Review was extracted).
+Every framework API in it was picked because it has a clean bridge to Quarkus. That constraint decides how fast every later extraction can start.
 
 {% include excalidraw.html file="monolith-architecture" alt="A layered Spring Boot monolith: six bounded-context packages (order, inventory, payment, shipping, notification, review) each with a controller, service, and repository layer, all built against one shared PostgreSQL schema populated by Flyway migrations V1 and V2, exposed as one REST API surface documented by springdoc OpenAPI." caption="Figure 8.1: The reference monolith: six bounded contexts, one layered Spring Boot deployable, one shared schema" %}
 
 ## The domain: six bounded contexts, one shipping business
 
-The monolith models a small but complete e-commerce shipping business, split
-into six bounded contexts that map onto the obvious nouns of "a customer buys
-a thing and it arrives at their door": **order** (the checkout aggregate and
-its line items), **inventory** (stock levels per SKU), **payment** (capturing
-a charge against an order), **shipping** (dispatching a shipment to an
-address), **notification** (telling the customer what happened), and
-**review** (a customer rating a product they bought). Each context lives as
-its own Java package under `dev.patterncatalyst.monolith`:
-`order`, `inventory`, `payment`, `shipping`, `notification`, with a shared
-vocabulary of DTOs and enums (`OrderDto`, `OrderStatus`, `StockDto`,
-`OrderCreate`) living in a `common` package that every context is allowed to
-depend on, so the same shapes travel unchanged into later extracted services.
-This scale discipline is deliberate: each context stays in roughly the
-three-to-nine-file range: an entity, a repository, a service, a controller,
-maybe a DTO or two, because a reference monolith that sprawls into hundreds
-of files per context stops being readable as a teaching artifact and starts
-being its own research project.
+The monolith models a small but complete shipping business around "a customer buys a thing and it arrives at their door": **order** (the checkout aggregate and its line items), **inventory** (stock per SKU), **payment** (a charge against an order), **shipping** (dispatching a shipment to an address), **notification** (telling the customer what happened) and **review** (a customer rating a product they bought).
 
-Read `MonolithApplication.java`'s class-level Javadoc and you will notice
-something this chapter owes you a clear, accurate account of: it says the monolith
-"originally" held six contexts as sibling packages, and that `review` "has
-been extracted and decommissioned from this module," the very extraction
-Chapter 7 walks through. That is not a mistake in the example: the Review
-extraction (proxy, Phase A lift, Phase B refactor, cutover, decommission)
-has already been run against this repository, so what you will find in
-`examples/00-monolith/src/main/java` today
-is five context packages (`order`, `inventory`, `payment`, `shipping`,
-`notification`); review's controller, entity, and service were deleted in
-that extraction, and `review` now lives on as `examples/02-review-service`,
-reached through the Camel strangler proxy described later in this book.
+Each context is a Java package under `dev.patterncatalyst.monolith`. A `common` package holds the shared vocabulary of DTOs and enums (`OrderDto`, `OrderStatus`, `StockDto`, `OrderCreate`) that every context may depend on, so the same shapes travel unchanged into later extracted services. Each context stays at roughly three to nine files: an entity, a repository, a service, a controller, maybe a DTO or two.
 
-That is a deliberate narrative choice, not a continuity error: this chapter
-describes the monolith **as designed**: all six contexts, Review included,
-because that is the "before" picture every later chapter needs as its
-starting point, and because Review's design (a REST-only context sharing one
-security filter chain with five contexts it has no runtime dependency on) is
-exactly the smell Chapter 9 catalogues and Chapter 15 cuts. Where this
-chapter cites real, present-tense code (entities, services, controllers,
-migrations), that code is the five contexts still resident in the module
-today. Where it describes review's original shape, it draws on `SMELLS.md`'s
-historical record and the javadoc comments left behind so that
-record would survive the deletion. Nothing here is invented; it is
-describing a system at the moment just before its first cut,
-using a repository that has already made that cut once.
+### Where the code lives
+
+Every class named below lives on the `reference/monolith-before` branch, the monolith as designed with all six contexts live:
+
+```bash
+git checkout reference/monolith-before
+```
+
+The `examples/00-monolith` tree on `main` is what is left after all six extractions: `MonolithApplication`, the `config` and `security` packages and the Flyway migrations, kept frozen as the "before" referent and serving nothing under `/api`. Each `stage/*` tag (`stage/01-review-extracted` through `stage/06-order-extracted`) holds the tree as it stood after one extraction.
 
 {% include excalidraw.html file="monolith-six-contexts" alt="The monolith as designed: six in-process bounded-context modules (order, inventory, payment, shipping, notification, review) inside one Spring Boot deployable, with no process boundary, no network hop, and no per-context database between any of them." caption="Figure 8.2: Six bounded contexts, one deployable: modules, not services" %}
 
-## The layering: controller, service, repository, three times five
+## Layering: controller, service, repository, six times
 
-Every one of the five contexts still in the module follows the same classic
-layered shape, and once you have read one you have effectively read all five.
-Take `inventory` as the clearest example, because it is the smallest:
-`InventoryController` is a thin `@RestController` that does nothing but
-delegate to `InventoryService`; `InventoryService` holds the one piece of
-domain logic this context has (reserving stock under a lock, discussed
-below); and `InventoryRepository` is a one-line `JpaRepository<InventoryItem,
-Long>` interface with two derived-query methods. `order`, `payment`,
-`shipping`, and `notification` repeat the same controller-service-repository
-triad, scaled up only as far as each context's actual responsibility
-requires: `payment` and `shipping` each have exactly one meaningful method
-on their service (`charge`, `dispatch`); `order` has more because it is where
-checkout itself happens, which the next section covers in full.
+Every context has the same classic layered shape. `inventory` is the smallest. `InventoryController` is a thin `@RestController` that delegates to `InventoryService`. The service holds the one piece of domain logic the context has, reserving stock under a lock. `InventoryRepository` is a one-line `JpaRepository<InventoryItem, Long>` interface with two derived-query methods. `order`, `payment`, `shipping`, `notification` and `review` repeat the triad, scaled to their responsibilities: `payment` and `shipping` each have one meaningful service method (`charge`, `dispatch`), and `order` has more because checkout happens there.
 
-This is Spring MVC over Spring Data JPA, the plainest possible version of
-each: `@RestController` classes mapped with `@RequestMapping`/`@GetMapping`/
-`@PostMapping`, `@Service` classes constructor-injected with the repositories
-and sibling services they need, and `JpaRepository` interfaces that Spring
-Data implements at startup from method-name conventions and a handful of
-explicit annotations. Nothing here is hexagonal: there are no ports, no
-interfaces separating a domain core from its Spring Data implementation, and
-a controller's request type flows straight through to a JPA entity's
-association graph in `order`'s case. That absence is itself one of the
-smells Chapter 9 names: a hexagonal boundary is exactly what makes an
-extraction mechanical later, and this monolith deliberately does not have
-one yet, so that Chapter 11's introduction of ports and adapters has a real
-gap to fill rather than a strawman.
+This is Spring MVC over Spring Data JPA in its plainest form. `@RestController` classes use `@RequestMapping`, `@GetMapping` and `@PostMapping`. `@Service` classes take their repositories and sibling services by constructor injection. Spring Data implements the `JpaRepository` interfaces at startup from method-name conventions.
 
-## How the code works
+Nothing is hexagonal. There are no ports, no interfaces between a domain core and its Spring Data implementation, and in `order`'s case a request type flows straight into a JPA association graph. That absence is one of the smells in the next chapter. A hexagonal boundary is what makes an extraction mechanical, and the monolith lacks one so that introducing ports and adapters has a real gap to fill.
 
-### The entities: one shared kernel, five contexts' worth of state
+## Entities and DTOs
 
-The module has seven resident JPA entities: one shared-kernel class plus six
-context-owned ones: `InventoryItem`, `Order`, `OrderItem`, `Payment`,
-`Shipment`, `Notification`. Review's entity was the eighth, removed
-when Review's code left the monolith. `Customer`, in the
-`common` package, is explicitly documented as "not one of the monolith's
-bounded contexts itself": it exists because `order` and `notification` both
-need to reference a customer, and in a single shared schema the cheapest way
-to do that is a direct `@ManyToOne` join rather than a context-local copy.
-Its Javadoc explains why it still carries a foreign key from
-a table (`reviews`) whose owning Java code has already left the building:
-`examples/02-review-service` is still in its Phase A form and reads
-and writes that table directly against this same database, so dropping it
-here would break a service this project just cut over to.
-That one comment is worth re-reading, because it is a live example of
-Chapter 7's "shared state masking a routing defect" lesson playing out in the
-schema itself, not just the proxy.
+The module has eight JPA entities: the shared-kernel `Customer` plus `InventoryItem`, `Order`, `OrderItem`, `Payment`, `Shipment`, `Notification` and `Review`. `Customer`, in `common`, is documented as "not one of the six bounded contexts itself". `order`, `review` and `notification` all reference a customer, and in a single schema the cheapest way is a direct `@ManyToOne` join rather than a context-local copy. Its `SMELL[ch.18]` comment names the cost: a decomposed system would have each context own, or replicate through CDC or an anti-corruption layer, only the customer fields it needs.
 
-`InventoryItem` is the simplest owned entity: a SKU, a name, a price in
-cents (never a floating-point currency type, a recurring convention in this
-codebase, because cents-as-`long` sidesteps rounding bugs that a `double`
-would reintroduce at every arithmetic step), a quantity on hand, and an
-`updatedAt` timestamp bumped by its own `decrement`/`restock` methods rather
-than left to callers to manage. `Order` is the richest entity in the module:
-it holds a `@ManyToOne` to `Customer`, an `OrderStatus` enum persisted as a
-string (`@Enumerated(EnumType.STRING)`, so the database stores `CONFIRMED`
-rather than an ordinal integer that would silently shift meaning if the enum
-were ever reordered), a running `totalCents` total, and a `@OneToMany` list
-of `OrderItem`s with `cascade = CascadeType.ALL, orphanRemoval = true`, which
-means saving an `Order` saves its items automatically, and removing an item from
-the in-memory list actually deletes its row, not just the association.
-`Order`'s own `addItem` method is where the running total gets maintained:
-it appends the item, calls back into it to set the owning side of the
-bidirectional association (`item.assignTo(this)`), and increments
-`totalCents` by that line's price times quantity, all in one place, so no
-caller can add an item and forget to update the total, because the total
-isn't a caller's responsibility at all. `OrderItem` itself carries the
-monolith's most-discussed single line: a `@ManyToOne` to
-`inventory.InventoryItem`, which is one bounded context's table joined
-directly from another's, inside one shared schema. That is smell #1 in
-`SMELLS.md`, and Chapter 9 spends real time on it; this chapter's job is only
-to show you the actual annotation that makes it true, not to cure it.
+The shared table outlives the code that owns it. After the Review extraction, `examples/02-review-service` still reads and writes `reviews` directly in this database, in its Phase A form and after Phase B, so the `reviews` foreign keys stay; dropping them would break a service that was just cut over. Shared state can mask a routing defect in the proxy the same way: both the old and the new path see the same rows.
 
-`Payment`, `Shipment`, and `Notification` (not shown in full here, but
-structurally identical in shape to `Order`'s simpler siblings) each hold a
-`@ManyToOne` back to `Order`, a status or channel field, and a `createdAt` or
-`sentAt` timestamp: three more cross-context joins into the same shared
-schema, following the same pattern.
+Three representation choices each avoid a specific bug:
 
-### The DTOs: a shared vocabulary that survives extraction
+| Choice | Where | Bug it avoids |
+|---|---|---|
+| Price in cents as `long` | `InventoryItem`, `Order.totalCents` | Rounding drift a `double` reintroduces at every arithmetic step |
+| `@Enumerated(EnumType.STRING)` | `Order`'s `OrderStatus` | An ordinal column silently changing meaning if the enum is reordered; the database stores `CONFIRMED` |
+| `@OneToMany(cascade = ALL, orphanRemoval = true)` | `Order` to `OrderItem` | Saving an `Order` saves its items, and removing an item from the list deletes its row, not just the association |
 
-The `common` package's records are not incidental: they are named and
-shaped to match the "reuse-map" vocabulary this project's sibling
-example projects already use, specifically so that when a context is
-extracted later in this book, its API contract doesn't have to be renamed or
-reshaped to match. `OrderCreate` is the checkout request: a Java `record`
-with Bean Validation annotations directly on its components:
-`@NotNull Long customerId`, `@NotEmpty @Valid List<Line> items`,
-`@NotBlank String paymentMethod`, `@NotBlank String shippingAddress`, and a
-nested `Line` record with its own `@NotBlank String sku` and
-`@Positive int quantity`. Because `OrderController.placeOrder` declares its
-parameter as `@Valid @RequestBody OrderCreate command`, Spring validates the
-entire nested structure, including every line in the list, because the
-outer `items` field is itself annotated `@Valid`, before `OrderService` ever
-sees it; a missing SKU or a zero quantity never reaches the service layer at
-all; it comes back as a 400 from `GlobalExceptionHandler`'s
-`MethodArgumentNotValidException` handler. `OrderStatus` is a three-value
-enum (`PENDING`, `CONFIRMED`, `PAYMENT_DECLINED`) kept
-small because the monolith's checkout flow is itself simple:
-there is no partial-fulfillment or multi-shipment state machine here, because
-that complexity would obscure the smells this monolith exists to demonstrate
-rather than illuminate them.
+`Order.addItem` appends the item, sets the owning side of the bidirectional association with `item.assignTo(this)` and increments `totalCents` by price times quantity, all in one place, so no caller can add an item and forget the total. `InventoryItem` bumps its own `updatedAt` in `decrement` and `restock`. `OrderItem` carries the monolith's most-discussed line: a `@ManyToOne` to `inventory.InventoryItem`, one context's table joined directly from another's. That is smell 1 in `SMELLS.md`. `Payment`, `Shipment` and `Notification` each hold a `@ManyToOne` back to `Order`, a status or channel field and a timestamp: three more cross-context joins. `Review` joins `Customer` and `InventoryItem` directly.
 
-### The core logic: `OrderService#placeOrder`, call by call
+The `common` records are shaped to match the reuse-map vocabulary of the sibling example projects, so an extracted context's API contract needs no renaming. `OrderCreate` is a Java `record` with Bean Validation directly on its components: `@NotNull Long customerId`, `@NotEmpty @Valid List<Line> items`, `@NotBlank String paymentMethod`, `@NotBlank String shippingAddress`, and a nested `Line` with `@NotBlank String sku` and `@Positive int quantity`. `OrderController.placeOrder` takes `@Valid @RequestBody OrderCreate command`, so Spring validates every nested line before `OrderService` sees the request. A missing SKU or a zero quantity returns 400 from `GlobalExceptionHandler`'s `MethodArgumentNotValidException` handler. `OrderStatus` has three values (`PENDING`, `CONFIRMED`, `PAYMENT_DECLINED`); there is no partial-fulfillment state machine, because it would obscure the smells.
 
-If this monolith has one method worth reading slowly, it is
-`OrderService#placeOrder`, because it is where all five of the remaining
-contexts meet inside a single Spring `@Transactional` boundary. Walking it in
-the order it actually executes:
+## The core logic: `OrderService#placeOrder`
+
+`placeOrder` is where five of the six contexts (all but review) meet inside one Spring `@Transactional` boundary. The `SMELL[ch.NN]` comments are the tags `SMELLS.md` catalogues:
 
 ```java
 @Transactional
 public OrderDto placeOrder(OrderCreate command) {
     Customer customer = customerRepository.findById(command.customerId())
-            .orElseThrow(() -> new ResourceNotFoundException(
-                "No customer with id " + command.customerId()));
+            .orElseThrow(() -> new ResourceNotFoundException("No customer with id " + command.customerId()));
 
     Order order = new Order(customer, command.shippingAddress());
 
+    // SMELL[ch.16]: reaching directly into inventory's entities/repository from
+    // the order context, with no anti-corruption layer at the seam.
     for (OrderCreate.Line line : command.items()) {
         InventoryItem inventoryItem = inventoryService.findBySkuOrThrow(line.sku());
-        inventoryService.reserve(line.sku(), line.quantity());
-        order.addItem(new OrderItem(inventoryItem, line.quantity(),
-                inventoryItem.getPriceCents()));
+        inventoryService.reserve(line.sku(), line.quantity()); // throws InsufficientStockException, no writes yet
+        order.addItem(new OrderItem(inventoryItem, line.quantity(), inventoryItem.getPriceCents()));
     }
 
     order = orderRepository.save(order);
 
+    // SMELL[ch.22]/[ch.26]: payment captured synchronously, in-process, inside
+    // the same transaction as the inventory decrement above. A decline here
+    // rolls back the inventory reservation too (see PaymentDeclinedException).
     paymentService.charge(order, order.getTotalCents(), command.paymentMethod());
     order.confirm();
 
+    // SMELL[ch.26]: shipping dispatched synchronously from the order's god
+    // service rather than being triggered by an event the order context emits.
     shippingService.dispatch(order, order.getShippingAddress());
+
+    // SMELL[ch.17]: notification sent synchronously inside the checkout
+    // transaction instead of via an outbox + async consumer.
     notificationService.sendOrderConfirmation(customer, order);
 
     return toDto(order);
 }
 ```
 
-The first call resolves the customer or fails fast with a `404`-mapped
-`ResourceNotFoundException`: there is no point building an order for a
-customer that does not exist, so this check happens before any other work.
-The `for` loop over `command.items()` does two things per line, kept
-separate: `findBySkuOrThrow` fetches the actual `InventoryItem` entity
-(not a DTO, more on that in a moment) so the order item can capture its
-current price, and `reserve` performs the actual stock check and decrement
-inside the same loop iteration. Splitting "look up" from "reserve" instead of
-having one method do both is a small design choice with a real consequence:
-`reserve` takes a pessimistic write lock (`InventoryRepository`'s
-`findWithLockBySku`, annotated `@Lock(LockModeType.PESSIMISTIC_WRITE)`) so
-that two concurrent checkouts racing for the last unit of a SKU cannot both
-read "1 on hand," both decide they can proceed, and both commit: the second
-transaction blocks on the lock until the first commits or rolls back, and
-then re-reads the now-current quantity. `reserve` throws
-`InsufficientStockException` (mapped by `GlobalExceptionHandler` to a `409`)
-the moment the requested quantity exceeds what's on hand, *before* any row
-is written for that item, which is why the exception's Javadoc specifically
-notes "throws ..., no writes yet."
+An unknown customer fails fast with a `404`-mapped `ResourceNotFoundException` before any other work. In the loop, `findBySkuOrThrow` returns the `InventoryItem` entity so the order item can capture the current price, and `reserve` checks and decrements stock. `reserve` takes a pessimistic write lock (`InventoryRepository#findWithLockBySku`, annotated `@Lock(LockModeType.PESSIMISTIC_WRITE)`). Two concurrent checkouts racing for the last unit cannot both read "1 on hand" and both commit: the second blocks until the first commits or rolls back, then re-reads the current quantity. `reserve` throws `InsufficientStockException`, mapped to `409`, as soon as the requested quantity exceeds what is on hand and before any row is written for that item.
 
-`orderRepository.save(order)` persists the order and, thanks to the
-cascading `@OneToMany`, its items in the same call. Only after that succeeds
-does `paymentService.charge` run, and this is the line that makes the
-`@Transactional` boundary matter rather than being decorative. `charge`'s
-demo decline rule is simple: any payment method string
-containing `DECLINE` (case-insensitively) throws
-`PaymentDeclinedException`, deterministically, with no real payment gateway
-involved. That design choice lets the behavior-equivalence
-suite Chapter 10 builds exercise the decline path without flaky external
-dependencies. When that exception is thrown, Spring's default rollback
-behavior unwinds the *entire* transaction: the order row, its items, and the
-inventory decrement from the loop above all revert, because Postgres
-gives this method atomic rollback across five tables by default. That is
-exactly the "it works today because one database can do this" smell Chapter
-9 names and Chapter 22/23/24 eventually replace with an explicit saga. This
-chapter's job is only to make sure you have seen, concretely, what "it works
-today" means at the code level: one `@Transactional` annotation, no
-saga machinery, no compensating actions, because none are needed yet.
+`orderRepository.save(order)` persists the order and, through the cascade, its items. Only then does `paymentService.charge` run. Its decline rule is deterministic: any payment method string containing `DECLINE`, case-insensitively, throws `PaymentDeclinedException`, with no real gateway involved. That lets the equivalence collection exercise the decline path without flaky dependencies. The exception unwinds the entire transaction, the order row, its items and the inventory decrement, because one Postgres database gives this method atomic rollback across five tables by default. That is the "works today because one database can do this" smell, which a saga later replaces. Today it is one `@Transactional` annotation with no compensating actions.
 
-If payment succeeds, `order.confirm()` flips the status to `CONFIRMED`,
-`shippingService.dispatch` creates a `Shipment` row synchronously, and
-`notificationService.sendOrderConfirmation` writes a `Notification` row,
-still inside the same transaction, still a plain synchronous method call.
-`toDto` at the end is a static mapper that walks the order's items and builds
-the `OrderDto` the controller actually returns; it exists so the
-JPA entity graph (with its lazy associations and bidirectional references)
-never has to be serialized directly to JSON, which would risk either a
-`LazyInitializationException` outside the transaction or an accidental
-infinite loop through the `Order`↔`OrderItem` back-reference.
+On success, `order.confirm()` sets `CONFIRMED`, `shippingService.dispatch` creates a `Shipment` row and `notificationService.sendOrderConfirmation` writes a `Notification` row, all synchronous calls in the same transaction. `toDto` is a static mapper that keeps the JPA entity graph from being serialized directly, which would risk a `LazyInitializationException` outside the transaction or an infinite loop through the `Order` and `OrderItem` back-reference.
 
 {% include excalidraw.html file="place-order-transaction-sequence" alt="OrderService#placeOrder as one Spring @Transactional spanning five bounded contexts in a single call stack: validate the customer, reserve stock, persist the order, charge payment, confirm, dispatch the shipment, and notify the customer; any failure partway through rolls back everything already written." caption="Figure 8.3: placeOrder, call by call: one transaction, five contexts" %}
 
-### `InventoryService`, `PaymentService`, `ShippingService`, `NotificationService`
+The four services `OrderService` calls are small. `InventoryService#findBySkuOrThrow` returns the actual `InventoryItem` entity to `order`, not the `StockDto` that inventory's own controller gets; its `SMELL[ch.16]` comment names this the leaky-domain-model smell, because no translation layer exists at that seam yet. `PaymentService.charge` is the decline rule plus a `save`. `ShippingService.dispatch` is a single `repository.save(new Shipment(...))` with no branching, since shipment failure is not a failure mode this monolith demonstrates. `NotificationService.sendOrderConfirmation` formats a string and saves a `Notification` row. Nothing touches email or SMS, because the point is the coupling, a synchronous call inside checkout's transaction.
 
-Each of the four services `OrderService` calls into is small enough to read
-in full, and each is worth a sentence on the one thing it does that a reader
-retyping this code should understand the reason for. `InventoryService`'s
-`findBySkuOrThrow` returns the *actual* `InventoryItem` JPA entity to its
-caller in `order`, not a `StockDto`. The same method `listAll`/`getBySku`
-use to build DTOs for inventory's own controller is not reused here, and
-that is not an oversight; it is the leaky-domain-model smell the
-in-code comment names directly, because there is no translation layer at
-this particular seam yet. `PaymentService.charge` is the decline rule just
-discussed, plus a straightforward `save`; `ShippingService.dispatch` is a
-single `repository.save(new Shipment(...))` call with no branching at all:
-dispatch always succeeds in this model, because shipment failure is not one
-of the failure modes this reference monolith is built to demonstrate.
-`NotificationService.sendOrderConfirmation` formats a plain string message
-and saves a `Notification` row; nothing here touches email, SMS, or any real
-channel, because the point of this context is the *coupling*, a synchronous
-call inside checkout's transaction, not the delivery mechanism.
+## Wiring and configuration
 
-### The wiring: `MonolithApplication`, `application.yml`, cross-cutting config
+`MonolithApplication` is an unremarkable `@SpringBootApplication`. `application.yml` points a Postgres datasource at the compose-stack coordinates (`jdbc:postgresql://localhost:5432/monolith`), sets `spring.jpa.hibernate.ddl-auto: validate` and enables Flyway (`spring.flyway.enabled: true`) on `classpath:db/migration`. With `validate`, Hibernate checks the schema against its mappings at startup but never creates or alters tables. Flyway owns the schema's shape and JPA only describes how objects map onto tables Flyway already created. `spring.jpa.open-in-view: false` rules out the Open Session In View anti-pattern: a lazy-loading exception outside a transaction is a bug to fix at the source.
 
-`MonolithApplication` is an unremarkable `@SpringBootApplication` with a
-`main` method that calls `SpringApplication.run`. The only thing worth
-noting is its class-level Javadoc, already discussed above, documenting the
-module's own history accurately instead of erasing that Review was ever there.
-`application.yml` configures a Postgres datasource pointed at the project's
-local compose-stack coordinates (`jdbc:postgresql://localhost:5432/monolith`),
-sets `spring.jpa.hibernate.ddl-auto: validate`, meaning Hibernate checks the
-schema matches its entity mappings at startup but never generates or alters
-tables itself, and turns on Flyway (`spring.flyway.enabled: true`) pointed
-at `classpath:db/migration`, which is where the schema actually comes from.
-That `ddl-auto: validate` choice is deliberate and worth internalizing now,
-because it recurs throughout this book: Flyway, not Hibernate, owns the
-schema's shape, and JPA's job is only to describe how Java objects map onto
-tables Flyway already created. `spring.jpa.open-in-view: false` closes the
-Open Session In View anti-pattern: a lazy-loading exception outside a
-service method's transaction boundary is a bug to be fixed at the source, not
-papered over by keeping a Hibernate session open through the whole web
-request.
+`GlobalExceptionHandler`, a `@RestControllerAdvice`, is the one error-mapping surface for every controller: `ResourceNotFoundException` to `404`, `InsufficientStockException` to `409`, `PaymentDeclinedException` to `402`, and Bean Validation failures to `400`, all in the same `ApiError` shape so a client never guesses which context produced an error. `OpenApiConfig` registers a springdoc `OpenAPI` bean whose description lists the six contexts and points at `SMELLS.md`.
 
-Two small `@Configuration` classes round out the wiring.
-`GlobalExceptionHandler`, a `@RestControllerAdvice`, is the one error-mapping
-surface shared by every controller in the module: `ResourceNotFoundException`
-to `404`, `InsufficientStockException` to `409`, `PaymentDeclinedException`
-to `402`, and Bean Validation failures to `400`, each producing the same
-`ApiError` shape so a client never has to guess which context produced an
-error. `OpenApiConfig` registers a springdoc `OpenAPI` bean with a title and
-version; its description field states in plain text that the monolith "still
-owns" five contexts and that review was "extracted and decommissioned." The
-generated OpenAPI spec a reader hits at `/v3/api-docs` tells
-the same true story this chapter does. `SecurityConfig` configures exactly
-one `SecurityFilterChain` for the whole application: CSRF disabled, stateless
-sessions, HTTP Basic auth, and a single authorization rule
-(`POST /api/reviews` requires authentication; everything else is
-`permitAll()`). That rule no longer matches any route in this module: there
-is no `review` controller left to match it, which is precisely why
-`SMELLS.md` calls this configuration "harmless/vacuous" today rather than
-deleting it outright: it is left in place as the fossil record of the smell
-Chapter 15 actually cured, for a reader who wants to see what "tangled into
-shared security" looked like in code before it was fixed.
+`SecurityConfig` defines one `SecurityFilterChain` for the application: CSRF disabled, stateless sessions, HTTP Basic, and one rule, `POST /api/reviews` requires authentication and everything else is `permitAll()`. Its `SMELL[ch.15]` comment marks review's one authenticated endpoint governed by the same global chain as every other context. After the Review extraction no controller in the module matches that rule, which is why `SMELLS.md` calls the configuration on `main` "harmless/vacuous" rather than deleting it: it stays as the fossil record of the tangled shared security.
 
-### The fragile bits
+Three simplifications are worth knowing before you copy anything:
 
-A few choices in this module are simplifications made for a
-reference example, and naming them here keeps a reader from
-discovering them by surprise. The payment decline rule (any method string
-containing `DECLINE`, case-insensitively) is not a real fraud or
-risk-scoring model; it exists purely so the equivalence suite Chapter 10
-builds has a deterministic way to exercise the decline path. The single
-in-memory demo user in `SecurityConfig` is not a real identity provider;
-Chapter 15's extraction replaces it with an OIDC-backed configuration
-standalone on Quarkus, precisely because review's authentication was never a
-feature the monolith as a whole needed. And the seed data in
-`V2__seed_data.sql` depends on Postgres's `BIGSERIAL` assigning IDs in
-strict insertion order against a freshly migrated schema (the script's own
-comment says so), which is a convenience for a demo fixture, not a pattern
-to copy into a production migration where concurrent writers could interleave
-inserts unpredictably.
+- The `DECLINE` rule is not a fraud model. It is a deterministic way to exercise the decline path.
+- The single in-memory demo user in `SecurityConfig` is not an identity provider. The Review extraction replaces it with an OIDC-backed configuration standalone on Quarkus.
+- `V2__seed_data.sql` relies on `BIGSERIAL` assigning IDs in insertion order against a freshly migrated schema, as its own comment says. That is fine for a demo fixture and dangerous in a production migration where concurrent writers could interleave inserts.
 
-## Persistence: one shared schema, two Flyway migrations
+## Persistence: one shared schema, two migrations
 
-Every context's table lives in one PostgreSQL schema, created by exactly two
-Flyway migrations that run in order at application startup.
-`V1__init_schema.sql` creates seven tables (`customers`, `inventory_items`,
-`orders`, `order_items`, `payments`, `shipments`, `notifications`, and
-`reviews`), and its very first line is a `SMELL[ch.18]` comment stating the
-smell outright: every foreign key in this file crosses a bounded-context
-boundary freely, because there is exactly one schema for the whole
-application to share. `orders.customer_id` references `customers`;
-`order_items.inventory_item_id` references `inventory_items`; `payments`,
-`shipments`, and `notifications` all reference `orders`; `reviews` references
-both `customers` and `inventory_items`. A decomposed system, the comment
-notes, would own one database per context and replace every one of those
-joins with either a CDC-fed local copy or a call across an anti-corruption
-layer, exactly the subject of Chapter 18 and Chapter 19, two parts of this
-book away from here.
+Every context's table lives in one PostgreSQL schema built by two Flyway migrations. `V1__init_schema.sql` creates eight tables (`customers`, `inventory_items`, `orders`, `order_items`, `payments`, `shipments`, `notifications`, `reviews`). Its first line is a `SMELL` comment stating the problem: every foreign key crosses a bounded-context boundary freely, because the whole application shares one schema.
 
-`V2__seed_data.sql` is the deterministic demo fixture every later chapter's
-examples assume exists: two customers (Ada Lovelace, Grace Hopper), three
-inventory items (a Standard Widget with 100 units on hand, a Deluxe Gadget
-with 50, and a Pocket Gizmo with only 5, kept scarce so the
-insufficient-stock path has a real SKU to exercise), one fully confirmed and
-shipped order for Ada, and two product reviews. The file's own header
-comment is explicit about the one constraint that makes it work at all: it
-relies on `BIGSERIAL` assigning IDs 1, 2, 3... in insertion order against a
-schema that was just created fresh, so a hardcoded `customer_id = 1` in a
-later `INSERT` reliably means Ada. That is a fine assumption for a Flyway
-migration that only ever runs once per fresh database, which is exactly
-what both the local compose-stack Postgres and the Testcontainers-backed
-integration tests give it, and it would be a dangerous assumption anywhere
-IDs might already be in use. The pattern is common enough in demo fixtures
-that it is easy to copy uncritically into a context where it no longer holds.
+- `orders.customer_id` references `customers`.
+- `order_items.inventory_item_id` references `inventory_items`.
+- `payments`, `shipments` and `notifications` reference `orders`; `notifications` also references `customers`.
+- `reviews` references both `customers` and `inventory_items`.
+
+A decomposed system would own one database per context and replace each join with a CDC-fed local copy or a call across an anti-corruption layer.
+
+`V2__seed_data.sql` is the deterministic fixture every later example assumes: two customers (Ada Lovelace, Grace Hopper), three inventory items (a Standard Widget with 100 units, a Deluxe Gadget with 50, and a Pocket Gizmo with only 5, scarce so the insufficient-stock path has a real SKU), one confirmed and shipped order for Ada, and two product reviews. A hardcoded `customer_id = 1` reliably means Ada because the script runs once against a fresh database, which is what both the compose-stack Postgres and the Testcontainers-backed integration tests provide.
 
 {% include excalidraw.html file="monolith-shared-schema-er" alt="The shared-schema entity-relationship diagram: eight tables in one PostgreSQL schema, with customers and inventory_items referenced from multiple context-owned tables and nine foreign keys crossing bounded-context ownership lines freely." caption="Figure 8.4: One shared schema, nine foreign keys crossing context boundaries" %}
 
 ## The REST API surface
 
-springdoc OpenAPI generates the full contract from the controllers
-themselves (no hand-maintained spec to drift out of sync), served at
-`/v3/api-docs` with a browsable UI at `/swagger-ui.html`. The surface across
-the five contexts still resident in the module:
+springdoc OpenAPI generates the contract from the controllers, so no hand-maintained spec can drift. It is served at `/v3/api-docs` with a UI at `/swagger-ui.html`. The six contexts expose:
 
 | Context | Endpoint | Method | Purpose |
 |---|---|---|---|
@@ -420,35 +164,17 @@ the five contexts still resident in the module:
 | shipping | `/api/shipments/{id}` | `GET` | Fetch one shipment |
 | shipping | `/api/shipments?orderId=` | `GET` | List shipments for an order |
 | notification | `/api/notifications?customerId=` | `GET` | List notifications for a customer |
+| review | `/api/reviews` | `POST` | Create a review (authenticated) |
+| review | `/api/reviews/{id}` | `GET` | Fetch one review |
+| review | `/api/reviews?sku=` | `GET` | List reviews for a SKU |
 
-Every one of these is plain Spring MVC (no GraphQL, no RPC framework, no
-custom content negotiation) because the API surface itself is not where
-this book spends its teaching budget; it is the substrate the
-behavior-equivalence suite in Chapter 10 captures as a Newman collection, and
-a surface this ordinary is exactly what makes that capture mechanical rather
-than an exercise in working around framework idiosyncrasies.
+All of it is plain Spring MVC, with no GraphQL, RPC framework or custom content negotiation. That ordinariness is what makes capturing the surface as a Newman equivalence collection mechanical.
 
 ## Why mainstream Spring
 
-Every one of the frameworks wired into this module (Spring MVC for REST,
-Spring Data JPA for persistence, Spring Security for the one authenticated
-route, Bean Validation for request shapes) was chosen for a reason this
-chapter can now state directly, because you have just seen the code that
-proves it: each one has a direct counterpart in the Quarkiverse
-Spring-compatibility bridge (`quarkus-spring-web`, `quarkus-spring-di`,
-`quarkus-spring-data-jpa`, `quarkus-spring-security`) that Part 5's
-extractions lean on for their first, fast pass onto Quarkus. This
-is not an incidental convenience; it is a design constraint this monolith
-was built under from the start. If `OrderRepository` had been written
-against some bespoke in-house persistence abstraction instead of a plain
-`JpaRepository<Order, Long>` interface, Phase A of every future extraction
-would need custom translation code before the equivalence gate could even
-run once. Because it is instead the plainest possible Spring Data interface,
-the Phase A lift is close to mechanical: the same interface, against the
-same entity, works almost unchanged once the compatibility extension is on
-the classpath instead of the real Spring Data JPA starter:
+Spring MVC for REST, Spring Data JPA for persistence, Spring Security for the one authenticated route and Bean Validation for request shapes each have a direct counterpart in the Quarkiverse Spring-compatibility bridge (`quarkus-spring-web`, `quarkus-spring-di`, `quarkus-spring-data-jpa`, `quarkus-spring-security`) that each extraction leans on for its first, fast pass onto Quarkus. That is a design constraint the monolith was built under. Had `OrderRepository` been written against a bespoke persistence abstraction instead of a plain `JpaRepository<Order, Long>`, Phase A of every extraction would need custom translation code before the equivalence check could run once. With the plain interface, the same interface against the same entity works almost unchanged once the compatibility extension replaces the Spring Data JPA starter on the classpath:
 
-{% include codetabs.html langs="Spring Boot (today, examples/00-monolith)|Quarkus (Phase A lift, quarkus-spring-data-jpa)" %}
+{% include codetabs.html langs="Spring Boot (examples/00-monolith, reference/monolith-before)|Quarkus (Phase A lift, quarkus-spring-data-jpa)" %}
 
 ```java
 // pom.xml dependency: org.springframework.boot:spring-boot-starter-data-jpa
@@ -462,7 +188,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
 ```java
 // pom.xml dependency: io.quarkiverse.spring:quarkus-spring-data-jpa
-// Same interface, same entity, same method signatures — the Quarkiverse
+// Same interface, same entity, same method signatures. The Quarkiverse
 // extension provides a Spring Data JPA-compatible implementation at build
 // time so this file does not need to change for the Phase A lift to pass
 // the equivalence gate unchanged.
@@ -474,92 +200,40 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 }
 ```
 
-The two tabs are identical by design. That sameness is the entire point of
-the two-phase strategy: Phase A proves an extraction behaves correctly
-against the equivalence suite *before* anyone spends effort making the code
-idiomatic, and it can prove that quickly precisely because nothing in the
-monolith's own code has to change to get there. A monolith built on exotic,
-hard-to-bridge Spring usage would force every extraction's Phase A to start
-with a rewrite instead of a lift, which would collapse the two-phase
-strategy back into one slow phase, exactly the thing Chapter 5 argued the
-ADLC's speed is supposed to avoid.
+The tabs are identical by design. The two-phase strategy proves an extraction behaves correctly against the equivalence collection before anyone spends effort making the code idiomatic, and it can do that quickly only because nothing in the monolith's own code has to change. Exotic, hard-to-bridge Spring usage would turn every Phase A from a lift into a rewrite and collapse the two phases into one slow one.
 
-## A healthy "before," with seams already visible
+## A healthy "before", with seams already visible
 
-It would be easy to write a "before" monolith that is obviously broken,
-tangled spaghetti nobody would ship, and call that realistic. This one is
-not that. `mvn verify` passes 38 tests green; the OpenAPI surface is
-complete and browsable; the checkout flow correctly rolls back a declined
-payment and an out-of-stock line; the error responses are consistent across
-every context. This is software a small team would ship, review,
-and run in production, which is exactly why it is the right "before." The
-six smells `SMELLS.md` catalogues (shared schema and cross-context joins,
-the god `OrderService`, one ACID transaction spanning five contexts, a
-synchronous notification inside that transaction, the missing
-anti-corruption layer between `order` and `inventory`, and review's
-tangled-but-independent security) are not bugs a code reviewer would catch
-and block on. They are the kind of structural debt that accumulates
-invisibly in a system that works fine at today's scale and today's team
-size, and only becomes expensive once a business tries to scale a single
-context, deploy it independently, or hand it to a different team. Chapter 9
-names and locates each one precisely, tagged to the exact pattern that cures
-it later in this book. Part 4, starting two chapters from here, teaches the
-method (strategic and tactical domain-driven design, event storming) for
-finding a seam like this systematically, in a system where nobody left you a
-`SMELLS.md` file to read.
+An obviously broken tangle would be an unrealistic "before". This one passes `mvn verify` with 45 test executions, has a complete browsable OpenAPI surface, correctly rolls back a declined payment and an out-of-stock line, and returns consistent errors across every context. A small team would ship and run it.
+
+The six smells in `SMELLS.md` are not bugs a code review would block: shared schema and cross-context joins, the god `OrderService`, one ACID transaction spanning five contexts, a synchronous notification inside that transaction, the missing anti-corruption layer between `order` and `inventory`, and review's tangled-but-independent security. They are structural debt that accumulates invisibly and becomes expensive when a business needs to scale one context, deploy it independently or hand it to another team. Strategic and tactical domain-driven design and event storming find seams like these in a system that comes without a `SMELLS.md`.
+
+> **Decision**
+>
+> Keep the framework surface to what a compatibility bridge can lift unchanged (plain Spring MVC, Spring Data JPA, Bean Validation), and let Flyway, not Hibernate, own the schema. Anything exotic taxes every later extraction.
+
+> **🤖 Explore with your agent**
+>
+> "On the `reference/monolith-before` branch, read `examples/00-monolith/src/main/java/dev/patterncatalyst/monolith/order/OrderService.java`. For each cross-context call in `placeOrder`, name the context it reaches, the `SMELL[ch.NN]` tag on it, and what that call becomes if its context is extracted, keeping the framework surface to what the Quarkiverse Spring-compatibility extensions can lift unchanged."
+>
+> Check: `git grep -n 'SMELL\[ch\.' reference/monolith-before -- examples/00-monolith/src/main/java/dev/patterncatalyst/monolith/order/OrderService.java` lists the tags the reply cites (`SMELL[ch.16]`, `SMELL[ch.17]`, `SMELL[ch.22]`, `SMELL[ch.26]`).
 
 ## Build, run, observe
 
 ```bash
+git checkout reference/monolith-before
 cd examples/00-monolith
 mvn verify          # three-tier suite: unit + slice + Testcontainers integration
 mvn spring-boot:run # starts the app on :8080 against application.yml's datasource
 ```
 
-With the application running and the local compose-stack Postgres up and
-seeded, `curl http://localhost:8080/api/inventory` returns the three seeded
-SKUs; `curl -X POST http://localhost:8080/api/orders` with a JSON body
-shaped like `OrderCreate` runs the full checkout flow this chapter just
-walked, end to end, against a real database.
+`mvn verify` runs the unit, slice and Testcontainers-backed integration tests: 45 test executions on `reference/monolith-before`, 38 at `stage/01-review-extracted` after Review's tests left with its extraction. On `main` the module boots but serves nothing under `/api`. With the application running and the compose-stack Postgres up and seeded, `curl http://localhost:8080/api/inventory` returns the three seeded SKUs. `curl -X POST http://localhost:8080/api/orders` with a JSON body shaped like `OrderCreate` runs the full checkout against the database.
 
-## Cross-check
-
-The generated OpenAPI document at `http://localhost:8080/v3/api-docs` is an
-independent description of the API surface, produced by springdoc from the
-controller annotations rather than hand-written. If a method, path, or
-response shape in this chapter's table above ever drifts from the running
-code, that spec (and the Swagger UI rendering it at `/swagger-ui.html`) will
-disagree with this chapter immediately, which is exactly the property that
-makes it a useful cross-check rather than a second copy of the same claim.
-
-## What you learned
-
-- The monolith's six bounded contexts (order, inventory, payment, shipping,
-  notification, review) share one classic layered shape: Spring MVC
-  controller, `@Service`, Spring Data JPA repository, repeated five times in
-  the code you can read today, with review's original sixth copy preserved
-  in `SMELLS.md`'s record of what Chapter 15 later extracts.
-- `OrderService#placeOrder` is the one method that ties all five remaining
-  contexts together inside a single `@Transactional` boundary, the exact
-  mechanism Chapter 9 names as a smell and Chapters 22-24 eventually replace
-  with an explicit saga.
-- One shared PostgreSQL schema, two Flyway migrations, and a seed script that
-  quietly depends on fresh-database insertion order are the persistence
-  layer's whole story, and its cross-context foreign keys are precisely
-  what Chapter 18/19 later untangle.
-- Every framework choice here (Spring MVC, Spring Data JPA, Spring Security)
-  was made because it bridges cleanly to Quarkus via the Quarkiverse
-  Spring-compatibility extensions, a design constraint on the
-  "before" picture, not an afterthought discovered during extraction.
-
-Chapter 9, "The Deliberate Smells," takes the six `SMELL[ch.NN]` comments
-scattered through this code and turns them into a deliberate catalogue,
-naming each one precisely and pointing, for the first time in this book, at
-the exact chapter that will cure it.
+The OpenAPI document at `http://localhost:8080/v3/api-docs` is produced from the controller annotations. If a path or response shape in the table above drifts from the running code, that spec and the Swagger UI at `/swagger-ui.html` disagree with it.
 
 ## For deeper coverage
 
 - Sam Newman, *Monolith to Microservices* (O'Reilly, 2019): why a believable "before" system, not a strawman, is the right starting point for any extraction; see the [Reading List](/bibliography/).
-- Eric Evans, *Domain-Driven Design* (Addison-Wesley, 2003): the bounded-context vocabulary this chapter's six packages anticipate, named explicitly once Chapter 11 arrives.
-- [Quarkus: Spring Data JPA compatibility guide](https://quarkus.io/guides/spring-data-jpa): the mechanics behind the Phase A lift codetabs example this chapter closes with.
-- Martin Kleppmann, *Designing Data-Intensive Applications* (O'Reilly, 2017): the shared-schema tradeoffs this chapter's ER diagram makes concrete, the starting point Chapters 18 and 19 unwind.
+- Eric Evans, *Domain-Driven Design* (Addison-Wesley, 2003): the bounded-context vocabulary the six packages anticipate.
+- [Quarkus: Spring Data JPA compatibility guide](https://quarkus.io/guides/spring-data-jpa): the mechanics behind the Phase A lift in the codetabs above.
+- Martin Kleppmann, *Designing Data-Intensive Applications* (O'Reilly, 2017): the shared-schema tradeoffs the ER diagram makes concrete.

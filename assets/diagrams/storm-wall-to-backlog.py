@@ -44,8 +44,8 @@ ROWS = [
      "Choreographed saga", "policy becomes a Kafka consumer on the payment.captured sibling topic"),
     ("PaymentCaptured -> ShipmentDispatched", "shipping's seam",
      "Shipping",
-     "Orchestrated saga", "Camel Saga EIP -- one coordinating definition, not peer-to-peer events"),
-    ("ShipmentDispatched -> OrderConfirmed / NotificationSent", "notification's seam -- cut first",
+     "Orchestrated saga", "Camel Saga EIP: one coordinating definition, not peer-to-peer events"),
+    ("ShipmentDispatched -> OrderConfirmed / NotificationSent", "notification's seam: cut first",
      "Notification",
      "Transactional outbox", "feeding an asynchronous consumer"),
 ]
@@ -65,7 +65,7 @@ for i, (boundary, seam_note, ctx, mech, mech_detail) in enumerate(ROWS):
 # ---- footnote: OrderService / ch.26 -- extracted last, no single mechanism --
 foot = node(COL_A_X, ROW_Y0 + 4 * (ROW_H + GUTTER) + 10, COL_A_W + (COL_B_X - COL_A_X - COL_A_W) + COL_B_W,
             90,
-            ["OrderService itself -- cut last",
+            ["OrderService itself: cut last",
              "issues every policy's command above; waits until all four boundaries already fire events"],
             style="ghost")
 nodes.append(foot)
@@ -89,7 +89,7 @@ notes = [
      "text": "This wall answers *where* to cut; *in what order* is the coupling-analysis question, not this figure's.",
      "anchor": "start", "size": 10.5, "color": "#555555"},
     {"x": COL_A_X, "y": H - 16,
-     "text": "Sourced from _docs/12-event-storming.md (\"From the wall to the backlog\"), citing build-plan.md Section E.",
+     "text": "Sourced from _docs/12-event-storming.md (\"From the wall to the backlog\").",
      "anchor": "start", "size": 10, "color": "#777777"},
 ]
 

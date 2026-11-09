@@ -65,7 +65,7 @@ notes = [
     {"x": PLOT_X + PLOT_W / 2, "y": PLOT_Y + PLOT_H + 52, "text": "change frequency", "anchor": "middle", "size": 11.5, "bold": True, "color": "#1d1d1d"},
 
     {"x": 40, "y": H - 16,
-     "text": "Sourced from _docs/04-strategies-and-assessment.md (\"The strategy menu: what each option actually buys\") -- "
+     "text": "Sourced from _docs/04-strategies-and-assessment.md (\"The strategy menu: what each option actually buys\"); "
              "the monolith's own placement is quoted directly: high strategic value, difficult on data, moderate elsewhere.",
      "anchor": "start", "size": 10.5, "color": "#555555"},
 ]

@@ -5,7 +5,7 @@ Red Hat-aligned Scene diagrams, one per high-value figure in the deck. Author
 here, then run build_diagrams.py (renders SVG + Excalidraw + PNG via cairosvg).
 
 Color by kind: svc=blue (services/clients), rest=red (edge/API surface / the
-move this book takes), data=purple (stores/state), platform=teal (infra/
+move this migration takes), data=purple (stores/state), platform=teal (infra/
 platform), govern=amber (policy/coordination), danger=deep-red (anti-pattern/
 failure/fail-gate), neutral=grey, muted=caption grey.
 """
@@ -18,7 +18,7 @@ from dgen import Scene, PALETTE
 def r01_modernization_2x2():
     s = Scene("r01-modernization-2x2", 1200, 660,
               title="Modernize by value and risk: not all at once",
-              subtitle="The six Rs on a value / change-risk grid; this book lives in the top-right, done incrementally")
+              subtitle="The six Rs on a value / change-risk grid; this migration lives in the top-right, done incrementally")
     # grid
     x0, y0, cw, ch, gap = 210, 120, 440, 215, 16
     s.label(150, y0 + 10, "HIGH", size=11, weight="bold", color=PALETTE["muted"], anchor="middle")
@@ -28,7 +28,7 @@ def r01_modernization_2x2():
     # top-left: high value, low risk
     s.box(x0, y0, cw, ch, "Rehost / Replatform", ["quick wins: containerize,", "lift onto Kubernetes"], kind="platform")
     # top-right: high value, high risk
-    s.box(x0 + cw + gap, y0, cw, ch, "Refactor / Re-architect", ["the strangler fig: one seam", "at a time  (this book)"], kind="rest")
+    s.box(x0 + cw + gap, y0, cw, ch, "Refactor / Re-architect", ["the strangler fig: one seam", "at a time  (this migration)"], kind="rest")
     # bottom-left: low value, low risk
     s.box(x0, y0 + ch + gap, cw, ch, "Retain / Encapsulate", ["leave it running;", "wrap it behind an API"], kind="svc")
     # bottom-right: low value, high risk
@@ -329,7 +329,7 @@ def r_coupling_ladder():
         ("3. Control coupling", "paymentMethod() threaded into charge() to pick an approve / decline path", "govern"),
         ("4. Stamp coupling", "OrderItem takes the whole InventoryItem for the three fields it needs", "govern"),
         ("5. Data coupling: done right", "listAll() returns OrderDto via toDto(), not raw entities", "platform"),
-        ("6. Message coupling (target)", "no monolith example; interaction only through messages (ch.14–26)", "muted"),
+        ("6. Message coupling (target)", "no monolith example; interaction only through messages", "muted"),
         ("7. API / data-structure (best)", "no monolith example; a versioned contract at the boundary", "muted"),
     ]
     x, w, y0, bh, gap = 150, 1010, 110, 92, 14

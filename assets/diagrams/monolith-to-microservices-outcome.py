@@ -36,7 +36,7 @@ W, H = 1560, 860
 
 # ============================= LEFT: before ================================
 outer_band_L = {"x": 40, "y": 70, "w": 710, "h": 680,
-                "label": "Spring Boot monolith -- one deployable (JDK 25)", "fill": "#ffffff"}
+                "label": "Spring Boot monolith: one deployable (JDK 25)", "fill": "#ffffff"}
 
 order = node(70, 110, 200, 74, ["Order", "bounded context"], style="box")
 inventory = node(290, 110, 200, 74, ["Inventory", "bounded context"], style="box")
@@ -72,7 +72,7 @@ left_nodes = left_ctx_nodes + [pg_tables]
 left_edges = left_bus_edges
 
 left_notes = [
-    {"x": 395, "y": 745, "text": "review is REST-only -- no synchronous collaborator, outside the checkout transaction",
+    {"x": 395, "y": 745, "text": "review is REST-only: no synchronous collaborator, outside the checkout transaction",
      "anchor": "middle", "size": 10.5, "color": "#555555"},
 ]
 
@@ -80,8 +80,8 @@ left_notes = [
 outer_band_R = {"x": 850, "y": 70, "w": 670, "h": 680,
                 "label": "Six Quarkus services + GraphQL gateway, behind one Camel edge router", "fill": "#ffffff"}
 
-router = node(870, 100, 220, 160, ["Camel REST edge router", ":8888 -- single entry point"], style="ink")
-kafka = node(870, 300, 220, 160, ["Kafka", "event backbone -- outbox + saga coordination"], style="box")
+router = node(870, 100, 220, 160, ["Camel REST edge router", ":8888, single entry point"], style="ink")
+kafka = node(870, 300, 220, 160, ["Kafka", "event backbone: outbox + saga coordination"], style="box")
 
 rev_svc = node(1210, 95, 280, 70, ["Review service :8081", "owns review schema"], style="box")
 notif_svc = node(1210, 182, 280, 70, ["Notification service :8083", "owns notification schema"], style="box")
@@ -123,7 +123,7 @@ notes = [
     {"x": 1185, "y": 58, "text": "After", "anchor": "middle", "bold": True, "size": 14, "color": "#2f5f3d"},
     {"x": 40, "y": H - 16,
      "text": "Sourced from _docs/00-introduction.md (\"The running example\"), monolith-architecture.py, and "
-             "strangler-completes-final-topology.py -- same six contexts, same ports, no codenames.",
+             "strangler-completes-final-topology.py; same six contexts, same ports, no codenames.",
      "anchor": "start", "size": 10.5, "color": "#555555"},
 ] + left_notes + right_notes + divider_notes
 

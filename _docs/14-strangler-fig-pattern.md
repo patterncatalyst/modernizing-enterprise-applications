@@ -2,179 +2,52 @@
 title: "The Strangler Fig Pattern"
 order: 14
 part: "The Strangler Fig in Practice"
-description: "Fowler's pattern, the three steps, the proxy/redirection/shared-database variants, and the Camel strangler proxy used for cutover in this book."
+description: "Fowler's pattern in four ordered moves, the proxy, redirection and shared-database variants, and the Camel content-based router that makes a cutover a configuration change."
 ---
 
 ## Learning objectives
 
 By the end of this chapter you can:
 
-- Explain Fowler's strangler fig pattern as four ordered moves (intercept, route, incrementally replace, retire) and why retiring the old code before a cutover is proven is the single most common way an incremental migration loses its safety property.
-- Distinguish the Proxy, Redirection, and Shared-Database variants and name which question each one answers: how the routing decision gets made, versus whether data ownership has to move in the same step as code ownership.
-- Read the Camel content-based router in `StranglerProxyRoute.java` end to end: the `platform-http` consumer, the `choice()`/`when()`/`otherwise()` decision, and the `bridgeEndpoint=true`/`throwExceptionOnFailure=false` forwarding semantics that make it a transparent reverse proxy.
-- Explain why the cutover flag is read from configuration rather than baked into route code, and why that single design choice is what makes a cutover, and its reversal, a restart instead of a redeploy.
-- Diagnose the `startsWith '/reviews'` predicate bug and explain why a fully green, 49-of-49 behavior-equivalence suite could not catch it when both backends shared one table.
-- Design a stop-the-backend negative check that proves a routing decision is correct independent of whether two backends happen to produce identical responses.
-- Sequence a safe decommission: delete only the files the extraction actually owns, leave non-conflicting legacy pieces alone, defer the data cut, and flip the committed default only after every other check is green.
+- Apply the strangler fig as four ordered moves (intercept, route, incrementally replace, retire) and explain why retiring old code before a cutover is proven loses the pattern's safety.
+- Distinguish the Proxy, Redirection and Shared-Database variants by the question each answers: how the routing decision is made, and whether data ownership moves with code ownership.
+- Build the Camel content-based router in `StranglerProxyRoute.java` and explain `bridgeEndpoint=true` and `throwExceptionOnFailure=false`.
+- Keep the cutover flag in configuration so a cutover and its reversal are a restart, not a redeploy.
+- Diagnose the `startsWith '/reviews'` predicate bug and explain why a green 49-of-49 equivalence run could not catch it.
+- Sequence a decommission: delete only what the extraction owns, defer the data cut, and flip the committed default last.
 
 ## Why this matters
 
-Chapter 13 closed Part 4 with a ranked list, not a plan: six bounded
-contexts, scored by afferent and efferent coupling, from review's
-near-zero score to order's maximal one. A ranked list tells you which
-seam to cut first. It does not tell you *how* to cut a seam in a running
-production system without a weekend outage and a prayer. That is this
-chapter's job, and it is the first chapter in Part 5 with running code
-behind every claim it makes, because the mechanism this chapter
-describes is not a diagram borrowed from a textbook. It is the actual
-Camel route sitting in front of this book's monolith today, already
-exercised against a real cutover, a real bug, and a real decommission.
-
-The code is in `examples/01-strangler-proxy/`. There is no run script in
-this directory beyond the Maven/Quarkus build itself: the proxy is a
-long-running process you start and leave up, and its `README.md` covers
-exactly how to build it, run it, and point the behavior-equivalence
-suite through it instead of at the monolith directly.
+A ranked list of contexts says which seam to cut first. It doesn't say how to cut one in a running production system without a weekend outage. The mechanism is the Camel route in `examples/01-strangler-proxy/`, which fronts the monolith, and it was exercised against a real cutover, a real bug and a real decommission. The proxy is a long-running process; its `README.md` covers building it, running it and pointing the equivalence suite through it.
 
 {% include excalidraw.html file="strangler-review-extraction" alt="Two stacked diagrams showing the Camel strangler proxy before and after the Review cutover: before, the proxy forwards /api/reviews traffic to the Spring monolith; after, the flag strangler.review.enabled routes that traffic to the Quarkus review service instead, with the monolith's Review module decommissioned." caption="Figure 14.1: The strangler proxy before and after the Review cutover: one Camel route, one flag, two backends." %}
 
-## Fowler's pattern, and why the metaphor fits
+## Pattern: Strangler Fig
 
-Martin Fowler named this pattern after a real botanical process, and the
-metaphor is unusually precise for an engineering analogy, which is why
-it has survived two decades of pattern inflation while flashier names
-have not. A strangler fig begins life as a seed dropped in the canopy of
-a host tree. It sends roots down the host's trunk toward the ground and
-grows a lattice of its own structure around the host's entire length,
-all while the host keeps standing, keeps photosynthesizing, keeps doing
-everything a tree does. Only once the fig's own structure is complete
-(once it can stand on its own, draw its own water, bear its own
-weight) does the host, no longer able to compete for light and
-nutrients inside the fig's lattice, die and rot away, leaving the fig
-standing in exactly the shape the host used to occupy.
+Martin Fowler named the pattern after a botanical process. A fig seed lands in a host tree's canopy and grows a lattice of its own around the trunk while the host keeps living. Only when the fig can stand alone does the host, starved of light, die and rot away, leaving the fig in the host's shape. Four moves, in this order:
 
-Translate that botanical sequence into four engineering moves and you
-have the whole pattern, in an order that matters:
+1. **Intercept.** Put something in front of the old system that sees every request. Nothing about the host has changed, but the mechanism that will redirect its traffic exists.
+2. **Route.** Decide per request which system answers. At first the answer is always the old system, but the decision point now lives outside the old code, so nothing after this step touches the old system again.
+3. **Incrementally replace.** Stand up one new piece as its own service, flip the routing decision for that piece only, verify, and repeat.
+4. **Retire.** When a piece of the old system gets no traffic, remove it. Readers' instinct treats this as the goal, but done too early it turns an incremental migration into a big-bang rewrite with extra ceremony.
 
-1. **Intercept.** Before a single line of new-system code exists, put
-   something in front of the old system that can see every request
-   headed its way. This is the fig's seed taking root in the canopy:
-   nothing about the host has changed yet, but the mechanism that will
-   eventually redirect its traffic now exists.
-2. **Route.** Decide, per request, which system answers it. At first
-   the answer is always "the old system," because nothing new has been
-   built yet. But the *decision point* now exists, separate from the
-   old system's own code, which is the property that makes everything
-   after this step possible without touching the old system again.
-3. **Incrementally replace.** Build one new piece of functionality,
-   stand it up as its own service, and flip the routing decision for
-   *that piece only* so the new service, not the old code, now
-   answers it. Repeat, one piece at a time, verifying each cutover
-   independently before moving to the next.
-4. **Retire.** Once a piece of the old system no longer receives any
-   traffic, the fig's roots have done their work and the host's
-   corresponding limb can be removed. This is the step every reader's
-   instinct wants to treat as the real goal (a smaller, more modern
-   old system), but it is also the step this chapter will spend the
-   most time insisting you get in the right order, because retiring
-   too early is how "incremental" migrations quietly turn into
-   big-bang rewrites with extra ceremony.
+{% include excalidraw.html file="strangler-four-moves" alt="The strangler fig pattern's four moves in order: intercept, route, incrementally replace, retire, shown as a reversible zone spanning the first three moves (both backends still exist, the flag can flip either direction) and a separate irreversible zone at retire. A dashed warning path shows what happens if retire is reached before a stop-the-old-system check passes: the fallback is gone and the migration quietly becomes a big-bang rewrite." caption="Figure 14.2: The four moves, in order: intercept, route, incrementally replace, retire. The window stays reversible through move three; retire is the one move that closes it, and it only belongs last." %}
 
-{% include excalidraw.html file="strangler-four-moves" alt="The strangler fig pattern's four moves in order -- intercept, route, incrementally replace, retire -- shown as a reversible zone spanning the first three moves (both backends still exist, the flag can flip either direction) and a separate irreversible zone at retire. A dashed warning path shows what happens if retire is reached before a stop-the-old-system check passes: the fallback is gone and the migration quietly becomes a big-bang rewrite." caption="Figure 14.2: The four moves, in order: intercept, route, incrementally replace, retire. The window stays reversible through move three; retire is the one move that closes it, and it only belongs last." %}
-
-Notice what the metaphor rules out by construction. A strangler fig
-never kills the host and then grows into the gap. It grows *around*
-the host while the host is still alive, and the host only dies once
-competing for the same resources has become impossible. The engineering
-reading of that constraint is the entire case this book made in Chapter
-4 for incremental migration over a rewrite: the system under
-modernization keeps serving production traffic, keeps earning the
-business revenue, for the full duration of the migration. There is
-never a moment where the new system has to "catch up" to a frozen old
-system's behavior, because the old system never stops, and there is
-never a cutover event where everything moves at once, because nothing
-in the pattern requires it. The whole migration is reversible, piece by
-piece, right up until a given host limb is actually removed, which is
-precisely what `examples/01-strangler-proxy/` demonstrates with one real
-bounded context, start to finish, later in this chapter.
+The fig never kills the host and grows into the gap. The system under modernization keeps serving traffic for the whole migration, so the new system never has to catch up to a frozen target, and nothing requires everything to move at once. The migration is reversible piece by piece until a host limb is actually removed.
 
 ## Three variants of the same idea
 
-Chapter 4 introduced the Strangler Fig family at the altitude a strategy
-decision needs: name the three shapes the pattern takes, say which one
-this book commits to, and move on. This chapter has running code to
-stand the distinction up properly, because the three variants answer
-two different questions: *how does the routing decision get
-made*, and *does data ownership have to move in the same step as code
-ownership*. Conflating them is a common way strangler migrations
-get needlessly harder than they have to be.
+| Variant | Question it answers | In this system |
+|---|---|---|
+| Proxy | How is the routing decision made? A facade in front of the old system routes on anything it can see: path, header, cookie, a percentage for canary traffic | A standalone Camel-on-Quarkus application, separate from the monolith and every extracted service. Every client request, the Newman equivalence suite included, goes through it |
+| Redirection | The Proxy variant with one narrow rule: route by URI path | The Review cutover. A path rule maps onto REST resource boundaries, so a migration stages one bounded context at a time, and the rule stays mechanical and auditable |
+| Shared-Database | Must the new service own a database before it goes live? | Review's `application.properties` sets `quarkus.hibernate-orm.schema-management.strategy=none`: in its Phase A (spring-compat lift) form the service owns no schema and reads and writes the `reviews` table in the monolith's Postgres instance. Per-context data ownership comes later, in the shared-data-to-owned-data work |
 
-**The Proxy variant** is the general case: a dedicated facade sits in
-front of the old system, and every request passes through it before
-reaching either backend. The facade is free to make its routing
-decision on anything it can observe about the request (the path, a
-header, a cookie, a percentage-based coin flip for canary traffic), and
-nothing about the rule has to be the same for every piece of
-functionality being migrated. `examples/01-strangler-proxy/` is a Proxy
-in exactly this sense: it is a standalone Camel-on-Quarkus application,
-entirely separate from both the monolith and any extracted service,
-and every request this book's clients make, the Newman behavior-
-equivalence suite included, goes through it first.
+The shared database isn't a corner cut. The service boundary and the data boundary are separable, and forcing both in one step buys nothing but a data migration the cutover didn't yet need. The variants aren't exclusive: one proxy can route most contexts by path and one by another signal, and a code cutover can go live while its data cutover happens later. The point is to name which variant answers which question at each seam, so the code decision and the data decision aren't discovered to be two decisions mid-migration.
 
-**The Redirection variant** is the Proxy variant with a specific,
-narrower routing rule: route by URI path (or, for non-HTTP transports,
-by whatever addressable resource identifier plays the same role). This
-is the variant this book's proxy actually implements for the Review
-cutover, and it is worth being precise about why that narrower rule is
-the right one here rather than a missed opportunity for something
-fancier. A path-based rule maps directly onto REST resource boundaries,
-which means a migration can be staged resource by resource, exactly
-the "one bounded context at a time" sequencing Chapter 13's coupling
-ranking produced, without the proxy ever needing to understand
-anything about request bodies, payment methods, or any other
-business-level signal. The routing decision stays mechanical and
-auditable: given a path, there is exactly one rule that decides the
-backend, and that rule is readable in a handful of lines of route code,
-not scattered across conditionals keyed on domain concepts that will
-themselves change as the migration proceeds.
+## The Camel route
 
-**The Shared-Database variant** answers the second question entirely:
-does the newly extracted service need its own database before it can
-go live, or can it keep reading and writing the same tables the
-still-shrinking monolith uses while the *code* separation proceeds on
-its own schedule? This book's own Review extraction uses exactly this
-variant, and the Review service's own
-`application.properties` says so in plain configuration
-(`quarkus.hibernate-orm.schema-management.strategy=none`) because
-`examples/02-review-service/` is still in its Phase A
-(spring-compat-lift) form and owns no schema of its own yet. The
-`reviews` table lives in the same shared Postgres instance the
-monolith's five remaining contexts use, and nothing about the cutover
-this chapter walks through required that to change first. That is not
-a corner cut; it is a boundary separable from the service
-boundary, and forcing both to move in the same step would have bought
-this chapter's worked example nothing except a data migration it did
-not yet need. True per-context data ownership for Review (its own
-schema, its own database, no shared rows) is deferred to Chapter 18
-and Chapter 19, the shared-data-to-owned-data arc, same as every other
-context in this book's sequence.
-
-These three variants are not mutually exclusive choices you pick once
-for an entire migration. A single proxy can route by path for most
-contexts and by a different signal for one that needs it; a single
-extraction can go live behind a code cutover while its data cutover
-happens two chapters later. What matters is naming which variant
-answers which question at each seam, rather than treating "strangler
-fig" as one undifferentiated technique and discovering mid-migration
-that the code decision and the data decision were never actually the
-same decision.
-
-## The mechanics, as implemented here, in Camel
-
-`StranglerProxyRoute.java` is a single Camel `RouteBuilder`, and its
-entire job, intercept, decide, forward, fits in one `configure()`
-method. Reading it top to bottom is reading the whole mechanism this
-chapter has been describing in the abstract:
+`StranglerProxyRoute.java` is a single `RouteBuilder` whose `configure()` intercepts, decides and forwards:
 
 ```java
 from("platform-http:/api?matchOnUriPrefix=true")
@@ -198,265 +71,64 @@ from("platform-http:/api?matchOnUriPrefix=true")
     .end();
 ```
 
-**The consumer, `platform-http:/api?matchOnUriPrefix=true`,** is the
-"intercept" step made literal: every request under `/api/**` lands on
-this one route, regardless of which bounded context it is ultimately
-headed for. `matchOnUriPrefix=true` is what makes a single consumer
-sufficient for an entire API surface rather than one consumer per
-resource. Without it, Camel would need an exact path match, and this
-route would need to be rewritten every time a new resource appeared
-anywhere in the system. The cost of that convenience is a fact that
-tripped up this book's own cutover, covered in the next
-section: `platform-http` hands the route the **full** incoming path in
-`CamelHttpPath`, including the `/api` prefix the consumer itself was
-registered under, not a path relative to that prefix, which is the
-assumption an earlier version of this route's predicate made, incorrectly.
+- **Consumer.** `matchOnUriPrefix=true` lets one consumer take every path under `/api`, so the route isn't rewritten when a resource appears. The cost: `platform-http` puts the full incoming path in `CamelHttpPath`, `/api` prefix included, not a path relative to the consumer.
+- **First `choice()`.** This is the content-based router from *Enterprise Integration Patterns*. A request is tagged `stranglerTarget=review` only when the path starts with `/api/reviews` and `strangler.review.enabled` is on. Everything else, including `/api/reviews` with the flag off, is tagged `monolith`. Keeping the decision in an exchange property, separate from the forward, lets you diagnose a routing bug by reading the decision alone.
+- **Second `choice()`.** This is the reverse proxy. `bridgeEndpoint=true` reuses the inbound method, path and query string exactly as received instead of building a new URI from the Camel message; without it every header, query parameter and the verb would be copied by hand, and any one missed is an observable difference. With it, nothing differs between talking to the proxy and talking to a backend. `throwExceptionOnFailure=false` stops Camel from turning a backend 4xx or 5xx into an exception; without it a `402` or `404` reaches the client as Camel's generic error response instead of the backend's real status and body.
+- **Fixed destinations.** `strangler.monolith.base-url` and `strangler.review.base-url` are operator-configured constants. The route picks between two known URIs and never interpolates a header or path segment into a destination, so nothing in a request can steer the proxy to an arbitrary host.
 
-**The first `choice()` is the "route" step**: the decision point
-Fowler's pattern requires to exist independently of either backend's
-own code. It checks two things at once, combined with
-`PredicateBuilder.and`: does the request path start with
-`/api/reviews`, and is the `strangler.review.enabled` flag currently
-on. Only when both hold does the exchange get tagged
-`stranglerTarget=review`; every other request, including `/api/reviews`
-traffic when the flag is off, gets tagged `stranglerTarget=monolith`.
-Tagging the decision onto an exchange property, rather than branching
-immediately into two separate `.to()` calls, is a small but deliberate
-choice: it keeps the *decision* and the *action* in two separate,
-independently readable blocks, which is exactly what let this book's
-own cutover bug (next section) be diagnosed by reading the decision
-logic in isolation from the forwarding logic.
-
-**The flag itself, `strangler.review.enabled`,** is a plain
-`@ConfigProperty boolean`, read from Quarkus/SmallRye Config, with a
-default of `false`:
+The flag is a plain `@ConfigProperty`:
 
 ```java
 @ConfigProperty(name = "strangler.review.enabled", defaultValue = "false")
 boolean reviewEnabled;
 ```
 
-Nothing about flipping this value touches the route's code. It is a
-configuration entry, in `application.properties`, or overridden at
-runtime with `-Dstrangler.review.enabled=true` or
-`STRANGLER_REVIEW_ENABLED=true`, read once per request from CDI-managed
-config, which is precisely what makes the cutover (and, for as long as
-both backends exist, its reversal) a configuration change plus a
-restart rather than a code change plus a redeploy. That distinction is
-not a convenience detail; it is the entire reason a strangler migration
-can be reversible at all. A routing decision baked into source code
-requires a build, a review, and a deploy to reverse: three separate
-chances for the reversal itself to fail. A routing decision read from
-config requires none of that.
+Flipping it touches no route code. Set it in `application.properties`, or override it with `-Dstrangler.review.enabled=true` or `STRANGLER_REVIEW_ENABLED=true`, and restart; the route reads the CDI-managed value on every request. A routing decision baked into source needs a build, a review and a deploy to reverse, three chances for the reversal itself to fail. A decision read from config needs none of them.
 
-**The second `choice()` is the forward, the actual reverse proxy,**
-and the two query parameters on each `.to()` call each do essential
-work. `bridgeEndpoint=true` tells Camel's HTTP producer to
-reuse the inbound request's method, path, and query string exactly as
-received, rather than building a new URI from the Camel message the way
-a plain HTTP producer call normally would; without it, every header,
-every query parameter, and the HTTP verb itself would need to be copied
-across manually, and any one of them missed would be an observable
-difference between talking to the proxy and talking to a backend
-directly, the one thing this pattern cannot tolerate.
-`throwExceptionOnFailure=false` tells the same producer not to convert a
-4xx or 5xx backend response into a thrown Camel exception, which by
-default it would. Without that flag, a backend's `402 Payment Required`
-or `404 Not Found` would arrive at the proxy as a `CamelExecutionException`
-and get turned into a generic Camel error response instead of the real
-status code and body the backend sent, which would be a
-difference the behavior-equivalence suite would catch immediately, since
-its assertions check exact status codes and response bodies, not just
-"did the request succeed."
+## The reversibility window: a bug the equivalence suite missed
 
-**One more property matters here because it is a security property,
-not just a mechanical one:** the target base URLs
-(`strangler.monolith.base-url` and `strangler.review.base-url`) are
-fixed, operator-configured constants read from config, never built from
-anything in the request itself. The route's `choice()` picks *which* of
-two known, already-configured URIs to use; it never interpolates a
-header or a path segment into the destination URI. That is the
-secure-by-default discipline a dynamic-URI Camel route needs: nothing
-an attacker controls in a request can redirect the proxy to an
-arbitrary host, because the set of possible destinations was decided at
-deploy time, not at request time.
+The route shown earlier is the fixed version. With the flag at `false`, the Newman equivalence run (sixteen requests, forty-nine assertions, captured once against the running monolith and never edited) ran through the proxy and passed 49 of 49, as expected. Flipping the flag to `true` should have sent Review traffic to the Quarkus service. The run again passed 49 of 49, and that result was wrong.
 
-## The reversibility window: a bug the equivalence suite almost missed
+The original predicate checked `startsWith '/reviews'`, which never matches `/api/reviews`. Every request, flag on or off, fell through to the monolith. The run could not see it because the Review service reads and writes the same `reviews` table in the same database as the monolith's Review module. Two processes serving identical rows return the same bytes, so a black-box contract check cannot tell the new service answering from the old backend answering with identical data. The assertions weren't wrong; they just don't test routing when both backends agree.
 
-The clean route listing above is the *fixed* version. The actual
-cutover attempt for Review did not go cleanly on the first try, and the
-failure is worth telling in full, because it is the single best
-illustration in this book of why "the tests passed" and "the cutover
-is correct" are not the same claim.
-
-With the flag at its original default of `false`, the full
-behavior-equivalence suite (sixteen requests, forty-nine assertions,
-captured once against the running monolith and never edited since) was
-run unchanged through the proxy, and came back green: 49 of 49
-assertions passed. That much was expected and correct: Review was
-served by the monolith, reached through the proxy, and the proxy
-introduced no observable difference.
-
-The next step, flip `strangler.review.enabled` to `true` and expect
-Review traffic to now reach the extracted Quarkus service instead, also
-came back 49 of 49 green. That result was **wrong**, and nobody caught
-it from the suite result alone. The route's content-based predicate
-checked `${header.CamelHttpPath} startsWith '/reviews'`, which never
-matches an incoming path of `/api/reviews`, because, as the previous
-section already named, `platform-http` hands the route the *full*
-path, prefix included. Every request, flag on or flag off, fell through
-to the `otherwise()` branch and reached the monolith. The flag was
-being read correctly; the predicate built around it was simply checking
-the wrong string.
-
-What let that bug hide behind a fully green suite is the shared-database
-variant discussed two sections ago: `examples/02-review-service/` reads
-and writes the exact same `reviews` table, in the exact same Postgres
-database, that the monolith's own Review module used. Two different
-processes serving identical rows from one shared table *is* the same
-data no matter which process actually answered the HTTP request, so a
-black-box contract test that only ever checks status codes and response
-bodies has no way to distinguish "the correct new service answered this
-request" from "the wrong old backend answered it with identical data."
-The equivalence suite's forty-nine assertions were never wrong on their
-own terms; they are just not a sufficient test of *routing correctness*
-when both candidate backends can produce byte-identical answers.
-
-The check that actually surfaced the bug was simpler and more
-decisive than any additional assertion added to the suite: stop the
-monolith entirely, and retry the same request through the proxy. A
-correctly wired cutover should keep working: the Review service is a
-separate, still-running process that does not depend on the monolith
-being up. Instead, the request failed the exact same way every other
-`/api/**` path did with the monolith down, which proved, independent of
-any response body, that Review traffic was still reaching a now-dead
-monolith regardless of the flag. That is a stronger proof than a
-status-code comparison ever could be, because it tests the proxy's
-actual *routing decision*, not merely whether the two backends happen
-to agree. Once the predicate was corrected to check
-`startsWith '/api/reviews'` (matching the path shape `platform-http`
-presents), the same stop-the-monolith check came back exactly
-as it should: Review requests succeeded (served by the now-isolated
-Quarkus service), and every other path failed (correctly, with nothing
-left to serve it).
-
-This is the "reversibility window" this chapter's whole mechanism is
-built to provide, demonstrated with a real failure inside it rather
-than asserted as a property on faith: for as long as both the
-monolith's Review module and the extracted Review service exist, the
-flag can move in either direction, and once the predicate bug was
-fixed, both directions were independently proven against the full
-suite, with the monolith still intact as a working fallback the entire
-time. Nothing about discovering and fixing the predicate bug required
-touching the monolith at all; the whole repair happened inside the
-proxy, which is precisely the containment a strangler seam is supposed
-to buy you.
+What surfaced the bug was simpler than any added assertion: stop the monolith and retry the same request through the proxy. A correct cutover keeps working, because the Review service is a separate process. Instead the request failed exactly like every other `/api/**` path. That tests the routing decision itself. After the predicate was corrected to `startsWith '/api/reviews'`, the same check came back as it should: Review requests succeeded and every other path failed. The repair happened entirely inside the proxy, which is the containment a strangler seam is meant to buy. While both the monolith's Review module and the extracted service existed, the flag could move either way, and both directions were proven against the full suite.
 
 {% include codetabs.html langs="Before the cutover (flag=false)|After the cutover (flag=true, routing fixed)" %}
 
 ```bash
 # Flag off: every request, including Review, reaches the monolith.
-curl -s localhost:8888/api/reviews?sku=SKU-WIDGET-001   # 200 — monolith's Review module
-curl -s localhost:8888/api/orders                       # 200 — monolith (unaffected)
+curl -s localhost:8888/api/reviews?sku=SKU-WIDGET-001   # 200, monolith's Review module
+curl -s localhost:8888/api/orders                       # 200, monolith (unaffected)
 ```
 
 ```bash
 # Flag on, monolith stopped entirely, to prove the routing decision itself:
-curl -s localhost:8888/api/reviews?sku=SKU-WIDGET-001   # 200 — review-service; monolith is down
-curl -s localhost:8888/api/orders                       # 500 — still targets the dead monolith, as expected
+curl -s localhost:8888/api/reviews?sku=SKU-WIDGET-001   # 200, review-service; monolith is down
+curl -s localhost:8888/api/orders                       # 500, still targets the dead monolith, as expected
 ```
 
-## Decommission: the one deliberate, irreversible step
+## Decommission: the one irreversible step
 
-Reversibility is a real property of this pattern, but it is not an
-unbounded one, and the Review extraction's final step is exactly where
-that boundary sits. Once the routing fix above was verified, the
-monolith's Review module (its controller, service, repository, entity,
-and DTOs, plus the tests written against them) was deleted outright
-from `examples/00-monolith/`. The monolith's security configuration was
-deliberately left in place rather than cleaned up alongside it: with no
-route left in the monolith matching `/api/reviews`, the one
-authenticated rule it used to enforce simply never fires anymore,
-rather than being deleted and risking disturbing something unrelated.
-That was a scope decision that kept the change confined to Review's own files.
-The `reviews` table itself, and its seed data, were *not*
-dropped, for exactly the shared-database reason named earlier: the
-extracted service still depends on that table being there, and true
-data ownership is a Chapter 18/19 problem, not a Review-chapter one.
-With the module gone, `strangler.review.enabled=true` became the
-committed default in `application.properties`, replacing the `false`
-it had held throughout the cutover check.
+Once the routing fix was verified, the monolith's Review module (controller, service, repository, entity, DTOs and the tests written against them) was deleted from `examples/00-monolith/`. Its security configuration stayed: with no route matching `/api/reviews`, the one authenticated rule never fires, and leaving it kept the change inside Review's own files. The `reviews` table and its seed data stayed too, because the extracted service still depends on them and data ownership moves later. Then `strangler.review.enabled=true` became the committed default in `application.properties`.
 
-The proof that this step is irreversible, and not merely
-inconvenient to reverse, is a direct request against the now-slimmed
-monolith: `GET http://localhost:8080/api/reviews` returns `404 Not
-Found`, while `GET http://localhost:8080/api/orders` returns `200 OK`,
-unaffected. As a final sanity check, the proxy was even restarted with
-an explicit override, `-Dstrangler.review.enabled=false`, forcing the
-flag back to the state that used to mean "serve Review from the
-monolith." The flag still mechanically works (it is not dead code),
-but a request to `/api/reviews` through it now returns `404`, because
-the backend that value used to select no longer has anything to serve.
-That is the observable shape of a closed reversibility
-window: the mechanism that provided reversibility is still there and
-still functions exactly as designed; what changed is that one of the
-two destinations it could point to has been permanently removed.
+The result is observable. `GET http://localhost:8080/api/reviews` returns `404 Not Found` and `GET http://localhost:8080/api/orders` returns `200 OK`. Restarting the proxy with `-Dstrangler.review.enabled=false` still works mechanically, but `/api/reviews` now returns `404`, because the backend that value used to select has nothing to serve. The mechanism that provided reversibility still functions; one of its two destinations is gone.
 
-Decommission as the *last* step, after
-every other check has gone green, is the whole discipline this chapter
-has been building toward. Retiring the old code too early, before the
-routing fix was verified, for instance, would have destroyed the
-fallback that made diagnosing and correcting the predicate bug cheap
-and safe. Retiring it only once the stop-the-monolith check, not just
-the suite, had proven the new service was answering is what
-keeps "incremental" from quietly becoming "big-bang, just spread over
-more calendar time."
+Decommission goes last, after every other check is green. Retiring the old code before the routing fix was verified would have destroyed the fallback that made diagnosing the predicate bug cheap. Retiring it only after the stop-the-monolith check proved the new service was answering is what keeps "incremental" from becoming "big-bang, spread over more calendar time."
 
-## What you learned
+> **Decision**
+>
+> Put a router in front, cut one path prefix at a time behind a configuration flag, prove the routing with the old backend stopped, and retire old code only after that proof.
 
-- Fowler's strangler fig pattern is four ordered moves (intercept,
-  route, incrementally replace, retire), and the ordering is the point:
-  retiring the old code before the new code's cutover is
-  proven is the single most common way an "incremental" migration loses
-  the safety property that justified choosing it.
-- The Proxy, Redirection, and Shared-Database variants answer two
-  different questions: how the routing decision gets made, and whether
-  data ownership has to move in the same step as code ownership.
-  This book's Review extraction uses the Redirection variant for
-  routing (by URI path) and the Shared-Database variant for data (the
-  `reviews` table stays in the monolith's schema until Chapters 18–19).
-- `bridgeEndpoint=true` and `throwExceptionOnFailure=false` on the
-  Camel HTTP producer are what make a reverse proxy transparent enough
-  to pass a behavior-equivalence suite: method, path, query, and the
-  backend's real status code and body all have to survive the hop
-  unchanged, or the suite will see the difference.
-- A feature flag read from config, not baked into route code, is what
-  makes a cutover (and its reversal) a restart instead of a redeploy,
-  and a shared database between two backends can make a broken cutover
-  look like a working one, which is why this book's own cutover trusted
-  a stop-the-backend check over a green suite result before declaring
-  victory.
-
-The proxy and its flag are infrastructure; they do not, on their own,
-produce a working Review service. **Chapter 15, "Extraction 1: Review
-Service,"** walks that service into existence end to end: the Quarkus
-scaffold, the HTTP Basic-secured endpoints, the equivalence-gate pass, and the
-flag-gated cutover this chapter has been describing from the proxy's
-side of the seam. **Chapter 16, "Content-Based Routing & the
-Anti-Corruption Layer,"** goes back inside this same route and the ones
-that follow it to build the translation layer (the message translator
-and content enricher) that keeps a legacy backend's leaky data shapes
-from leaking into every service that has to talk to it. **Chapter
-17, "Extraction 2: Notification Service,"** is where this pattern
-meets its first real complication: an event consumer that cannot simply
-be reached by routing an inbound HTTP path, which is exactly the seam
-that forces this book's outbox and its first taste of event-driven
-cutover.
+> **🤖 Explore with your agent**
+>
+> "Read `examples/01-strangler-proxy/src/main/java/dev/patterncatalyst/strangler/StranglerProxyRoute.java` and `CUTOVER.md`. Review the routing predicates for any path that would match the wrong prefix (for example `/api/reviews` against a longer path), confirm no destination URI is built from request data, and list the checks I should run with a backend stopped before retiring any old code."
+>
+> Check: the reply should point at the `startsWith` predicates and `CamelHttpPath` including the `/api` prefix, and propose a stop-the-backend request per extracted context.
 
 ## For deeper coverage
 
 - Sam Newman, *Monolith to Microservices* (O'Reilly, 2019): the incremental, strangler-first migration playbook this whole book follows.
-- Martin Fowler, [*StranglerFigApplication*](https://martinfowler.com/bliki/StranglerFigApplication.html): the canonical write-up of the pattern this chapter names and implements in Camel.
+- Martin Fowler, [*StranglerFigApplication*](https://martinfowler.com/bliki/StranglerFigApplication.html): the canonical write-up of the pattern the Camel proxy implements.
 - Gregor Hohpe & Bobby Woolf, *Enterprise Integration Patterns* (Addison-Wesley, 2003): the content-based router the strangler proxy's `choice()`/`when()`/`otherwise()` route is built from.
 - Chris Richardson, [microservices.io: Strangler Application](https://microservices.io/patterns/refactoring/strangler-application.html): a second, independent catalog entry for the same pattern, useful for cross-checking Fowler's narrative against a pattern-language framing.
-- Cloud Native Design Patterns, [Composition](https://github.com/patterncatalyst/cloud-native-design-patterns/blob/main/_docs/03-composition.md): the companion book's treatment of fronting a system under migration with a composition layer, the same role this chapter's proxy plays.
+- Cloud Native Design Patterns, [Composition](https://github.com/patterncatalyst/cloud-native-design-patterns/blob/main/_docs/03-composition.md): the companion book's treatment of fronting a system under migration with a composition layer, the same role the proxy plays.

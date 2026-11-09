@@ -63,6 +63,8 @@ scan_target() {
 
   # 2. scan the SBOM (not the artifact again) -- the SBOM is the contract.
   grype "sbom:$sbom" -o json -q > "$scan"
+  # Remove host identifiers (checkout path, home directory) from the recorded scan.
+  sed -i -e "s|$REPO_ROOT|<repo>|g" -e "s|$HOME|~|g" "$scan"
 
   # 3. tally by severity and apply the policy.
   local crit high med

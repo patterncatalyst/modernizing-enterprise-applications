@@ -6,22 +6,15 @@ description: "The finished eight-workload system on OpenShift: a Helm chart, Rou
 duration: 40 minutes
 ---
 
-Chapter 30 brought the modernized system up on a real cluster (minikube, with
-Istio and the LGTM stack), and Chapter 31 wired its CI/CD and supply-chain gates.
-Both targeted vanilla Kubernetes. This appendix does the same thing on **OpenShift**,
-because "deploy it to Kubernetes" and "deploy it to OpenShift" are not the same
-sentence. OpenShift adds opinions: Security Context Constraints that reject pinned
-UIDs, Routes instead of hand-rolled ingress, an integrated image registry. Those
-opinions are what you have to design for.
+The modernized system already runs on vanilla Kubernetes (minikube, with Istio and the LGTM stack). **OpenShift** is a different target, because it adds opinions: Security Context Constraints that reject pinned UIDs, Routes instead of hand-rolled ingress, and an integrated image registry. Those are what you have to design for.
 
-Everything below ran on a live cluster. The eight application workloads plus
+Everything below ran on OpenShift Local. The eight application workloads plus
 Postgres and Kafka came up `1/1` in namespace `mea`; an external `curl` through an
 OpenShift Route reached the Camel strangler proxy, which routed to inventory-service,
 which read its own Flyway-migrated Postgres schema and returned seeded JSON: the
-whole stack, working end to end. The packaging is a single Helm chart under
+whole stack, end to end. The packaging is a single Helm chart under
 [`openshift/helm/mea/`](https://github.com/patterncatalyst/modernizing-enterprise-applications/tree/main/openshift/helm/mea);
-this appendix explains what is in it, what changed from `deploy/k8s/`, and how it
-was verified.
+what follows covers what is in it, what changed from `deploy/k8s/`, and how it was verified.
 
 ## Prerequisites
 
@@ -38,7 +31,7 @@ You do not need a paid subscription or a cloud account. **OpenShift Local** (CRC
    - the **pull secret** (a small JSON file). Save it as `~/Downloads/pull-secret.txt`.
 3. **Install `crc`** on a Fedora or RHEL host (bare metal, or a VM with nested
    virtualization). Extract the archive and put the `crc` binary on your `PATH`
-   (e.g. `~/.local/bin/crc`). This appendix used **CRC 2.64.0**, which bundles
+   (e.g. `~/.local/bin/crc`). Recorded with **CRC 2.64.0**, which bundles
    **OpenShift 4.22.14**. CRC wants the machine to itself: stop any running
    minikube profile first (`minikube stop -p mea`).
 4. **Size the host.** CRC's defaults (4 vCPU / ~10.5 GB RAM) are not enough for
@@ -60,7 +53,7 @@ You do not need a paid subscription or a cloud account. **OpenShift Local** (CRC
    `crc setup` needs root for a couple of steps (it installs a small setuid helper
    and configures the libvirt network), so run it in a terminal where `sudo` can
    prompt you. The first `crc start` provisions the VM and waits for the cluster to
-   settle (budget 10–15 minutes). It also prints the console URL and a login;
+   settle (budget 10 to 15 minutes). It also prints the console URL and a login;
    none of the steps below need it, so keep it out of shared terminals and notes.
 
 6. **Get `oc`.** CRC ships a version-matched `oc`; `eval "$(crc oc-env)"` puts it
@@ -76,15 +69,15 @@ You do not need a paid subscription or a cloud account. **OpenShift Local** (CRC
 
    If you want the web console, `crc console --credentials` prints the login;
    run it yourself and keep the output out of notes and commits. You will also
-   need `helm` (v3+; this appendix used v4), `skopeo`, and the JDK 25 + Maven
-   toolchain from Chapter 1, but **no container engine**: every image is
+   need `helm` (v3+; recorded with v4), `skopeo`, and the JDK 25 + Maven
+   toolchain from the setup, but **no container engine**: every image is
    built inside the cluster. Right after `crc start` returns, the API server may
    briefly reset connections while its operators roll out; if a command fails
    with `EOF`, wait a minute and retry.
 
 ## What changes when the target is OpenShift
 
-The `deploy/k8s/base/` manifests from Chapter 29 are plain Kubernetes. Three of
+The `deploy/k8s/base/` manifests are plain Kubernetes. Three of
 their assumptions do not survive contact with OpenShift, and the chart in
 `openshift/helm/mea/` is built around fixing exactly those three.
 
@@ -195,7 +188,7 @@ duplicating YAML per service, pays off:
             tcpSocket: { port: http }
           {{- end }}
           securityContext:
-            runAsNonRoot: true            # NOTE: no runAsUser — restricted-v2 assigns it
+            runAsNonRoot: true            # NOTE: no runAsUser; restricted-v2 assigns it
             allowPrivilegeEscalation: false
             capabilities: { drop: ["ALL"] }
             seccompProfile: { type: RuntimeDefault }
@@ -209,7 +202,7 @@ URLs, the gRPC coordinates) is a single ConfigMap, `mea-app-config`, ported from
 in-cluster address is built from the release namespace
 {% raw %}(`<svc>.{{ .Release.Namespace }}.svc.cluster.local`){% endraw %}, so the
 chart installs into any namespace without editing. Postgres and Kafka keep every
-hard-won fix from Chapter 30's live apply: Postgres's `args`-not-`command`
+hard-won fix from the live minikube apply: Postgres's `args`-not-`command`
 entrypoint and `PGDATA` subdirectory, and Kafka's `publishNotReadyAddresses`,
 pod-stable quorum-voter DNS, and 10-second probe timeout. Those fixes matter on
 OpenShift exactly as they did on minikube.
@@ -328,10 +321,10 @@ That is a 200 with seeded data: the Route, the SCC-assigned UID, the ConfigMap
 wiring, the Flyway migration, and the Camel route all working together.
 
 **The shared schema.** review-service is the one service still in the
-*shared-data* phase (Chapter 18): it reads the monolith's `public.reviews` table
+*shared-data* phase: it reads the monolith's `public.reviews` table
 rather than owning its own schema, and a fresh cluster has no monolith to create
 that table. So `deploy.sh` applies the frozen monolith's committed Flyway SQL
-(V1–V4) to `public` once, on a fresh database, the same way the compose stack
+(V1 to V4) to `public` once, on a fresh database, the same way the compose stack
 (`infra/db/init/10-monolith-public-schema.sh`), the minikube deploy and CI do.
 Before that step existed, `GET /api/reviews` through the proxy returned **500**
 with `relation "reviews" does not exist`; it now returns 200.
@@ -354,6 +347,6 @@ starter manifest is committed at
 [`openshift/gitops/application.yaml`](https://github.com/patterncatalyst/modernizing-enterprise-applications/blob/main/openshift/gitops/application.yaml).
 Its symmetric partner is **OpenShift Pipelines** (Tekton) for the build half: the
 `build-images.sh` loop above becomes a `Pipeline` triggered on push, the
-managed counterpart to the GitHub Actions workflows of Chapter 31. Both are
+managed counterpart to the GitHub Actions workflows. Both are
 left as starting points rather than part of the verified deploy: each
 needs its operator installed, and GitOps needs this repo reachable from the cluster.

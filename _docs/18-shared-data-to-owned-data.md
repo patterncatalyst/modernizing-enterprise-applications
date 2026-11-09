@@ -2,56 +2,27 @@
 title: "From Shared Data to Owned Data"
 order: 18
 part: "Data Across the Seam"
-description: "The shared-data pattern and its limits; the cost of the shared schema; planning the split that the Inventory extraction will carry out."
+description: "A foreign key is a dependency the database enforces silently. Database-per-service trades it for autonomy, snapshots and eventual consistency."
 ---
 
 ## Learning objectives
 
 By the end of this chapter you can:
 
-- Explain why shared-database coupling is harder to detect and break than any code-level smell, because a foreign key is a dependency the database enforces silently rather than one application code declares.
-- Weigh what database-per-service buys (independent deployability, scaling, and technology choice) against what it costs (live joins become network calls or event-fed read models; cross-service referential integrity disappears, replaced by eventual consistency the system must tolerate).
-- Apply the core denormalization move: replace a live foreign-key join with a point-in-time snapshot of the fields a context needs, or an explicit live call when the data must be current. Decide which fits a given relationship.
-- Reframe data duplication as a deliberate design choice rather than a normalization lapse, using Kleppmann's point that a cache, an index, a materialized view, and a denormalized copy are the same idea, and name what keeps each copy's staleness bounded.
-- Compare Review's deferred shared-schema choice against Notification's own-schema-from-day-one choice and state the two-writer/split-brain argument that decides correctly between them.
-- Describe a CDC-based backfill as an alternative to a big-bang schema cutover, and explain how an equivalence gate has to change once it must prove a new database is "the one really answering" rather than merely agreeing with a shared table.
+- Explain why shared-database coupling is harder to detect and break than a code smell: a foreign key is a dependency the database enforces silently, not one application code declares.
+- Weigh what database-per-service buys (independent deployability, scaling and technology choice) against what it costs (joins become network calls or event-fed read models, and cross-service referential integrity disappears).
+- Replace a live foreign-key join with a point-in-time snapshot, or with an explicit live call when the data must be current, and decide which fits a relationship.
+- Treat duplication as a design choice, and name what bounds each copy's staleness.
+- Choose between Review's deferred shared schema and Notification's own schema from the first migration using the two-writer argument.
+- Describe a CDC backfill as the alternative to a big-bang schema cutover, and say how an equivalence gate must change to prove the new database is the one answering.
 
 ## Why this matters
 
-Chapter 13 scored the monolith's five remaining smells on the Constantine
-taxonomy and on afferent/efferent coupling, and it named shared-database
-coupling (`SMELL[ch.18]`) as the single worst offender in the system: common
-coupling and content coupling at once, invisible at the point of use because
-the database enforces the dependency instead of the code declaring it. That
-chapter earned the claim with a taxonomy and a ranking. It did not yet spend
-the time the claim deserves on what the shared schema actually costs to run,
-or on what a team gives up the day it finally splits one database into many.
-This chapter does that work. There is no new code here and no new runnable
-example: `examples/00-monolith/` is unchanged since Chapter 10, and
-`examples/02-review-service/` and `examples/03-notification-service/` are
-unchanged since Chapters 15 and 17. What this chapter adds is the argument
-that turns Chapter 13's ranking into a plan: why this particular coupling is
-the hardest one in the book to break, what database-per-service buys
-and costs, the concrete moves that get a foreign key out of a shared
-schema and into two owned ones, and the two services already sitting in this
-repository that embody two different stages of that process: one still
-deferring it, one that never had to make the mistake in the first place.
-Chapter 19 runs the technique against Inventory, with CDC doing the
-heavy lifting this chapter only describes.
+The coupling analysis ranked shared-database coupling as the worst offender in the monolith: common and content coupling at once, invisible at the point of use because the database enforces the dependency and no code declares it. Splitting one database into many has costs the ranking doesn't show, and no code change covers them. `examples/00-monolith/`, `examples/02-review-service/` and `examples/03-notification-service/` hold the evidence, and the CDC backfill that carries the plan out comes with the inventory extraction. The monolith's entity classes quoted below (`OrderItem`, `Customer`) were deleted from the current tree by later extractions; they are on the `reference/monolith-before` branch (`git checkout reference/monolith-before`). `V1__init_schema.sql` is unchanged in the current tree.
 
-## Why shared-database coupling is the hardest coupling to break
+## Why shared-database coupling is the hardest to break
 
-Every other smell Chapter 9 catalogued lives in application code, which means
-every other smell has an owner who can see it, reason about it, and change it
-inside one pull request. The god `OrderService`'s four outbound dependencies
-are sitting in one constructor, visible to anyone who opens the file. The
-missing anti-corruption layer is a `findBySkuOrThrow` call returning a raw
-entity instead of a DTO: one method, one fix, reviewable in a diff. The
-shared schema is different in kind, not just degree, because its coupling
-does not live in a class anyone owns. It lives in `V1__init_schema.sql`, a
-migration that runs once, and in nine `REFERENCES` clauses (eight of them
-crossing a bounded-context seam) that Postgres itself enforces for as long
-as the tables exist:
+Every other smell lives in application code, where an owner can see it and change it in one pull request. The god `OrderService`'s outbound dependencies sit in one constructor. The missing anti-corruption layer is one method returning a raw entity. The shared schema lives in `V1__init_schema.sql`, a migration that ran once, and in nine `REFERENCES` clauses (eight crossing a bounded-context seam) that Postgres enforces for as long as the tables exist:
 
 ```sql
 -- V1__init_schema.sql
@@ -75,152 +46,60 @@ CREATE TABLE payments (
 );
 ```
 
-`payments`, `shipments`, and `notifications` each hold a foreign key straight
-into `orders`; `order_items` holds one into `inventory_items`; `reviews`
-holds two, into `customers` and `inventory_items`. `Customer` itself is the
-clearest case of all: its own class-level javadoc calls it a "shared-kernel
-entity. Not one of the monolith's bounded contexts itself," referenced
-directly by `order` via JPA and, at the database level only, by
-`notifications` and `reviews` as well. Six tables, five bounded contexts, one
-schema, and not one line of Java anywhere that says "I depend on inventory's
-table shape" or "I depend on customer's column list." The database says it,
-silently, on every row.
+`payments`, `shipments` and `notifications` each hold a foreign key into `orders`. `order_items` holds one into `inventory_items`. `reviews` holds two, into `customers` and `inventory_items`. `Customer` is the clearest case: its javadoc calls it a "shared-kernel entity. Not one of the monolith's bounded contexts itself", referenced by `order` through JPA and, at the database level only, by `notifications` and `reviews`. Six tables, five bounded contexts, one schema, and no line of Java says "I depend on inventory's table shape".
 
 {% include excalidraw.html file="monolith-shared-schema-er" alt="The shared-schema entity-relationship diagram: eight tables in one PostgreSQL schema, with customers and inventory_items referenced from multiple context-owned tables and nine foreign keys crossing bounded-context ownership lines freely." caption="Figure 18.1: The FK web database-per-service has to break apart: nine foreign keys, one shared schema" %}
 
-That silence is the entire reason this coupling outranks the others. A
-foreign key is not a negotiated contract between two teams who both read and
-approved it; it is a constraint one migration author wrote once, which every
-future writer to either table must now honor forever, whether or not they
-know it exists. Nothing fails at the point where the coupling is introduced.
-Something fails later, somewhere else, usually owned by a different person:
-inventory drops a column it believes nothing uses, and a query order wrote
-two years ago, against a join nobody remembers authorizing, breaks in
-production. Every other smell this book catalogues announces itself in a
-code review. This one waits for a migration.
+A foreign key isn't a negotiated contract. It's a constraint one migration author wrote once, which every future writer to either table must honor whether or not they know it exists. Nothing fails where the coupling is introduced. Later, somewhere else and usually in someone else's code, inventory drops a column it believes nothing uses and a join written two years ago breaks in production.
 
-Kleppmann's framing in *Designing Data-Intensive Applications* gives this
-exact failure mode its proper name: a foreign key is a form of referential
-integrity the database enforces for you, and the price of that convenience is
-that every writer to the referenced table is now implicitly coupled to every
-reader that depends on the reference holding. Inside one database, that price
-is close to free: Postgres checks the constraint on every write and refuses
-to let it break, so the coupling and its enforcement are the same mechanism.
-The moment a system is split across two databases, the enforcement stays
-behind in the old schema while the coupling itself does not disappear; it
-just becomes invisible to the one mechanism that used to catch it. That is
-Chapter 13's distributed-monolith trap restated in data terms: distance goes
-up, the dependency the foreign key was quietly managing does not go away, and
-now nothing is checking it at write time at all.
+Kleppmann's *Designing Data-Intensive Applications* puts the price this way: referential integrity is enforced for you, and every writer to the referenced table is implicitly coupled to every reader that relies on the reference holding. Inside one database that price is close to free, because the coupling and its enforcement are the same mechanism. Across two databases the enforcement stays behind in the old schema and the coupling doesn't go away. It is the distributed-monolith trap in data terms: distance goes up, the dependency stays, and nothing checks it at write time.
 
-## The database-per-service principle: what you buy, what you give up
+## Pattern: Database per Service
 
-The destination this chapter is aiming at (one owned database per bounded
-context, no table any other context can query directly) is usually sold on
-its benefits alone: independent deployability, because a schema migration no
-longer requires coordinating with every other context that happens to query
-the same tables; independent scaling, because `inventory_items` under a flash
-sale's read load does not have to compete with `orders`' write load on the
-same connection pool; and independent technology choice, because a context
-whose access pattern is fundamentally a key-value lookup is no longer forced
-onto the same relational engine a context doing multi-row transactional
-writes needs. Those benefits are real, and this book's decomposition roadmap
-is built to win them one context at a time.
+The destination is one owned database per bounded context, with no table any other context can query. The benefits are the usual ones:
 
-What that same sales pitch tends to leave out is the full size of what gets
-given up to get there. This chapter covers that cost before Chapter 19
-pays it.
+| Benefit | What it removes |
+|---|---|
+| Independent deployability | A schema migration no longer needs coordinating with every context that queries the same tables. |
+| Independent scaling | `inventory_items` under flash-sale reads doesn't compete with `orders` writes on one connection pool. |
+| Independent technology | A key-value access pattern isn't forced onto the engine a transactional context needs. |
 
-**Cross-table joins become API calls or replicated read models.**
-`OrderItem`'s `@ManyToOne` into `InventoryItem` today is a single SQL join,
-executed inside the same transaction, consistent by construction because
-there is only one database to be consistent with. The instant inventory owns
-its own database, that join has exactly two replacements, and both are
-qualitatively worse in the same way: a network call, which can fail,
-time out, or return a stale answer the instant after it returns; or a
-locally-held copy of inventory's data, which is only ever as fresh as the
-last event that updated it. There is no third option that recovers the
-original join's properties: a single, atomic, always-current read across two
-contexts' data, because that property was never free. It was a cost
-the shared schema had already paid, upfront, by coupling every writer to
-every reader. Splitting the database does not introduce a new cost; it stops
-hiding an old one.
+The costs are bigger than that pitch admits.
 
-**Referential integrity across services is gone, by design, not by
-oversight.** Nothing will stop a payment service, once it owns its own
-database, from holding a `order_id` that points at an order which the order
-service has since deleted, archived, or never actually created. Inside one
-schema, Postgres's `REFERENCES orders (id)` clause makes that state
-unreachable: the write fails. Across two schemas, that guarantee is
-gone, and it is gone permanently, not until someone remembers to rebuild it.
-What takes its place is a weaker, eventually-consistent promise: the owning
-context publishes the facts that matter (an order existed, with this id, at
-this moment), and every other context that cares either consumes that fact
-once and keeps its own copy, or calls back to ask, accepting that the answer
-might be stale by the time it arrives. Chapter 22's ACID→ACD argument is this
-exact trade, generalized from referential integrity to transactions as a
-whole: the database no longer gives you certain states cannot exist, and the
-system has to be designed to tolerate the states it no longer
-prevents.
+**Joins become API calls or replicated read models.** `OrderItem`'s `@ManyToOne` into `InventoryItem` is a single SQL join today, consistent by construction because there is one database. Once inventory owns its database the join has two replacements, both worse in the same way: a network call, which can fail, time out or return an answer already stale; or a local copy of inventory's data, only as fresh as the last event that updated it. Nothing recovers the original single, atomic, always-current read across two contexts. The shared schema had paid for that property up front by coupling every writer to every reader. Splitting the database stops hiding the cost.
 
-**What is bought in exchange is autonomy**: the ability for one team to
-change their schema, deploy their service, and scale their storage without a
-cross-context migration meeting, a shared maintenance window, or a shared
-on-call rotation standing in the way. That autonomy is the entire argument
-for paying the first two costs, and it is only a good trade when the
-business actually needs it: independent scaling because one context's load
-profile differs from its neighbors', independent deployment
-cadence because one team ships faster than the others, or independent
-ownership because two different teams, not one, are responsible for the code.
-Chapter 13 already made this point about services in general: "microservices
-are not the goal." It applies with even more force to data, because a
-split database is far harder to undo than a split deployable. Merging two
-codebases back into one repository is an afternoon's work. Merging two
-diverged schemas, each of which has accumulated its own migrations, its own
-assumptions, and its own data drift, is not.
+**Referential integrity across services is gone, by design.** Once payment owns its database, nothing stops it holding an `order_id` for an order that was deleted, archived or never created. Inside one schema `REFERENCES orders (id)` makes that state unreachable. Across two schemas the guarantee is gone permanently. What replaces it is an eventually consistent promise: the owning context publishes the facts that matter, and every other context either consumes a fact once and keeps its own copy, or calls back and accepts that the answer may be stale on arrival. The system has to tolerate states the database no longer prevents, the same trade the move from ACID to ACD makes for transactions as a whole.
 
-## From foreign key to snapshot: the denormalization move, concretely
+**What it buys is autonomy:** one team changes its schema, deploys and scales its storage without a cross-context migration meeting or shared maintenance window. That justifies the first two costs only when the business needs it: a different load profile, a different release cadence, or two teams owning the code. Microservices aren't the goal, and the point applies more strongly to data, because a split database is far harder to undo than a split deployable. Merging two codebases is an afternoon's work. Merging two schemas that have each accumulated migrations, assumptions and data drift is not.
 
-The mechanical heart of every data decomposition in this book is one move,
-repeated per relationship: replace a live join into another context's table
-with either a locally-owned, point-in-time copy of exactly the fields this
-context actually needs, or an explicit call across a published contract when
-a point-in-time copy would be wrong. `OrderItem`'s own javadoc already names
-the destination for the first kind of relationship, because it was written
-with Chapter 19 in mind from the day the smell was planted:
+## From foreign key to snapshot
+
+The core move, repeated per relationship, replaces a live join into another context's table with one of two things:
+
+| Need | Replacement |
+|---|---|
+| The fact as of the moment that mattered to this context | A point-in-time copy of exactly the fields it needs, fed by an event or a backfill. |
+| The fact as of this instant | An explicit call across a published contract. |
+
+A live foreign key quietly picks the first answer for every relationship, whether or not it was right. `OrderItem`'s javadoc already named the destination:
 
 ```java
 /**
  * SMELL[ch.18]: {@code OrderItem} holds a direct JPA {@code @ManyToOne} FK/join
- * onto {@code inventory.InventoryItem} — an order-context table referencing an
+ * onto {@code inventory.InventoryItem}: an order-context table referencing an
  * inventory-context table in the one shared schema. Once inventory owns its own
- * database (ch.19), this join is replaced by a denormalized copy of the fields the
+ * database, this join is replaced by a denormalized copy of the fields the
  * order context actually needs (sku, name, price-at-time-of-order), kept current
  * via CDC.
  */
 ```
 
-It is worth sitting with exactly what changes and, just as importantly, what
-does not. `OrderItem` already stores `unitPriceCents` as its own column,
-copied at order-placement time rather than read live off
-`inventoryItem.getPriceCents()` on every access. That part of the design was
-already correct, and it was correct before any service boundary existed,
-because a customer's receipt has to show what they paid, not what the SKU
-costs today. What is *not* yet denormalized is the SKU and the product name:
-both are reached today by following the live `@ManyToOne` into the current
-`inventory_items` row, which means an order placed last year silently
-inherits whatever name and SKU that row holds *today*: if inventory renames
-"Deluxe Gadget" to "Deluxe Gadget Pro" next quarter, every historical order's
-display quietly relabels itself, with no record that anything changed. That
-is a correctness bug hiding inside a convenience, and it was always a bug,
-independent of any decomposition. The shared schema just made it invisible
-by making "read the current row" the path of least resistance. The
-illustrative shape the real Chapter 19 migration will build looks like this
-(not yet in this repository, a sketch of the target, not a claim about
-existing code):
+`OrderItem` already stores `unitPriceCents` as its own column, copied at placement time instead of read live off `inventoryItem.getPriceCents()`. That part was correct before any service boundary existed, because a receipt shows what the customer paid, not what the SKU costs today. The SKU and product name aren't denormalized yet. Both are reached by following the live `@ManyToOne` into the current `inventory_items` row, so an order placed last year inherits whatever name that row holds today. If inventory renames "Deluxe Gadget" to "Deluxe Gadget Pro", every historical order relabels itself with no record that anything changed. That bug exists independently of any decomposition. The shared schema hid it by making "read the current row" the path of least resistance.
+
+The target shape, as an illustration written before the split:
 
 ```java
-// Illustrative — the target shape ch.19 builds, not yet in examples/.
+// Illustrative: the target shape the inventory extraction builds, not yet in examples/.
 // order_items gains its own columns; the @ManyToOne into InventoryItem
 // is removed once inventory owns its own database.
 @Entity
@@ -234,234 +113,69 @@ public class OrderItem {
     private String productNameSnapshot;
 
     @Column(name = "unit_price_cents", nullable = false)
-    private long unitPriceCents; // already owned today — unchanged
+    private long unitPriceCents; // already owned today, unchanged
 }
 ```
 
 ```sql
--- Illustrative — order_items after the FK is removed
+-- Illustrative: order_items after the FK is removed
 ALTER TABLE order_items DROP CONSTRAINT order_items_inventory_item_id_fkey;
 ALTER TABLE order_items ADD COLUMN inventory_item_sku VARCHAR(64) NOT NULL;
 ALTER TABLE order_items ADD COLUMN product_name_snapshot VARCHAR(255) NOT NULL;
 ```
 
-{% include excalidraw.html file="shared-db-to-database-per-service" alt="Before and after: on the left, one shared schema where order_items holds a live FK join into inventory_items, which is why a SKU rename silently relabels every historical order's display; on the right, inventory owns its own database, the FK is dropped, order_items gains sku and product-name snapshot columns written once at order-placement time, and a CDC connector backfills inventory's new database by tailing the old schema's write-ahead log." caption="Figure 18.2: order_items -> inventory_items: a live FK join today, a snapshot plus a CDC event feed after ch.19" %}
+The inventory extraction shipped its version as `examples/00-monolith/src/main/resources/db/migration/V4__decompose_order_items_fk.sql`: it adds `sku` and `product_name`, backfills them from `inventory_items`, sets them `NOT NULL`, then drops the foreign key and the `inventory_item_id` column.
 
-Three fields replace one live join: `sku` and the product name become
-point-in-time snapshots, written once at order-placement time exactly the way
-`unitPriceCents` already is, and the live foreign key, along with the
-guarantee that `inventory_items.id` must exist for the row to be valid,
-disappears entirely. Nothing left in `order`'s schema can tell you what
-inventory's *current* stock level, price, or name is; order no longer needs
-to know, because it already captured the facts it cares about at the
-one moment they mattered. For the facts order does need live (can
-this SKU still be reserved, right now, at checkout time), the decomposition
-roadmap's answer is a synchronous call across the seam (`quarkus-grpc` for
-inventory), not a stale local copy, because a
-stock check is exactly the case where a snapshot would be wrong.
-Both moves point at the same lesson from two directions: once a relationship
-crosses an owned-data boundary, you have to decide, explicitly, whether the
-consuming context needs the truth *as of this instant* (call across the seam)
-or the truth *as of the moment that mattered to it* (keep a snapshot, fed by
-an event or a backfill). A live FK quietly picked the first answer for every
-relationship in the schema, whether or not it was the right one for that
-relationship, which is exactly how the SKU-rename bug above got into the
-code without anyone deciding it should be there.
+{% include excalidraw.html file="shared-db-to-database-per-service" alt="Before and after: on the left, one shared schema where order_items holds a live FK join into inventory_items, which is why a SKU rename silently relabels every historical order's display; on the right, inventory owns its own database, the FK is dropped, order_items gains sku and product-name snapshot columns written once at order-placement time, and a CDC connector backfills inventory's new database by tailing the old schema's write-ahead log." caption="Figure 18.2: order_items -> inventory_items: a live FK join today, a snapshot plus a CDC event feed after the split" %}
 
-## Data duplication as a deliberate choice, not a lapse
+Three fields replace one join. SKU and name become snapshots written once at placement, as `unitPriceCents` already is, and the foreign key disappears along with the guarantee that the `inventory_items` row exists. Order no longer needs inventory's current stock, price or name, because it captured what mattered at the moment it mattered. For what order does need live, such as whether a SKU can still be reserved at checkout, the answer is a synchronous call across the seam (`quarkus-grpc` for inventory), because a stock check is exactly where a snapshot would be wrong.
 
-Every engineer trained on relational modeling learns to treat duplicated data
-as a defect to be normalized away: the same fact stored in two places is the
-textbook setup for the two places disagreeing. That instinct is correct
-inside one database, where normalization is nearly free and a single
-transaction can keep every copy of a fact consistent at the moment it
-changes. It becomes actively wrong advice the moment two contexts own
-separate databases, because the alternative to duplication is not
-consistency. It is a live cross-service call on every read, paying a network
-hop and a new failure mode for every join a single schema used to answer in
-microseconds. Kleppmann's treatment of derived data in *Designing
-Data-Intensive Applications* names the reframe directly: a cache, an index, a
-materialized view, and a denormalized copy of another service's data are all
-the same idea wearing different names: each one is a redundant copy of some
-upstream fact, kept in a shape optimized for how *this* reader needs it,
-whose correctness depends entirely on how reliably it is kept in sync with
-its source of truth rather than on whether a copy exists at all. Once that
-reframe lands, the question a data-decomposition plan actually has to answer
-stops being "should this fact be duplicated?" (it always will be, the moment
-two services both need it) and becomes "what keeps this copy accurate, and
-how stale is it allowed to get before that staleness is a bug instead of a
-tolerated property of the design?" Chapter 19's CDC backfill is this book's
-answer for inventory's data: a mechanism that keeps a derived copy current by
-tailing the source of truth's own write-ahead log, which is a stronger
-freshness guarantee than an application remembering to publish an event on
-every write, and the specific reason CDC earns a whole chapter rather than a
-paragraph.
+## Data duplication as a design choice
 
-## Read models fed by events: the shape Chapter 21 completes
+Relational training treats duplicated data as a defect. Inside one database that's right: normalization is nearly free and one transaction keeps every copy consistent. Across two owned databases the alternative to duplication isn't consistency. It's a live cross-service call on every read, paying a network hop and a new failure mode for every join a single schema answered in microseconds.
 
-The outbox Chapter 17 built for notification is this same idea at its
-smallest possible scale, and this chapter names the connection explicitly
-rather than leaving a reader to spot it alone. `OutboxEvent` is a durable,
-ordered record of one fact (an order was placed), published at-least-once to
-every consumer that cares, and `examples/03-notification-service`'s
-`Notification` table is a read model built entirely from consuming that one
-event stream, never from a query against order's own tables. That is CQRS's
-read side in miniature: a materialized, purpose-built copy of just the fields
-one consumer needs, kept current by consuming events rather than by querying
-the source of truth live. Chapter 20 hardens the publishing half of this
-pattern: ordering, deduplication, the dual-write trap an outbox closes.
-Chapter 21 generalizes the consuming half into a full read/write split, where
-the GraphQL gateway's read side is itself one more event-fed projection, no
-different in kind from notification's table, just assembled from more
-streams. Every piece of that eventual architecture is this chapter's same
-single move: a live join replaced by an owned, event-fed copy, applied
-again and again until the whole system is built from it.
+Kleppmann's treatment of derived data names the reframe: a cache, an index, a materialized view and a denormalized copy of another service's data are the same idea, a redundant copy of an upstream fact in a shape optimized for this reader. Its correctness depends on how reliably it's kept in sync, not on whether a copy exists. So the question stops being whether to duplicate, since it will happen once two services need the fact, and becomes what keeps the copy accurate and how stale it may get before that's a bug. For inventory's data the answer is CDC: tailing the source's write-ahead log keeps a derived copy current with a stronger freshness guarantee than an application remembering to publish an event on every write.
 
-## The lived contrast: one schema, one deferral, one clean start
+### Read models fed by events
 
-This book does not have to argue the shared-schema cost in the abstract,
-because two already-extracted services sit in this repository making the
-opposite choice under two different sets of constraints, and the difference
-between them is the clearest evidence available for everything above.
+The outbox built for notification is this idea at its smallest. `OutboxEvent` is a durable, ordered record of one fact (an order was placed), published at-least-once to every consumer. The `Notification` table in `examples/03-notification-service` is a read model built only from that stream, never from a query against order's tables. That is the read side of CQRS in miniature: a purpose-built copy of the fields one consumer needs, kept current by consuming events. The GraphQL gateway's read side is one more event-fed projection of the same kind, assembled from more streams.
 
-`examples/02-review-service` is still, as of this writing, in its Phase A
-form, and its own `README.md` states the deferral in plain terms:
-it persists against "the SAME compose-stack Postgres the monolith uses...
-reading/writing the existing `reviews` table plus minimal read-only
-projections of the shared `customers`/`inventory_items` tables," and "owns
-**no** schema of its own yet — true database decomposition is deferred to the
-data-across-the-seam chapters (ch.18/19), not this step." `Customer.java`'s
-own javadoc explains exactly why that deferral is safe rather than
-embarrassing: dropping the `reviews` table from the shared schema today
-"would break the very service just cut over to." The service boundary
-and the data boundary are separable decisions. Review's extraction
-deliberately separated them, scoping the service cut now and leaving the
-schema split for Chapter 19 rather than leaving the deferral unexplained.
+## Review and Notification: two answers to one question
 
-`examples/03-notification-service` made the opposite choice from the day its
-first migration ran, and its own `V1__create_notifications_table.sql`
-explains why in terms this chapter has now built the vocabulary to
-appreciate fully:
+Two extracted services in the repository make opposite choices under different constraints.
 
-```sql
--- Why own schema, not shared: ch.15's Review extraction (Phase A) could stay
--- in the monolith's shared schema because Review only ever *reads* a
--- synchronously-consistent REST contract. Notification is event-driven
--- (ch.17 consumes `order.placed` off Kafka asynchronously) — an
--- event-driven read model that shared the upstream aggregate's table would
--- have two writers racing on the same rows (the monolith's now-decommissioned
--- synchronous path, and this service's consumer) with no way to reconcile
--- them. Owning the table from the start avoids that split-brain entirely.
-```
+`examples/02-review-service` was extracted in its Phase A form with its schema still shared. Its `README.md` says it persists against "the SAME compose-stack Postgres the monolith uses... reading/writing the existing `reviews` table plus minimal read-only projections of the shared `customers`/`inventory_items` tables," and "owns **no** schema of its own yet". `Customer.java`'s javadoc explains why that is safe: dropping the `reviews` table from the shared schema today "would break the very service just cut over to." The service boundary and the data boundary are separable decisions, and Review scoped the service cut first.
 
-That is the two-writer problem a shared schema creates the instant a second,
-independent write path exists. Notification could not defer owning its
-data the way review did, because review only ever had one writer at a time
-(first the monolith, then, after cutover, the review service), while
-notification's asynchronous consumer and the monolith's write path would have
-had to coexist, racing on the same rows, for the length of the cutover
-window. Owning the schema from day one was not a nicety for notification; it
-was the only design that avoided a split-brain by construction rather than
-by hoping nobody raced it in practice. `Customer.java`'s own javadoc records
-the aftermath precisely: the monolith's `notifications` table "is deliberately
-kept in this shared schema, now write-only history that nothing in this
-module reads or writes anymore," now orphaned, with no runtime
-dependency left on it at all: a cleaner ending than review's, because
-notification never had a live reader left behind to protect.
+`examples/03-notification-service` owned its schema from the first migration, and `V1__create_notifications_table.sql` gives the reason. Review only ever read a synchronously consistent REST contract, with one writer at a time (first the monolith, then the review service after cutover). Notification is event-driven. A read model sharing the upstream aggregate's table would have two writers, the monolith's synchronous path and the service's consumer, racing on the same rows for the whole cutover window with no way to reconcile them. Owning the schema avoids that split-brain by construction instead of by hoping nobody races. The aftermath, per `Customer.java`'s javadoc: the monolith's `notifications` table "is kept in this shared schema, now write-only history that nothing in this module reads or writes anymore". It is orphaned with no runtime dependency, a cleaner ending than Review's, which left a live reader to protect.
 
-Two services, two different starting constraints, two different
-answers. The contrast is the whole argument this chapter has been
-building in prose, made concrete: own your data from day one when a second
-writer is coming, and it is safe to defer only when you can state
-why deferring doesn't yet create one.
+| Service | Schema | Writers during cutover | Why |
+|---|---|---|---|
+| Review | Shared, deferred | One at a time | Deferral is safe when you can state why it doesn't yet create a second writer. |
+| Notification | Owned from the first migration | Two (monolith path, consumer) | A second independent write path is coming. |
 
-## Planning the split: what Chapter 19 actually has to do
+## Planning the split
 
-Ranking a context's coupling, as Chapter 13 did, and naming the technique, as
-this chapter has, still leaves one question unanswered: how does a schema
-that has been live since `V1__init_schema.sql` actually get split without a
-maintenance window the business cannot afford? Chapter 19 answers that
-question for inventory specifically, but it is worth previewing the shape of
-the answer here, because it reframes what "the split" even means. The naive
-version (stop the monolith, export inventory's rows, stand up a new
-database, import them, restart everything pointed at the new location) is a
-big-bang cutover with exactly the failure profile this book's strangler-fig
-discipline exists to avoid. The CDC-based version Chapter 19 actually runs
-instead treats the split as a *backfill*: a connector tails the shared
-schema's write-ahead log, replicating every change to `inventory_items` into
-a brand-new, independently-owned database in near-real-time, while the
-monolith keeps writing to the old table exactly as it does today. Only once
-that replica has caught up and proven itself current does traffic
-cut over: reads first, behind a flag, the same reversibility discipline
-every extraction in this book has used since Review. Only after the cut
-holds does the old table's write path get retired. The schema split happens
-gradually, underneath a system that keeps running the whole time, which is
-the same lesson the strangler fig taught about code, now applied to data.
+A schema live since `V1__init_schema.sql` has to split without a maintenance window. The naive way is stop the monolith, export inventory's rows, stand up a new database, import and restart pointed at it. That is a big-bang cutover with exactly the failure profile the strangler discipline exists to avoid.
 
-One more question this chapter should not duck: what happens to the
-behavior-equivalence suite once there are two databases instead of one? Every
-extraction through Chapter 17 kept the suite's job simple, because
-"equivalent" meant "the same answer comes back," checkable by one backend or
-another, with both backends still reading from, or, worse, coincidentally
-agreeing despite, the same underlying rows, which is precisely the false-
-equivalence trap Chapter 7 and Chapter 17 both had to defeat. A decomposed
-database raises the stakes on that same trap: once inventory's data
-lives in two places, a green run has to prove the *new* database is the one
-actually answering, not that it happens to agree with a shared table it
-never touched. Chapter 19 extends the negative-check discipline Chapter 17
-introduced (kill the dependency, force red, restore it, confirm green)
-to the database split itself, and that extension, not a new testing
-philosophy, is what makes the equivalence gate trustworthy against a
-decomposed data tier rather than merely optimistic about it.
+The CDC way treats the split as a backfill. A connector tails the shared schema's write-ahead log and replicates every change to `inventory_items` into a new, independently owned database in near-real time, while the monolith keeps writing the old table. Once the replica has caught up and proven current, traffic cuts over: reads first, behind a flag, with the same reversibility as every extraction since Review. Only after the cut holds does the old table's write path retire. The schema splits gradually underneath a running system, the strangler lesson applied to data.
 
-## What you learned
+The equivalence gate has to change as well. Until now "equivalent" meant the same answer came back, with both backends reading the same rows or agreeing by coincidence, the false-equivalence trap that already bit Review. With two databases, a green run has to prove the new database is the one answering, not that it agrees with a shared table it never touched. The extension is the negative check from the notification extraction applied to the database split: kill the dependency, force red, restore it, confirm green.
 
-- Shared-database coupling is the hardest coupling in this book to break
-  because it is enforced by the database, not declared in application code:
-  a foreign key is a dependency nothing in `OrderService` or `InventoryService`
-  states explicitly, which is exactly why it survives unnoticed until a
-  migration on one side breaks a query on the other.
-- Database-per-service trades a database's free referential integrity and
-  free cross-table joins for independent deployability, scaling, and team
-  ownership: cross-table joins become network calls or event-fed read
-  models, and referential integrity across services stops existing by
-  design, replaced by eventual consistency the system has to be built to
-  tolerate.
-- The core technique is a denormalization move repeated per relationship:
-  replace a live FK with either a point-in-time snapshot of the fields this
-  context needs (order's SKU/name/price, following the same
-  discipline `unitPriceCents` already uses) or an explicit call across a
-  published contract when the data has to be current live, never a
-  silent default to whichever behavior the shared schema happened to make
-  easiest.
-- Data duplication across owned schemas is a deliberate choice, not a lapse
-  in normalization discipline: every cache, read model, and denormalized
-  copy is the same idea, and the real design question is what keeps each
-  copy's staleness bounded and acceptable, which is what CDC, outboxes, and
-  CQRS read models each answer in their own way.
-- `examples/02-review-service` (shared schema, deferred by design, safe
-  because it has one writer at a time) and `examples/03-notification-service`
-  (owned schema from day one, necessary because a second writer was coming)
-  are the same decision made correctly under two different constraints: the
-  clearest evidence in this repository for when deferring data ownership is
-  defensible and when it isn't.
+> **Decision**
+>
+> Own the data from the first migration when a second writer is coming. Defer only when you can say why deferring creates no second writer. For each foreign key that crosses a boundary, snapshot the fields the consumer needs at the moment they mattered, and call across the seam only for facts that must be current.
+
+> **🤖 Explore with your agent**
+>
+> "Review `examples/00-monolith/src/main/resources/db/migration/V1__init_schema.sql` and list every `REFERENCES` clause that crosses a bounded-context seam. For each, say whether the consuming context needs the value as of this instant or as of the moment it mattered, and propose a snapshot column or a seam call. Don't edit any file."
+>
+> Check: the reply finds nine foreign keys, eight of them crossing a seam, and proposes snapshot columns for `order_items` (SKU, product name) while keeping `unit_price_cents`.
 
 ## For deeper coverage
 
-- Martin Kleppmann, *Designing Data-Intensive Applications* (O'Reilly, 2017): the derived-data framing ("a cache, an index, a materialized view, and a denormalized copy are the same idea") this chapter's duplication-as-deliberate-choice argument is built on.
-- Chris Richardson, *Microservices Patterns* (Manning, 2018): the database-per-service pattern this chapter makes the case for before Chapter 19 implements it.
-- Sam Newman, *Building Microservices*, 2nd ed. (O'Reilly, 2021): service boundaries and data ownership, the argument for why a split database is far harder to undo than a split deployable.
-- Eric Evans, *Domain-Driven Design* (Addison-Wesley, 2003): the shared-kernel concept this chapter uses to describe `Customer`'s cross-context reach, and the bounded-context ownership this chapter argues every table should eventually have.
-- [Debezium: Connector documentation](https://debezium.io/documentation/): the canonical reference for the change-data-capture mechanism this chapter previews and Chapter 19 implements.
-- Cloud Native Design Patterns, [Data](https://github.com/patterncatalyst/cloud-native-design-patterns/blob/main/_docs/04-data.md): the companion book's treatment of data ownership and replication underlying this chapter's database-per-service argument.
-
-Chapter 19 picks this plan up and runs it against Inventory: a CDC
-connector tailing the monolith's write-ahead log, a backfill into a database
-inventory actually owns, a synchronous gRPC seam for the facts order needs
-live, and an equivalence gate taught to prove the new database is the one
-really answering. Chapter 20 then hardens the outbox pattern this chapter
-leaned on for notification's example into a general treatment of ordering,
-deduplication, and the dual-write trap, and Chapter 21 generalizes the
-event-fed read model this chapter previewed into CQRS's full read/write
-split: the same single move, replace a live join with an owned copy, run
-once per remaining relationship in the schema until nothing is left.
+- Martin Kleppmann, *Designing Data-Intensive Applications* (O'Reilly, 2017): the derived-data framing ("a cache, an index, a materialized view, and a denormalized copy are the same idea") behind duplication as a choice.
+- Chris Richardson, *Microservices Patterns* (Manning, 2018): the database-per-service pattern.
+- Sam Newman, *Building Microservices*, 2nd ed. (O'Reilly, 2021): service boundaries and data ownership, and why a split database is far harder to undo than a split deployable.
+- Eric Evans, *Domain-Driven Design* (Addison-Wesley, 2003): the shared-kernel concept behind `Customer`'s cross-context reach, and bounded-context ownership.
+- [Debezium: Connector documentation](https://debezium.io/documentation/): the change-data-capture mechanism the plan relies on.
+- Cloud Native Design Patterns, [Data](https://github.com/patterncatalyst/cloud-native-design-patterns/blob/main/_docs/04-data.md): the companion book's treatment of data ownership and replication.

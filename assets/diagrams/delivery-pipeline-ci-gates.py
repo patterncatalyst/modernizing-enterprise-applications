@@ -34,7 +34,7 @@ trigger = node(60, 400, 230, 90,
 
 # ---- lane 1: behavior gates (code-ci.yml) ----------------------------------
 behavior_band = {"x": 360, "y": 70, "w": 700, "h": 360,
-                 "label": "code-ci.yml :  behavior gates (what the system DOES)", "fill": "#fafafa"}
+                 "label": "code-ci.yml :  behavior gates (what the system does)", "fill": "#fafafa"}
 equiv = node(390, 120, 300, 80,
              ["equivalence-gate", "monolith baseline: Newman suite"], style="accent")
 seams = node(390, 215, 300, 120,

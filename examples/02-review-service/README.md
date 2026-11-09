@@ -1,15 +1,15 @@
 # review-service
 
-**ch.15 Phase B ("make it idiomatic") — r02 S9.** The monolith's
+**Phase B ("make it idiomatic").** The monolith's
 (`examples/00-monolith`) Review bounded context, extracted onto Quarkus in
-two phases (DRQ-029): **Phase A** (r02 S8, preserved in git history at commit
+two phases: **Phase A** (preserved in git history at commit
 `5479d49`) lifted the Spring-shaped source onto Quarkus largely unchanged via
-the Quarkiverse Spring-compatibility extensions. **This step (Phase B)**
-refactors off that compatibility shim to idiomatic Quarkus — Quarkus REST
+the Quarkiverse Spring-compatibility extensions. **Phase B**
+refactors off that compatibility shim to idiomatic Quarkus, Quarkus REST
 (RESTEasy Reactive) instead of `quarkus-spring-web`, Panache repositories
 instead of Spring Data `JpaRepository`, plain CDI `@ApplicationScoped` +
 constructor injection instead of `@Service`, and a `@ServerExceptionMapper`
-instead of `@RestControllerAdvice` — with the exact same external HTTP
+instead of `@RestControllerAdvice`, with the exact same external HTTP
 contract. See `MIGRATION.md` for the before/after measurements.
 
 - Port `8081`. Endpoints (identical external contract to the monolith):
@@ -18,14 +18,14 @@ contract. See `MIGRATION.md` for the before/after measurements.
 - Persistence: the SAME compose-stack Postgres the monolith uses
   (`localhost:5432`, db `monolith`), reading/writing the existing `reviews`
   table plus minimal read-only projections of the shared `customers`/
-  `inventory_items` tables. This service owns **no** schema of its own yet —
+  `inventory_items` tables. This service owns **no** schema of its own yet,
   true database decomposition is deferred to the data-across-the-seam
-  chapters (ch.18/19), not this step.
+  chapters, not here.
 - Verified against the project's behavior-equivalence suite
   (`tooling/newman/mea.postman_collection.json`, "Review Context Contract"
-  folder) — unchanged, all assertions green.
+  folder), unchanged, all assertions green.
 
-## CI equivalence gate (r02-plan S-CI, DRQ-030)
+## CI equivalence gate
 
 `.github/workflows/code-ci.yml` builds this service, points it at a disposable
 GitHub Actions Postgres service container (schema/seed applied from the
@@ -33,7 +33,7 @@ monolith's committed `V1__init_schema.sql`/`V2__seed_data.sql`, since this
 service owns no migrations of its own), and runs the behavior-equivalence
 suite's **"Review Context Contract"** folder
 (`tooling/newman/mea.postman_collection.json`) against it. A non-zero
-`newman` exit code fails the job — this is the project's equivalence gate
+`newman` exit code fails the job, this is the project's equivalence gate
 running in CI for the first time.
 
 Before this workflow was committed it was validated locally both ways:
@@ -45,9 +45,9 @@ Before this workflow was committed it was validated locally both ways:
   `@Max(500)`. Re-running the identical `newman` command then failed:
   `4e. Authenticated write with invalid rating -> 400 validation` got a `201
   Created` instead of `400`, and the `error=VALIDATION_FAILED` assertion
-  failed too — exit code `1`. The widened annotation was reverted immediately
+  failed too, exit code `1`. The widened annotation was reverted immediately
   afterward (confirmed via `git diff` showing no residual change), and the
-  suite was re-run green before the workflow file was committed — proving the
+  suite was re-run green before the workflow file was committed, proving the
   gate actually gates, not just runs.
 
 This project uses Quarkus, the Supersonic Subatomic Java Framework.

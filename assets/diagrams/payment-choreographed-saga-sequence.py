@@ -55,7 +55,7 @@ resp202 = node(800, 110, 230, 90,
                ["202 Accepted", "Location: /api/orders/{id}", "order status = PENDING"], style="ink")
 
 outboxrow = node(230, 250, 260, 90,
-                  ["Outbox row written", "order.placed: SAME @Transactional"], style="sub")
+                  ["Outbox row written", "order.placed: same @Transactional"], style="sub")
 relay1 = node(530, 250, 230, 90, ["OutboxRelay", "@Scheduled poller"], style="box")
 kafka_placed = node(800, 250, 230, 90, ["Kafka topic", "order.placed"], style="ink")
 
@@ -82,7 +82,7 @@ charge = node(530, 430, 250, 90,
               ["PaymentService.processOrderPlaced()", "charge: idempotent by orderId"], style="accent")
 
 payoutboxrow = node(230, 560, 260, 80,
-                      ["Payment outbox row", "CAPTURED or DECLINED: SAME txn"], style="sub")
+                      ["Payment outbox row", "CAPTURED or DECLINED: same txn"], style="sub")
 relay2 = node(530, 560, 230, 80, ["PaymentOutboxRelay", "@Scheduled poller"], style="box")
 kafka_captured = node(830, 410, 240, 70, ["Kafka topic", "payment.captured"], style="ink")
 kafka_declined = node(830, 500, 240, 70, ["Kafka topic", "payment.declined"], style="ink")
@@ -101,7 +101,7 @@ band_b_edges = [
 # Band C: order-saga reaction: the monolith's FIRST Kafka consumer (H4)
 # ============================================================================
 band_c = {"x": 20, "y": 700, "w": 1560, "h": 280,
-          "label": "Order-saga reaction: async (monolith's FIRST Kafka consumer)", "fill": "#fafafa"}
+          "label": "Order-saga reaction: async (monolith's first Kafka consumer)", "fill": "#fafafa"}
 
 listener = node(230, 750, 290, 90,
                  ["OrderSagaListener", "@KafkaListener: idempotent (status == PENDING)"], style="box")

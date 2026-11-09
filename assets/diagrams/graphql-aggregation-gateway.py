@@ -33,7 +33,7 @@ W, H = 1650, 820
 
 client = node(40, 340, 220, 110, ["Client", "GraphQL query", "order(id)"], style="user")
 gateway = node(320, 300, 300, 190,
-               ["GraphQL gateway :8090", "GatewayApi: @Query + @Source resolvers", "owns NO data: pure stitching layer"],
+               ["GraphQL gateway :8090", "GatewayApi: @Query + @Source resolvers", "owns no data: pure stitching layer"],
                style="ink")
 stitched = node(320, 520, 300, 110,
                 ["OrderView response", "order + payments[] + shipments[]", "+ items[].stock + items[].reviews[]"],
@@ -64,7 +64,7 @@ notes = [
      "anchor": "middle", "bold": True, "size": 17},
 
     {"x": 1080, "y": 660,
-     "text": "four fields resolve over REST; stock is the ONE field resolved over gRPC: the gateway never mixes",
+     "text": "four fields resolve over REST; stock is the one field resolved over gRPC: the gateway never mixes",
      "anchor": "middle", "size": 11, "color": "#2f5f3d", "bold": True},
     {"x": 1080, "y": 676,
      "text": "protocols inside a single field, and never caches or denormalizes what it fetches",

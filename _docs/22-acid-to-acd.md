@@ -2,142 +2,62 @@
 title: "ACID → ACD: Living Without Isolation"
 order: 22
 part: "Data Across the Seam"
-description: "The consistency just given up: dirty reads, lost updates, non-repeatable reads, where it bites and how to bound it."
+description: "Dirty reads, lost updates and non-repeatable reads come back once services commit independently; what survives the cut, what a saga rebuilds and how to bound the rest."
 ---
 
 ## Learning objectives
 
 By the end of this chapter you can:
 
-- State SMELL #3 precisely (one in-process `@Transactional` in `OrderService#placeOrder` spanning order, inventory, payment, and shipping) and explain why it "works" today only because Postgres gives atomic rollback automatically.
-- Distinguish the two tiers of evidence this project uses to prove a rollback happens: a mocked unit test showing *orchestration order* versus the Newman "Payment-Declined" scenario showing a *real, observed* Postgres rollback.
-- Explain why two-phase commit is rejected as the fix for cross-service atomicity: a blocking coordinator, locks held across two network round-trips, and a recentralization of operational ownership.
-- Define ACD (Atomic locally, Consistent eventually, Durable, isolation dropped) and its sibling term BASE, and state precisely what survives decomposition and what has to be rebuilt by hand.
-- Explain a compensating action as a new, hand-written, forward-moving transaction, not a database rollback, and why nothing makes it fire automatically once a saga spans services.
-- Connect CAP and PACELC to a saga's compensating-action model, and explain why "correctness" under ACD means bounded convergence rather than instantaneous, globally agreed state.
-- Identify the classic isolation anomalies (dirty read, lost update, non-repeatable read) that reappear once services commit independently, and explain why inventory's stock reservation stays synchronous while payment and shipping get the full saga treatment.
+- State SMELL #3: one in-process `@Transactional` in `OrderService#placeOrder` spans order, inventory, payment and shipping, and works only because Postgres rolls back automatically.
+- Tell a mocked unit test, which shows orchestration order, from a Newman scenario, which shows a real Postgres rollback.
+- Reject two-phase commit as the fix for cross-service atomicity: a blocking coordinator, locks held across network round-trips and centralized operational ownership.
+- Define ACD (atomic locally, consistent eventually, durable, isolation dropped) and BASE, and say what survives decomposition and what you rebuild by hand.
+- Explain a compensating action as a new forward-moving transaction that nothing fires automatically.
+- Connect CAP and PACELC to compensation, and define correctness under ACD as bounded convergence.
+- Name the isolation anomalies that return once services commit independently, and say why inventory's reservation stays synchronous while payment and shipping get a saga.
 
 ## Why this matters
 
-Chapter 21 gave the gateway's read side a model that tolerates staleness:
-CQRS accepts that a read model can lag its write model by a bounded
-window, because the alternative (reading and writing the same normalized
-tables under one transaction manager) is the thing the gateway was built to
-get away from, and it closed by naming this chapter directly as the one
-that "itemizes the bill": dirty reads, lost updates, non-repeatable reads,
-the isolation ACID used to give you automatically and that an eventually
-consistent system, by its nature, cannot. This chapter pays that bill in
-full, without euphemism, and asks the harder question underneath Chapter
-21's acceptance: what, precisely, is being given up, and why is giving it up
-not optional once a system crosses the seam from one process to several? The
-monolith's checkout today answers a question every one of its six bounded
-contexts can take for granted, "did this commit, all of it, or none of it,"
-with a single word: **yes**, guaranteed by one `@Transactional` boundary and
-one database's write-ahead log. Every chapter since Chapter 17 has been
-quietly removing contexts from that guarantee's reach. This chapter names the
-guarantee being removed, proves with the project's own evidence exactly how
-much the monolith depends on it today, and states precisely what replaces it
-once inventory, payment, and shipping are no longer sitting inside the same
-process as the order they belong to. There is no new runnable example here:
-this chapter grounds entirely in code and evidence Chapters 9, 10, and 17
-already put in the repository, because the idea is conceptual and the proof
-should come from a system the reader has already watched behave this way.
+The monolith's checkout answers "did this commit, all of it or none of it" with one word, yes, guaranteed by one `@Transactional` boundary and one database's write-ahead log. Each extraction since Notification has removed a context from that guarantee's reach. A read model that lags its write model by a bounded window is the first visible cost. The rest of the bill is what the shared transaction provided without any code, why it can't cross a process boundary, and what replaces it. Nothing new runs here. The evidence comes from the monolith and its recorded Newman scenarios. Later extractions removed the monolith's checkout from the current tree; `OrderService` as quoted below, after the outbox replaced the notification call, is at the `stage/02-notification-extracted` tag (`git checkout stage/02-notification-extracted`), and the original five-context version is on the `reference/monolith-before` branch.
 
 ## SMELL #3: one transaction, four contexts, one rollback
 
-`examples/00-monolith/SMELLS.md` catalogues the deliberate smell this chapter
-is about in one line, and the line is precise to read exactly as written
-before anything else: **"One in-process ACID transaction spanning
-contexts"**: `OrderService#placeOrder` wraps the inventory decrement, order
-persistence, payment capture, and shipment dispatch in a single
-`@Transactional`, so any failure anywhere rolls back everything, everywhere.
-Notification's synchronous call used to sit inside that same boundary too,
-until Chapter 17 moved it out. The outbox write that replaced it is still
-part of this transaction, because the outbox is order-owned infrastructure,
-not a borrowed call into another context's service, but the call that *used*
-to reach into notification's logic and block on it is gone. SMELL #3 is what
-is left after that first cure: four bounded contexts (order, inventory,
-payment, shipping) still committing or rolling back as one atomic unit,
-exactly where this book always said the ACID→ACD argument would
-be made.
-
-The method's own javadoc states the mechanism and its expiration date in the
-same breath:
+`examples/00-monolith/SMELLS.md` catalogues the smell in one line: **one in-process ACID transaction spanning contexts**. `OrderService#placeOrder` wraps the inventory decrement, order persistence, payment capture and shipment dispatch in a single `@Transactional`, so a failure anywhere rolls back everything. Notification left the boundary when its synchronous call became an outbox write. The outbox row is order-owned, so it stays inside the transaction. What remains is four contexts committing or rolling back as one unit.
 
 ```java
 // order/OrderService.java#placeOrder
 /**
  * SMELL[ch.22]: one in-process ACID {@code @Transactional} spans FOUR bounded
- * contexts — order, inventory, payment, shipping (plus this context's own
+ * contexts: order, inventory, payment, shipping (plus this context's own
  * outbox table write...). It "works" today because Postgres gives us atomic
  * rollback for free across all of them. The moment any one of these becomes
  * its own service with its own database, this rollback-everything behavior
  * disappears and has to be rebuilt explicitly as a saga with compensating
- * actions (ch.23 choreographed, ch.24 orchestrated) — that is the
- * ACID -> ACD story told in ch.22.
+ * actions (choreographed for payment, orchestrated for shipping): that is the
+ * ACID -> ACD story.
  */
 @Transactional
 public OrderDto placeOrder(OrderCreate command) {
 ```
 
-Walk the method's actual body and the "four contexts, one commit" claim stops
-being an abstraction and becomes four concrete calls inside one unbroken
-stack frame: `inventoryService.reserve(...)` decrements stock before a single
-byte of the order has been written; `orderRepository.save(order)` persists
-the order itself; `paymentService.charge(order, order.getTotalCents(),
-command.paymentMethod())` captures payment against a total that was only just
-computed; `shippingService.dispatch(order, order.getShippingAddress())`
-books a shipment against an order that, at this exact point in the method, is
-not yet guaranteed to exist from any other transaction's point of view,
-because this one hasn't committed. Every one of those four calls either all
-happen or none of them do, and nothing in the method's own code expresses
-that promise explicitly. It is bought entirely by the method boundary
-Spring's `@Transactional` wraps around the whole thing, backed by one
-Postgres connection's write-ahead log. That is the strength this chapter
-names before explaining why it cannot travel: the
-monolith's checkout author never had to write a single line of
-failure-recovery code, because the database wrote it automatically, for every
-possible combination of partial failure, the instant the `@Transactional`
-annotation was added.
+The body is four calls in one stack frame: `inventoryService.reserve(...)` decrements stock before any of the order is written, `orderRepository.save(order)` persists it, `paymentService.charge(...)` captures payment, and `shippingService.dispatch(...)` books a shipment against an order no other transaction can see yet. Nothing in the code expresses the all-or-nothing promise. The method boundary and one Postgres connection supply it. The checkout author never wrote failure-recovery code, because the database wrote it for every combination of partial failure.
 
-## The free rollback, proven, not asserted
+## The free rollback, proven at two tiers
 
-A claim this consequential earns more than a code comment's say-so, and this
-project does not ask you to take it on faith. `PaymentDeclinedException`'s
-own javadoc states the dependency: raising this exception mid-method
-"rolls back everything already written in this request, including the
-inventory decrement," a sentence that is only true because of where the
-exception is thrown relative to the transaction boundary, and the contrast
-with its sibling exception makes that precision sharper. `InsufficientStockException`
-is raised *before* any writes happen at all (a checkout that exceeds stock
-on hand never touches the database, so no rollback is needed for that path)
-while `PaymentDeclinedException` is raised *after* the inventory
-reservation and the order row have both already been written inside this
-transaction, which is exactly the scenario a rollback exists to undo.
+`PaymentDeclinedException` is thrown after the inventory reservation and the order row are written, so a decline is exactly the case a rollback exists to undo. Its sibling `InsufficientStockException` is thrown before any write, so that path needs no rollback.
 
-The project proves this at two different tiers of evidence, and the gap
-between them is the whole argument. At the unit tier,
-`OrderServiceTest#placeOrder_paymentDeclined_throwsAfterInventoryReservedButBeforeShippingOrNotification`
-mocks every collaborator and can only prove *orchestration order*: that
-`inventoryService.reserve(...)` was called before `paymentService.charge(...)`
-threw, and that `shippingService.dispatch(...)` was never reached after it
-did. Its own in-code comment states the limit of what a mocked test
-can show: "inventory WAS reserved (in-memory) before the decline; in the real
-flow only the surrounding `@Transactional` rolls that back. This unit test
-proves the orchestration order, not the rollback itself." A mock cannot roll
-anything back; there is no database underneath it to undo.
+Two kinds of evidence cover the decline path, and the gap between them is the argument:
 
-The real proof, a real Postgres transaction, rolled back, observed
-from outside the process, lives in the behavior-equivalence suite, in
-`tooling/newman/mea.postman_collection.json`'s "Scenario 3: Payment-Declined"
-folder, and it earns its evidentiary weight by doing something the unit test
-structurally cannot: capturing the *database's own state* before the
-decline, sending a real HTTP request that hits a real `@Transactional`
-method against a real Postgres instance, and then checking that state again
-afterward.
+| Tier | What it can show | What it can't |
+|---|---|---|
+| Unit test with every collaborator mocked | `reserve(...)` ran before `charge(...)` threw, and `dispatch(...)` was never reached | A rollback: a mock has no database to undo anything |
+| Newman scenario "Payment-Declined" through HTTP | Stock read before the decline equals stock read after it | Nothing about call order |
+
+The unit test's own comment states its limit: it proves the orchestration order, not the rollback. The Newman scenario reads stock, sends a checkout with `paymentMethod: "CARD-DECLINE"`, expects `402` with `error=PAYMENT_DECLINED`, and reads stock again.
 
 ```javascript
-// mea.postman_collection.json, "Scenario 3 — Payment-Declined"
+// mea.postman_collection.json, "Scenario 3: Payment-Declined"
 // 3a. capture stock before the declined checkout
 pm.collectionVariables.set('widgetStockBeforeDecline', json.quantityOnHand);
 
@@ -151,315 +71,80 @@ pm.test('Documented error contract: error=PAYMENT_DECLINED', function () {
 
 // 3c. re-read stock after the decline
 var before = Number(pm.collectionVariables.get('widgetStockBeforeDecline'));
-pm.test('Quantity on hand is unchanged — the reservation rolled back with the ' +
+pm.test('Quantity on hand is unchanged: the reservation rolled back with the ' +
     'declined payment (same ACID transaction, SMELL[ch.22])', function () {
     pm.expect(json.quantityOnHand).to.eql(before);
 });
 ```
 
-Read those three steps as a single experiment rather than three independent
-assertions: step 3a takes a snapshot, step 3b forces a mid-transaction
-failure through the exact code path the javadoc above describes, and step 3c
-re-reads the same row from the same database and finds it unchanged, not
-"unchanged according to a mock that was never asked to change it," but
-unchanged because Postgres undid the `UPDATE` that
-`inventoryService.reserve(...)` issued, the instant `charge(...)` threw
-further down the same call stack. This is the behavior-equivalence suite's
-black-box counterpart to the unit test's white-box proof, and this project's
-own testing chapter already draws the contrast directly: the same branch
-proven once by calling Java directly with every collaborator mocked, and
-once by sending a real request and reading nothing but the HTTP response and
-a stock count back. Only the second proof is evidence that a real rollback
-happened; the first is evidence that the code would *ask* for one.
+The stock is unchanged because Postgres undid the `UPDATE` that `reserve(...)` issued the moment `charge(...)` threw. Only this black-box check is evidence of a real rollback. The mocked one is evidence that the code would ask for one.
 
-## Why the free rollback cannot survive decomposition
+## Why the free rollback can't cross a process boundary
 
-Follow the paper trail this project already committed to, and the fate of
-this transaction is not a matter of opinion: SMELLS.md's own row for SMELL #3
-names its cure as ch.23 (choreographed saga) and ch.24 (orchestrated saga),
-not "add transaction isolation across services" or "configure a distributed
-transaction coordinator." That is a deliberate omission, and it is worth
-spelling out why distributed transactions (the obvious-looking fix to a
-reader meeting this problem for the first time) are not on this book's menu
-at all.
+The textbook mechanism for atomicity across databases is **two-phase commit**. In the prepare phase, a coordinator asks each participant (order, inventory, payment and shipping databases) to ready its local transaction and vote. A yes voter holds its locks and prepared state until told otherwise. In the commit phase, the coordinator tells everyone to commit only if every vote was yes, and to abort otherwise.
 
-The textbook mechanism for atomicity across multiple databases is the
-**two-phase commit protocol**, and its two phases describe exactly what it
-would take to give `placeOrder` the same all-or-nothing guarantee once
-inventory, payment, and shipping each own a separate database behind a
-separate service. In the **prepare** phase, a coordinator asks every
-participant (the order database, the inventory database, the payment
-database, the shipping database) to ready its local transaction and vote
-whether it *can* commit, without yet committing; every participant that
-votes yes must then hold its local locks and its prepared, uncommitted state
-until the coordinator tells it what to do next. In the **commit** phase, the
-coordinator collects every vote and, only if every single one was "yes,"
-tells every participant to commit; if even one voted "no" (or never
-answered), it tells every participant to abort instead.
+Kleppmann's treatment in *Designing Data-Intensive Applications* gives the failure modes that rule it out here:
 
-Kleppmann's treatment of this protocol in *Designing Data-Intensive
-Applications* names the exact three failure modes that make it unworkable at
-the boundary this book is building across. First, the coordinator is a
-single point of failure for the entire operation: if it crashes after
-collecting votes but before broadcasting the commit decision, every
-participant that voted yes is stuck holding its locks indefinitely,
-unable to safely commit or abort on its own, because it does not
-know what the other participants decided. This is 2PC's "in doubt" state,
-and it can only be resolved by the coordinator recovering, which may take
-an unbounded amount of time. Second, the protocol is synchronous and
-blocking by construction: every participant's local locks are held across
-*two* network round-trips to every other participant, for the entire
-duration of the slowest one, which is precisely the latency and availability
-cost a modernization project is trying to shed, not acquire, at the
-service boundary. Third, and this is the one that makes it a non-starter
-for independently owned databases specifically, 2PC requires every
-participant to speak the same coordination protocol and trust the same
-coordinator, which quietly re-centralizes the very thing decomposition was
-meant to distribute: operational ownership. A payment service a different
-team owns, versions, and deploys on its own schedule cannot be asked to hold
-open database locks on an order it has never heard of, waiting on a
-coordinator it does not operate, for as long as it takes a shipping service
-three hops away to finish preparing its own, unrelated write. The monolith's
-free rollback worked because one process held one connection to one
-database for the whole operation; a distributed transaction tries to
-recreate that illusion across process and ownership boundaries where it was
-never physically true to begin with, and the cost of maintaining the
-illusion (held locks, a fragile coordinator, and reduced availability for
-every participant on every request) is higher than the cost of admitting
-the illusion is gone and designing for its absence instead. That is why "2PC is
-off the table" is a one-line verdict here rather than a protocol to
-configure: the premise Chapter 23 builds its saga on, not a footnote inside
-it.
+- **The coordinator is a single point of failure.** If it crashes after collecting votes and before broadcasting the decision, every yes voter is stuck "in doubt", holding locks, until the coordinator recovers. That can take unbounded time.
+- **It blocks by construction.** Local locks are held across two network round-trips for as long as the slowest participant takes, which is the latency and availability cost decomposition is meant to shed.
+- **It recentralizes ownership.** Every participant must speak the same protocol and trust the same coordinator. A payment service another team owns and deploys on its own schedule can't be asked to hold database locks for an order it has never heard of, waiting on a coordinator it doesn't operate.
 
-## ACD: what survives the cut, and what has to be rebuilt
+The monolith's rollback worked because one process held one connection to one database. Two-phase commit recreates that illusion where it was never physically true, and the held locks, fragile coordinator and lower availability cost more than designing for its absence.
 
-The consistency property this book asks you to adopt in place of full ACID
-across the seam is best named **ACD**: **A**tomic (locally, inside each
-service's own database), **C**onsistent (eventually, across services, once
-every step of a multi-service operation has either completed or been
-compensated), and **D**urable (as before: once a service commits its local
-write, that write survives a crash), with the **I**, isolation across the
-whole operation, deliberately absent, which is exactly the property this
-chapter's own title names. ACD sits in the same family as **BASE**
-(**B**asically **A**vailable, **S**oft state, **E**ventually consistent),
-the term Kleppmann and the wider distributed-systems literature use for the
-same tradeoff described from the availability side rather than the
-transaction side; this book prefers ACD because it names the property by
-contrast with the acronym the reader already has memorized from the
-monolith, rather than introducing a second, unrelated acronym to hold the
-same idea.
+## ACD: what survives the cut
 
-Here is what survives the decomposition, stated precisely rather
-than as a slogan. Each extracted service keeps full local ACID: inventory's
-own database, payment's own database, and shipping's own database each still
-wrap their own write in a real `@Transactional` (or its Quarkus/Panache
-equivalent) against their own schema, with the same atomicity, isolation, and
-durability guarantees the monolith's single Postgres instance always
-provided. Nothing about *this* chapter asks a service to give up transactions
-inside its own boundary; a service that cannot atomically commit its own
-write is broken, decomposition or not. What does not survive is
-atomicity *across* services: there is no longer one connection, one
-write-ahead log, and one commit point spanning the order write, the
-inventory decrement, the payment capture, and the shipment dispatch, because
-those four things are now four separate commits, on four separate
-connections, to four separate databases, each of which can succeed or fail
-independently of the other three.
+**ACD** is atomic (inside each service's own database), consistent (eventually, across services, once every step has completed or been compensated), durable (a committed local write survives a crash), with the **I**, isolation across the whole operation, dropped. **BASE** (basically available, soft state, eventually consistent) describes the same trade-off from the availability side. ACD names the property by contrast with the acronym the monolith already taught.
 
-The property a saga restores in place of the dropped cross-service atomicity
-is not "guarantee it never happens" (that guarantee is specifically what 2PC
-could not deliver without the costs named above) but "guarantee that when a
-later step fails, an explicit, carefully written **compensating action**
-undoes the effect of every step that already succeeded." A compensating
-action is not a rollback in the database sense; it is a new forward-moving
-transaction, written by the service that owns the data being undone, that
-produces the opposite business effect of the step it is compensating for.
-Where `inventoryService.reserve(...)` decremented stock inside the same
-local transaction the monolith controlled completely, an inventory service
-extracted behind its own API has to expose something like a `release`
-or `cancelReservation` operation that a saga can call explicitly when a
-later step (payment, in Chapter 23's choreographed version) fails. Nothing
-makes that compensating call happen automatically the way Postgres made the
-monolith's rollback happen automatically; a saga author has to write it, name
-it, and test its failure-path behavior exactly as carefully as the happy
-path, because the one mechanism that used to do this automatically, one database,
-one transaction manager, is no longer in the room.
+What survives: each extracted service keeps full local ACID. Inventory, payment and shipping each wrap their own write in a real `@Transactional` (or its Quarkus/Panache equivalent) against their own schema. A service that can't commit its own write atomically is broken, decomposition or not.
+
+What doesn't survive: atomicity across services. The order write, inventory decrement, payment capture and shipment dispatch become four commits on four connections to four databases, and each can fail independently of the others.
+
+A saga restores the guarantee that when a later step fails, an explicit **compensating action** undoes every step that already succeeded. It isn't a database rollback. It's a new forward-moving transaction, written by the service that owns the data, that produces the opposite business effect. The monolith's `reserve(...)` decrement has an extracted counterpart, a `release` or `cancelReservation` operation the saga calls explicitly when payment fails. Nothing fires it automatically. You write it, name it, and test its failure path as carefully as the happy path, because the one transaction manager that used to do this is no longer in the room.
 
 {% include excalidraw.html file="acid-to-acd" alt="The ACID-to-ACD spine: on top, OrderService#placeOrder's single transaction rolling back every extracted context automatically, with no compensating code written for it; on the bottom, each service keeping full local transactions inside its own database while cross-service atomicity and isolation are gone, replaced by an explicit compensating action a saga runs instead of a database rollback." caption="Figure 22.1: What ACID gives up at the seam, and what a saga rebuilds" %}
 
-## CAP, PACELC, and what "correctness" means now
+## CAP, PACELC and what correctness means now
 
-The reason this tradeoff is not a design mistake to be engineered around, but
-a fundamental limit to be designed *with*, is the CAP theorem's own
-statement: a distributed data system facing a network partition must choose
-between **consistency** (every read sees the most recent write) and
-**availability** (every request gets a response), and it cannot have both
-during the partition. Four independently deployed databases, reachable only
-over a network that can and will experience latency, timeouts, and outright
-partitions, are exactly the system CAP describes. The monolith's one
-process never had this choice to make, because it never had a network
-between its "nodes" to partition in the first place. PACELC sharpens the
-same idea for the much more common case where nothing is actually broken:
-**E**lse, when the system is running normally with no partition at all, it
-still has to choose between **L**atency and **C**onsistency on every
-request, because keeping every replica of a payment status byte-for-byte
-current requires blocking the caller until every replica agrees, and not
-blocking the caller means the caller might read a status that is a few
-milliseconds stale. A saga's compensating-action model is a concrete,
-practical answer to PACELC's every-day question: it chooses low latency and
-local availability on every individual step, and accepts a bounded window
-where the system's overall state has not yet converged, rather than making
-every step wait for global agreement that may never arrive cheaply, or at
-all.
+CAP says a distributed data system facing a network partition must choose between consistency and availability. Four databases reachable only over a network that can delay, time out and partition are the system it describes. PACELC covers the common case where nothing is broken: **E**lse, the system still trades **L**atency against **C**onsistency on every request, because keeping every replica of a payment status current means blocking the caller until all agree.
 
-That is the sentence this chapter asks you to internalize before Part 7 puts
-it into running code: correctness, at the scale of a distributed checkout,
-no longer means "instantaneous and globally agreed"; it means **the system
-provably converges to a single consistent state, within a bounded window,
-and never settles on a state nobody intended.** An order that briefly shows
-as "placed" while payment has not yet been captured is not a bug under ACD
-the way it would be a severe one under the monolith's ACID contract; an
-order that settles permanently as "placed" after payment was declined,
-with no compensating action ever running to correct it, is the
-real failure ACD has to guard against, and guarding against it is what a
-saga's explicit compensation step, not an implicit database rollback, now
-has to do explicitly.
+A saga's compensation model answers that every-day question by choosing low latency and local availability on each step and accepting a bounded window where overall state hasn't converged. Correctness at this scale means the system converges to one consistent state within a bounded window and never settles on a state nobody intended. An order that briefly shows "placed" before payment is captured is normal under ACD. An order that settles permanently as "placed" after a decline, with no compensation ever running, is the failure to guard against.
 
 ## The isolation anomalies the monolith never had to name
 
-Because the monolith's checkout lived entirely inside one
-`SERIALIZABLE`-or-stronger transaction boundary by default, it never had to
-reckon with the classic isolation anomalies a textbook introduces early and
-a working system usually only meets at the seam between two of them. A
-**dirty read** (one transaction observing another transaction's
-not-yet-committed write) becomes a live possibility the instant payment is
-captured in its own service and a different part of the system (a
-reporting view, a customer-facing order-status page, the GraphQL gateway's
-read model from Chapter 21) can observe "payment captured" before the
-shipping step of the same saga has run or failed; the monolith's single
-commit point meant no external reader could ever observe a state that later
-turned out to be undone, because nothing was visible to anyone until the
-whole thing committed or none of it did. A **lost update** becomes possible
-the moment two sagas touch the same inventory row through two independent,
-service-owned transactions with no single lock manager coordinating them,
-instead of the monolith's one process serializing every write through one
-connection pool. A **non-repeatable read** (rereading the same row twice
-inside one logical operation and getting two different answers) is now the
-*ordinary* case for any saga step that reads another service's state before
-acting on it, because that state can change between the read and the
-dependent write for reasons entirely outside the saga's own control.
+Inside one transaction boundary the checkout never met the classic anomalies. They return at the seam:
 
-None of these three anomalies is a defect introduced by sloppy engineering
-at the seam; they are the literal, named cost of trading one shared
-transaction manager for several independently committing ones, and this
-book's answer to all three is the same one Chapter 17 already demonstrated
-in miniature: bound the window, make the staleness visible rather than
-silent, and verify convergence explicitly rather than assuming it. The
-notification extraction's bounded-wait poll (retry up to ten times at a
-fixed interval rather than asserting instantaneous consistency) is this
-chapter's dirty-read and non-repeatable-read problem solved one topic early,
-for the simplest possible case: one event, one idempotent consumer, no
-compensating action required because notification can never meaningfully
-fail checkout in the first place. Payment and shipping's sagas, in Part 7,
-face the harder version of the same problem (multiple steps, any of which
-can fail, each needing its own compensating action) and inherit the same
-underlying discipline: a bounded window is acceptable; an unbounded one, or
-a silently inconsistent one, is not.
+- **Dirty read.** Another reader, such as a reporting view, an order-status page or the GraphQL gateway's read model, can observe "payment captured" before the shipping step of the same saga has run or failed. The monolith exposed nothing until the whole transaction committed.
+- **Lost update.** Two sagas touching the same inventory row through independent service-owned transactions have no single lock manager coordinating them.
+- **Non-repeatable read.** A saga step that reads another service's state before acting on it sees that state change between the read and the dependent write. This is the ordinary case.
 
-## Three extractions, three different answers
+These are the named cost of trading one transaction manager for several, not sloppy engineering. The answer is the same each time: bound the window, make staleness visible rather than silent, and verify convergence explicitly. The Notification extraction does this with a bounded-wait poll (up to ten retries at a fixed interval) instead of asserting instant consistency, which is enough there because one event, one idempotent consumer and no compensation can't fail checkout. Payment and shipping face the harder version, several steps that can each fail and each need a compensation, under the same rule: a bounded window is acceptable, an unbounded or silently inconsistent one isn't.
 
-It is worth being precise that "give up atomicity, adopt ACD" is not applied
-uniformly to every context this transaction currently spans, because not
-every context carries the same cost if its consistency check runs a few
-hundred milliseconds late. Notification already left the transaction
-entirely in Chapter 17: a confirmation message arriving a few seconds after
-checkout returns is invisible to the customer and has zero compensating
-action to write, because there is nothing to undo if a notification is
-merely late. That extraction is this chapter's proof of concept, not its
-hardest case.
+## One rule, four treatments
 
-Inventory is the harder case, and Chapter 19 makes a deliberate, named
-exception to the general eventual-consistency pattern because of it: the
-stock *check* and *reservation* step stays **synchronous**, over gRPC,
-specifically because overselling the same physical unit of stock to two
-customers is a correctness failure no compensating action can fully repair:
-you can refund a customer's card after the fact, but you cannot always
-produce a second physical widget that does not exist. Reserving stock stays
-a request-response call the order context waits on before it commits to
-anything else, even after inventory is its own service with its own
-database; what becomes asynchronous is everything *downstream* of a
-successful reservation, not the reservation decision itself. That is the
-calibration this chapter wants you to carry forward: ACD is not "make
-everything eventually consistent everywhere"; it is "make exactly as much
-consistent, and exactly as synchronous, as the specific business invariant
-requires, and no more."
+ACD isn't applied uniformly, because contexts differ in the cost of a late consistency check.
 
-Payment and shipping are where the full saga pattern is built,
-because both of them tolerate a bounded window *and*
-need a compensating action when something downstream goes wrong: a
-captured payment whose shipment later fails to dispatch has to be refunded,
-not merely logged as an anomaly. Chapter 23 builds the choreographed version
-of that saga for payment: services reacting to each other's events
-(`order.placed` triggers payment's attempt, `payment.captured` or
-`payment.declined` triggers whatever reacts to it next) with no central
-coordinator, which is the natural extension of the event-driven style
-Chapter 17 already introduced. Chapter 24 builds the same outcome for
-shipping with the opposite control style: a central orchestrator, using the
-Camel Saga EIP, explicitly sequencing each step and explicitly invoking the
-matching compensating action the moment any step reports failure. Putting
-both styles on the same codebase, back to back, is this book's way of
-making the choreography-versus-orchestration tradeoff concrete rather than
-theoretical: the same underlying ACD guarantee, built two structurally
-different ways, so the reader can judge for themselves which shape fits
-which kind of saga before being told which one "wins."
+| Context | Treatment | Why |
+|---|---|---|
+| Notification | Fully asynchronous, no compensation | A confirmation arriving seconds late is invisible, and a late message has nothing to undo |
+| Inventory | Stock check and reservation stay synchronous over gRPC; only what follows is asynchronous | Overselling a physical unit to two customers can't be fully repaired: you can refund a card but not produce a second widget |
+| Payment | Choreographed saga: `order.placed` triggers payment's attempt, `payment.captured` or `payment.declined` triggers the next reaction, no central coordinator | Tolerates a bounded window and needs compensation when something downstream fails |
+| Shipping | Orchestrated saga using the Camel Saga EIP | Same need, opposite control style: a central coordinator sequences steps and invokes the matching compensation on failure |
 
-## What you learned
+A captured payment whose shipment fails to dispatch has to be refunded, not merely logged. Putting both saga styles on one codebase makes the choreography-versus-orchestration trade-off concrete before either is declared the winner.
 
-- The monolith's checkout gets atomic rollback across four bounded contexts
-  **automatically**, paid for entirely by one `@Transactional` boundary and one
-  database's write-ahead log, a guarantee this project proved with two
-  different tiers of evidence: a mocked unit test showing the *orchestration
-  order* a decline forces, and the behavior-equivalence suite's
-  "Payment-Declined" scenario showing the *real, observed* rollback by
-  re-reading Postgres state before and after a declined checkout over a real
-  HTTP request.
-- That guarantee cannot travel across a service boundary. Two-phase commit,
-  the textbook mechanism for atomicity across independent databases, trades
-  it for a single-point-of-failure coordinator, locks held across multiple
-  blocking network round-trips, and a recentralization of operational
-  ownership that defeats the purpose of decomposing in the first place.
-- **ACD** (atomic locally, eventually consistent across services, durable as
-  before) replaces full cross-service ACID; **BASE** names the same tradeoff
-  from the availability side. What is kept: full local ACID inside each
-  service's own database. What is rebuilt, by hand, is cross-service
-  atomicity, as a saga, with an explicit **compensating action** for every
-  step that needs one, because no database transaction manager spans the
-  services anymore to do it automatically.
-- CAP and PACELC are not abstractions once a checkout crosses a real network:
-  every saga step trades consistency for availability and latency on
-  every request, which is why "correctness" under ACD means *converges to a
-  consistent state within a bounded window*, not *instantaneous and globally
-  agreed*, and why a bounded-wait poll with a stated budget, not an
-  instantaneous assertion, is the right shape of check for it.
-- Not every context needs the same answer: notification tolerates full
-  asynchrony with no compensating action at all (Chapter 17); inventory's
-  stock reservation stays synchronous because overselling is a
-  correctness failure a compensation cannot fully repair (Chapter 19);
-  payment and shipping get the full saga treatment because they tolerate a
-  bounded window but need compensation when something fails
-  downstream (Chapters 23 and 24).
+> **Decision**
+>
+> Keep exactly as much consistency and as much synchrony as the business invariant demands, and no more. If a failure can't be undone after the fact (overselling stock), keep the call synchronous. If it can be compensated (a refund, a release), go asynchronous and write the compensating action as carefully as the happy path. Never reach for two-phase commit across independently owned databases.
 
-Chapter 23 picks this argument up and makes it concrete on the Payment
-extraction: a choreographed saga, event-driven exactly in the style Chapter
-17 introduced, with `order.placed` and `payment.captured`/`payment.declined`
-as its vocabulary and a compensating action standing in for the rollback
-this chapter just took away. Chapter 24 builds the same guarantee again, for
-Shipping, through a central orchestrator instead of peer-to-peer events:
-the same ACD outcome, reached by the opposite control style, on the same
-codebase.
+> **🤖 Explore with your agent**
+>
+> "Check out the stage/02-notification-extracted tag. In `examples/00-monolith`, read `SMELLS.md` and `src/main/java/dev/patterncatalyst/monolith/order/OrderService.java#placeOrder`. For each of the four calls inside the `@Transactional` (inventory reserve, order save, payment charge, shipping dispatch), decide whether it needs a synchronous call or can become asynchronous with a compensating action, using this rule: keep it synchronous only if a failure can't be undone afterward. Name the compensating action for each asynchronous one and the isolation anomaly (dirty read, lost update or non-repeatable read) a client could observe while the saga is in flight."
+>
+> Check: the reply keeps the inventory reservation synchronous, names a refund for a captured payment whose shipment then fails and a release of the stock reservation when a later step fails, and names one anomaly per asynchronous step. Compare it with the Payment-Declined folder in `tooling/newman/mea.postman_collection.json`.
 
 ## For deeper coverage
 
-- Martin Kleppmann, *Designing Data-Intensive Applications* (O'Reilly, 2017), two-phase commit's named failure modes and the CAP/PACELC framing this chapter leans on directly; see the [Reading List](/bibliography/).
-- Chris Richardson, *Microservices Patterns* (Manning, 2018), the saga pattern and compensating-transaction vocabulary this chapter's ACD argument sets up for Chapters 23 and 24.
-- Sam Newman, *Monolith to Microservices* (O'Reilly, 2019), the "what you give up" framing for splitting a shared database, including the loss of cross-service transactions.
-- Cloud Native Design Patterns, [Appendix D: Sagas](https://github.com/patterncatalyst/cloud-native-design-patterns/blob/main/_docs/17-appendix-d-sagas.md), the companion book's own treatment of compensating-action saga design.
+- Martin Kleppmann, *Designing Data-Intensive Applications* (O'Reilly, 2017): two-phase commit's failure modes and the CAP and PACELC framing; see the [Reading List](/bibliography/).
+- Chris Richardson, *Microservices Patterns* (Manning, 2018): the saga pattern and compensating-transaction vocabulary.
+- Sam Newman, *Monolith to Microservices* (O'Reilly, 2019): what you give up when splitting a shared database, including cross-service transactions.
+- Cloud Native Design Patterns, [Appendix D: Sagas](https://github.com/patterncatalyst/cloud-native-design-patterns/blob/main/_docs/17-appendix-d-sagas.md): compensating-action saga design.

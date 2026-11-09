@@ -67,7 +67,7 @@ bugL = node(100, 410, 600, 110, style="ghost", lines=[
 
 left_nodes = [schemaL, orderItemsL, inventoryItemsL, bugL]
 left_edges = [
-    connect(orderItemsL, inventoryItemsL, label="@ManyToOne -- live join, read every time", amber=True),
+    connect(orderItemsL, inventoryItemsL, label="@ManyToOne: live join, read every time", amber=True),
     connect(orderItemsL, bugL, dashed=True, label="sku / product name read live, not captured"),
 ]
 
@@ -118,10 +118,10 @@ notes = [
      "anchor": "start", "size": 11, "color": "#555555"},
 
     {"x": 860, "y": 740,
-     "text": "Written once at order-placement, frozen forever -- a later SKU rename can no longer relabel a historical order.",
+     "text": "Written once at order-placement, frozen forever: a later SKU rename can no longer relabel a historical order.",
      "anchor": "start", "size": 11, "color": "#2f5f3d", "bold": True},
     {"x": 860, "y": 756,
-     "text": "A live stock check at checkout still crosses the seam synchronously (gRPC) -- this snapshot is for history, not for \"in stock right now.\"",
+     "text": "A live stock check at checkout still crosses the seam synchronously (gRPC), this snapshot is for history, not for \"in stock right now.\"",
      "anchor": "start", "size": 10.5, "color": "#555555"},
 
     {"x": 40, "y": 800,

@@ -1,10 +1,10 @@
 # order-service
 
-**ch.26 Phase B ("idiomatic refactor + CQRS write model + lifted saga
-reactions + own outbox") — S5 (DRQ-073/074), HARD PART H1.** The Phase A
-Spring-compat shim is gone — `/api/orders` now runs on Quarkus REST
+**Phase B ("idiomatic refactor + CQRS write model + lifted saga
+reactions + own outbox").** The Phase A
+Spring-compat shim is gone, `/api/orders` now runs on Quarkus REST
 (`OrderResource`) + Panache (`OrderRepository`/`CustomerRepository`) + plain
-CDI (`OrderService`) — and the net-new CQRS write core is layered on top:
+CDI (`OrderService`), and the net-new CQRS write core is layered on top:
 `placeOrder` is the command handler (validate → reserve over gRPC → persist
 `PENDING` → write `order.placed` to this service's OWN transactional outbox,
 atomic with the order row, no dual-write), and `OrderSagaListener` lifts the
@@ -15,14 +15,14 @@ mutual-exclusion guarantees exactly. Mirrors `examples/05-payment-service`'s
 and `examples/06-shipping-service`'s Phase B. See `MIGRATION.md` for the
 component-by-component table and measured before/after metrics.
 
-**This service OWNS ITS OWN SCHEMA from day one** (`order_service` — not
-`order`, a reserved Postgres keyword; see `V1__create_order_schema.sql`) —
+**This service OWNS ITS OWN SCHEMA from day one** (`order_service`, not
+`order`, a reserved Postgres keyword; see `V1__create_order_schema.sql`),
 same discipline as inventory/payment/shipping, NOT review's shared-schema
 approach. It also owns the lifted `customers` table (customer was never its
-own extraction — it comes along with order).
+own extraction, it comes along with order).
 
-**FK decomposition (DRQ-068):** `Order`'s monolith `@ManyToOne Customer` is
-replaced with a plain `customerId` value + a `customerEmail` snapshot — no
+**FK decomposition:** `Order`'s monolith `@ManyToOne Customer` is
+replaced with a plain `customerId` value + a `customerEmail` snapshot, no
 JPA association, no DB-level FK, even though `customers` is now co-owned by
 this same schema (see `Order.java`'s javadoc).
 
@@ -43,9 +43,9 @@ this same schema (see `Order.java`'s javadoc).
   `CONFIRMED` (the ONLY path to `CONFIRMED`); `shipment-failed` →
   `SHIPPING_FAILED` + compensating `Release` per sku; `payment-declined` →
   `PAYMENT_DECLINED` + compensating `Release` per sku. Status-guard
-  idempotent, at-most-once compensation, mutually exclusive by construction
-  — see `MIGRATION.md`'s Phase B section.
-- No read-model projection yet — that is ch.26 S6 (`order_view`, reserved
+  idempotent, at-most-once compensation, mutually exclusive by construction;
+  see `MIGRATION.md`'s Phase B section.
+- No read-model projection yet, that comes next (`order_view`, reserved
   via Flyway, empty and unwritten).
 
 This project uses Quarkus, the Supersonic Subatomic Java Framework.

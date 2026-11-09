@@ -25,7 +25,7 @@ W, H = 1680, 700
 client = node(30, 270, 150, 80, ["Client", "POST /api/orders"], style="sub")
 
 band = {"x": 200, "y": 170, "w": 1310, "h": 300,
-        "label": "ONE @Transactional: OrderService#placeOrder (order/OrderService.java)",
+        "label": "One @Transactional: OrderService#placeOrder (order/OrderService.java)",
         "fill": "#eaf4ec"}
 
 STEP_Y, STEP_H, STEP_W, GUTTER = 240, 120, 145, 12
@@ -68,7 +68,7 @@ edges.append(connect(step_nodes["reserve"], insufficient, dashed=True, label="qu
 
 # ---- failure branch 2: payment decline: rolls back everything written ----
 rollback = node(step_nodes["charge"]["x"] - 40, 480, 300, 100,
-                ["402 Payment Required", "PaymentDeclinedException", "ROLLBACK ALL: reserve + persist undone"],
+                ["402 Payment Required", "PaymentDeclinedException", "Rollback all: reserve + persist undone"],
                 style="ink")
 nodes.append(rollback)
 edges.append(connect(step_nodes["charge"], rollback, dashed=True, label="method contains DECLINE"))

@@ -54,7 +54,7 @@ orderListenerL = node(420, 350, 300, 90,
                        ["Monolith: OrderSagaListener", "reacts independently,", "confirms or compensates"],
                        style="box")
 noCoordL = node(230, 500, 300, 90,
-                 ["NO COORDINATOR", "control is EMERGENT: no process", "owns the sequence top-to-bottom"],
+                 ["No coordinator", "control is emergent: no process", "owns the sequence top-to-bottom"],
                  style="ghost")
 
 choreo_nodes = [kafkaL, paymentSvcL, orderListenerL, noCoordL]
@@ -96,7 +96,7 @@ orch_edges = [
 ]
 
 orch_note = {"x": 1200, "y": 650,
-             "text": "ONE visible place owns the sequence top-to-bottom",
+             "text": "One visible place owns the sequence top-to-bottom",
              "anchor": "middle", "size": 11.5, "color": "#2f5f3d", "bold": True}
 orch_note2 = {"x": 1200, "y": 666,
               "text": "reading the route tells you the whole story",

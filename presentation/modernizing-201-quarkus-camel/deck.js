@@ -9,8 +9,8 @@ const {
   addStatusTable, addCaption, addCodeSlide, addSectionDivider, addNotes,
 } = H;
 
-const OUT = "Modernizing-201-Quarkus-Camel-r1.1.pptx";
-const REV = "r1.1";
+const OUT = "Modernizing-201-Quarkus-Camel-r1.2.pptx";
+const REV = "r1.2";
 
 const pres = newDeck();
 pres.title = "Modernizing Enterprise Applications: 201 · Quarkus & Camel in depth";
@@ -97,7 +97,7 @@ leadSlide("ORIENTATION · SCOPE", "What this deck assumes",
     { lead: "Grounded in the repository", text: "every snippet is lifted from the example modules." },
     { lead: "Two runtimes, one register", text: "Camel first (the integration layer), then Quarkus (the chassis and the services), then how they run together." },
   ],
-  "A quick framing so expectations are right. This deck does not re-argue why to modernize or re-walk the six extractions; the other two decks do that. It assumes you have seen the arc and want to know how Quarkus and Camel deliver it. The plan is three acts: Camel as the integration layer, then Quarkus as the chassis and the services, then the two together: topology, telemetry, and which service demonstrates which capability. The appendix carries reference tables to keep open in another window. Comments in green on the code slides are the parts worth reading aloud.");
+  "A quick framing so expectations are right. This deck does not re-argue why to modernize or re-walk the six extractions; the other two decks do that. It assumes you have seen the arc and want to know how Quarkus and Camel deliver it. The plan is three acts: Camel as the integration layer, then Quarkus as the chassis and the services, then the two together: topology, telemetry, and which service demonstrates which capability. The deck appendix carries reference tables to keep open in another window. Comments in green on the code slides are the parts worth reading aloud.");
 
 diagramBulletsSlide("ORIENTATION · THE CORE IDEA", "Build-time, not boot-time", "r-build-time-vs-runtime",
   [
@@ -184,9 +184,9 @@ codeSlide("CAMEL · SAGA EIP", "The orchestrated saga, as one readable route", "
     "        .compensation(\"direct:ship-compensate\")",
     "        .option(\"orderId\", header(\"orderId\"))",
     "    .to(\"direct:ship-enrich\")        // step 1",
-    "    .to(\"direct:ship-dispatch\")      // step 2 — persists before step 3 can fail",
-    "    .to(\"direct:ship-book-carrier\")  // step 3 — the deterministic failure point",
-    "    .to(\"direct:ship-emit-dispatched\")// step 4 — only on success",
+    "    .to(\"direct:ship-dispatch\")      // step 2: persists before step 3 can fail",
+    "    .to(\"direct:ship-book-carrier\")  // step 3: the deterministic failure point",
+    "    .to(\"direct:ship-emit-dispatched\")// step 4: only on success",
     "    .end();",
   ],
   "The shipping orchestrator: ShipmentSagaRoute",
@@ -221,7 +221,7 @@ diagramBulletsSlide("CAMEL · TWO STYLES", "Camel orchestrates, Kafka choreograp
     { code: "bean", name: "Step delegation", purpose: "Each direct: step calls one method on a CDI bean, kept unit-testable." },
     { code: "saga", name: "Saga coordinator", purpose: "The Saga EIP SPI; InMemorySagaService for this single-JVM demonstrator." },
   ], { colW: [2.10, 2.60, 7.39] });
-  addNotes(s, "A short reference for the components the two routes use. platform-http is the edge consumer: one endpoint catching the whole /api path space via matchOnUriPrefix. http is the producer that forwards to a service; its bridgeEndpoint option is what makes the proxy transparent. direct gives the saga its in-process, synchronous step endpoints with no serialization between steps. bean delegates each step to a single method on a CDI bean, which keeps route logic out of the steps and the steps independently testable. saga is the coordinator SPI; this demonstrator uses the InMemorySagaService implementation, which is correct for one JVM: a production deployment would swap in a durable coordinator, named in the appendix and in the general 201's deferral list.");
+  addNotes(s, "A short reference for the components the two routes use. platform-http is the edge consumer: one endpoint catching the whole /api path space via matchOnUriPrefix. http is the producer that forwards to a service; its bridgeEndpoint option is what makes the proxy transparent. direct gives the saga its in-process, synchronous step endpoints with no serialization between steps. bean delegates each step to a single method on a CDI bean, which keeps route logic out of the steps and the steps independently testable. saga is the coordinator SPI; this demonstrator uses the InMemorySagaService implementation, which is correct for one JVM: a production deployment would swap in a durable coordinator, named in the deck appendix and in the general 201's deferral list.");
 }
 
 leadSlide("CAMEL · THE FRONT DOOR", "One consumer for the whole path space",
@@ -273,7 +273,7 @@ diagramBulletsSlide("QUARKUS · THE CHASSIS", "The chassis is a set of extension
 
 codeSlide("QUARKUS · CONFIG & HEALTH", "Config and health, by declaration", "properties · java",
   [
-    "# application.properties — configuration is just keys",
+    "# application.properties: configuration is just keys",
     "quarkus.http.port=8087",
     "quarkus.flyway.migrate-at-start=true",
     "inventory.grpc.timeout-ms=5000",
@@ -300,7 +300,7 @@ diagramBulletsSlide("QUARKUS · TWO-PHASE MIGRATION", "Phase A lift, Phase B idi
 
 codeSlide("QUARKUS · PERSISTENCE", "Persistence with Panache + Flyway", "java · Panache",
   [
-    "// a repository method — intent, not JPA boilerplate",
+    "// a repository method: intent, not JPA boilerplate",
     "List<OrderOutboxEvent> findUnpublished(int batchSize);",
     "",
     "// the scheduled relay reads the outbox and publishes, in one tx",
@@ -320,7 +320,7 @@ codeSlide("QUARKUS · PERSISTENCE", "Persistence with Panache + Flyway", "java �
 
 codeSlide("QUARKUS · MESSAGING OUT", "Publishing: the outbox relay to Kafka", "java · SmallRye Reactive Messaging",
   [
-    "# application.properties — a channel is configuration",
+    "# application.properties: a channel is configuration",
     "mp.messaging.outgoing.order-placed.connector=smallrye-kafka",
     "mp.messaging.outgoing.order-placed.topic=order.placed",
     "",
@@ -361,7 +361,7 @@ codeSlide("QUARKUS · gRPC", "A gRPC service, reactive", "java · quarkus-grpc",
     "        // look up the item, compute whether demand can be satisfied",
     "        return Uni.createFrom().item(toStockReply(sku, item, canSatisfy));",
     "    }",
-    "    // reserve(...) / release(...) / getStock(...) — same shape",
+    "    // reserve(...) / release(...) / getStock(...): same shape",
     "}",
   ],
   "The gRPC seam: inventory-service's server",
@@ -377,7 +377,7 @@ codeSlide("QUARKUS · GRAPHQL", "Aggregation with SmallRye GraphQL", "java · Sm
     "        return OrderView.from(orderRestClient.getById(id));      // REST",
     "    }",
     "",
-    "    // a nested field, resolved lazily — over gRPC:",
+    "    // a nested field, resolved lazily: over gRPC:",
     "    public StockView stock(@Source OrderItemView item) {",
     "        var reply = inventoryGrpc.getStock(/* sku */);           // gRPC",
     "        return new StockView(reply.getStockKeepingUnit(),",
@@ -413,7 +413,7 @@ leadSlide("QUARKUS · NATIVE & AOT", "Native image and the JDK 25 AOT cache",
     { lead: "JVM AOT cache (JDK 25)", text: "where native is not wanted, the JDK 25 AOT cache still cuts JVM warm-up." },
     { lead: "Density in production", text: "fast start and small footprint mean more services per node and quicker scale-up." },
   ],
-  "Native image is the headline payoff of everything in act two. Because Quarkus has already done the framework work at build time and the runtime does almost no reflection, GraalVM Mandrel can compile the service ahead of time into a standalone native binary: the measured result on this project is roughly fifty-millisecond startup and about seventy megabytes of resident memory, an order of magnitude better than the JVM figures. That is not a free lunch: a native build takes longer and the closed-world assumption occasionally needs reflection hints, which the chapters document. Where a native image is not wanted, the JDK 25 ahead-of-time cache still trims JVM warm-up. Either way the operational consequence is density (more services per node and faster scale-up), which matters once six services become the unit of deployment.");
+  "Native image is the headline payoff of everything in act two. Because Quarkus has already done the framework work at build time and the runtime does almost no reflection, GraalVM Mandrel can compile the service ahead of time into a standalone native binary: the measured result on this project is roughly fifty-millisecond startup and about seventy megabytes of resident memory, an order of magnitude better than the JVM figures. That is not a free lunch: a native build takes longer and the closed-world assumption occasionally needs reflection hints, which the Quarkus native-image guide documents. Where a native image is not wanted, the JDK 25 ahead-of-time cache still trims JVM warm-up. Either way the operational consequence is density (more services per node and faster scale-up), which matters once six services become the unit of deployment.");
 
 leadSlide("QUARKUS · SPRING-COMPAT", "Phase A: the Spring-compatibility bridge",
   [
@@ -492,7 +492,7 @@ leadSlide("TOGETHER · TELEMETRY", "One trace across both runtimes",
     { lead: "quarkus-opentelemetry", text: "add the extension and point three properties at the collector: no span code." },
     { lead: "Auto-instrumented", text: "JAX-RS endpoints, the REST client, and gRPC emit spans automatically." },
     { lead: "Camel participates", text: "routes propagate trace context, so an edge-to-service hop stays one trace." },
-    { lead: "Exported to LGTM", text: "spans land in Tempo; the mesh adds its own Envoy spans on top (general 201 / mesh chapter)." },
+    { lead: "Exported to LGTM", text: "spans land in Tempo; the mesh adds its own Envoy spans on top (see the general 201)." },
     { lead: "Context is the app's job", text: "the mesh amplifies a trace; the instrumented services start and propagate it." },
   ],
   "Observability closes the loop and shows the two runtimes cooperating. Tracing is another extension-as-capability: add quarkus-opentelemetry, set three properties (the OTLP endpoint, the service name, and the sampler), and the JAX-RS server, the REST client, and gRPC are all auto-instrumented, with no manual span code anywhere in the services. Camel propagates the same trace context across a route, so a request that enters the edge router and fans out to services stays a single trace rather than fragmenting at the integration layer. The spans export to the LGTM stack and, on Kubernetes, the service mesh adds Envoy spans for every hop on top, covered in the general 201. The one thing the application still owns is starting and propagating context; the mesh amplifies a trace, it does not originate one.");
@@ -517,7 +517,7 @@ codeSlide("TOGETHER · TRACING", "OpenTelemetry: three properties, auto-instrume
     "# add the quarkus-opentelemetry extension, then:",
     "quarkus.otel.exporter.otlp.traces.endpoint=http://lgtm.mea.svc.cluster.local:4317",
     "quarkus.otel.service.name=order-service",
-    "quarkus.otel.traces.sampler=always_on   # demo sampler — not for production",
+    "quarkus.otel.traces.sampler=always_on   # demo sampler: not for production",
     "",
     "// no span code anywhere: JAX-RS, the REST client, and gRPC",
     "// are auto-instrumented; Camel propagates the same trace context",
@@ -588,7 +588,7 @@ divider("D", "Appendix", "Reference: keep open in another window",
     { code: "Apicurio 3.3.3", name: "Schema registry", purpose: "Avro, contract-first event evolution." },
     { code: "Mandrel", name: "Native builder", purpose: "GraalVM-based native-image compilation." },
   ], { colW: [2.70, 2.30, 7.09], rowH: 0.42 });
-  addNotes(s, "The pinned versions are listed for reproducibility. They drift, so re-check them against the repository before quoting them. JDK 25 is the baseline, with both the JVM and the AOT-cache path in play. Quarkus 3.40.1 is the platform BOM shared by every service, which is what keeps the extension versions aligned. Camel 4.22 arrives through camel-quarkus. Spring Boot 4.1 runs the frozen monolith shell (it was built on 3.5) and 3.5 was the Phase A compatibility bridge. Kafka in KRaft mode is the event backbone; PostgreSQL holds one schema per service plus the outbox tables; Apicurio provides the Avro registry for contract-first events; and Mandrel is the native-image builder. The general 201 and the book carry the full matrix with the per-service specifics.");
+  addNotes(s, "The pinned versions are listed for reproducibility. They drift, so re-check them against the repository before quoting them. JDK 25 is the baseline, with both the JVM and the AOT-cache path in play. Quarkus 3.40.1 is the platform BOM shared by every service, which is what keeps the extension versions aligned. Camel 4.22 arrives through camel-quarkus. Spring Boot 4.1 runs the frozen monolith shell (it was built on 3.5) and 3.5 was the Phase A compatibility bridge. Kafka in KRaft mode is the event backbone; PostgreSQL holds one schema per service plus the outbox tables; Apicurio provides the Avro registry for contract-first events; and Mandrel is the native-image builder. The general 201 and the tutorial site carry the full matrix with the per-service specifics.");
 }
 
 leadSlide("APPENDIX · GLOSSARY", "Glossary",
@@ -610,11 +610,11 @@ leadSlide("APPENDIX · GLOSSARY", "Glossary",
   addContentTitle(s, "CLOSING", "Where to go deeper");
   leadBullets(s, [
     { lead: "The repository", text: "the routes, the extensions, and the messaging wiring are in the repository, runnable on Docker Engine and minikube." },
-    { lead: "The book", text: "the full 32-chapter tutorial, each chapter with a runnable example and a verification footer." },
+    { lead: "The tutorial site", text: "thirty-two chapters, each with a runnable example and a verification footer." },
     { lead: "The other decks", text: "the 101 for the ideas, the general 201 for the whole migration; this deck is the framework lens on both." },
     { lead: "Start where your pain is", text: "pick the service in the capability map that matches your problem, and read its module." },
   ]);
-  addNotes(s, "To close: this deck was the framework lens, and the best next step is the code it points at. Everything shown here is in the repository: the edge router, the saga route, the extension lists, the messaging configuration. All of it runs on Docker Engine for development and minikube for the Kubernetes chapters. The book carries the full narrative, chapter by chapter, each with a runnable example and a verification footer. The other two decks cover the parts this one assumed: the 101 for the ideas and the general 201 for the whole migration. And the most practical entry point is the capability map a few slides back: find the service that matches the problem in front of you and read that module first.");
+  addNotes(s, "To close: this deck was the framework lens, and the best next step is the code it points at. Everything shown here is in the repository: the edge router, the saga route, the extension lists, the messaging configuration. All of it runs on Docker Engine for development and minikube for the Kubernetes work. The tutorial site carries the full narrative, each chapter with a runnable example and a verification footer. The other two decks cover the parts this one assumed: the 101 for the ideas and the general 201 for the whole migration. And the most practical entry point is the capability map a few slides back: find the service that matches the problem in front of you and read that module first.");
 }
 
 

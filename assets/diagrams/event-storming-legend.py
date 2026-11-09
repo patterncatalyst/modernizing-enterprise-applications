@@ -33,19 +33,19 @@ g.OUT = os.path.dirname(__file__)
 W, H = 1180, 970
 
 ROWS = [
-    ("Domain event", "orange sticky -- a past-tense fact",
+    ("Domain event", "orange sticky: a past-tense fact",
      "e.g. OrderPlaced, StockReserved, PaymentCaptured", "accent", "#f4b183"),
-    ("Command", "blue sticky -- the imperative that triggered the fact",
+    ("Command", "blue sticky: the imperative that triggered the fact",
      "e.g. Place Order, Reserve Stock, Capture Payment", "user", "#9dc3f0"),
-    ("Actor", "small yellow figure, left of its command -- who/what issued it",
+    ("Actor", "small yellow figure, left of its command: who/what issued it",
      "e.g. Customer; or a job, webhook, or policy", "sub", "#f5ea8a"),
-    ("Aggregate", "large yellow sticky -- the data cluster enforcing an invariant",
+    ("Aggregate", "large yellow sticky: the data cluster enforcing an invariant",
      "e.g. Order (is PlaceOrder well-formed?), InventoryItem (enough stock?)", "box", "#f0d64a"),
-    ("Policy / reaction", "lilac sticky -- \"whenever X, then issue command Y\", no human actor",
+    ("Policy / reaction", "lilac sticky: \"whenever X, then issue command Y\", no human actor",
      "e.g. whenever OrderPlaced, then Reserve Stock", "ghost", "#cdb3e8"),
-    ("Read model", "green sticky -- a view projected forward from events",
+    ("Read model", "green sticky: a view projected forward from events",
      "e.g. Order Status, fed by OrderPlaced/PaymentCaptured/ShipmentDispatched/OrderConfirmed", "kernel", "#a8d9ad"),
-    ("External system", "pink sticky -- outside the team's control, called through a policy",
+    ("External system", "pink sticky: outside the team's control, called through a policy",
      "e.g. the card network, a carrier's dispatch API", "ink", "#f0a8c4"),
 ]
 
@@ -59,7 +59,7 @@ notes = [
     {"x": W / 2, "y": 34, "text": "Event-storming note-type legend: the wall's color grammar",
      "anchor": "middle", "bold": True, "size": 18},
     {"x": W / 2, "y": 60,
-     "text": "in the order a session adds them -- each sticky color under its conventional name, "
+     "text": "in the order a session adds them: each sticky color under its conventional name, "
              "mapped onto this book's house-style box types",
      "anchor": "middle", "size": 12, "color": "#555555"},
 ]
@@ -82,7 +82,7 @@ notes.append({
 })
 notes.append({
     "x": CARD_X, "y": H - 48,
-    "text": "-- the same mapping event-storm-checkout.py (Figure 12.1) already uses.",
+    "text": "This is the same mapping event-storm-checkout.py (Figure 12.1) already uses.",
     "anchor": "start", "size": 10, "color": "#555555",
 })
 notes.append({

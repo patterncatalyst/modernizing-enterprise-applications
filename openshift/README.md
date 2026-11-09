@@ -2,7 +2,7 @@
 
 This directory is the **OpenShift counterpart** to [`deploy/k8s/`](../deploy/k8s/).
 The `deploy/k8s/` tree runs the eight-workload topology on vanilla Kubernetes
-(minikube, Chapter 30); this tree runs the same topology on OpenShift, packaged as
+(minikube; see [Mesh, Observability & Distributed Tracing](https://patterncatalyst.github.io/modernizing-enterprise-applications/docs/30-mesh-observability-tracing/)); this tree runs the same topology on OpenShift, packaged as
 a **Helm chart** (`helm/mea/`). The appendix *"Deploying to OpenShift"* walks
 through it end to end; this README is the quick reference.
 
@@ -40,13 +40,13 @@ Three things, and they are the reason this is its own tree rather than a one-lin
 
 1. **Security Context Constraints (SCC).** The `deploy/k8s/base` Deployments pin
    `runAsUser: 185`. OpenShift's default `restricted-v2` SCC assigns each pod a
-   UID from the namespace's allocated range and rejects a hardcoded one — so the
+   UID from the namespace's allocated range and rejects a hardcoded one, so the
    app Deployments here **drop `runAsUser` entirely** and let the platform assign
    it (the UBI OpenJDK images run as any UID). Postgres and Kafka *do* need
    specific UIDs (70 / 1000), so they run under a dedicated ServiceAccount
    (`mea-infra`) bound to the `nonroot-v2` SCC.
 2. **Routes, not port-forward.** External access is two `Route` objects (the
-   strangler proxy and the GraphQL gateway) served by the cluster's router — no
+   strangler proxy and the GraphQL gateway) served by the cluster's router, no
    `kubectl port-forward`, no NodePort.
 3. **The integrated registry, filled from inside the cluster.** The eight
    service images are built *in* OpenShift (Docker-strategy binary builds fed
@@ -55,14 +55,14 @@ Three things, and they are the reason this is its own tree rather than a one-lin
    Everything is referenced as
    `image-registry.openshift-image-registry.svc:5000/mea/...`.
 
-Everything else — the shared env ConfigMap, the per-service schema wiring, the
-Kafka/Postgres `ch.30 live-apply` fixes, the graceful-shutdown windows, the health
-probes — is carried over unchanged.
+Everything else, the shared env ConfigMap, the per-service schema wiring, the
+Kafka/Postgres minikube live-apply fixes, the graceful-shutdown windows, the health
+probes, is carried over unchanged.
 
 ## Prerequisites
 
 - A Fedora or RHEL host with **OpenShift Local (CRC)**, `oc` (`eval "$(crc
-  oc-env)"`), `helm`, `skopeo`, JDK 25 and Maven — see the appendix for account
+  oc-env)"`), `helm`, `skopeo`, JDK 25 and Maven, see the appendix for account
   + download + `crc setup`/`crc start`. No container engine is needed on this
   path. Stop any running minikube profile first: one local cluster at a time.
 - The scripts use the `crc-admin` kubeconfig context `crc start` writes
